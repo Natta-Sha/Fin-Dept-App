@@ -119,10 +119,22 @@
       <div class="col-md-3">
         <label class="form-label">Client Name</label>
         <p class="form-control-plaintext" id="client_name"></p>
+        <input
+          id="client_name_input"
+          type="text"
+          class="form-control"
+          style="display: none"
+        />
       </div>
       <div class="col-md-3">
         <label class="form-label">Client Address</label>
         <p class="form-control-plaintext" id="client_address"></p>
+        <textarea
+          id="client_address_input"
+          class="form-control"
+          rows="2"
+          style="display: none"
+        ></textarea>
       </div>
     </div>
 
@@ -130,10 +142,22 @@
       <div class="col-md-3">
         <label class="form-label">Client Number</label>
         <p class="form-control-plaintext" id="client_number"></p>
+        <input
+          id="client_number_input"
+          type="text"
+          class="form-control"
+          style="display: none"
+        />
       </div>
       <div class="col-md-3">
         <label class="form-label">Our Company</label>
         <p class="form-control-plaintext" id="our_company"></p>
+        <input
+          id="our_company_input"
+          type="text"
+          class="form-control"
+          style="display: none"
+        />
       </div>
 
       <div class="col-md-3">
@@ -145,6 +169,12 @@
       <div class="col-md-3">
         <label class="form-label">Due Date</label>
         <p class="form-control-plaintext" id="due_date"></p>
+        <input
+          id="due_date_input"
+          type="date"
+          class="form-control"
+          style="display: none"
+        />
       </div>
       <div class="col-md-3">
         <label class="form-label" for="exchange_rate" id="exchange_rate_label"
@@ -173,10 +203,22 @@
           <div class="col-md-6">
             <label class="form-label">Bank Details 1</label>
             <pre class="form-control-plaintext" id="bank_details_1"></pre>
+            <textarea
+              id="bank_details_1_input"
+              class="form-control"
+              rows="4"
+              style="display: none"
+            ></textarea>
           </div>
           <div class="col-md-6">
             <label class="form-label">Bank Details 2</label>
             <pre class="form-control-plaintext" id="bank_details_2"></pre>
+            <textarea
+              id="bank_details_2_input"
+              class="form-control"
+              rows="4"
+              style="display: none"
+            ></textarea>
           </div>
         </div>
       </div>
@@ -872,6 +914,23 @@
               document.getElementById("due_date").textContent = data.dueDate
                 ? formatDateDDMMYYYY(new Date(data.dueDate))
                 : "";
+
+              // Populate hidden edit inputs with existing values
+              document.getElementById("client_name_input").value =
+                data.clientName || "";
+              document.getElementById("client_address_input").value =
+                data.clientAddress || "";
+              document.getElementById("client_number_input").value =
+                data.clientNumber || "";
+              document.getElementById("our_company_input").value =
+                data.ourCompany || "";
+              document.getElementById("bank_details_1_input").value =
+                data.bankDetails1 || "";
+              document.getElementById("bank_details_2_input").value =
+                data.bankDetails2 || "";
+              document.getElementById("due_date_input").value = formatInputDate(
+                data.invoiceDate || ""
+              );
             })
             .getInvoiceDataById(invoiceId);
 
@@ -982,12 +1041,39 @@
 
           const commentInput = document.getElementById("comment");
           const commentDisplay = document.getElementById("comment-display");
+          const toggleEditField = (plainId, inputId) => {
+            const plain = document.getElementById(plainId);
+            const input = document.getElementById(inputId);
+            if (!plain || !input) return;
+            if (mode === "edit") {
+              plain.style.display = "none";
+              input.style.display = "block";
+            } else {
+              plain.style.display = "block";
+              input.style.display = "none";
+            }
+          };
+
           if (mode === "edit") {
             if (commentInput) commentInput.style.display = "block";
             if (commentDisplay) commentDisplay.style.display = "none";
+            toggleEditField("client_name", "client_name_input");
+            toggleEditField("client_address", "client_address_input");
+            toggleEditField("client_number", "client_number_input");
+            toggleEditField("our_company", "our_company_input");
+            toggleEditField("bank_details_1", "bank_details_1_input");
+            toggleEditField("bank_details_2", "bank_details_2_input");
+            toggleEditField("due_date", "due_date_input");
           } else {
             if (commentInput) commentInput.style.display = "none";
             if (commentDisplay) commentDisplay.style.display = "block";
+            toggleEditField("client_name", "client_name_input");
+            toggleEditField("client_address", "client_address_input");
+            toggleEditField("client_number", "client_number_input");
+            toggleEditField("our_company", "our_company_input");
+            toggleEditField("bank_details_1", "bank_details_1_input");
+            toggleEditField("bank_details_2", "bank_details_2_input");
+            toggleEditField("due_date", "due_date_input");
           }
 
           // Make plaintext fields editable in edit mode
