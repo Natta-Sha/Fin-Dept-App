@@ -363,7 +363,7 @@
             id="save-without-changes-btn"
             class="btn btn-outline-secondary px-5 fw-bold"
           >
-            Save without changes
+            Discard changes
           </button>
         </div>
       </div>
@@ -1020,6 +1020,13 @@
               "edit-bottom-btn-container"
             );
             if (editBtns) editBtns.style.display = "block";
+            // Wire up Exit without saving → back to list
+            const exitBtn = document.getElementById("save-without-changes-btn");
+            if (exitBtn) {
+              exitBtn.addEventListener("click", function () {
+                window.top.location.href = BASE_URL + "?page=InvoicesList";
+              });
+            }
           } else {
             document.getElementById("page-title").textContent =
               "Invoice - View";
