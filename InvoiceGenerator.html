@@ -428,6 +428,27 @@
 
         return payload;
       }
+
+      // Robust navigation back to invoices list for both web-app and sidebar contexts
+      function safeNavigateToInvoicesList() {
+        const target = BASE_URL + "?page=InvoicesList";
+        try {
+          window.top.location.href = target;
+          return;
+        } catch (e) {}
+        try {
+          window.location.href = target;
+          return;
+        } catch (e2) {}
+        if (
+          google &&
+          google.script &&
+          google.script.host &&
+          google.script.host.close
+        ) {
+          google.script.host.close();
+        }
+      }
       let validProjectNames = [];
       let invoiceId = "<?= invoiceId ?>";
       let mode = "<?= mode ?>";
@@ -1044,8 +1065,7 @@
                         .addEventListener(
                           "hidden.bs.modal",
                           function () {
-                            window.top.location.href =
-                              BASE_URL + "?page=InvoicesList";
+                            google.script.host.close();
                           },
                           { once: true }
                         );
@@ -1095,7 +1115,7 @@
             const exitBtn = document.getElementById("save-without-changes-btn");
             if (exitBtn) {
               exitBtn.addEventListener("click", function () {
-                window.top.location.href = BASE_URL + "?page=InvoicesList";
+                safeNavigateToInvoicesList();
               });
             }
             // Wire up Save changes → collect data and call backend update
@@ -1113,8 +1133,7 @@
                         );
                         return;
                       }
-                      window.top.location.href =
-                        BASE_URL + "?page=InvoicesList";
+                      safeNavigateToInvoicesList();
                     })
                     .withFailureHandler(function (err) {
                       alert("Error updating invoice: " + err.message);
