@@ -836,7 +836,7 @@
                 window.location.href = "?page=InvoicesList";
                 return;
               }
-              if (["view", "delete", "copy"].includes(mode)) {
+              if (["view", "delete", "copy", "edit"].includes(mode)) {
                 renderSavedDataRaw(data);
               } else {
                 fillInvoiceFormFromSavedData(data);
@@ -918,6 +918,12 @@
           } else if (mode === "view") {
             document.getElementById("page-title").textContent =
               "Invoice - View";
+            document.getElementById(
+              "delete-bottom-btn-container"
+            ).style.display = "none";
+          } else if (mode === "edit") {
+            document.getElementById("page-title").textContent =
+              "Invoice - Edit";
             document.getElementById(
               "delete-bottom-btn-container"
             ).style.display = "none";
