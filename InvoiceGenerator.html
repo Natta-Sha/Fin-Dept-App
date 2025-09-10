@@ -929,7 +929,7 @@
               document.getElementById("bank_details_2_input").value =
                 data.bankDetails2 || "";
               document.getElementById("due_date_input").value = formatInputDate(
-                data.invoiceDate || ""
+                data.dueDate || ""
               );
             })
             .getInvoiceDataById(invoiceId);
@@ -1033,7 +1033,8 @@
           }
           document.getElementById("back-to-list").style.display = "block";
           document.getElementById("generate-btn").style.display = "none";
-          document.getElementById("new-invoice-btn").style.display = "none";
+          const newInvoiceBtn = document.getElementById("new-invoice-btn");
+          if (newInvoiceBtn) newInvoiceBtn.style.display = "none";
 
           const addRowBtn = document.getElementById("add-row-btn");
           if (addRowBtn)
