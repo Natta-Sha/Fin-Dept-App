@@ -1,0 +1,38 @@
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Node/NPM (if used by tooling)
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Apps Script / clasp
+.clasp.json
+.claspignore
+# Local clasp auth tokens (do not publish)
+**/.clasprc.json
+clasprc.json
+
+# Environment & secrets
+.env
+.env.*
+# Project-specific sensitive config (contains IDs)
+config.js
+
+# Logs
+*.log
+logs/
+
+# Build artifacts
+/dist/
+/build/
+/tmp/

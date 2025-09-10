@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <base target="_top" />
+    <meta charset="UTF-8" />
+    <title>List of Invoices</title>
+
+    <!-- Стили -->
+    <link
+      rel="stylesheet"
+      href="https://cdn.datatables.net/1.13.4/css/jquery.dataTables.min.css"
+    />
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdn.datatables.net/fixedheader/3.4.0/css/fixedHeader.dataTables.min.css"
+    />
+
+    <!-- Скрипты -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.4/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.4/moment.min.js"></script>
+    <script src="https://cdn.datatables.net/plug-ins/1.13.4/sorting/datetime-moment.js"></script>
+    <script src="https://cdn.datatables.net/fixedheader/3.4.0/js/dataTables.fixedHeader.min.js"></script>
+
+    <style>
+      body {
+        font-size: 0.875rem; /* уменьшенный шрифт */
+      }
+
+      th,
+      td {
+        padding: 4px 8px !important; /* компактнее строки */
+      }
+
+      table.dataTable {
+        width: 100% !important;
+      }
+
+      th:nth-child(1),
+      td:nth-child(1) {
+        width: 20%;
+      }
+      th:nth-child(2),
+      td:nth-child(2) {
+        width: 10%;
+      }
+      th:nth-child(3),
+      td:nth-child(3) {
+        width: 12%;
+      }
+      th:nth-child(4),
+      td:nth-child(4) {
+        width: 12%;
+      }
+      th:nth-child(5),
+      td:nth-child(5) {
+        width: 10%;
+      }
+      th:nth-child(6),
+      td:nth-child(6) {
+        width: 10%;
+      }
+      th:nth-child(7),
+      td:nth-child(7) {
+        width: 26%;
+        white-space: nowrap;
+      }
+
+      thead input {
+        width: 100%;
+        box-sizing: border-box;
+        padding: 4px;
+      }
+
+      /* Выравнивание заголовков по центру */
+      #invoiceTable thead th {
+        text-align: center !important;
+      }
+    </style>
+  </head>
+
+  <body class="container py-4">
+    <a href="<?= baseUrl ?>?page=Home" class="btn btn-link"
+      >← Back to Main Page</a
+    >
+
+    <div class="mb-3 d-flex justify-content-start">
+      <a
+        href="<?= baseUrl ?>?page=InvoiceGenerator&mode=create"
+        class="btn btn-primary"
+      >
+        Generate Invoice
+      </a>
+    </div>
+
+    <script>
+      function goHome() {
+        window.location.href = "?page=Home";
+      }
+    </script>
+
+    <h2 class="mb-4">List of Invoices</h2>
+
+    <table
+      id="invoiceTable"
+      class="display table table-bordered"
+      style="width: 100%; display: none"
+    >
+      <thead class="table-light">
+        <tr>
+          <th>Project Name</th>
+          <th>Invoice Number</th>
+          <th>Invoice Date</th>
+          <th>Due Date</th>
+          <th>Total</th>
+          <th>Currency</th>
+          <th>Actions</th>
+        </tr>
+        <tr>
+          <th><input type="text" placeholder="Search Project" /></th>
+          <th><input type="text" placeholder="Search Number" /></th>
+          <th><input type="text" placeholder="Search Date" /></th>
+          <th><input type="text" placeholder="Search Due" /></th>
+          <th><input type="text" placeholder="Search Total" /></th>
+          <th><input type="text" placeholder="Search Currency" /></th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+
+    <script>
+      function goHome() {
+        window.location.href = "?page=Home";
+      }
+    </script>
+    <script>
+      $(document).ready(function () {
+        $.fn.dataTable.moment("DD/MM/YYYY");
+        const table = $("#invoiceTable").DataTable({
+          dom: "lrtip",
+          orderCellsTop: true,
+          columnDefs: [
+            {
+              targets: 4, // колонка Total (индекс 4)
+              className: "dt-body-right dt-head-center", // данные вправо, заголовок по центру
+              render: function (data, type, row) {
+                if (type === "display" && data) {
+                  // Форматируем число с запятыми для отображения
+                  const num = parseFloat(data);
+                  if (!isNaN(num)) {
+                    return num.toLocaleString(undefined, {
+                      minimumFractionDigits: 2,
+                      maximumFractionDigits: 2,
+                    });
+                  }
+                }
+                return data;
+              },
+            },
+            {
+              targets: [0, 1, 2, 3, 5, 6], // все колонки кроме Total (4)
+              className: "dt-body-left dt-head-center", // данные влево, заголовок по центру
+            },
+          ],
+        });
+
+        new $.fn.dataTable.FixedHeader(table);
+
+        $("#invoiceTable thead tr:eq(1) th").each(function (i) {
+          $("input", this).on("keyup change", function () {
+            if (table.column(i).search() !== this.value) {
+              table.column(i).search(this.value).draw();
+            }
+          });
+        });
+
+        google.script.run
+          .withSuccessHandler(function (data) {
+            if (!Array.isArray(data) || data.length === 0) {
+              table.clear().draw();
+              document.getElementById("invoiceTable").style.display = "";
+              return;
+            }
+
+            data.forEach((row) => {
+              table.row.add([
+                row.projectName || "",
+                row.invoiceNumber || "",
+                row.invoiceDate || "",
+                row.dueDate || "",
+                row.total || "",
+                row.currency || "",
+                `
+                  <a href="<?= baseUrl ?>?page=InvoiceGenerator&id=${row.id}&mode=view" class="btn btn-sm btn-outline-primary me-1">View</a>
+                  <button class="btn btn-sm btn-outline-secondary me-1">Edit</button>
+                  <a href="<?= baseUrl ?>?page=InvoiceGenerator&id=${row.id}&mode=delete" class="btn btn-sm btn-outline-danger me-1">Delete</a>
+                  <button class="btn btn-sm btn-outline-success">Copy</button>
+                `,
+              ]);
+            });
+
+            table.draw();
+            document.getElementById("invoiceTable").style.display = "";
+          })
+          .withFailureHandler(function (error) {
+            console.error("Error loading invoice list:", error);
+            alert("Failed to load invoice list.");
+          })
+          .getInvoiceList();
+      });
+    </script>
+
+    <!-- Modal for deletion info -->
+    <div
+      class="modal fade"
+      id="deletedModal"
+      tabindex="-1"
+      aria-labelledby="deletedModalLabel"
+      aria-hidden="true"
+    >
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="deletedModalLabel">Invoice Deleted</h5>
+            <button
+              type="button"
+              class="btn-close"
+              data-bs-dismiss="modal"
+              aria-label="Close"
+            ></button>
+          </div>
+          <div class="modal-body">The invoice was deleted.</div>
+        </div>
+      </div>
+    </div>
+    <script>
+      // Show modal if deleted=1 in URL
+      $(function () {
+        const params = new URLSearchParams(window.location.search);
+        if (params.get("deleted") === "1") {
+          const modal = new bootstrap.Modal(
+            document.getElementById("deletedModal")
+          );
+          modal.show();
+        }
+      });
+    </script>
+  </body>
+</html>
