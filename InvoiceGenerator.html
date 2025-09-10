@@ -856,15 +856,17 @@
                 window.location.href = "?page=InvoicesList";
                 return;
               }
-              if (["view", "delete", "copy", "edit"].includes(mode)) {
+              if (["view", "delete", "copy"].includes(mode)) {
                 renderSavedDataRaw(data);
               } else {
                 fillInvoiceFormFromSavedData(data);
               }
 
-              document.querySelectorAll("input, textarea").forEach((el) => {
-                el.disabled = true;
-              });
+              if (mode !== "edit") {
+                document.querySelectorAll("input, textarea").forEach((el) => {
+                  el.disabled = true;
+                });
+              }
               document.getElementById("comment-display").textContent =
                 data.comment || "";
               document.getElementById("due_date").textContent = data.dueDate
@@ -975,13 +977,40 @@
           document.getElementById("new-invoice-btn").style.display = "none";
 
           const addRowBtn = document.getElementById("add-row-btn");
-          if (addRowBtn) addRowBtn.style.display = "none";
+          if (addRowBtn)
+            addRowBtn.style.display = mode === "edit" ? "inline-block" : "none";
 
           const commentInput = document.getElementById("comment");
-          if (commentInput) commentInput.style.display = "none";
-
           const commentDisplay = document.getElementById("comment-display");
-          if (commentDisplay) commentDisplay.style.display = "block";
+          if (mode === "edit") {
+            if (commentInput) commentInput.style.display = "block";
+            if (commentDisplay) commentDisplay.style.display = "none";
+          } else {
+            if (commentInput) commentInput.style.display = "none";
+            if (commentDisplay) commentDisplay.style.display = "block";
+          }
+
+          // Make plaintext fields editable in edit mode
+          if (mode === "edit") {
+            const makeEditable = (id) => {
+              const el = document.getElementById(id);
+              if (el) {
+                el.contentEditable = "true";
+                el.classList.remove("form-control-plaintext");
+                el.classList.add("form-control");
+              }
+            };
+            [
+              "client_name",
+              "client_address",
+              "client_number",
+              "our_company",
+              "bank_details_1",
+              "bank_details_2",
+              "due_date",
+              "currency",
+            ].forEach(makeEditable);
+          }
         } else {
           document.getElementById("page-title").textContent = "Create invoice";
           const editBtns = document.getElementById("edit-bottom-btn-container");
