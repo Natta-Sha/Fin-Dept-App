@@ -370,65 +370,6 @@
     </div>
 
     <script>
-      // Build current form data from UI (used for edit save)
-      function buildCurrentFormData() {
-        const projectValue = document
-          .getElementById("project_name")
-          .value.trim();
-        const toDDMMYYYY = (yyyyMmDd) => {
-          if (!yyyyMmDd) return "";
-          const [y, m, d] = yyyyMmDd.split("-");
-          return `${d}/${m}/${y}`;
-        };
-
-        const payload = {
-          projectName: projectValue,
-          invoiceNumber: document.getElementById("invoice_number").value.trim(),
-          clientName: document.getElementById("client_name_input").value.trim(),
-          clientAddress: document
-            .getElementById("client_address_input")
-            .value.trim(),
-          clientNumber: document
-            .getElementById("client_number_input")
-            .value.trim(),
-          invoiceDate: document.getElementById("invoice_date").value.trim(),
-          dueDate: toDDMMYYYY(
-            (document.getElementById("due_date_input").value || "").trim()
-          ),
-          tax: document.getElementById("tax").textContent.trim(),
-          subtotal: document.getElementById("subtotal").innerText.trim(),
-          total: document.getElementById("total").innerText.trim(),
-          exchangeRate: document.getElementById("exchange_rate").value.trim(),
-          currency: document
-            .getElementById("currency")
-            .textContent.trim()
-            .split(" ")[0],
-          amountInEUR: document
-            .getElementById("amount_in_eur")
-            .innerText.trim(),
-          bankDetails1: document
-            .getElementById("bank_details_1_input")
-            .value.trim(),
-          bankDetails2: document
-            .getElementById("bank_details_2_input")
-            .value.trim(),
-          ourCompany: document.getElementById("our_company_input").value.trim(),
-          comment: document.getElementById("comment").value.trim(),
-          items: [],
-          templateId: window.currentProjectDetails?.templateId || "",
-          folderId: window.currentProjectDetails?.folderId || "",
-        };
-
-        const tbody = document.getElementById("invoice-body");
-        for (let row of tbody.rows) {
-          const inputs = row.getElementsByTagName("input");
-          const rowData = Array.from(inputs).map((i) => i.value.trim());
-          payload.items.push(rowData);
-        }
-
-        return payload;
-      }
-
       // Robust navigation back to invoices list for both web-app and sidebar contexts
       function safeNavigateToInvoicesList() {
         const target = BASE_URL + "?page=InvoicesList";
@@ -1118,33 +1059,7 @@
                 safeNavigateToInvoicesList();
               });
             }
-            // Wire up Save changes → collect data and call backend update
-            const saveBtn = document.getElementById("save-with-changes-btn");
-            if (saveBtn) {
-              saveBtn.addEventListener("click", function () {
-                try {
-                  const payload = buildCurrentFormData();
-                  google.script.run
-                    .withSuccessHandler(function (res) {
-                      if (!res || !res.success) {
-                        alert(
-                          "Failed to update invoice: " +
-                            (res && res.message ? res.message : "Unknown error")
-                        );
-                        return;
-                      }
-                      safeNavigateToInvoicesList();
-                    })
-                    .withFailureHandler(function (err) {
-                      alert("Error updating invoice: " + err.message);
-                    })
-                    .updateInvoiceById(invoiceId, payload);
-                } catch (e) {
-                  console.error(e);
-                  alert("Failed to collect form data: " + e.message);
-                }
-              });
-            }
+            // Save changes: placeholder only (no action)
           } else {
             document.getElementById("page-title").textContent =
               "Invoice - View";
