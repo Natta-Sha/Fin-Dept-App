@@ -1040,6 +1040,12 @@
           if (addRowBtn)
             addRowBtn.style.display = mode === "edit" ? "inline-block" : "none";
 
+          // Keep Project Name non-editable in edit mode
+          if (mode === "edit") {
+            const projectNameEl = document.getElementById("project_name");
+            if (projectNameEl) projectNameEl.disabled = true;
+          }
+
           const commentInput = document.getElementById("comment");
           const commentDisplay = document.getElementById("comment-display");
           const toggleEditField = (plainId, inputId) => {
