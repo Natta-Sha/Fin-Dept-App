@@ -307,6 +307,26 @@
       </div>
     </div>
 
+    <!-- Edit mode bottom actions -->
+    <div id="edit-bottom-btn-container" style="display: none">
+      <div class="row mt-4">
+        <div class="col-md-12 d-flex justify-content-end gap-2">
+          <button
+            id="save-with-changes-btn"
+            class="btn btn-primary px-5 fw-bold"
+          >
+            Save with changes
+          </button>
+          <button
+            id="save-without-changes-btn"
+            class="btn btn-outline-secondary px-5 fw-bold"
+          >
+            Save without changes
+          </button>
+        </div>
+      </div>
+    </div>
+
     <script>
       let validProjectNames = [];
       let invoiceId = "<?= invoiceId ?>";
@@ -860,6 +880,10 @@
             document.getElementById(
               "delete-bottom-btn-container"
             ).style.display = "block";
+            const editBtns = document.getElementById(
+              "edit-bottom-btn-container"
+            );
+            if (editBtns) editBtns.style.display = "none";
 
             // Add event handler for delete button
             document
@@ -921,18 +945,30 @@
             document.getElementById(
               "delete-bottom-btn-container"
             ).style.display = "none";
+            const editBtns = document.getElementById(
+              "edit-bottom-btn-container"
+            );
+            if (editBtns) editBtns.style.display = "none";
           } else if (mode === "edit") {
             document.getElementById("page-title").textContent =
               "Invoice - Edit";
             document.getElementById(
               "delete-bottom-btn-container"
             ).style.display = "none";
+            const editBtns = document.getElementById(
+              "edit-bottom-btn-container"
+            );
+            if (editBtns) editBtns.style.display = "block";
           } else {
             document.getElementById("page-title").textContent =
               "Invoice - View";
             document.getElementById(
               "delete-bottom-btn-container"
             ).style.display = "none";
+            const editBtns = document.getElementById(
+              "edit-bottom-btn-container"
+            );
+            if (editBtns) editBtns.style.display = "none";
           }
           document.getElementById("back-to-list").style.display = "block";
           document.getElementById("generate-btn").style.display = "none";
@@ -948,6 +984,8 @@
           if (commentDisplay) commentDisplay.style.display = "block";
         } else {
           document.getElementById("page-title").textContent = "Create invoice";
+          const editBtns = document.getElementById("edit-bottom-btn-container");
+          if (editBtns) editBtns.style.display = "none";
           // Optionally clear fields here
           console.log("No invoiceId found in URL, showing blank form.");
           const selectedProject = document
