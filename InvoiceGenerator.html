@@ -48,6 +48,11 @@
         outline: none;
         box-shadow: none;
       }
+
+      /* Hide delete buttons when form is submitted */
+      .form-submitted .icon-button {
+        display: none !important;
+      }
     </style>
     <!-- Bootstrap JS (для модальных окон) -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
@@ -1072,6 +1077,8 @@
             document.getElementById("spinner").style.display = "none";
             document.getElementById("generate-btn").disabled = false;
             setFormInputsDisabled(false);
+            // Show delete buttons back on error
+            document.body.classList.remove("form-submitted");
             // Revert comment input visibility on error
             (function revertCommentOnCreateError() {
               const commentInputEl = document.getElementById("comment");
@@ -1108,14 +1115,8 @@
             );
             if (copyBtns) copyBtns.style.display = "none";
 
-            // Remove delete buttons from table rows to prevent further editing
-            document
-              .querySelectorAll("#invoice-body tr .icon-button")
-              .forEach((btn) => {
-                if (btn.querySelector(".bi-trash")) {
-                  btn.remove();
-                }
-              });
+            // Hide delete buttons by adding CSS class
+            document.body.classList.add("form-submitted");
 
             // Show comment as plaintext, hide input to avoid placeholder
             (function swapCommentToPlaintext() {
