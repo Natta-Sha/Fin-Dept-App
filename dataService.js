@@ -670,6 +670,12 @@ function updateInvoiceByIdFromData(id, data) {
     const taxAmount = (subtotalNum * taxRate) / 100;
     const totalAmount = subtotalNum + taxAmount;
 
+    // Resolve template and folder like in creation flow
+    const detailsForTemplate = getProjectDetailsFromData(data.projectName);
+    const templateId = detailsForTemplate && detailsForTemplate.templateId;
+    if (!templateId) {
+      throw new Error(ERROR_MESSAGES.NO_TEMPLATE_ID);
+    }
     const folderId = getProjectFolderId(data.projectName);
 
     const doc = createInvoiceDoc(
@@ -680,7 +686,7 @@ function updateInvoiceByIdFromData(id, data) {
       taxRate,
       taxAmount,
       totalAmount,
-      data.templateId,
+      templateId,
       folderId
     );
     const pdf = doc.getAs("application/pdf");
