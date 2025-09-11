@@ -1117,6 +1117,14 @@
                 google.script.run
                   .withSuccessHandler(function (result) {
                     if (result.success) {
+                      // Show success modal and stop spinner
+                      const bottomSpinDone = document.getElementById(
+                        "delete-bottom-spinner"
+                      );
+                      if (bottomSpinDone) bottomSpinDone.style.display = "none";
+                      const spinnerTopDone =
+                        document.getElementById("delete-spinner");
+                      if (spinnerTopDone) spinnerTopDone.style.display = "none";
                       // Show success modal
                       const modal = new bootstrap.Modal(
                         document.getElementById("deleteSuccessModal")
@@ -1219,6 +1227,13 @@
                   const editSpin = document.getElementById("edit-spinner");
                   if (editSpin) editSpin.style.display = "inline-block";
                   setFormInputsDisabled(true);
+                  // Ensure Currency display becomes non-editable immediately
+                  const currencyEl = document.getElementById("currency");
+                  if (currencyEl) {
+                    currencyEl.contentEditable = "false";
+                    currencyEl.classList.remove("form-control");
+                    currencyEl.classList.add("form-control-plaintext");
+                  }
 
                   const payload = buildCurrentFormDataForSave();
                   google.script.run
@@ -1353,7 +1368,6 @@
               "bank_details_1",
               "bank_details_2",
               "due_date",
-              "currency",
             ].forEach(makeEditable);
           }
         } else {
