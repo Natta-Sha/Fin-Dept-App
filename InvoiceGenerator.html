@@ -1108,6 +1108,15 @@
             );
             if (copyBtns) copyBtns.style.display = "none";
 
+            // Remove delete buttons from table rows to prevent further editing
+            document
+              .querySelectorAll("#invoice-body tr .icon-button")
+              .forEach((btn) => {
+                if (btn.querySelector(".bi-trash")) {
+                  btn.remove();
+                }
+              });
+
             // Show comment as plaintext, hide input to avoid placeholder
             (function swapCommentToPlaintext() {
               const commentInputEl = document.getElementById("comment");
