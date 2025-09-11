@@ -998,6 +998,16 @@
         document.getElementById("generate-btn").disabled = true;
         document.getElementById("spinner").style.display = "inline-block";
         setFormInputsDisabled(true);
+        // Hide comment placeholder while processing
+        (function hideCommentPlaceholderWhileCreate() {
+          const commentInputEl = document.getElementById("comment");
+          const commentDisplayEl = document.getElementById("comment-display");
+          if (commentInputEl && commentDisplayEl) {
+            commentDisplayEl.textContent = commentInputEl.value.trim();
+            commentDisplayEl.style.display = "block";
+            commentInputEl.style.display = "none";
+          }
+        })();
         document.getElementById("result").innerHTML = "";
 
         google.script.run
@@ -1005,6 +1015,16 @@
             document.getElementById("spinner").style.display = "none";
             document.getElementById("generate-btn").disabled = false;
             setFormInputsDisabled(false);
+            // Revert comment input visibility on error
+            (function revertCommentOnCreateError() {
+              const commentInputEl = document.getElementById("comment");
+              const commentDisplayEl =
+                document.getElementById("comment-display");
+              if (commentInputEl && commentDisplayEl) {
+                commentDisplayEl.style.display = "none";
+                commentInputEl.style.display = "block";
+              }
+            })();
             alert(
               "An error occurred: " +
                 error.message +
