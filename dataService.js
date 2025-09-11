@@ -606,3 +606,156 @@ function extractFileIdFromUrl(url) {
   }
   return match[0];
 }
+
+/**
+ * Update existing invoice row by ID with new data
+ * Replaces the entire row's data while preserving Doc/PDF links
+ * @param {string} id - Invoice ID to update
+ * @param {Object} data - New invoice data (same shape as creation payload)
+ * @returns {Object} { success: true }
+ */
+function updateInvoiceByIdFromData(id, data) {
+  try {
+    if (!id || id.toString().trim() === "") {
+      return { success: false, message: "Invalid invoice ID provided" };
+    }
+
+    const spreadsheet = getSpreadsheet(CONFIG.SPREADSHEET_ID);
+    const sheet = getSheet(spreadsheet, CONFIG.SHEETS.INVOICES);
+    const table = sheet.getDataRange().getValues();
+    const headers = table[0];
+
+    const indexMap = headers.reduce((acc, h, i) => {
+      acc[h] = i;
+      return acc;
+    }, {});
+
+    const idCol = indexMap["ID"];
+    if (idCol === undefined) throw new Error("ID column not found.");
+
+    let rowIndex = -1; // 0-based within data array (header at 0)
+    for (let i = 1; i < table.length; i++) {
+      if (table[i][idCol] === id) {
+        rowIndex = i;
+        break;
+      }
+    }
+    if (rowIndex === -1)
+      return { success: false, message: "Invoice not found." };
+
+    // Delete old Doc/PDF (best effort)
+    const oldDocUrl = table[rowIndex][indexMap["Google Doc Link"]] || "";
+    const oldPdfUrl = table[rowIndex][indexMap["PDF Link"]] || "";
+    try {
+      if (oldDocUrl) {
+        const oldDocId = extractFileIdFromUrl(oldDocUrl);
+        if (oldDocId) DriveApp.getFileById(oldDocId).setTrashed(true);
+      }
+    } catch (e) {}
+    try {
+      if (oldPdfUrl) {
+        const oldPdfId = extractFileIdFromUrl(oldPdfUrl);
+        if (oldPdfId) DriveApp.getFileById(oldPdfId).setTrashed(true);
+      }
+    } catch (e) {}
+
+    // Recompute like in creation
+    const formattedDate = formatDate(data.invoiceDate);
+    const [day, month, year] = (data.dueDate || "01/01/1970").split("/");
+    const dueDateObject = new Date(year, month - 1, day);
+    const formattedDueDate = formatDate(dueDateObject);
+
+    const subtotalNum = parseFloat(data.subtotal) || 0;
+    const taxRate = parseFloat(data.tax) || 0;
+    const taxAmount = (subtotalNum * taxRate) / 100;
+    const totalAmount = subtotalNum + taxAmount;
+
+    // Resolve template and folder like in creation flow
+    const detailsForTemplate = getProjectDetailsFromData(data.projectName);
+    const templateId = detailsForTemplate && detailsForTemplate.templateId;
+    if (!templateId) {
+      throw new Error(ERROR_MESSAGES.NO_TEMPLATE_ID);
+    }
+    const folderId = getProjectFolderId(data.projectName);
+
+    const doc = createInvoiceDoc(
+      data,
+      formattedDate,
+      formattedDueDate,
+      subtotalNum,
+      taxRate,
+      taxAmount,
+      totalAmount,
+      templateId,
+      folderId
+    );
+    const pdf = doc.getAs("application/pdf");
+    const folder = DriveApp.getFolderById(CONFIG.FOLDER_ID);
+    const cleanCompany = (data.ourCompany || "")
+      .replace(/[\\/:*?"<>|]/g, "")
+      .trim();
+    const cleanClient = (data.clientName || "")
+      .replace(/[\\/:*?"<>|]/g, "")
+      .trim();
+    const filename = `${data.invoiceDate}_Invoice${data.invoiceNumber}_${cleanCompany}-${cleanClient}`;
+    const pdfFile = folder.createFile(pdf).setName(`${filename}.pdf`);
+
+    // Build row exactly by headers
+    const fullRow = new Array(headers.length).fill("");
+    fullRow[indexMap["ID"]] = id;
+    fullRow[indexMap["Project Name"]] = data.projectName;
+    fullRow[indexMap["Invoice Number"]] = data.invoiceNumber;
+    fullRow[indexMap["Client Name"]] = data.clientName;
+    fullRow[indexMap["Client Address"]] = data.clientAddress;
+    fullRow[indexMap["Client Number"]] = data.clientNumber;
+    fullRow[indexMap["Invoice Date"]] = new Date(data.invoiceDate);
+    fullRow[indexMap["Due Date"]] = dueDateObject;
+    fullRow[indexMap["Tax Rate (%)"]] = taxRate.toFixed(0);
+    fullRow[indexMap["Subtotal"]] = subtotalNum.toFixed(2);
+    fullRow[indexMap["Tax Amount"]] = taxAmount.toFixed(2);
+    fullRow[indexMap["Total"]] = totalAmount.toFixed(2);
+    fullRow[indexMap["Exchange Rate"]] =
+      data.currency === "$"
+        ? parseFloat(data.exchangeRate || 0).toFixed(4)
+        : "";
+    fullRow[indexMap["Currency"]] = data.currency;
+    fullRow[indexMap["Amount in EUR"]] =
+      data.currency === "$" ? parseFloat(data.amountInEUR || 0).toFixed(2) : "";
+    fullRow[indexMap["Bank Details 1"]] = data.bankDetails1;
+    fullRow[indexMap["Bank Details 2"]] = data.bankDetails2;
+    fullRow[indexMap["Our Company"]] = data.ourCompany || "";
+    fullRow[indexMap["Comment"]] = data.comment || "";
+    fullRow[indexMap["Google Doc Link"]] = doc.getUrl();
+    fullRow[indexMap["PDF Link"]] = pdfFile.getUrl();
+
+    // Items: start from 'Row 1 #' header
+    const firstItemIdx = headers.indexOf("Row 1 #");
+    const itemsCapacity =
+      CONFIG.INVOICE_TABLE.MAX_ROWS * CONFIG.INVOICE_TABLE.COLUMNS_PER_ROW;
+    let flatItems = [];
+    (data.items || []).forEach((row, i) => {
+      const r = [...row];
+      r[0] = (i + 1).toString();
+      if (r[2]) r[2] = `'${r[2].toString()}`; // force Period as text
+      flatItems.push(...r);
+    });
+    if (flatItems.length > itemsCapacity)
+      flatItems = flatItems.slice(0, itemsCapacity);
+    while (flatItems.length < itemsCapacity) flatItems.push("");
+    if (firstItemIdx !== -1) {
+      for (let j = 0; j < itemsCapacity; j++) {
+        const target = firstItemIdx + j;
+        if (target < headers.length) fullRow[target] = flatItems[j];
+      }
+    }
+
+    // Write back row (1-based)
+    const sheetRow = rowIndex + 1;
+    sheet.getRange(sheetRow, 1, 1, fullRow.length).setValues([fullRow]);
+    CacheService.getScriptCache().remove("invoiceList");
+    return { success: true, docUrl: doc.getUrl(), pdfUrl: pdfFile.getUrl() };
+  } catch (error) {
+    console.error("Error updating invoice:", error);
+    return { success: false, message: error.message };
+  }
+}

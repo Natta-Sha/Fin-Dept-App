@@ -135,3 +135,13 @@ function deleteInvoiceById(id) {
 function testLogger(message) {
   Logger.log(`[CLIENT TEST]: ${message}`);
 }
+
+/**
+ * Update invoice by ID (frontend endpoint)
+ * @param {string} id
+ * @param {Object} data
+ * @returns {Object}
+ */
+function updateInvoiceById(id, data) {
+  return updateInvoiceByIdFromData(id, data);
+}
