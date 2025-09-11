@@ -1131,7 +1131,8 @@
                   try {
                     document
                       .querySelectorAll("#invoice-body tr")
-                      .forEach((row) => {
+                      .forEach((row, idx) => {
+                        if (idx === 0) return; // first row is not deletable
                         let last = row.cells[row.cells.length - 1];
                         if (!last) return;
                         if (last.querySelector(".icon-button")) return;
