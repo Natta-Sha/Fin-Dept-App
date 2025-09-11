@@ -1025,6 +1025,18 @@
             // 🔒 Keep form disabled and hide generate button after success
             setFormInputsDisabled(true);
             document.getElementById("generate-btn").style.display = "none";
+
+            // Show comment as plaintext, hide input to avoid placeholder
+            (function swapCommentToPlaintext() {
+              const commentInputEl = document.getElementById("comment");
+              const commentDisplayEl =
+                document.getElementById("comment-display");
+              if (commentInputEl && commentDisplayEl) {
+                commentDisplayEl.textContent = commentInputEl.value.trim();
+                commentDisplayEl.style.display = "block";
+                commentInputEl.style.display = "none";
+              }
+            })();
           })
           .processForm(data);
       }
