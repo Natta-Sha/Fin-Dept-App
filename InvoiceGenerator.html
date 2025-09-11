@@ -1110,6 +1110,23 @@
               "edit-bottom-btn-container"
             );
             if (editBtns) editBtns.style.display = "block";
+
+            // Ensure templateId is available for the selected project in edit mode
+            (function ensureTemplateForEdit() {
+              try {
+                const projectValue = (
+                  document.getElementById("project_name").value || ""
+                ).trim();
+                if (projectValue) {
+                  google.script.run
+                    .withSuccessHandler(function (details) {
+                      window.currentProjectDetails = details || {};
+                    })
+                    .withFailureHandler(function () {})
+                    .getProjectDetails(projectValue);
+                }
+              } catch (_) {}
+            })();
             // Wire up Exit without saving → back to list
             const exitBtn = document.getElementById("save-without-changes-btn");
             if (exitBtn) {
