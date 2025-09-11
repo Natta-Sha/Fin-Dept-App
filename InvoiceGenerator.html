@@ -1107,7 +1107,7 @@
                         .addEventListener(
                           "hidden.bs.modal",
                           function () {
-                            google.script.host.close();
+                            safeNavigateToInvoicesList();
                           },
                           { once: true }
                         );
