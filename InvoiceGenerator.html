@@ -1152,9 +1152,13 @@
               }
               document.getElementById("comment-display").textContent =
                 data.comment || "";
-              document.getElementById("due_date").textContent = data.dueDate
-                ? formatDateDDMMYYYY(new Date(data.dueDate))
-                : "";
+              if (mode !== "copy") {
+                document.getElementById("due_date").textContent = data.dueDate
+                  ? formatDateDDMMYYYY(new Date(data.dueDate))
+                  : "";
+              } else {
+                document.getElementById("due_date").textContent = "";
+              }
 
               // Populate hidden edit inputs with existing values
               document.getElementById("client_name_input").value =
@@ -1542,6 +1546,30 @@
                   // Overwrite UI with Lists values (like create)
                   fillProjectDetails(details || {});
                   window.currentProjectDetails = details || {};
+                  window.currentProjectNameCached = selectedProjectCopy;
+                  // Recompute due date immediately
+                  try {
+                    const invoiceDateVal =
+                      document.getElementById("invoice_date").value;
+                    let due = null;
+                    if (invoiceDateVal) {
+                      let baseDate = new Date(invoiceDateVal);
+                      if ((details && details.dayType) === "WD") {
+                        due = addWorkingDays(
+                          baseDate,
+                          parseInt(details.paymentDelay) || 0
+                        );
+                      } else {
+                        due = new Date(baseDate);
+                        due.setDate(
+                          due.getDate() + (parseInt(details.paymentDelay) || 0)
+                        );
+                      }
+                    }
+                    document.getElementById("due_date").textContent = due
+                      ? formatDateDDMMYYYY(due)
+                      : "";
+                  } catch (_) {}
                 })
                 .getProjectDetails(selectedProjectCopy);
             })();
