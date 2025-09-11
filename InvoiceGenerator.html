@@ -474,6 +474,13 @@
           });
           const addRowBtnEl = document.getElementById("add-row-btn");
           if (addRowBtnEl) addRowBtnEl.disabled = isDisabled;
+
+          // Hide/show delete buttons based on form state
+          if (isDisabled) {
+            document.body.classList.add("form-submitted");
+          } else {
+            document.body.classList.remove("form-submitted");
+          }
         } catch (_) {}
       }
       // Build payload for Save changes from current UI values
