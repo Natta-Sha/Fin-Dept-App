@@ -753,7 +753,7 @@ function updateInvoiceByIdFromData(id, data) {
     const sheetRow = rowIndex + 1;
     sheet.getRange(sheetRow, 1, 1, fullRow.length).setValues([fullRow]);
     CacheService.getScriptCache().remove("invoiceList");
-    return { success: true };
+    return { success: true, docUrl: doc.getUrl(), pdfUrl: pdfFile.getUrl() };
   } catch (error) {
     console.error("Error updating invoice:", error);
     return { success: false, message: error.message };
