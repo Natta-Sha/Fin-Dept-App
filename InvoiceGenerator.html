@@ -1414,11 +1414,41 @@
             const copyCreate = document.getElementById("copy-create-new-btn");
             if (copyCreate) {
               copyCreate.addEventListener("click", function () {
-                // Reuse submitFormWithData from create
                 try {
-                  submitFormWithData();
+                  // Disable to prevent double submit
+                  copyCreate.disabled = true;
+                  const projectVal = document
+                    .getElementById("project_name")
+                    .value.trim();
+                  // If we already cached details for this project with templateId, reuse; else fetch
+                  if (
+                    window.currentProjectDetails &&
+                    window.currentProjectDetails.templateId &&
+                    window.currentProjectNameCached === projectVal
+                  ) {
+                    submitFormWithData();
+                  } else {
+                    google.script.run
+                      .withSuccessHandler(function (details) {
+                        try {
+                          window.currentProjectDetails = details || {};
+                          window.currentProjectNameCached = projectVal;
+                          fillProjectDetails(details || {});
+                          submitFormWithData();
+                        } catch (e) {
+                          alert("Failed to start creation: " + e.message);
+                          copyCreate.disabled = false;
+                        }
+                      })
+                      .withFailureHandler(function (err) {
+                        alert("Failed to load project details: " + err.message);
+                        copyCreate.disabled = false;
+                      })
+                      .getProjectDetails(projectVal);
+                  }
                 } catch (e) {
                   alert("Failed to create from copy: " + e.message);
+                  copyCreate.disabled = false;
                 }
               });
             }
@@ -1448,14 +1478,19 @@
               }
             })();
             // Pull client-derived details from Lists as in create
-            const selectedProjectCopy = document
-              .getElementById("project_name")
-              .value.trim();
-            if (selectedProjectCopy) {
+            (function refreshFromListsForCopy() {
+              const selectedProjectCopy = document
+                .getElementById("project_name")
+                .value.trim();
+              if (!selectedProjectCopy) return;
               google.script.run
-                .withSuccessHandler(fillProjectDetails)
+                .withSuccessHandler(function (details) {
+                  // Overwrite UI with Lists values (like create)
+                  fillProjectDetails(details || {});
+                  window.currentProjectDetails = details || {};
+                })
                 .getProjectDetails(selectedProjectCopy);
-            }
+            })();
           } else {
             document.getElementById("page-title").textContent =
               "Invoice - View";
