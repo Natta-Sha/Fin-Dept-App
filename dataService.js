@@ -631,87 +631,121 @@ function updateInvoiceByIdFromData(id, data) {
     }, {});
 
     const idCol = indexMap["ID"];
-    if (idCol === undefined) {
-      throw new Error("ID column not found.");
-    }
+    if (idCol === undefined) throw new Error("ID column not found.");
 
-    let rowIndex = -1; // 0-based within table array
+    let rowIndex = -1; // 0-based within data array (header at 0)
     for (let i = 1; i < table.length; i++) {
       if (table[i][idCol] === id) {
         rowIndex = i;
         break;
       }
     }
-    if (rowIndex === -1) {
+    if (rowIndex === -1)
       return { success: false, message: "Invoice not found." };
-    }
 
-    // Preserve Doc/PDF URLs
-    const existingDocUrl = table[rowIndex][indexMap["Google Doc Link"]] || "";
-    const existingPdfUrl = table[rowIndex][indexMap["PDF Link"]] || "";
+    // Delete old Doc/PDF (best effort)
+    const oldDocUrl = table[rowIndex][indexMap["Google Doc Link"]] || "";
+    const oldPdfUrl = table[rowIndex][indexMap["PDF Link"]] || "";
+    try {
+      if (oldDocUrl) {
+        const oldDocId = extractFileIdFromUrl(oldDocUrl);
+        if (oldDocId) DriveApp.getFileById(oldDocId).setTrashed(true);
+      }
+    } catch (e) {}
+    try {
+      if (oldPdfUrl) {
+        const oldPdfId = extractFileIdFromUrl(oldPdfUrl);
+        if (oldPdfId) DriveApp.getFileById(oldPdfId).setTrashed(true);
+      }
+    } catch (e) {}
 
-    // Build new row data (same order as in creation code 'row' in processFormFromData)
+    // Recompute like in creation
+    const formattedDate = formatDate(data.invoiceDate);
     const [day, month, year] = (data.dueDate || "01/01/1970").split("/");
     const dueDateObject = new Date(year, month - 1, day);
+    const formattedDueDate = formatDate(dueDateObject);
 
     const subtotalNum = parseFloat(data.subtotal) || 0;
     const taxRate = parseFloat(data.tax) || 0;
     const taxAmount = (subtotalNum * taxRate) / 100;
     const totalAmount = subtotalNum + taxAmount;
 
-    const itemCells = [];
-    (data.items || []).forEach((row, i) => {
-      const newRow = [...row];
-      newRow[0] = (i + 1).toString();
-      if (newRow[2]) newRow[2] = `'${newRow[2].toString()}`;
-      itemCells.push(...newRow);
-    });
+    const folderId = getProjectFolderId(data.projectName);
 
-    const updatedRow = [];
-    updatedRow[indexMap["ID"]] = id;
-    updatedRow[indexMap["Project Name"]] = data.projectName;
-    updatedRow[indexMap["Invoice Number"]] = data.invoiceNumber;
-    updatedRow[indexMap["Client Name"]] = data.clientName;
-    updatedRow[indexMap["Client Address"]] = data.clientAddress;
-    updatedRow[indexMap["Client Number"]] = data.clientNumber;
-    updatedRow[indexMap["Invoice Date"]] = new Date(data.invoiceDate);
-    updatedRow[indexMap["Due Date"]] = dueDateObject;
-    updatedRow[indexMap["Tax Rate (%)"]] = taxRate.toFixed(0);
-    updatedRow[indexMap["Subtotal"]] = subtotalNum.toFixed(2);
-    updatedRow[indexMap["Tax Amount"]] = taxAmount.toFixed(2);
-    updatedRow[indexMap["Total"]] = totalAmount.toFixed(2);
-    updatedRow[indexMap["Exchange Rate"]] =
+    const doc = createInvoiceDoc(
+      data,
+      formattedDate,
+      formattedDueDate,
+      subtotalNum,
+      taxRate,
+      taxAmount,
+      totalAmount,
+      data.templateId,
+      folderId
+    );
+    const pdf = doc.getAs("application/pdf");
+    const folder = DriveApp.getFolderById(CONFIG.FOLDER_ID);
+    const cleanCompany = (data.ourCompany || "")
+      .replace(/[\\/:*?"<>|]/g, "")
+      .trim();
+    const cleanClient = (data.clientName || "")
+      .replace(/[\\/:*?"<>|]/g, "")
+      .trim();
+    const filename = `${data.invoiceDate}_Invoice${data.invoiceNumber}_${cleanCompany}-${cleanClient}`;
+    const pdfFile = folder.createFile(pdf).setName(`${filename}.pdf`);
+
+    // Build row exactly by headers
+    const fullRow = new Array(headers.length).fill("");
+    fullRow[indexMap["ID"]] = id;
+    fullRow[indexMap["Project Name"]] = data.projectName;
+    fullRow[indexMap["Invoice Number"]] = data.invoiceNumber;
+    fullRow[indexMap["Client Name"]] = data.clientName;
+    fullRow[indexMap["Client Address"]] = data.clientAddress;
+    fullRow[indexMap["Client Number"]] = data.clientNumber;
+    fullRow[indexMap["Invoice Date"]] = new Date(data.invoiceDate);
+    fullRow[indexMap["Due Date"]] = dueDateObject;
+    fullRow[indexMap["Tax Rate (%)"]] = taxRate.toFixed(0);
+    fullRow[indexMap["Subtotal"]] = subtotalNum.toFixed(2);
+    fullRow[indexMap["Tax Amount"]] = taxAmount.toFixed(2);
+    fullRow[indexMap["Total"]] = totalAmount.toFixed(2);
+    fullRow[indexMap["Exchange Rate"]] =
       data.currency === "$"
         ? parseFloat(data.exchangeRate || 0).toFixed(4)
         : "";
-    updatedRow[indexMap["Currency"]] = data.currency;
-    updatedRow[indexMap["Amount in EUR"]] =
+    fullRow[indexMap["Currency"]] = data.currency;
+    fullRow[indexMap["Amount in EUR"]] =
       data.currency === "$" ? parseFloat(data.amountInEUR || 0).toFixed(2) : "";
-    updatedRow[indexMap["Bank Details 1"]] = data.bankDetails1;
-    updatedRow[indexMap["Bank Details 2"]] = data.bankDetails2;
-    updatedRow[indexMap["Our Company"]] = data.ourCompany || "";
-    updatedRow[indexMap["Comment"]] = data.comment || "";
-    updatedRow[indexMap["Google Doc Link"]] = existingDocUrl;
-    updatedRow[indexMap["PDF Link"]] = existingPdfUrl;
+    fullRow[indexMap["Bank Details 1"]] = data.bankDetails1;
+    fullRow[indexMap["Bank Details 2"]] = data.bankDetails2;
+    fullRow[indexMap["Our Company"]] = data.ourCompany || "";
+    fullRow[indexMap["Comment"]] = data.comment || "";
+    fullRow[indexMap["Google Doc Link"]] = doc.getUrl();
+    fullRow[indexMap["PDF Link"]] = pdfFile.getUrl();
 
-    // Now append item cells after base columns, maintaining sheet structure
-    const baseColsCount = Object.keys(indexMap).length; // includes item headers
-    // We will write the entire row from column 1 to full length aligning with headers length
-    const fullRow = new Array(headers.length).fill("");
-    for (let col = 0; col < headers.length; col++) {
-      if (updatedRow[col] !== undefined) fullRow[col] = updatedRow[col];
-    }
-    // Item cells start from column 21 (index 20)
-    const itemsStartCol = 21 - 1; // zero-based index 20
-    for (let j = 0; j < itemCells.length; j++) {
-      const targetIndex = itemsStartCol + j;
-      if (targetIndex < headers.length) fullRow[targetIndex] = itemCells[j];
+    // Items: start from 'Row 1 #' header
+    const firstItemIdx = headers.indexOf("Row 1 #");
+    const itemsCapacity =
+      CONFIG.INVOICE_TABLE.MAX_ROWS * CONFIG.INVOICE_TABLE.COLUMNS_PER_ROW;
+    let flatItems = [];
+    (data.items || []).forEach((row, i) => {
+      const r = [...row];
+      r[0] = (i + 1).toString();
+      if (r[2]) r[2] = `'${r[2].toString()}`; // force Period as text
+      flatItems.push(...r);
+    });
+    if (flatItems.length > itemsCapacity)
+      flatItems = flatItems.slice(0, itemsCapacity);
+    while (flatItems.length < itemsCapacity) flatItems.push("");
+    if (firstItemIdx !== -1) {
+      for (let j = 0; j < itemsCapacity; j++) {
+        const target = firstItemIdx + j;
+        if (target < headers.length) fullRow[target] = flatItems[j];
+      }
     }
 
-    // Write back row (convert rowIndex to sheet row number)
-    const sheetRow = rowIndex + 1; // convert to 1-based row index
+    // Write back row (1-based)
+    const sheetRow = rowIndex + 1;
     sheet.getRange(sheetRow, 1, 1, fullRow.length).setValues([fullRow]);
-
     CacheService.getScriptCache().remove("invoiceList");
     return { success: true };
   } catch (error) {
