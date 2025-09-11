@@ -392,6 +392,23 @@
       </div>
     </div>
 
+    <!-- Copy mode bottom actions -->
+    <div id="copy-bottom-btn-container" style="display: none">
+      <div class="row mt-4">
+        <div class="col-md-12 d-flex justify-content-end gap-2">
+          <button id="copy-create-new-btn" class="btn btn-success px-5 fw-bold">
+            Create new
+          </button>
+          <button
+            id="copy-cancel-btn"
+            class="btn btn-outline-secondary px-5 fw-bold"
+          >
+            Cancel
+          </button>
+        </div>
+      </div>
+    </div>
+
     <!-- Edit mode bottom actions -->
     <div id="edit-bottom-btn-container" style="display: none">
       <div class="row mt-4">
@@ -715,13 +732,16 @@
             row.appendChild(cell);
           });
           const delCell = document.createElement("td");
-          delCell.innerHTML = invoiceId
-            ? "" // скрыть кнопку удаления, если invoiceId существует (режим просмотра)
-            : `
+          // Add delete button only if: not in view/delete mode AND not the first row
+          const shouldHaveDeleteBtn =
+            !["view", "delete"].includes(mode) && i > 0;
+          delCell.innerHTML = shouldHaveDeleteBtn
+            ? `
     <button type="button" class="icon-button" onclick="deleteRow(this)" title="Delete row">
       <i class="bi bi-trash"></i>
     </button>
-  `;
+  `
+            : "";
 
           row.appendChild(delCell);
           tbody.appendChild(row);
@@ -739,7 +759,7 @@
         return dateVal;
       }
 
-      if (["create", "edit"].includes(mode)) {
+      if (["create", "edit", "copy"].includes(mode)) {
         document
           .getElementById("project_name")
           .addEventListener("change", function () {
@@ -747,6 +767,14 @@
             if (validProjectNames.includes(value) && mode === "create") {
               google.script.run
                 .withSuccessHandler(fillProjectDetails)
+                .getProjectDetails(value);
+            } else if (mode === "copy") {
+              // In copy, when project changes, refresh client data immediately
+              google.script.run
+                .withSuccessHandler(function (details) {
+                  window.currentProjectDetails = details || {};
+                  fillProjectDetails(details || {});
+                })
                 .getProjectDetails(value);
             }
           });
@@ -758,10 +786,32 @@
             const project = document
               .getElementById("project_name")
               .value.trim();
-            if (value && project && mode === "create") {
-              google.script.run
-                .withSuccessHandler(fillProjectDetails)
-                .getProjectDetails(project);
+            if (value && project) {
+              if (mode === "create") {
+                google.script.run
+                  .withSuccessHandler(fillProjectDetails)
+                  .getProjectDetails(project);
+              } else if (mode === "copy" && window.currentProjectDetails) {
+                // Recompute due date based on cached details
+                const details = window.currentProjectDetails;
+                try {
+                  let baseDate = new Date(value);
+                  let due;
+                  if ((details && details.dayType) === "WD") {
+                    due = addWorkingDays(
+                      baseDate,
+                      parseInt(details.paymentDelay) || 0
+                    );
+                  } else {
+                    due = new Date(baseDate);
+                    due.setDate(
+                      due.getDate() + (parseInt(details.paymentDelay) || 0)
+                    );
+                  }
+                  document.getElementById("due_date").textContent =
+                    formatDateDDMMYYYY(due);
+                } catch (_) {}
+              }
             }
           });
       }
@@ -813,6 +863,13 @@
 
       function deleteRow(btn) {
         const row = btn.parentNode.parentNode;
+        const tbody = document.getElementById("invoice-body");
+
+        // Prevent deletion of the first row
+        if (tbody.rows[0] === row) {
+          return;
+        }
+
         row.parentNode.removeChild(row);
         updateTotals();
       }
@@ -1045,6 +1102,11 @@
             // 🔒 Keep form disabled and hide generate button after success
             setFormInputsDisabled(true);
             document.getElementById("generate-btn").style.display = "none";
+            // Hide copy buttons (if copy flow)
+            const copyBtns = document.getElementById(
+              "copy-bottom-btn-container"
+            );
+            if (copyBtns) copyBtns.style.display = "none";
 
             // Show comment as plaintext, hide input to avoid placeholder
             (function swapCommentToPlaintext() {
@@ -1068,6 +1130,8 @@
           mode,
         });
 
+        // Early refresh for copy: will be handled after invoice data loads
+
         // Hide the bottom delete button by default
         document.getElementById("delete-bottom-btn-container").style.display =
           "none";
@@ -1084,22 +1148,94 @@
                 window.location.href = "?page=InvoicesList";
                 return;
               }
-              if (["view", "delete", "copy"].includes(mode)) {
+              if (["view", "delete"].includes(mode)) {
                 renderSavedDataRaw(data);
               } else {
                 fillInvoiceFormFromSavedData(data);
+                // If copying, immediately clear client-derived fields and reload from Lists
+                if (mode === "copy") {
+                  const clearText = (id) => {
+                    const el = document.getElementById(id);
+                    if (el) el.textContent = "";
+                  };
+                  [
+                    "client_name",
+                    "client_address",
+                    "client_number",
+                    "our_company",
+                    "bank_details_1",
+                    "bank_details_2",
+                    "tax",
+                    "currency",
+                    "due_date",
+                  ].forEach(clearText);
+
+                  // Load fresh client data from Lists
+                  const projectVal = document
+                    .getElementById("project_name")
+                    .value.trim();
+                  if (projectVal) {
+                    google.script.run
+                      .withSuccessHandler(function (details) {
+                        window.currentProjectDetails = details || {};
+                        fillProjectDetails(details || {});
+                        // Compute due date based on invoice date and Lists data
+                        const invoiceDateVal =
+                          document.getElementById("invoice_date").value;
+                        if (invoiceDateVal) {
+                          let baseDate = new Date(invoiceDateVal);
+                          let due;
+                          if ((details && details.dayType) === "WD") {
+                            due = addWorkingDays(
+                              baseDate,
+                              parseInt(details.paymentDelay) || 0
+                            );
+                          } else {
+                            due = new Date(baseDate);
+                            due.setDate(
+                              due.getDate() +
+                                (parseInt(details.paymentDelay) || 0)
+                            );
+                          }
+                          document.getElementById("due_date").textContent =
+                            formatDateDDMMYYYY(due);
+                        }
+                      })
+                      .getProjectDetails(projectVal);
+                  }
+
+                  // Ensure delete buttons exist for each row except first
+                  try {
+                    document
+                      .querySelectorAll("#invoice-body tr")
+                      .forEach((row, idx) => {
+                        if (idx === 0) return; // first row is not deletable
+                        let last = row.cells[row.cells.length - 1];
+                        if (!last) return;
+                        if (last.querySelector(".icon-button")) return;
+                        last.innerHTML = `
+    <button type="button" class="icon-button" onclick="deleteRow(this)" title="Delete row">
+      <i class="bi bi-trash"></i>
+    </button>`;
+                      });
+                  } catch (_) {}
+                }
               }
 
-              if (mode !== "edit") {
+              if (!["edit", "copy"].includes(mode)) {
                 document.querySelectorAll("input, textarea").forEach((el) => {
                   el.disabled = true;
                 });
               }
               document.getElementById("comment-display").textContent =
                 data.comment || "";
-              document.getElementById("due_date").textContent = data.dueDate
-                ? formatDateDDMMYYYY(new Date(data.dueDate))
-                : "";
+              if (mode !== "copy") {
+                document.getElementById("due_date").textContent = data.dueDate
+                  ? formatDateDDMMYYYY(new Date(data.dueDate))
+                  : "";
+              } else {
+                document.getElementById("due_date").textContent = "";
+              }
 
               // Populate hidden edit inputs with existing values
               document.getElementById("client_name_input").value =
@@ -1372,6 +1508,148 @@
                 }
               });
             }
+          } else if (mode === "copy") {
+            document.getElementById("page-title").textContent =
+              "Invoice - Copy";
+            document.getElementById(
+              "delete-bottom-btn-container"
+            ).style.display = "none";
+            const editBtnsHide = document.getElementById(
+              "edit-bottom-btn-container"
+            );
+            if (editBtnsHide) editBtnsHide.style.display = "none";
+            const copyBtns = document.getElementById(
+              "copy-bottom-btn-container"
+            );
+            if (copyBtns) copyBtns.style.display = "block";
+
+            // Wire up Copy buttons
+            const copyCancel = document.getElementById("copy-cancel-btn");
+            if (copyCancel) {
+              copyCancel.addEventListener("click", function () {
+                safeNavigateToInvoicesList();
+              });
+            }
+            const copyCreate = document.getElementById("copy-create-new-btn");
+            if (copyCreate) {
+              copyCreate.addEventListener("click", function () {
+                try {
+                  // Disable to prevent double submit
+                  copyCreate.disabled = true;
+                  const projectVal = document
+                    .getElementById("project_name")
+                    .value.trim();
+                  // If we already cached details for this project with templateId, reuse; else fetch
+                  if (
+                    window.currentProjectDetails &&
+                    window.currentProjectDetails.templateId &&
+                    window.currentProjectNameCached === projectVal
+                  ) {
+                    submitFormWithData();
+                  } else {
+                    google.script.run
+                      .withSuccessHandler(function (details) {
+                        try {
+                          window.currentProjectDetails = details || {};
+                          window.currentProjectNameCached = projectVal;
+                          fillProjectDetails(details || {});
+                          submitFormWithData();
+                        } catch (e) {
+                          alert("Failed to start creation: " + e.message);
+                          copyCreate.disabled = false;
+                        }
+                      })
+                      .withFailureHandler(function (err) {
+                        alert("Failed to load project details: " + err.message);
+                        copyCreate.disabled = false;
+                      })
+                      .getProjectDetails(projectVal);
+                  }
+                } catch (e) {
+                  alert("Failed to create from copy: " + e.message);
+                  copyCreate.disabled = false;
+                }
+              });
+            }
+
+            // In copy mode, enable inputs for editable fields and refresh client-derived details
+            const inputsToEnable = ["invoice_number", "invoice_date"];
+            inputsToEnable.forEach((id) => {
+              const el = document.getElementById(id);
+              if (el) el.disabled = false;
+            });
+            // Table inputs
+            document.querySelectorAll("#invoice-body input").forEach((el) => {
+              el.disabled = false;
+            });
+            // Allow exchange rate editing only for USD
+            const exchInput = document.getElementById("exchange_rate");
+            if (exchInput) exchInput.disabled = false;
+            // Comment input visible and enabled
+            (function showCommentForCopy() {
+              const commentInputEl = document.getElementById("comment");
+              const commentDisplayEl =
+                document.getElementById("comment-display");
+              if (commentInputEl && commentDisplayEl) {
+                commentDisplayEl.style.display = "none";
+                commentInputEl.style.display = "block";
+                commentInputEl.disabled = false;
+              }
+            })();
+            // Pull client-derived details from Lists as in create
+            (function refreshFromListsForCopy() {
+              const selectedProjectCopy = document
+                .getElementById("project_name")
+                .value.trim();
+              if (!selectedProjectCopy) return;
+              // Clear client-derived fields to avoid showing old invoice data
+              const clearText = (id) => {
+                const el = document.getElementById(id);
+                if (el) el.textContent = "";
+              };
+              [
+                "client_name",
+                "client_address",
+                "client_number",
+                "our_company",
+                "bank_details_1",
+                "bank_details_2",
+                "tax",
+                "currency",
+                "due_date",
+              ].forEach(clearText);
+              google.script.run
+                .withSuccessHandler(function (details) {
+                  // Overwrite UI with Lists values (like create)
+                  fillProjectDetails(details || {});
+                  window.currentProjectDetails = details || {};
+                  window.currentProjectNameCached = selectedProjectCopy;
+                  // Recompute due date immediately
+                  try {
+                    const invoiceDateVal =
+                      document.getElementById("invoice_date").value;
+                    let due = null;
+                    if (invoiceDateVal) {
+                      let baseDate = new Date(invoiceDateVal);
+                      if ((details && details.dayType) === "WD") {
+                        due = addWorkingDays(
+                          baseDate,
+                          parseInt(details.paymentDelay) || 0
+                        );
+                      } else {
+                        due = new Date(baseDate);
+                        due.setDate(
+                          due.getDate() + (parseInt(details.paymentDelay) || 0)
+                        );
+                      }
+                    }
+                    document.getElementById("due_date").textContent = due
+                      ? formatDateDDMMYYYY(due)
+                      : "";
+                  } catch (_) {}
+                })
+                .getProjectDetails(selectedProjectCopy);
+            })();
           } else {
             document.getElementById("page-title").textContent =
               "Invoice - View";
@@ -1382,6 +1660,10 @@
               "edit-bottom-btn-container"
             );
             if (editBtns) editBtns.style.display = "none";
+            const copyBtnsHide = document.getElementById(
+              "copy-bottom-btn-container"
+            );
+            if (copyBtnsHide) copyBtnsHide.style.display = "none";
           }
           document.getElementById("back-to-list").style.display = "block";
           document.getElementById("generate-btn").style.display = "none";
@@ -1390,7 +1672,9 @@
 
           const addRowBtn = document.getElementById("add-row-btn");
           if (addRowBtn)
-            addRowBtn.style.display = mode === "edit" ? "inline-block" : "none";
+            addRowBtn.style.display = ["edit", "copy"].includes(mode)
+              ? "inline-block"
+              : "none";
 
           // Keep Project Name non-editable in edit mode
           if (mode === "edit") {
