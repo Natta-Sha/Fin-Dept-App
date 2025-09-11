@@ -1266,6 +1266,16 @@
                     currencyEl.classList.remove("form-control");
                     currencyEl.classList.add("form-control-plaintext");
                   }
+                  // Hide comment placeholder while processing (edit)
+                  const commentInputProc = document.getElementById("comment");
+                  const commentDisplayProc =
+                    document.getElementById("comment-display");
+                  if (commentInputProc && commentDisplayProc) {
+                    commentDisplayProc.textContent =
+                      commentInputProc.value.trim();
+                    commentDisplayProc.style.display = "block";
+                    commentInputProc.style.display = "none";
+                  }
 
                   const payload = buildCurrentFormDataForSave();
                   google.script.run
@@ -1328,6 +1338,15 @@
                       const editSpin2 = document.getElementById("edit-spinner");
                       if (editSpin2) editSpin2.style.display = "none";
                       setFormInputsDisabled(false);
+                      // Revert comment visibility on error
+                      const commentInputErr =
+                        document.getElementById("comment");
+                      const commentDisplayErr =
+                        document.getElementById("comment-display");
+                      if (commentInputErr && commentDisplayErr) {
+                        commentDisplayErr.style.display = "none";
+                        commentInputErr.style.display = "block";
+                      }
                     })
                     .updateInvoiceById(invoiceId, payload);
                 } catch (e) {
@@ -1342,6 +1361,14 @@
                   const editSpin3 = document.getElementById("edit-spinner");
                   if (editSpin3) editSpin3.style.display = "none";
                   setFormInputsDisabled(false);
+                  // Revert comment visibility on exception
+                  const commentInputEx = document.getElementById("comment");
+                  const commentDisplayEx =
+                    document.getElementById("comment-display");
+                  if (commentInputEx && commentDisplayEx) {
+                    commentDisplayEx.style.display = "none";
+                    commentInputEx.style.display = "block";
+                  }
                 }
               });
             }
