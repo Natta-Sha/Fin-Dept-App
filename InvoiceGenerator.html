@@ -1389,6 +1389,35 @@
                 }
               });
             }
+          } else if (mode === "copy") {
+            document.getElementById("page-title").textContent =
+              "Invoice - Copy";
+            document.getElementById(
+              "delete-bottom-btn-container"
+            ).style.display = "none";
+            const editBtnsHide = document.getElementById(
+              "edit-bottom-btn-container"
+            );
+            if (editBtnsHide) editBtnsHide.style.display = "none";
+            const copyBtns = document.getElementById(
+              "copy-bottom-btn-container"
+            );
+            if (copyBtns) copyBtns.style.display = "block";
+
+            // Wire up Copy buttons
+            const copyCancel = document.getElementById("copy-cancel-btn");
+            if (copyCancel) {
+              copyCancel.addEventListener("click", function () {
+                safeNavigateToInvoicesList();
+              });
+            }
+            const copyCreate = document.getElementById("copy-create-new-btn");
+            if (copyCreate) {
+              copyCreate.addEventListener("click", function () {
+                // Placeholder for next step
+                alert("Create new from copy: coming next.");
+              });
+            }
           } else {
             document.getElementById("page-title").textContent =
               "Invoice - View";
@@ -1399,6 +1428,10 @@
               "edit-bottom-btn-container"
             );
             if (editBtns) editBtns.style.display = "none";
+            const copyBtnsHide = document.getElementById(
+              "copy-bottom-btn-container"
+            );
+            if (copyBtnsHide) copyBtnsHide.style.display = "none";
           }
           document.getElementById("back-to-list").style.display = "block";
           document.getElementById("generate-btn").style.display = "none";
