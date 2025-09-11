@@ -1101,13 +1101,13 @@
                 window.location.href = "?page=InvoicesList";
                 return;
               }
-              if (["view", "delete", "copy"].includes(mode)) {
+              if (["view", "delete"].includes(mode)) {
                 renderSavedDataRaw(data);
               } else {
                 fillInvoiceFormFromSavedData(data);
               }
 
-              if (mode !== "edit") {
+              if (!["edit", "copy"].includes(mode)) {
                 document.querySelectorAll("input, textarea").forEach((el) => {
                   el.disabled = true;
                 });
@@ -1414,9 +1414,47 @@
             const copyCreate = document.getElementById("copy-create-new-btn");
             if (copyCreate) {
               copyCreate.addEventListener("click", function () {
-                // Placeholder for next step
-                alert("Create new from copy: coming next.");
+                // Reuse submitFormWithData from create
+                try {
+                  submitFormWithData();
+                } catch (e) {
+                  alert("Failed to create from copy: " + e.message);
+                }
               });
+            }
+
+            // In copy mode, enable inputs for editable fields and refresh client-derived details
+            const inputsToEnable = ["invoice_number", "invoice_date"];
+            inputsToEnable.forEach((id) => {
+              const el = document.getElementById(id);
+              if (el) el.disabled = false;
+            });
+            // Table inputs
+            document.querySelectorAll("#invoice-body input").forEach((el) => {
+              el.disabled = false;
+            });
+            // Allow exchange rate editing only for USD
+            const exchInput = document.getElementById("exchange_rate");
+            if (exchInput) exchInput.disabled = false;
+            // Comment input visible and enabled
+            (function showCommentForCopy() {
+              const commentInputEl = document.getElementById("comment");
+              const commentDisplayEl =
+                document.getElementById("comment-display");
+              if (commentInputEl && commentDisplayEl) {
+                commentDisplayEl.style.display = "none";
+                commentInputEl.style.display = "block";
+                commentInputEl.disabled = false;
+              }
+            })();
+            // Pull client-derived details from Lists as in create
+            const selectedProjectCopy = document
+              .getElementById("project_name")
+              .value.trim();
+            if (selectedProjectCopy) {
+              google.script.run
+                .withSuccessHandler(fillProjectDetails)
+                .getProjectDetails(selectedProjectCopy);
             }
           } else {
             document.getElementById("page-title").textContent =
