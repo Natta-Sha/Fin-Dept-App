@@ -1270,6 +1270,32 @@
                         "edit-bottom-btn-container"
                       );
                       if (editBtnsAfter) editBtnsAfter.style.display = "none";
+                      // Ensure currency becomes non-editable and shown as plaintext
+                      (function ensureCurrencyPlain() {
+                        const currencyEl = document.getElementById("currency");
+                        if (currencyEl) {
+                          currencyEl.contentEditable = "false";
+                          currencyEl.classList.remove("form-control");
+                          currencyEl.classList.add("form-control-plaintext");
+                        }
+                      })();
+                      // Swap comment input to plaintext to avoid placeholder
+                      (function swapCommentToPlaintextAfterEdit() {
+                        const commentInputEl =
+                          document.getElementById("comment");
+                        const commentDisplayEl =
+                          document.getElementById("comment-display");
+                        if (commentInputEl && commentDisplayEl) {
+                          commentDisplayEl.textContent =
+                            commentInputEl.value.trim();
+                          commentDisplayEl.style.display = "block";
+                          commentInputEl.style.display = "none";
+                        }
+                      })();
+                      // Hide add-row button after save
+                      const addRowBtnHide =
+                        document.getElementById("add-row-btn");
+                      if (addRowBtnHide) addRowBtnHide.style.display = "none";
                     })
                     .withFailureHandler(function (err) {
                       alert("Error updating invoice: " + err.message);
