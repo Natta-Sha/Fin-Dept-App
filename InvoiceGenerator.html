@@ -1062,6 +1062,11 @@
             // 🔒 Keep form disabled and hide generate button after success
             setFormInputsDisabled(true);
             document.getElementById("generate-btn").style.display = "none";
+            // Hide copy buttons (if copy flow)
+            const copyBtns = document.getElementById(
+              "copy-bottom-btn-container"
+            );
+            if (copyBtns) copyBtns.style.display = "none";
 
             // Show comment as plaintext, hide input to avoid placeholder
             (function swapCommentToPlaintext() {
@@ -1483,6 +1488,22 @@
                 .getElementById("project_name")
                 .value.trim();
               if (!selectedProjectCopy) return;
+              // Clear client-derived fields to avoid showing old invoice data
+              const clearText = (id) => {
+                const el = document.getElementById(id);
+                if (el) el.textContent = "";
+              };
+              [
+                "client_name",
+                "client_address",
+                "client_number",
+                "our_company",
+                "bank_details_1",
+                "bank_details_2",
+                "tax",
+                "currency",
+                "due_date",
+              ].forEach(clearText);
               google.script.run
                 .withSuccessHandler(function (details) {
                   // Overwrite UI with Lists values (like create)
