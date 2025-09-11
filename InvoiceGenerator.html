@@ -732,13 +732,16 @@
             row.appendChild(cell);
           });
           const delCell = document.createElement("td");
-          delCell.innerHTML = invoiceId
-            ? "" // скрыть кнопку удаления, если invoiceId существует (режим просмотра)
-            : `
+          // Add delete button only if: not in view/delete mode AND not the first row
+          const shouldHaveDeleteBtn =
+            !["view", "delete"].includes(mode) && i > 0;
+          delCell.innerHTML = shouldHaveDeleteBtn
+            ? `
     <button type="button" class="icon-button" onclick="deleteRow(this)" title="Delete row">
       <i class="bi bi-trash"></i>
     </button>
-  `;
+  `
+            : "";
 
           row.appendChild(delCell);
           tbody.appendChild(row);
@@ -860,6 +863,13 @@
 
       function deleteRow(btn) {
         const row = btn.parentNode.parentNode;
+        const tbody = document.getElementById("invoice-body");
+
+        // Prevent deletion of the first row
+        if (tbody.rows[0] === row) {
+          return;
+        }
+
         row.parentNode.removeChild(row);
         updateTotals();
       }
@@ -1120,58 +1130,7 @@
           mode,
         });
 
-        // Early refresh for copy: clear and pull Lists data immediately
-        if (mode === "copy") {
-          try {
-            const clearText = (id) => {
-              const el = document.getElementById(id);
-              if (el) el.textContent = "";
-            };
-            [
-              "client_name",
-              "client_address",
-              "client_number",
-              "our_company",
-              "bank_details_1",
-              "bank_details_2",
-              "tax",
-              "currency",
-              "due_date",
-            ].forEach(clearText);
-            const projectVal = document
-              .getElementById("project_name")
-              .value.trim();
-            if (projectVal) {
-              google.script.run
-                .withSuccessHandler(function (details) {
-                  window.currentProjectDetails = details || {};
-                  window.currentProjectNameCached = projectVal;
-                  fillProjectDetails(details || {});
-                  // Compute due date if invoice date already chosen
-                  const invoiceDateVal =
-                    document.getElementById("invoice_date").value;
-                  if (invoiceDateVal) {
-                    let baseDate = new Date(invoiceDateVal);
-                    let due;
-                    if ((details && details.dayType) === "WD") {
-                      due = addWorkingDays(
-                        baseDate,
-                        parseInt(details.paymentDelay) || 0
-                      );
-                    } else {
-                      due = new Date(baseDate);
-                      due.setDate(
-                        due.getDate() + (parseInt(details.paymentDelay) || 0)
-                      );
-                    }
-                    document.getElementById("due_date").textContent =
-                      formatDateDDMMYYYY(due);
-                  }
-                })
-                .getProjectDetails(projectVal);
-            }
-          } catch (_) {}
-        }
+        // Early refresh for copy: will be handled after invoice data loads
 
         // Hide the bottom delete button by default
         document.getElementById("delete-bottom-btn-container").style.display =
@@ -1193,7 +1152,7 @@
                 renderSavedDataRaw(data);
               } else {
                 fillInvoiceFormFromSavedData(data);
-                // If copying, immediately clear client-derived fields to avoid showing saved values
+                // If copying, immediately clear client-derived fields and reload from Lists
                 if (mode === "copy") {
                   const clearText = (id) => {
                     const el = document.getElementById(id);
@@ -1210,7 +1169,42 @@
                     "currency",
                     "due_date",
                   ].forEach(clearText);
-                  // Ensure delete buttons exist for each row
+
+                  // Load fresh client data from Lists
+                  const projectVal = document
+                    .getElementById("project_name")
+                    .value.trim();
+                  if (projectVal) {
+                    google.script.run
+                      .withSuccessHandler(function (details) {
+                        window.currentProjectDetails = details || {};
+                        fillProjectDetails(details || {});
+                        // Compute due date based on invoice date and Lists data
+                        const invoiceDateVal =
+                          document.getElementById("invoice_date").value;
+                        if (invoiceDateVal) {
+                          let baseDate = new Date(invoiceDateVal);
+                          let due;
+                          if ((details && details.dayType) === "WD") {
+                            due = addWorkingDays(
+                              baseDate,
+                              parseInt(details.paymentDelay) || 0
+                            );
+                          } else {
+                            due = new Date(baseDate);
+                            due.setDate(
+                              due.getDate() +
+                                (parseInt(details.paymentDelay) || 0)
+                            );
+                          }
+                          document.getElementById("due_date").textContent =
+                            formatDateDDMMYYYY(due);
+                        }
+                      })
+                      .getProjectDetails(projectVal);
+                  }
+
+                  // Ensure delete buttons exist for each row except first
                   try {
                     document
                       .querySelectorAll("#invoice-body tr")
