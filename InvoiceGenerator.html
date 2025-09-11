@@ -374,10 +374,20 @@
 
     <div id="delete-bottom-btn-container" style="display: none">
       <div class="row mt-4">
-        <div class="col-md-12 d-flex justify-content-end gap-2">
+        <div
+          class="col-md-12 d-flex justify-content-end gap-2 align-items-center"
+        >
           <button id="delete-bottom-btn" class="btn btn-danger px-5 fw-bold">
             Delete
           </button>
+          <div
+            id="delete-bottom-spinner"
+            class="spinner-border text-danger ms-2"
+            style="display: none"
+            role="status"
+          >
+            <span class="visually-hidden">Deleting...</span>
+          </div>
         </div>
       </div>
     </div>
@@ -432,6 +442,17 @@
         ) {
           google.script.host.close();
         }
+      }
+
+      // Disable/enable all form fields (inputs, textareas, row controls)
+      function setFormInputsDisabled(isDisabled) {
+        try {
+          document.querySelectorAll("input, textarea").forEach((el) => {
+            el.disabled = isDisabled;
+          });
+          const addRowBtnEl = document.getElementById("add-row-btn");
+          if (addRowBtnEl) addRowBtnEl.disabled = isDisabled;
+        } catch (_) {}
       }
       // Build payload for Save changes from current UI values
       function buildCurrentFormDataForSave() {
@@ -973,15 +994,17 @@
           JSON.stringify(data, null, 2)
         );
 
-        // Enable spinner and disable button
+        // Enable spinner and disable button + form
         document.getElementById("generate-btn").disabled = true;
         document.getElementById("spinner").style.display = "inline-block";
+        setFormInputsDisabled(true);
         document.getElementById("result").innerHTML = "";
 
         google.script.run
           .withFailureHandler(function (error) {
             document.getElementById("spinner").style.display = "none";
             document.getElementById("generate-btn").disabled = false;
+            setFormInputsDisabled(false);
             alert(
               "An error occurred: " +
                 error.message +
@@ -999,12 +1022,9 @@
       </div>
     `;
 
-            // 🔒 Disable all input fields and buttons
-            document.querySelectorAll("input, textarea").forEach((el) => {
-              el.disabled = true;
-            });
-
-            document.getElementById("generate-btn").disabled = true;
+            // 🔒 Keep form disabled and hide generate button after success
+            setFormInputsDisabled(true);
+            document.getElementById("generate-btn").style.display = "none";
           })
           .processForm(data);
       }
@@ -1084,9 +1104,11 @@
             document
               .getElementById("delete-bottom-btn")
               .addEventListener("click", function () {
-                // Show spinner
-                const spinner = document.getElementById("delete-spinner");
-                if (spinner) spinner.style.display = "inline-block";
+                // Show single spinner (consistent with edit/create)
+                const bottomSpin = document.getElementById(
+                  "delete-bottom-spinner"
+                );
+                if (bottomSpin) bottomSpin.style.display = "inline-block";
 
                 // Disable button
                 this.disabled = true;
@@ -1120,7 +1142,10 @@
                       document.getElementById(
                         "delete-bottom-btn"
                       ).disabled = false;
-                      if (spinner) spinner.style.display = "none";
+                      const bottomSpin2 = document.getElementById(
+                        "delete-bottom-spinner"
+                      );
+                      if (bottomSpin2) bottomSpin2.style.display = "none";
                     }
                   })
                   .withFailureHandler(function (error) {
@@ -1129,7 +1154,10 @@
                     document.getElementById(
                       "delete-bottom-btn"
                     ).disabled = false;
-                    if (spinner) spinner.style.display = "none";
+                    const bottomSpin3 = document.getElementById(
+                      "delete-bottom-spinner"
+                    );
+                    if (bottomSpin3) bottomSpin3.style.display = "none";
                   })
                   .deleteInvoiceById(invoiceId);
               });
@@ -1190,6 +1218,7 @@
                   if (exitBtnEl) exitBtnEl.disabled = true;
                   const editSpin = document.getElementById("edit-spinner");
                   if (editSpin) editSpin.style.display = "inline-block";
+                  setFormInputsDisabled(true);
 
                   const payload = buildCurrentFormDataForSave();
                   google.script.run
@@ -1209,7 +1238,7 @@
         <a href="${res.pdfUrl}" class="btn btn-outline-secondary mt-2" target="_blank">Open PDF</a>
       </div>
     `;
-                      // Hide edit action buttons after successful update
+                      // Hide edit action buttons after successful update and keep form disabled
                       const editBtnsAfter = document.getElementById(
                         "edit-bottom-btn-container"
                       );
@@ -1225,6 +1254,7 @@
                       if (exitBtnEl2) exitBtnEl2.disabled = false;
                       const editSpin2 = document.getElementById("edit-spinner");
                       if (editSpin2) editSpin2.style.display = "none";
+                      setFormInputsDisabled(false);
                     })
                     .updateInvoiceById(invoiceId, payload);
                 } catch (e) {
@@ -1238,6 +1268,7 @@
                   if (exitBtnEl3) exitBtnEl3.disabled = false;
                   const editSpin3 = document.getElementById("edit-spinner");
                   if (editSpin3) editSpin3.style.display = "none";
+                  setFormInputsDisabled(false);
                 }
               });
             }
