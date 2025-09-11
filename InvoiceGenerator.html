@@ -385,7 +385,9 @@
     <!-- Edit mode bottom actions -->
     <div id="edit-bottom-btn-container" style="display: none">
       <div class="row mt-4">
-        <div class="col-md-12 d-flex justify-content-end gap-2">
+        <div
+          class="col-md-12 d-flex justify-content-end gap-2 align-items-center"
+        >
           <button
             id="save-with-changes-btn"
             class="btn btn-primary px-5 fw-bold"
@@ -398,6 +400,14 @@
           >
             Discard changes
           </button>
+          <div
+            id="edit-spinner"
+            class="spinner-border text-primary ms-2"
+            style="display: none"
+            role="status"
+          >
+            <span class="visually-hidden">Saving...</span>
+          </div>
         </div>
       </div>
     </div>
@@ -1172,6 +1182,15 @@
             if (saveBtn) {
               saveBtn.addEventListener("click", function () {
                 try {
+                  // UI: disable buttons and show spinner
+                  saveBtn.disabled = true;
+                  const exitBtnEl = document.getElementById(
+                    "save-without-changes-btn"
+                  );
+                  if (exitBtnEl) exitBtnEl.disabled = true;
+                  const editSpin = document.getElementById("edit-spinner");
+                  if (editSpin) editSpin.style.display = "inline-block";
+
                   const payload = buildCurrentFormDataForSave();
                   google.script.run
                     .withSuccessHandler(function (res) {
@@ -1190,14 +1209,35 @@
         <a href="${res.pdfUrl}" class="btn btn-outline-secondary mt-2" target="_blank">Open PDF</a>
       </div>
     `;
+                      // Hide edit action buttons after successful update
+                      const editBtnsAfter = document.getElementById(
+                        "edit-bottom-btn-container"
+                      );
+                      if (editBtnsAfter) editBtnsAfter.style.display = "none";
                     })
                     .withFailureHandler(function (err) {
                       alert("Error updating invoice: " + err.message);
+                      // Re-enable on error
+                      saveBtn.disabled = false;
+                      const exitBtnEl2 = document.getElementById(
+                        "save-without-changes-btn"
+                      );
+                      if (exitBtnEl2) exitBtnEl2.disabled = false;
+                      const editSpin2 = document.getElementById("edit-spinner");
+                      if (editSpin2) editSpin2.style.display = "none";
                     })
                     .updateInvoiceById(invoiceId, payload);
                 } catch (e) {
                   console.error(e);
                   alert("Failed to collect form data: " + e.message);
+                  // Re-enable on exception
+                  saveBtn.disabled = false;
+                  const exitBtnEl3 = document.getElementById(
+                    "save-without-changes-btn"
+                  );
+                  if (exitBtnEl3) exitBtnEl3.disabled = false;
+                  const editSpin3 = document.getElementById("edit-spinner");
+                  if (editSpin3) editSpin3.style.display = "none";
                 }
               });
             }
