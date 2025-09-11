@@ -1110,6 +1110,38 @@
                 renderSavedDataRaw(data);
               } else {
                 fillInvoiceFormFromSavedData(data);
+                // If copying, immediately clear client-derived fields to avoid showing saved values
+                if (mode === "copy") {
+                  const clearText = (id) => {
+                    const el = document.getElementById(id);
+                    if (el) el.textContent = "";
+                  };
+                  [
+                    "client_name",
+                    "client_address",
+                    "client_number",
+                    "our_company",
+                    "bank_details_1",
+                    "bank_details_2",
+                    "tax",
+                    "currency",
+                    "due_date",
+                  ].forEach(clearText);
+                  // Ensure delete buttons exist for each row
+                  try {
+                    document
+                      .querySelectorAll("#invoice-body tr")
+                      .forEach((row) => {
+                        let last = row.cells[row.cells.length - 1];
+                        if (!last) return;
+                        if (last.querySelector(".icon-button")) return;
+                        last.innerHTML = `
+    <button type="button" class="icon-button" onclick="deleteRow(this)" title="Delete row">
+      <i class="bi bi-trash"></i>
+    </button>`;
+                      });
+                  } catch (_) {}
+                }
               }
 
               if (!["edit", "copy"].includes(mode)) {
@@ -1534,7 +1566,9 @@
 
           const addRowBtn = document.getElementById("add-row-btn");
           if (addRowBtn)
-            addRowBtn.style.display = mode === "edit" ? "inline-block" : "none";
+            addRowBtn.style.display = ["edit", "copy"].includes(mode)
+              ? "inline-block"
+              : "none";
 
           // Keep Project Name non-editable in edit mode
           if (mode === "edit") {
