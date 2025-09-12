@@ -1239,7 +1239,7 @@
               document.getElementById("spinner").style.display = "none";
               document.getElementById("result").innerHTML = `
       <div class="alert alert-success mt-4">
-        <strong>Invoice created!</strong><br>
+        <strong>Credit note created!</strong><br>
         <a href="${result.docUrl}" class="btn btn-outline-secondary mt-2" target="_blank">Open Google Doc</a>
         <a href="${result.pdfUrl}" class="btn btn-outline-secondary mt-2" target="_blank">Open PDF</a>
       </div>
@@ -1269,7 +1269,7 @@
                 }
               })();
             })
-            .processForm(data);
+            .processCreditNoteForm(data);
         }
 
         window.addEventListener("DOMContentLoaded", function () {

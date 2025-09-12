@@ -1088,3 +1088,68 @@ function updateCreditNoteByIdFromData(id, data) {
     return { success: false, message: error.message };
   }
 }
+
+/**
+ * Save credit note data to spreadsheet
+ * @param {Object} data - Credit note data to save
+ * @returns {Object} Result with newRowIndex and uniqueId
+ */
+function saveCreditNoteData(data) {
+  try {
+    const spreadsheet = getSpreadsheet(CONFIG.SPREADSHEET_ID);
+    const sheet = getSheet(spreadsheet, CONFIG.SHEETS.CREDITNOTES);
+    const uniqueId = Utilities.getUuid();
+
+    // Parse DD/MM/YYYY date
+    const [day, month, year] = data.dueDate.split("/");
+    const dueDateObject = new Date(year, month - 1, day);
+
+    const newRow = [
+      uniqueId,
+      data.projectName,
+      data.invoiceNumber,
+      data.clientName,
+      data.clientAddress,
+      data.clientNumber,
+      new Date(data.invoiceDate), // YYYY-MM-DD is fine
+      dueDateObject,
+      data.tax,
+      data.subtotal,
+      calculateTaxAmountFromUtils(data.subtotal, data.tax),
+      calculateTotalAmountFromUtils(
+        data.subtotal,
+        calculateTaxAmountFromUtils(data.subtotal, data.tax)
+      ),
+      data.currency === "$" ? data.exchangeRate : "",
+      data.currency,
+      data.currency === "$" ? data.amountInEUR : "",
+      data.bankDetails1,
+      data.bankDetails2,
+      data.ourCompany || "",
+      data.comment || "",
+      "", // Placeholder for Doc URL
+      "", // Placeholder for PDF URL
+    ];
+
+    // Process items to force Period field to be saved as text
+    const itemCells = [];
+    data.items.forEach((row, i) => {
+      const newRow = [...row];
+      // Force Period field (index 2) to be saved as text to prevent Google Sheets from converting it to date
+      if (newRow[2]) {
+        newRow[2] = `'${newRow[2].toString()}`; // Add single quote prefix to force text format
+      }
+      itemCells.push(...newRow);
+    });
+    const fullRow = newRow.concat(itemCells);
+
+    const newRowIndex = sheet.getLastRow() + 1;
+    sheet.getRange(newRowIndex, 1, 1, fullRow.length).setValues([fullRow]);
+    CacheService.getScriptCache().remove("creditNotesList");
+
+    return { newRowIndex, uniqueId };
+  } catch (error) {
+    console.error("Error saving credit note data:", error);
+    throw error;
+  }
+}
