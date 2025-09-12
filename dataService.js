@@ -787,12 +787,19 @@ function getCreditNotesListFromData() {
     const colIndex = {
       id: headers.indexOf("ID"),
       projectName: headers.indexOf("Project Name"),
-      creditNoteNumber: headers.indexOf("Invoice Number"), // Will look for "Invoice Number" in CreditNotes sheet
-      creditNoteDate: headers.indexOf("Invoice Date"), // Will look for "Invoice Date" in CreditNotes sheet
+      creditNoteNumber: headers.indexOf("Credit Note Number"),
+      creditNoteDate: headers.indexOf("Credit Note Date"),
       dueDate: headers.indexOf("Due Date"),
       total: headers.indexOf("Total"),
       currency: headers.indexOf("Currency"),
     };
+
+    // Validate required columns
+    for (let key in colIndex) {
+      if (colIndex[key] === -1) {
+        console.error(`Missing column in CreditNotes: ${key}`);
+      }
+    }
 
     const result = data
       .slice(1)

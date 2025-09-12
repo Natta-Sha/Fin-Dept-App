@@ -423,7 +423,7 @@
           <button
             id="cancel-create-btn"
             class="btn btn-outline-secondary ms-2"
-            onclick="window.location.href='<?= baseUrl ?>?page=CreditNotesList'"
+            onclick="safeNavigateToCreditNotesList()"
           >
             Cancel
           </button>
@@ -546,6 +546,27 @@
         // Robust navigation back to invoices list for both web-app and sidebar contexts
         function safeNavigateToInvoicesList() {
           const target = BASE_URL + "?page=InvoicesList";
+          try {
+            window.top.location.href = target;
+            return;
+          } catch (e) {}
+          try {
+            window.location.href = target;
+            return;
+          } catch (e2) {}
+          if (
+            google &&
+            google.script &&
+            google.script.host &&
+            google.script.host.close
+          ) {
+            google.script.host.close();
+          }
+        }
+
+        // Robust navigation back to credit notes list for both web-app and sidebar contexts
+        function safeNavigateToCreditNotesList() {
+          const target = BASE_URL + "?page=CreditNotesList";
           try {
             window.top.location.href = target;
             return;
@@ -1439,7 +1460,7 @@
                           .addEventListener(
                             "hidden.bs.modal",
                             function () {
-                              safeNavigateToInvoicesList();
+                              safeNavigateToCreditNotesList();
                             },
                             { once: true }
                           );
@@ -1477,7 +1498,7 @@
                 document.getElementById("delete-cancel-btn");
               if (deleteCancelBtn) {
                 deleteCancelBtn.addEventListener("click", function () {
-                  safeNavigateToInvoicesList();
+                  safeNavigateToCreditNotesList();
                 });
               }
             } else if (mode === "view") {
@@ -1500,7 +1521,7 @@
               const viewBackBtn = document.getElementById("view-back-btn");
               if (viewBackBtn) {
                 viewBackBtn.addEventListener("click", function () {
-                  safeNavigateToInvoicesList();
+                  safeNavigateToCreditNotesList();
                 });
               }
             } else if (mode === "edit") {
@@ -1540,7 +1561,7 @@
               );
               if (exitBtn) {
                 exitBtn.addEventListener("click", function () {
-                  safeNavigateToInvoicesList();
+                  safeNavigateToCreditNotesList();
                 });
               }
               // Save changes: collect current form data and send to backend
@@ -1698,7 +1719,7 @@
               const copyCancel = document.getElementById("copy-cancel-btn");
               if (copyCancel) {
                 copyCancel.addEventListener("click", function () {
-                  safeNavigateToInvoicesList();
+                  safeNavigateToCreditNotesList();
                 });
               }
               const copyCreate = document.getElementById("copy-create-new-btn");
