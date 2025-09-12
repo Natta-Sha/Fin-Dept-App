@@ -835,20 +835,36 @@ function getCreditNoteDataByIdFromData(id) {
       return {};
     }
 
+    console.log("DEBUG: Looking for Credit Note ID:", id, "Type:", typeof id);
+
     const spreadsheet = getSpreadsheet(CONFIG.SPREADSHEET_ID);
     const sheet = getSheet(spreadsheet, CONFIG.SHEETS.CREDITNOTES);
     const data = sheet.getDataRange().getValues();
     const headers = data[0];
+    console.log("DEBUG: Headers in CreditNotes sheet:", headers);
+
     const indexMap = headers.reduce((acc, h, i) => {
       acc[h] = i;
       return acc;
     }, {});
+    console.log("DEBUG: Index map:", indexMap);
+    console.log("DEBUG: Total rows in sheet:", data.length);
 
     let row = null;
     for (let i = 1; i < data.length; i++) {
+      const currentId = data[i][indexMap["ID"]];
+      console.log(
+        `DEBUG: Row ${i}, ID in sheet:`,
+        currentId,
+        "Type:",
+        typeof currentId,
+        "Comparing with:",
+        id
+      );
       if (data[i][indexMap["ID"]] === id) {
         // Точно как в инвойсах
         row = data[i];
+        console.log("DEBUG: Found matching row:", row);
         break;
       }
     }
