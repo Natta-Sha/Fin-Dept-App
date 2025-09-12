@@ -1092,62 +1092,163 @@ function updateCreditNoteByIdFromData(id, data) {
 /**
  * Save credit note data to spreadsheet
  * @param {Object} data - Credit note data to save
- * @returns {Object} Result with newRowIndex and uniqueId
+ * @returns {Object} Result with docUrl and pdfUrl
  */
 function saveCreditNoteData(data) {
   try {
+    Logger.log("saveCreditNoteData: Starting credit note creation.");
+    Logger.log(
+      `saveCreditNoteData: Received data for project: ${data.projectName}, credit note: ${data.invoiceNumber}`
+    );
+
     const spreadsheet = getSpreadsheet(CONFIG.SPREADSHEET_ID);
     const sheet = getSheet(spreadsheet, CONFIG.SHEETS.CREDITNOTES);
     const uniqueId = Utilities.getUuid();
+    Logger.log(`saveCreditNoteData: Generated new unique ID: ${uniqueId}`);
+
+    if (sheet.getLastRow() === 0) {
+      const baseHeaders = [
+        "ID",
+        "Project Name",
+        "Invoice Number",
+        "Client Name",
+        "Client Address",
+        "Client Number",
+        "Invoice Date",
+        "Due Date",
+        "Tax Rate (%)",
+        "Subtotal",
+        "Tax Amount",
+        "Total",
+        "Exchange Rate",
+        "Currency",
+        "Amount in EUR",
+        "Bank Details 1",
+        "Bank Details 2",
+        "Our Company",
+        "Comment",
+        "Google Doc Link",
+        "PDF Link",
+      ];
+
+      const itemHeaders = [];
+      for (let i = 1; i <= CONFIG.INVOICE_TABLE.MAX_ROWS; i++) {
+        itemHeaders.push(
+          `Row ${i} #`,
+          `Row ${i} Service`,
+          `Row ${i} Period`,
+          `Row ${i} Quantity`,
+          `Row ${i} Rate/hour`,
+          `Row ${i} Amount`
+        );
+      }
+      const allHeaders = baseHeaders.concat(itemHeaders);
+      sheet.getRange(1, 1, 1, allHeaders.length).setValues([allHeaders]);
+    }
 
     // Parse DD/MM/YYYY date
     const [day, month, year] = data.dueDate.split("/");
     const dueDateObject = new Date(year, month - 1, day);
+    const formattedDate = formatDate(data.invoiceDate);
+    const formattedDueDate = formatDate(dueDateObject);
 
-    const newRow = [
-      uniqueId,
-      data.projectName,
-      data.invoiceNumber,
-      data.clientName,
-      data.clientAddress,
-      data.clientNumber,
-      new Date(data.invoiceDate), // YYYY-MM-DD is fine
-      dueDateObject,
-      data.tax,
-      data.subtotal,
-      calculateTaxAmountFromUtils(data.subtotal, data.tax),
-      calculateTotalAmountFromUtils(
-        data.subtotal,
-        calculateTaxAmountFromUtils(data.subtotal, data.tax)
-      ),
-      data.currency === "$" ? data.exchangeRate : "",
-      data.currency,
-      data.currency === "$" ? data.amountInEUR : "",
-      data.bankDetails1,
-      data.bankDetails2,
-      data.ourCompany || "",
-      data.comment || "",
-      "", // Placeholder for Doc URL
-      "", // Placeholder for PDF URL
-    ];
+    const subtotalNum = parseFloat(data.subtotal) || 0;
+    const taxRate = parseFloat(data.tax) || 0;
+    const taxAmount = (subtotalNum * taxRate) / 100;
+    const totalAmount = subtotalNum + taxAmount;
 
-    // Process items to force Period field to be saved as text
-    const itemCells = [];
-    data.items.forEach((row, i) => {
-      const newRow = [...row];
-      // Force Period field (index 2) to be saved as text to prevent Google Sheets from converting it to date
-      if (newRow[2]) {
-        newRow[2] = `'${newRow[2].toString()}`; // Add single quote prefix to force text format
-      }
-      itemCells.push(...newRow);
+    // Resolve template and folder like in creation flow
+    const detailsForTemplate = getProjectDetailsFromData(data.projectName);
+    const templateId = detailsForTemplate && detailsForTemplate.templateId;
+    if (!templateId) {
+      throw new Error(ERROR_MESSAGES.NO_TEMPLATE_ID);
+    }
+    const folderId = getProjectFolderId(data.projectName);
+
+    const doc = createCreditNoteDoc(
+      data,
+      formattedDate,
+      formattedDueDate,
+      subtotalNum,
+      taxRate,
+      taxAmount,
+      totalAmount,
+      templateId,
+      folderId
+    );
+    const pdf = doc.getAs("application/pdf");
+    const folder = DriveApp.getFolderById(CONFIG.FOLDER_ID);
+    const cleanCompany = (data.ourCompany || "")
+      .replace(/[\\/:*?"<>|]/g, "")
+      .trim();
+    const cleanClient = (data.clientName || "")
+      .replace(/[\\/:*?"<>|]/g, "")
+      .trim();
+    const filename = `${data.invoiceDate}_CreditNote${data.invoiceNumber}_${cleanCompany}-${cleanClient}`;
+    const pdfFile = folder.createFile(pdf).setName(`${filename}.pdf`);
+
+    // Build row exactly by headers
+    const headers = sheet
+      .getRange(1, 1, 1, sheet.getLastColumn())
+      .getValues()[0];
+    const indexMap = headers.reduce((acc, h, i) => {
+      acc[h] = i;
+      return acc;
+    }, {});
+
+    const fullRow = new Array(headers.length).fill("");
+    fullRow[indexMap["ID"]] = uniqueId;
+    fullRow[indexMap["Project Name"]] = data.projectName;
+    fullRow[indexMap["Invoice Number"]] = data.invoiceNumber;
+    fullRow[indexMap["Client Name"]] = data.clientName;
+    fullRow[indexMap["Client Address"]] = data.clientAddress;
+    fullRow[indexMap["Client Number"]] = data.clientNumber;
+    fullRow[indexMap["Invoice Date"]] = new Date(data.invoiceDate);
+    fullRow[indexMap["Due Date"]] = dueDateObject;
+    fullRow[indexMap["Tax Rate (%)"]] = taxRate.toFixed(0);
+    fullRow[indexMap["Subtotal"]] = subtotalNum.toFixed(2);
+    fullRow[indexMap["Tax Amount"]] = taxAmount.toFixed(2);
+    fullRow[indexMap["Total"]] = totalAmount.toFixed(2);
+    fullRow[indexMap["Exchange Rate"]] =
+      data.currency === "$"
+        ? parseFloat(data.exchangeRate || 0).toFixed(4)
+        : "";
+    fullRow[indexMap["Currency"]] = data.currency;
+    fullRow[indexMap["Amount in EUR"]] =
+      data.currency === "$" ? parseFloat(data.amountInEUR || 0).toFixed(2) : "";
+    fullRow[indexMap["Bank Details 1"]] = data.bankDetails1;
+    fullRow[indexMap["Bank Details 2"]] = data.bankDetails2;
+    fullRow[indexMap["Our Company"]] = data.ourCompany || "";
+    fullRow[indexMap["Comment"]] = data.comment || "";
+    fullRow[indexMap["Google Doc Link"]] = doc.getUrl();
+    fullRow[indexMap["PDF Link"]] = pdfFile.getUrl();
+
+    // Items: start from 'Row 1 #' header
+    const firstItemIdx = headers.indexOf("Row 1 #");
+    const itemsCapacity =
+      CONFIG.INVOICE_TABLE.MAX_ROWS * CONFIG.INVOICE_TABLE.COLUMNS_PER_ROW;
+    let flatItems = [];
+    (data.items || []).forEach((row, i) => {
+      const r = [...row];
+      r[0] = (i + 1).toString();
+      if (r[2]) r[2] = `'${r[2].toString()}`; // force Period as text
+      flatItems.push(...r);
     });
-    const fullRow = newRow.concat(itemCells);
+    if (flatItems.length > itemsCapacity)
+      flatItems = flatItems.slice(0, itemsCapacity);
+    while (flatItems.length < itemsCapacity) flatItems.push("");
+    if (firstItemIdx !== -1) {
+      for (let j = 0; j < itemsCapacity; j++) {
+        const target = firstItemIdx + j;
+        if (target < headers.length) fullRow[target] = flatItems[j];
+      }
+    }
 
     const newRowIndex = sheet.getLastRow() + 1;
     sheet.getRange(newRowIndex, 1, 1, fullRow.length).setValues([fullRow]);
     CacheService.getScriptCache().remove("creditNotesList");
 
-    return { newRowIndex, uniqueId };
+    return { success: true, docUrl: doc.getUrl(), pdfUrl: pdfFile.getUrl() };
   } catch (error) {
     console.error("Error saving credit note data:", error);
     throw error;

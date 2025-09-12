@@ -334,3 +334,92 @@ function getProjectFolderId(projectName) {
   );
   return CONFIG.FOLDER_ID;
 }
+
+/**
+ * Create credit note document from template
+ * @param {Object} data - Credit note data
+ * @param {string} formattedDate - Formatted invoice date
+ * @param {string} formattedDueDate - Formatted due date
+ * @param {number} subtotal - Subtotal amount
+ * @param {number} taxRate - Tax rate percentage
+ * @param {number} taxAmount - Tax amount
+ * @param {number} totalAmount - Total amount
+ * @param {string} templateId - Template document ID
+ * @param {string} folderId - Target folder ID
+ * @returns {Document} Created document
+ */
+function createCreditNoteDoc(
+  data,
+  formattedDate,
+  formattedDueDate,
+  subtotal,
+  taxRate,
+  taxAmount,
+  totalAmount,
+  templateId,
+  folderId
+) {
+  Logger.log(`createCreditNoteDoc: Starting for template ID: ${templateId}`);
+  if (!templateId) {
+    Logger.log("createCreditNoteDoc: ERROR - No templateId provided.");
+    throw new Error(ERROR_MESSAGES.NO_TEMPLATE_ID);
+  }
+
+  try {
+    const template = DriveApp.getFileById(templateId);
+    Logger.log(">>> Using folderId: " + folderId);
+
+    const folder = DriveApp.getFolderById(folderId);
+
+    const filename = generateCreditNoteFilenameFromUtils(data);
+    Logger.log(`createCreditNoteDoc: Generated filename: ${filename}`);
+
+    const copy = template.makeCopy(filename, folder);
+    Logger.log(`createCreditNoteDoc: Created copy with ID: ${copy.getId()}`);
+
+    const doc = DocumentApp.openById(copy.getId());
+    const body = doc.getBody();
+
+    // Handle exchange rate section
+    handleExchangeRateSection(body, data);
+
+    // Update credit note table
+    updateCreditNoteTable(body, data);
+
+    // Replace placeholders
+    replaceDocumentPlaceholders(
+      body,
+      data,
+      formattedDate,
+      formattedDueDate,
+      taxRate,
+      taxAmount,
+      totalAmount
+    );
+
+    Logger.log(
+      `createCreditNoteDoc: Placeholders replaced. Saving and closing doc.`
+    );
+    doc.saveAndClose();
+    Logger.log(
+      `createCreditNoteDoc: Document saved and closed. Returning doc object.`
+    );
+    return doc;
+  } catch (error) {
+    Logger.log(`createCreditNoteDoc: CRITICAL ERROR - ${error.toString()}`);
+    Logger.log(`Stack Trace: ${error.stack}`);
+    console.error("Error creating credit note document:", error);
+    throw error;
+  }
+}
+
+/**
+ * Update credit note table in document
+ * @param {Body} body - Document body
+ * @param {Object} data - Credit note data
+ */
+function updateCreditNoteTable(body, data) {
+  // For now, use the same logic as invoice table
+  // Later this can be customized for credit notes
+  updateInvoiceTable(body, data);
+}

@@ -72,6 +72,17 @@ function generateInvoiceFilenameFromUtils(data) {
 }
 
 /**
+ * Generate filename for credit note document
+ * @param {Object} data - Credit note data
+ * @returns {string} Generated filename
+ */
+function generateCreditNoteFilenameFromUtils(data) {
+  const cleanCompany = cleanFilename(data.ourCompany);
+  const cleanClient = cleanFilename(data.clientName);
+  return `${data.invoiceDate}_CreditNote${data.invoiceNumber}_${cleanCompany}-${cleanClient}`;
+}
+
+/**
  * Format currency amount with symbol
  * @param {number|string} amount - Amount to format
  * @param {string} currency - Currency symbol
