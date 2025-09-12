@@ -453,6 +453,12 @@
             <button id="delete-bottom-btn" class="btn btn-danger px-5 fw-bold">
               Delete
             </button>
+            <button
+              id="delete-cancel-btn"
+              class="btn btn-outline-secondary px-5 fw-bold"
+            >
+              Cancel
+            </button>
             <div
               id="delete-bottom-spinner"
               class="spinner-border text-danger ms-2"
@@ -485,6 +491,20 @@
         </div>
       </div>
 
+      <!-- View mode bottom actions -->
+      <div id="view-bottom-btn-container" style="display: none">
+        <div class="row mt-4">
+          <div class="col-md-12 d-flex justify-content-end gap-2">
+            <button
+              id="view-back-btn"
+              class="btn btn-outline-primary px-5 fw-bold"
+            >
+              Back
+            </button>
+          </div>
+        </div>
+      </div>
+
       <!-- Edit mode bottom actions -->
       <div id="edit-bottom-btn-container" style="display: none">
         <div class="row mt-4">
@@ -501,7 +521,7 @@
               id="save-without-changes-btn"
               class="btn btn-outline-secondary px-5 fw-bold"
             >
-              Discard changes
+              Cancel
             </button>
             <div
               id="edit-spinner"
@@ -1367,6 +1387,10 @@
                 "edit-bottom-btn-container"
               );
               if (editBtns) editBtns.style.display = "none";
+              const viewBtns = document.getElementById(
+                "view-bottom-btn-container"
+              );
+              if (viewBtns) viewBtns.style.display = "none";
               document.getElementById("generate-btn").style.display = "none";
 
               // Add event handler for delete button
@@ -1440,6 +1464,15 @@
                     })
                     .deleteInvoiceById(invoiceId);
                 });
+
+              // Add Cancel button handler for delete mode
+              const deleteCancelBtn =
+                document.getElementById("delete-cancel-btn");
+              if (deleteCancelBtn) {
+                deleteCancelBtn.addEventListener("click", function () {
+                  safeNavigateToInvoicesList();
+                });
+              }
             } else if (mode === "view") {
               document.getElementById("page-title").textContent =
                 "Invoice - View";
@@ -1450,7 +1483,19 @@
                 "edit-bottom-btn-container"
               );
               if (editBtns) editBtns.style.display = "none";
+              const viewBtns = document.getElementById(
+                "view-bottom-btn-container"
+              );
+              if (viewBtns) viewBtns.style.display = "block";
               document.getElementById("generate-btn").style.display = "none";
+
+              // Add Back button handler for view mode
+              const viewBackBtn = document.getElementById("view-back-btn");
+              if (viewBackBtn) {
+                viewBackBtn.addEventListener("click", function () {
+                  safeNavigateToInvoicesList();
+                });
+              }
             } else if (mode === "edit") {
               document.getElementById("page-title").textContent =
                 "Invoice - Edit";
@@ -1461,6 +1506,10 @@
                 "edit-bottom-btn-container"
               );
               if (editBtns) editBtns.style.display = "block";
+              const viewBtns = document.getElementById(
+                "view-bottom-btn-container"
+              );
+              if (viewBtns) viewBtns.style.display = "none";
 
               // Ensure templateId is available for the selected project in edit mode
               (function ensureTemplateForEdit() {
@@ -1629,6 +1678,10 @@
                 "edit-bottom-btn-container"
               );
               if (editBtnsHide) editBtnsHide.style.display = "none";
+              const viewBtnsHide = document.getElementById(
+                "view-bottom-btn-container"
+              );
+              if (viewBtnsHide) viewBtnsHide.style.display = "none";
               const copyBtns = document.getElementById(
                 "copy-bottom-btn-container"
               );
@@ -1775,6 +1828,10 @@
                 "edit-bottom-btn-container"
               );
               if (editBtns) editBtns.style.display = "none";
+              const viewBtnsElse = document.getElementById(
+                "view-bottom-btn-container"
+              );
+              if (viewBtnsElse) viewBtnsElse.style.display = "none";
               const copyBtnsHide = document.getElementById(
                 "copy-bottom-btn-container"
               );
