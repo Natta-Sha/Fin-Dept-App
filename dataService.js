@@ -829,62 +829,64 @@ function getCreditNotesListFromData() {
  */
 function getCreditNoteDataByIdFromData(id) {
   try {
-    // Validate input (точно как в инвойсах)
+    // Validate input
     if (!id || id.toString().trim() === "") {
       console.log("Invalid ID provided to getCreditNoteDataByIdFromData");
       return {};
     }
 
-    console.log("DEBUG: Looking for Credit Note ID:", id, "Type:", typeof id);
-
     const spreadsheet = getSpreadsheet(CONFIG.SPREADSHEET_ID);
     const sheet = getSheet(spreadsheet, CONFIG.SHEETS.CREDITNOTES);
     const data = sheet.getDataRange().getValues();
     const headers = data[0];
-    console.log("DEBUG: Headers in CreditNotes sheet:", headers);
-
     const indexMap = headers.reduce((acc, h, i) => {
       acc[h] = i;
       return acc;
     }, {});
-    console.log("DEBUG: Index map:", indexMap);
-    console.log("DEBUG: Total rows in sheet:", data.length);
 
     let row = null;
     for (let i = 1; i < data.length; i++) {
-      const currentId = data[i][indexMap["ID"]];
-      console.log(
-        `DEBUG: Row ${i}, ID in sheet:`,
-        currentId,
-        "Type:",
-        typeof currentId,
-        "Comparing with:",
-        id
-      );
       if (data[i][indexMap["ID"]] === id) {
-        // Точно как в инвойсах
         row = data[i];
-        console.log("DEBUG: Found matching row:", row);
         break;
       }
     }
-
     if (!row) {
-      console.log("Credit note not found for ID:", id);
+      console.log(`Credit note with ID ${id} not found.`);
       return {};
     }
 
-    // Формируем результат точно как в инвойсах
-    const result = {};
-    headers.forEach((header, index) => {
-      if (header && row[index] !== undefined) {
-        result[header.toString().trim()] = row[index];
+    const items = [];
+    for (let i = 0; i < CONFIG.INVOICE_TABLE.MAX_ROWS; i++) {
+      const base = 21 + i * CONFIG.INVOICE_TABLE.COLUMNS_PER_ROW;
+      const item = row.slice(base, base + CONFIG.INVOICE_TABLE.COLUMNS_PER_ROW);
+      if (item.some((cell) => cell && cell.toString().trim() !== "")) {
+        items.push(item);
       }
-    });
+    }
 
-    return result;
+    return {
+      projectName: row[indexMap["Project Name"]],
+      invoiceNumber: row[indexMap["Invoice Number"]],
+      clientName: row[indexMap["Client Name"]],
+      clientAddress: row[indexMap["Client Address"]],
+      clientNumber: row[indexMap["Client Number"]],
+      invoiceDate: formatDateForInput(row[indexMap["Invoice Date"]]),
+      dueDate: formatDateForInput(row[indexMap["Due Date"]]),
+      tax: row[indexMap["Tax Rate (%)"]],
+      subtotal: row[indexMap["Subtotal"]],
+      total: row[indexMap["Total"]],
+      exchangeRate: row[indexMap["Exchange Rate"]],
+      currency: row[indexMap["Currency"]],
+      amountInEUR: row[indexMap["Amount in EUR"]],
+      bankDetails1: row[indexMap["Bank Details 1"]],
+      bankDetails2: row[indexMap["Bank Details 2"]],
+      ourCompany: row[indexMap["Our Company"]],
+      comment: row[indexMap["Comment"]],
+      items: items,
+    };
   } catch (error) {
-    console.error("Error in getCreditNoteDataByIdFromData:", error);
+    console.error("Error getting credit note data by ID:", error);
     return {};
   }
 }
