@@ -830,10 +830,19 @@ function getCreditNotesListFromData() {
 function getCreditNoteDataByIdFromData(id) {
   try {
     if (!id) throw new Error("Credit Note ID is required");
+    console.log("Looking for credit note with ID:", id);
 
     const spreadsheet = getSpreadsheet(CONFIG.SPREADSHEET_ID);
     const sheet = getSheet(spreadsheet, CONFIG.SHEETS.CREDITNOTES);
     const data = sheet.getDataRange().getValues();
+
+    console.log("CreditNotes data rows:", data.length);
+    if (data.length > 1) {
+      console.log(
+        "First data row IDs:",
+        data.slice(1, 5).map((row) => row[0])
+      );
+    }
 
     if (data.length < 2) {
       throw new Error("No credit note data found");

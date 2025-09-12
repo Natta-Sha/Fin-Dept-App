@@ -1490,7 +1490,7 @@
                       );
                       if (bottomSpin3) bottomSpin3.style.display = "none";
                     })
-                    .deleteInvoiceById(invoiceId);
+                    .deleteCreditNoteById(creditNoteId);
                 });
 
               // Add Cancel button handler for delete mode
@@ -1671,7 +1671,7 @@
                           commentInputErr.style.display = "block";
                         }
                       })
-                      .updateInvoiceById(invoiceId, payload);
+                      .updateCreditNoteById(creditNoteId, payload);
                   } catch (e) {
                     console.error(e);
                     alert("Failed to collect form data: " + e.message);
