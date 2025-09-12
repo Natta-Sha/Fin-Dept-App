@@ -1373,6 +1373,7 @@
                 "edit-bottom-btn-container"
               );
               if (editBtns) editBtns.style.display = "none";
+              document.getElementById("generate-btn").style.display = "none";
 
               // Add event handler for delete button
               document
@@ -1455,6 +1456,7 @@
                 "edit-bottom-btn-container"
               );
               if (editBtns) editBtns.style.display = "none";
+              document.getElementById("generate-btn").style.display = "none";
             } else if (mode === "edit") {
               document.getElementById("page-title").textContent =
                 "Invoice - Edit";
@@ -1622,6 +1624,7 @@
                   }
                 });
               }
+              document.getElementById("generate-btn").style.display = "none";
             } else if (mode === "copy") {
               document.getElementById("page-title").textContent =
                 "Invoice - Copy";
@@ -1767,6 +1770,7 @@
                   })
                   .getProjectDetails(selectedProjectCopy);
               })();
+              document.getElementById("generate-btn").style.display = "none";
             } else {
               document.getElementById("page-title").textContent =
                 "Invoice - View";
@@ -1782,7 +1786,6 @@
               );
               if (copyBtnsHide) copyBtnsHide.style.display = "none";
             }
-            document.getElementById("back-to-list").style.display = "block";
             document.getElementById("generate-btn").style.display = "none";
             const newInvoiceBtn = document.getElementById("new-invoice-btn");
             if (newInvoiceBtn) newInvoiceBtn.style.display = "none";

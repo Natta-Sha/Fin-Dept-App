@@ -10,7 +10,7 @@
       <div class="d-flex justify-content-center flex-grow-1">
         <div class="d-flex">
           <!-- Home Button -->
-          <div class="nav-item">
+          <div class="nav-item mx-3">
             <a
               href="<?= baseUrl ?>"
               class="nav-link <?= activePage === 'home' ? 'active' : '' ?>"
@@ -19,10 +19,11 @@
           </div>
 
           <!-- Clients Dropdown -->
-          <div class="nav-item dropdown">
+          <div class="nav-item dropdown mx-3">
             <a
               href="#"
               class="nav-link dropdown-toggle <?= activePage === 'clients' ? 'active' : '' ?>"
+              role="button"
               data-bs-toggle="dropdown"
             >
               Clients
@@ -83,10 +84,11 @@
           </div>
 
           <!-- Contractors Dropdown -->
-          <div class="nav-item dropdown">
+          <div class="nav-item dropdown mx-3">
             <a
               href="#"
               class="nav-link dropdown-toggle <?= activePage === 'contractors' ? 'active' : '' ?>"
+              role="button"
               data-bs-toggle="dropdown"
             >
               Contractors
@@ -131,7 +133,7 @@
       </div>
 
       <!-- Right spacer -->
-      <div style="width: 120px"></div>
+      <div style="width: 150px"></div>
     </div>
   </div>
 </nav>
