@@ -898,42 +898,83 @@ function getCreditNoteDataByIdFromData(id) {
  */
 function deleteCreditNoteByIdFromData(id) {
   try {
-    if (!id) throw new Error("Credit Note ID is required");
+    // Validate input
+    if (!id || id.toString().trim() === "") {
+      console.log("Invalid ID provided to deleteCreditNoteByIdFromData");
+      return { success: false, message: "Invalid credit note ID provided" };
+    }
 
     const spreadsheet = getSpreadsheet(CONFIG.SPREADSHEET_ID);
     const sheet = getSheet(spreadsheet, CONFIG.SHEETS.CREDITNOTES);
     const data = sheet.getDataRange().getValues();
+    const headers = data[0];
 
-    const targetRowIndex = data.findIndex(
-      (row, index) =>
-        index > 0 && row[0]?.toString().trim() === id.toString().trim()
-    );
+    const idCol = headers.indexOf("ID");
+    const docLinkCol = headers.indexOf("Google Doc Link");
+    const pdfLinkCol = headers.indexOf("PDF Link");
 
-    if (targetRowIndex === -1) {
-      throw new Error(`Credit note with ID ${id} not found`);
+    if (idCol === -1) throw new Error("ID column not found.");
+
+    let rowToDelete = -1;
+    let docUrl = "";
+    let pdfUrl = "";
+
+    for (let i = 1; i < data.length; i++) {
+      if (data[i][idCol] === id) {
+        rowToDelete = i + 1; // 1-based index
+        docUrl = data[i][docLinkCol] || "";
+        pdfUrl = data[i][pdfLinkCol] || "";
+        break;
+      }
     }
 
-    // Get the credit note data before deletion (for document cleanup if needed)
-    const creditNoteData = data[targetRowIndex];
+    if (rowToDelete === -1) {
+      return { success: false, message: "Credit note not found." };
+    }
 
-    // Delete the row (targetRowIndex + 1 because Sheets are 1-indexed)
-    sheet.deleteRow(targetRowIndex + 1);
+    // 🔹 Удаляем файлы (если есть), логируем ошибки
+    let deletedNotes = [];
 
-    // Clear cache
-    var cache = CacheService.getScriptCache();
-    cache.remove("creditNotesList");
+    if (docUrl && docUrl.trim() !== "") {
+      try {
+        const docId = extractFileIdFromUrl(docUrl);
+        if (docId) {
+          DriveApp.getFileById(docId).setTrashed(true);
+        }
+      } catch (err) {
+        const msg = "Google Doc already deleted or not found.";
+        Logger.log(msg + " " + err.message);
+        deletedNotes.push(msg);
+      }
+    }
 
+    if (pdfUrl && pdfUrl.trim() !== "") {
+      try {
+        const pdfId = extractFileIdFromUrl(pdfUrl);
+        if (pdfId) {
+          DriveApp.getFileById(pdfId).setTrashed(true);
+        }
+      } catch (err) {
+        const msg = "PDF already deleted or not found.";
+        Logger.log(msg + " " + err.message);
+        deletedNotes.push(msg);
+      }
+    }
+
+    // 🧹 Удаляем строку
+    sheet.deleteRow(rowToDelete);
+
+    // 🧼 Очищаем кэш
+    CacheService.getScriptCache().remove("creditNotesList");
+
+    // ✅ Возвращаем результат
     return {
       success: true,
-      message: "Credit note deleted successfully",
-      deletedData: creditNoteData,
+      note: deletedNotes.length ? deletedNotes.join(" ") : undefined,
     };
   } catch (error) {
-    console.error("Error in deleteCreditNoteByIdFromData:", error);
-    return {
-      success: false,
-      message: error.message,
-    };
+    console.error("Error deleting credit note:", error);
+    return { success: false, message: error.message };
   }
 }
 
