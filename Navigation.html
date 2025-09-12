@@ -1,0 +1,137 @@
+<nav class="top-nav">
+  <div class="container-fluid">
+    <div class="d-flex align-items-center justify-content-between">
+      <!-- Logo -->
+      <a href="<?= baseUrl ?>" class="nav-brand d-flex align-items-center">
+        Sloboda Studio
+      </a>
+
+      <!-- Centered Navigation -->
+      <div class="d-flex justify-content-center flex-grow-1">
+        <div class="d-flex">
+          <!-- Home Button -->
+          <div class="nav-item">
+            <a
+              href="<?= baseUrl ?>"
+              class="nav-link <?= activePage === 'home' ? 'active' : '' ?>"
+              >Home</a
+            >
+          </div>
+
+          <!-- Clients Dropdown -->
+          <div class="nav-item dropdown">
+            <a
+              href="#"
+              class="nav-link dropdown-toggle <?= activePage === 'clients' ? 'active' : '' ?>"
+              data-bs-toggle="dropdown"
+            >
+              Clients
+            </a>
+            <ul class="dropdown-menu">
+              <li>
+                <a
+                  href="#"
+                  class="dropdown-item"
+                  data-bs-toggle="tooltip"
+                  title="Coming soon"
+                  style="cursor: not-allowed; opacity: 0.6"
+                  onclick="return false;"
+                  >Information</a
+                >
+              </li>
+              <li>
+                <a
+                  href="#"
+                  class="dropdown-item"
+                  data-bs-toggle="tooltip"
+                  title="Coming soon"
+                  style="cursor: not-allowed; opacity: 0.6"
+                  onclick="return false;"
+                  >Financial overview</a
+                >
+              </li>
+              <li>
+                <a
+                  href="<?= baseUrl ?>?page=InvoicesList"
+                  class="dropdown-item <?= activePage === 'invoices' ? 'active' : '' ?>"
+                  >Invoices</a
+                >
+              </li>
+              <li>
+                <a
+                  href="#"
+                  class="dropdown-item"
+                  data-bs-toggle="tooltip"
+                  title="Coming soon"
+                  style="cursor: not-allowed; opacity: 0.6"
+                  onclick="return false;"
+                  >Credit Notes</a
+                >
+              </li>
+              <li>
+                <a
+                  href="#"
+                  class="dropdown-item"
+                  data-bs-toggle="tooltip"
+                  title="Coming soon"
+                  style="cursor: not-allowed; opacity: 0.6"
+                  onclick="return false;"
+                  >Payments</a
+                >
+              </li>
+            </ul>
+          </div>
+
+          <!-- Contractors Dropdown -->
+          <div class="nav-item dropdown">
+            <a
+              href="#"
+              class="nav-link dropdown-toggle <?= activePage === 'contractors' ? 'active' : '' ?>"
+              data-bs-toggle="dropdown"
+            >
+              Contractors
+            </a>
+            <ul class="dropdown-menu">
+              <li>
+                <a
+                  href="#"
+                  class="dropdown-item"
+                  data-bs-toggle="tooltip"
+                  title="Coming soon"
+                  style="cursor: not-allowed; opacity: 0.6"
+                  onclick="return false;"
+                  >Information</a
+                >
+              </li>
+              <li>
+                <a
+                  href="#"
+                  class="dropdown-item"
+                  data-bs-toggle="tooltip"
+                  title="Coming soon"
+                  style="cursor: not-allowed; opacity: 0.6"
+                  onclick="return false;"
+                  >Contracts</a
+                >
+              </li>
+              <li>
+                <a
+                  href="#"
+                  class="dropdown-item"
+                  data-bs-toggle="tooltip"
+                  title="Coming soon"
+                  style="cursor: not-allowed; opacity: 0.6"
+                  onclick="return false;"
+                  >Bills</a
+                >
+              </li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <!-- Right spacer -->
+      <div style="width: 120px"></div>
+    </div>
+  </div>
+</nav>
