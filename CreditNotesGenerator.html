@@ -1423,6 +1423,8 @@
               );
               if (viewBtns) viewBtns.style.display = "none";
               document.getElementById("generate-btn").style.display = "none";
+              document.getElementById("cancel-create-btn").style.display =
+                "none";
 
               // Add event handler for delete button
               document
@@ -1519,7 +1521,8 @@
               );
               if (viewBtns) viewBtns.style.display = "block";
               document.getElementById("generate-btn").style.display = "none";
-              document.getElementById("action-buttons").style.display = "none";
+              document.getElementById("cancel-create-btn").style.display =
+                "none";
 
               // Add Back button handler for view mode
               const viewBackBtn = document.getElementById("view-back-btn");
@@ -1542,6 +1545,9 @@
                 "view-bottom-btn-container"
               );
               if (viewBtns) viewBtns.style.display = "none";
+              document.getElementById("generate-btn").style.display = "none";
+              document.getElementById("cancel-create-btn").style.display =
+                "none";
 
               // Ensure templateId is available for the selected project in edit mode
               (function ensureTemplateForEdit() {
@@ -1718,6 +1724,9 @@
                 "copy-bottom-btn-container"
               );
               if (copyBtns) copyBtns.style.display = "block";
+              document.getElementById("generate-btn").style.display = "none";
+              document.getElementById("cancel-create-btn").style.display =
+                "none";
 
               // Wire up Copy buttons
               const copyCancel = document.getElementById("copy-cancel-btn");
