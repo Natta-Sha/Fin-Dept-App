@@ -59,36 +59,34 @@
         background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
         color: white;
         padding: 0.75rem 0;
-        margin-bottom: 2rem;
-        border-radius: 0.5rem;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
       }
 
       .nav-brand {
         color: white !important;
-        text-decoration: none;
         font-weight: bold;
-        font-size: 1.25rem;
-      }
-
-      .nav-brand:hover {
-        color: rgba(255, 255, 255, 0.8) !important;
+        font-size: 1.5rem;
+        text-decoration: none;
       }
 
       .nav-item {
-        margin: 0 1rem;
+        position: relative;
       }
 
       .nav-link {
-        color: rgba(255, 255, 255, 0.9) !important;
-        text-decoration: none;
-        padding: 0.5rem 1rem;
-        border-radius: 0.25rem;
+        color: white !important;
+        font-weight: 500;
+        padding: 0.75rem 2rem !important;
+        border-radius: 25px;
         transition: all 0.3s ease;
+        background: rgba(255, 255, 255, 0.1);
+        margin: 0 0.5rem;
+        font-size: 1.1rem;
       }
 
       .nav-link:hover {
-        color: white !important;
-        background: rgba(255, 255, 255, 0.1);
+        background: rgba(255, 255, 255, 0.2);
+        transform: translateY(-1px);
       }
 
       .nav-link.active {
@@ -96,26 +94,22 @@
         font-weight: 600;
       }
 
+      /* Dropdown styling */
       .dropdown-menu {
-        background: white;
         border: none;
-        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-        border-radius: 0.5rem;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+        border-radius: 8px;
+        margin-top: 0.5rem;
       }
 
       .dropdown-item {
-        color: #333;
-        padding: 0.5rem 1rem;
+        padding: 0.75rem 1.5rem;
+        transition: all 0.2s ease;
       }
 
       .dropdown-item:hover {
-        background: #f8f9fa;
-        color: #495057;
-      }
-
-      .dropdown-item.active {
-        background: #667eea;
-        color: white;
+        background-color: #f8f9fa;
+        transform: translateX(5px);
       }
 
       .main-content {
