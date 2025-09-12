@@ -1297,9 +1297,20 @@
                   "Loaded credit note data (DOMContentLoaded):",
                   data
                 );
-                console.log("DEBUG: data.projectName =", data.projectName);
-                console.log("DEBUG: Object.keys(data) =", Object.keys(data));
-                if (!data || !data.projectName) {
+                console.log("DEBUG: data is null?", data === null);
+                console.log(
+                  "DEBUG: data is empty object?",
+                  data && Object.keys(data).length === 0
+                );
+                if (data && Object.keys(data).length > 0) {
+                  console.log("DEBUG: data.projectName =", data.projectName);
+                  console.log("DEBUG: Object.keys(data) =", Object.keys(data));
+                }
+                if (
+                  !data ||
+                  Object.keys(data).length === 0 ||
+                  !data.projectName
+                ) {
                   console.error("Invalid credit note data received:", data);
                   alert(
                     "Error loading credit note data. The credit note may have invalid data in the database."
