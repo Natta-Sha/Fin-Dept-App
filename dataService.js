@@ -787,8 +787,8 @@ function getCreditNotesListFromData() {
     const colIndex = {
       id: headers.indexOf("ID"),
       projectName: headers.indexOf("Project Name"),
-      creditNoteNumber: headers.indexOf("Invoice Number"), // Same column as Invoice Number for now
-      creditNoteDate: headers.indexOf("Invoice Date"), // Same column as Invoice Date for now
+      creditNoteNumber: headers.indexOf("Invoice Number"), // Will look for "Invoice Number" in CreditNotes sheet
+      creditNoteDate: headers.indexOf("Invoice Date"), // Will look for "Invoice Date" in CreditNotes sheet
       dueDate: headers.indexOf("Due Date"),
       total: headers.indexOf("Total"),
       currency: headers.indexOf("Currency"),
