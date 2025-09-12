@@ -261,9 +261,13 @@
                 <ul class="dropdown-menu">
                   <li>
                     <a
-                      class="dropdown-item"
+                      class="dropdown-item text-muted"
                       href="#"
-                      onclick="showComingSoon('Client Information')"
+                      data-bs-toggle="tooltip"
+                      data-bs-placement="right"
+                      title="Coming soon"
+                      style="cursor: not-allowed; opacity: 0.6"
+                      onclick="return false;"
                       >Information</a
                     >
                   </li>
@@ -517,8 +521,33 @@
     <!-- Close main-content -->
 
     <script>
+      // Initialize Bootstrap tooltips
+      document.addEventListener("DOMContentLoaded", function () {
+        var tooltipTriggerList = [].slice.call(
+          document.querySelectorAll('[data-bs-toggle="tooltip"]')
+        );
+        var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+          return new bootstrap.Tooltip(tooltipTriggerEl);
+        });
+      });
+
+      // Temporary function for items not yet converted to tooltips
       function showComingSoon(feature) {
-        alert(`${feature} feature is coming soon!`);
+        // Show a more pleasant "coming soon" message
+        var tooltip = document.createElement("div");
+        tooltip.className =
+          "alert alert-info alert-dismissible fade show position-fixed";
+        tooltip.style.top = "20px";
+        tooltip.style.right = "20px";
+        tooltip.style.zIndex = "9999";
+        tooltip.innerHTML = `
+          <strong>${feature}</strong> feature is coming soon!
+          <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        `;
+        document.body.appendChild(tooltip);
+        setTimeout(() => {
+          if (tooltip.parentNode) tooltip.parentNode.removeChild(tooltip);
+        }, 3000);
       }
     </script>
   </body>
