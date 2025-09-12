@@ -777,11 +777,8 @@ function getCreditNotesListFromData() {
     }
 
     const spreadsheet = getSpreadsheet(CONFIG.SPREADSHEET_ID);
-    console.log("Looking for CreditNotes sheet...");
     const sheet = getSheet(spreadsheet, CONFIG.SHEETS.CREDITNOTES);
-    console.log("Found Invoices sheet:", sheet ? "YES" : "NO");
     const data = sheet.getDataRange().getValues();
-    console.log("CreditNotes data rows:", data.length);
 
     if (data.length < 2) return [];
 
@@ -790,8 +787,8 @@ function getCreditNotesListFromData() {
     const colIndex = {
       id: headers.indexOf("ID"),
       projectName: headers.indexOf("Project Name"),
-      creditNoteNumber: headers.indexOf("Credit Note Number"), // Ищем Credit Note Number
-      creditNoteDate: headers.indexOf("Credit Note Date"), // Ищем Credit Note Date
+      invoiceNumber: headers.indexOf("Invoice Number"),
+      invoiceDate: headers.indexOf("Invoice Date"),
       dueDate: headers.indexOf("Due Date"),
       total: headers.indexOf("Total"),
       currency: headers.indexOf("Currency"),
@@ -800,39 +797,27 @@ function getCreditNotesListFromData() {
     // Validate required columns
     for (let key in colIndex) {
       if (colIndex[key] === -1) {
-        console.error(`Missing column in CreditNotes: ${key}`);
+        throw new Error(ERROR_MESSAGES.MISSING_COLUMN(key));
       }
     }
 
-    const result = data
-      .slice(1)
-      .map((row, index) => {
-        if (!row[colIndex.id] || row[colIndex.id].toString().trim() === "") {
-          return null;
-        }
+    const result = data.slice(1).map((row) => ({
+      id: row[colIndex.id] || "",
+      projectName: row[colIndex.projectName] || "",
+      invoiceNumber: row[colIndex.invoiceNumber] || "",
+      invoiceDate: formatDate(row[colIndex.invoiceDate]),
+      dueDate: formatDate(row[colIndex.dueDate]),
+      total:
+        row[colIndex.total] !== undefined && row[colIndex.total] !== ""
+          ? parseFloat(row[colIndex.total]).toFixed(2)
+          : "",
+      currency: row[colIndex.currency] || "",
+    }));
 
-        return {
-          id: row[colIndex.id]?.toString().trim() || "",
-          projectName: row[colIndex.projectName]?.toString().trim() || "",
-          creditNoteNumber:
-            row[colIndex.creditNoteNumber]?.toString().trim() || "",
-          creditNoteDate:
-            formatDateForDisplay(row[colIndex.creditNoteDate]) || "",
-          // Также добавляем поля как у инвойсов для совместимости
-          invoiceNumber:
-            row[colIndex.creditNoteNumber]?.toString().trim() || "",
-          invoiceDate: formatDateForDisplay(row[colIndex.creditNoteDate]) || "",
-          dueDate: formatDateForDisplay(row[colIndex.dueDate]) || "",
-          total: parseFloat(row[colIndex.total]) || 0,
-          currency: row[colIndex.currency]?.toString().trim() || "",
-        };
-      })
-      .filter(Boolean);
-
-    cache.put("creditNotesList", JSON.stringify(result), 300);
+    cache.put("creditNotesList", JSON.stringify(result), 300); // cache for 5 minutes
     return result;
   } catch (error) {
-    console.error("Error in getCreditNotesListFromData:", error);
+    console.error("Error getting credit notes list:", error);
     return [];
   }
 }
