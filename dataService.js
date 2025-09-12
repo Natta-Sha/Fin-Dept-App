@@ -777,9 +777,9 @@ function getCreditNotesListFromData() {
     }
 
     const spreadsheet = getSpreadsheet(CONFIG.SPREADSHEET_ID);
-    console.log("Looking for CreditNotes sheet...");
-    const sheet = getSheet(spreadsheet, CONFIG.SHEETS.CREDITNOTES);
-    console.log("Found CreditNotes sheet:", sheet ? "YES" : "NO");
+    console.log("Looking for Invoices sheet (temporary test)...");
+    const sheet = getSheet(spreadsheet, CONFIG.SHEETS.INVOICES);
+    console.log("Found Invoices sheet:", sheet ? "YES" : "NO");
     const data = sheet.getDataRange().getValues();
     console.log("CreditNotes data rows:", data.length);
 
@@ -790,8 +790,8 @@ function getCreditNotesListFromData() {
     const colIndex = {
       id: headers.indexOf("ID"),
       projectName: headers.indexOf("Project Name"),
-      creditNoteNumber: headers.indexOf("Credit Note Number"),
-      creditNoteDate: headers.indexOf("Credit Note Date"),
+      creditNoteNumber: headers.indexOf("Invoice Number"), // Временно берем из Invoice Number
+      creditNoteDate: headers.indexOf("Invoice Date"), // Временно берем из Invoice Date
       dueDate: headers.indexOf("Due Date"),
       total: headers.indexOf("Total"),
       currency: headers.indexOf("Currency"),
@@ -843,7 +843,7 @@ function getCreditNoteDataByIdFromData(id) {
     if (!id) throw new Error("Credit Note ID is required");
 
     const spreadsheet = getSpreadsheet(CONFIG.SPREADSHEET_ID);
-    const sheet = getSheet(spreadsheet, CONFIG.SHEETS.CREDITNOTES);
+    const sheet = getSheet(spreadsheet, CONFIG.SHEETS.INVOICES); // Временно используем Invoices
     const data = sheet.getDataRange().getValues();
 
     if (data.length < 2) {
@@ -883,7 +883,7 @@ function deleteCreditNoteByIdFromData(id) {
     if (!id) throw new Error("Credit Note ID is required");
 
     const spreadsheet = getSpreadsheet(CONFIG.SPREADSHEET_ID);
-    const sheet = getSheet(spreadsheet, CONFIG.SHEETS.CREDITNOTES);
+    const sheet = getSheet(spreadsheet, CONFIG.SHEETS.INVOICES); // Временно используем Invoices
     const data = sheet.getDataRange().getValues();
 
     const targetRowIndex = data.findIndex(
@@ -931,7 +931,7 @@ function updateCreditNoteByIdFromData(id, data) {
     if (!data) throw new Error("Credit note data is required");
 
     const spreadsheet = getSpreadsheet(CONFIG.SPREADSHEET_ID);
-    const sheet = getSheet(spreadsheet, CONFIG.SHEETS.CREDITNOTES);
+    const sheet = getSheet(spreadsheet, CONFIG.SHEETS.INVOICES); // Временно используем Invoices
     const sheetData = sheet.getDataRange().getValues();
 
     if (sheetData.length < 2) {
