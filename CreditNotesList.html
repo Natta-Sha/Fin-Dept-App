@@ -187,8 +187,8 @@
         <thead class="table-light">
           <tr>
             <th>Project Name</th>
-            <th>Credit Note Number</th>
-            <th>Credit Note Date</th>
+            <th>Invoice Number</th>
+            <th>Invoice Date</th>
             <th>Due Date</th>
             <th>Total</th>
             <th>Currency</th>
@@ -196,8 +196,8 @@
           </tr>
           <tr>
             <th><input type="text" placeholder="Search Project" /></th>
-            <th><input type="text" placeholder="Search Number" /></th>
-            <th><input type="text" placeholder="Search Date" /></th>
+            <th><input type="text" placeholder="Search Invoice Number" /></th>
+            <th><input type="text" placeholder="Search Invoice Date" /></th>
             <th><input type="text" placeholder="Search Due" /></th>
             <th><input type="text" placeholder="Search Total" /></th>
             <th><input type="text" placeholder="Search Currency" /></th>
@@ -264,8 +264,8 @@
               data.forEach((row) => {
                 table.row.add([
                   row.projectName || "",
-                  row.creditNoteNumber || "",
-                  row.creditNoteDate || "",
+                  row.invoiceNumber || "",
+                  row.invoiceDate || "",
                   row.dueDate || "",
                   row.total || "",
                   row.currency || "",

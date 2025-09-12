@@ -818,6 +818,10 @@ function getCreditNotesListFromData() {
             row[colIndex.creditNoteNumber]?.toString().trim() || "",
           creditNoteDate:
             formatDateForDisplay(row[colIndex.creditNoteDate]) || "",
+          // Также добавляем поля как у инвойсов для совместимости
+          invoiceNumber:
+            row[colIndex.creditNoteNumber]?.toString().trim() || "",
+          invoiceDate: formatDateForDisplay(row[colIndex.creditNoteDate]) || "",
           dueDate: formatDateForDisplay(row[colIndex.dueDate]) || "",
           total: parseFloat(row[colIndex.total]) || 0,
           currency: row[colIndex.currency]?.toString().trim() || "",
