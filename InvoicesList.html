@@ -27,8 +27,79 @@
     <script src="https://cdn.datatables.net/fixedheader/3.4.0/js/dataTables.fixedHeader.min.js"></script>
 
     <style>
+      /* Top navigation bar styling */
+      .top-nav {
+        background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+        padding: 0.75rem 0;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+      }
+
+      .nav-brand {
+        color: white !important;
+        font-weight: bold;
+        font-size: 1.5rem;
+        text-decoration: none;
+      }
+
+      .nav-item {
+        position: relative;
+      }
+
+      .nav-link {
+        color: white !important;
+        font-weight: 500;
+        padding: 0.75rem 2rem !important;
+        border-radius: 25px;
+        transition: all 0.3s ease;
+        background: rgba(255, 255, 255, 0.1);
+        margin: 0 0.5rem;
+        font-size: 1.1rem;
+      }
+
+      .nav-link:hover {
+        background: rgba(255, 255, 255, 0.2);
+        transform: translateY(-1px);
+      }
+
+      .nav-link.active {
+        background: rgba(255, 255, 255, 0.3);
+      }
+
+      /* Dropdown styling */
+      .dropdown-menu {
+        border: none;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+        border-radius: 8px;
+        margin-top: 0.5rem;
+      }
+
+      .dropdown-item {
+        padding: 0.75rem 1.5rem;
+        transition: all 0.2s ease;
+      }
+
+      .dropdown-item:hover {
+        background-color: #f8f9fa;
+        transform: translateX(5px);
+      }
+
+      .dropdown-item.active {
+        background-color: #e3f2fd;
+        color: #1976d2;
+        font-weight: 500;
+      }
+
       body {
         font-size: 0.875rem; /* уменьшенный шрифт */
+        margin: 0;
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+      }
+
+      .main-content {
+        flex-grow: 1;
+        padding: 20px;
       }
 
       th,
@@ -81,174 +152,374 @@
         text-align: center !important;
       }
     </style>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
   </head>
 
-  <body class="container py-4">
-    <a href="<?= baseUrl ?>?page=Home" class="btn btn-link"
-      >← Back to Main Page</a
-    >
+  <body>
+    <!-- Top Navigation -->
+    <nav class="top-nav">
+      <div class="container-fluid">
+        <div class="d-flex align-items-center justify-content-between">
+          <!-- Logo -->
+          <a href="<?= baseUrl ?>" class="nav-brand d-flex align-items-center">
+            <svg width="32" height="32" viewBox="0 0 40 40" class="me-2">
+              <circle
+                cx="20"
+                cy="20"
+                r="18"
+                fill="#FFD700"
+                stroke="#FFA500"
+                stroke-width="2"
+              />
+              <circle cx="20" cy="8" r="3" fill="#8B4513" />
+              <ellipse
+                cx="15"
+                cy="16"
+                rx="2"
+                ry="4"
+                fill="#FFD700"
+                transform="rotate(-20 15 16)"
+              />
+              <ellipse
+                cx="25"
+                cy="16"
+                rx="2"
+                ry="4"
+                fill="#FFD700"
+                transform="rotate(20 25 16)"
+              />
+              <ellipse
+                cx="12"
+                cy="22"
+                rx="2"
+                ry="3"
+                fill="#FFD700"
+                transform="rotate(-40 12 22)"
+              />
+              <ellipse
+                cx="28"
+                cy="22"
+                rx="2"
+                ry="3"
+                fill="#FFD700"
+                transform="rotate(40 28 22)"
+              />
+              <ellipse
+                cx="14"
+                cy="28"
+                rx="1.5"
+                ry="2.5"
+                fill="#FFD700"
+                transform="rotate(-60 14 28)"
+              />
+              <ellipse
+                cx="26"
+                cy="28"
+                rx="1.5"
+                ry="2.5"
+                fill="#FFD700"
+                transform="rotate(60 26 28)"
+              />
+              <ellipse
+                cx="18"
+                cy="32"
+                rx="1"
+                ry="2"
+                fill="#FFD700"
+                transform="rotate(-80 18 32)"
+              />
+              <ellipse
+                cx="22"
+                cy="32"
+                rx="1"
+                ry="2"
+                fill="#FFD700"
+                transform="rotate(80 22 32)"
+              />
+            </svg>
+            Sloboda Studio
+          </a>
 
-    <div class="mb-3 d-flex justify-content-start">
-      <a
-        href="<?= baseUrl ?>?page=InvoiceGenerator&mode=create"
-        class="btn btn-primary"
+          <!-- Centered Navigation -->
+          <div class="d-flex justify-content-center flex-grow-1">
+            <div class="d-flex">
+              <!-- Home Button -->
+              <div class="nav-item mx-3">
+                <a class="nav-link" href="<?= baseUrl ?>"> Home </a>
+              </div>
+
+              <!-- Clients Dropdown -->
+              <div class="nav-item dropdown mx-3">
+                <a
+                  class="nav-link dropdown-toggle active"
+                  href="#"
+                  role="button"
+                  data-bs-toggle="dropdown"
+                >
+                  Clients
+                </a>
+                <ul class="dropdown-menu">
+                  <li>
+                    <a
+                      class="dropdown-item"
+                      href="#"
+                      onclick="showComingSoon('Client Information')"
+                      >Information</a
+                    >
+                  </li>
+                  <li>
+                    <a
+                      class="dropdown-item"
+                      href="#"
+                      onclick="showComingSoon('Financial Overview')"
+                      >Financial overview</a
+                    >
+                  </li>
+                  <li>
+                    <a
+                      class="dropdown-item active"
+                      href="<?= baseUrl ?>?page=InvoicesList"
+                      >Invoices</a
+                    >
+                  </li>
+                  <li>
+                    <a
+                      class="dropdown-item"
+                      href="#"
+                      onclick="showComingSoon('Credit Notes')"
+                      >Credit Notes</a
+                    >
+                  </li>
+                  <li>
+                    <a
+                      class="dropdown-item"
+                      href="#"
+                      onclick="showComingSoon('Payments')"
+                      >Payments</a
+                    >
+                  </li>
+                </ul>
+              </div>
+
+              <!-- Contractors Dropdown -->
+              <div class="nav-item dropdown mx-3">
+                <a
+                  class="nav-link dropdown-toggle"
+                  href="#"
+                  role="button"
+                  data-bs-toggle="dropdown"
+                >
+                  Contractors
+                </a>
+                <ul class="dropdown-menu">
+                  <li>
+                    <a
+                      class="dropdown-item"
+                      href="#"
+                      onclick="showComingSoon('Contractor Information')"
+                      >Information</a
+                    >
+                  </li>
+                  <li>
+                    <a
+                      class="dropdown-item"
+                      href="#"
+                      onclick="showComingSoon('Contracts')"
+                      >Contracts</a
+                    >
+                  </li>
+                  <li>
+                    <a
+                      class="dropdown-item"
+                      href="#"
+                      onclick="showComingSoon('Bills')"
+                      >Bills</a
+                    >
+                  </li>
+                </ul>
+              </div>
+            </div>
+          </div>
+
+          <!-- Right side spacer for balance -->
+          <div style="width: 150px"></div>
+        </div>
+      </div>
+    </nav>
+
+    <!-- Main Content -->
+    <div class="main-content container">
+      <div class="mb-3 d-flex justify-content-start">
+        <a
+          href="<?= baseUrl ?>?page=InvoiceGenerator&mode=create"
+          class="btn btn-primary"
+        >
+          Generate Invoice
+        </a>
+      </div>
+
+      <script>
+        function goHome() {
+          window.location.href = "?page=Home";
+        }
+      </script>
+
+      <h2 class="mb-4">List of Invoices</h2>
+
+      <table
+        id="invoiceTable"
+        class="display table table-bordered"
+        style="width: 100%; display: none"
       >
-        Generate Invoice
-      </a>
-    </div>
+        <thead class="table-light">
+          <tr>
+            <th>Project Name</th>
+            <th>Invoice Number</th>
+            <th>Invoice Date</th>
+            <th>Due Date</th>
+            <th>Total</th>
+            <th>Currency</th>
+            <th>Actions</th>
+          </tr>
+          <tr>
+            <th><input type="text" placeholder="Search Project" /></th>
+            <th><input type="text" placeholder="Search Number" /></th>
+            <th><input type="text" placeholder="Search Date" /></th>
+            <th><input type="text" placeholder="Search Due" /></th>
+            <th><input type="text" placeholder="Search Total" /></th>
+            <th><input type="text" placeholder="Search Currency" /></th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
 
-    <script>
-      function goHome() {
-        window.location.href = "?page=Home";
-      }
-    </script>
-
-    <h2 class="mb-4">List of Invoices</h2>
-
-    <table
-      id="invoiceTable"
-      class="display table table-bordered"
-      style="width: 100%; display: none"
-    >
-      <thead class="table-light">
-        <tr>
-          <th>Project Name</th>
-          <th>Invoice Number</th>
-          <th>Invoice Date</th>
-          <th>Due Date</th>
-          <th>Total</th>
-          <th>Currency</th>
-          <th>Actions</th>
-        </tr>
-        <tr>
-          <th><input type="text" placeholder="Search Project" /></th>
-          <th><input type="text" placeholder="Search Number" /></th>
-          <th><input type="text" placeholder="Search Date" /></th>
-          <th><input type="text" placeholder="Search Due" /></th>
-          <th><input type="text" placeholder="Search Total" /></th>
-          <th><input type="text" placeholder="Search Currency" /></th>
-          <th></th>
-        </tr>
-      </thead>
-      <tbody></tbody>
-    </table>
-
-    <script>
-      function goHome() {
-        window.location.href = "?page=Home";
-      }
-    </script>
-    <script>
-      $(document).ready(function () {
-        $.fn.dataTable.moment("DD/MM/YYYY");
-        const table = $("#invoiceTable").DataTable({
-          dom: "lrtip",
-          orderCellsTop: true,
-          columnDefs: [
-            {
-              targets: 4, // колонка Total (индекс 4)
-              className: "dt-body-right dt-head-center", // данные вправо, заголовок по центру
-              render: function (data, type, row) {
-                if (type === "display" && data) {
-                  // Форматируем число с запятыми для отображения
-                  const num = parseFloat(data);
-                  if (!isNaN(num)) {
-                    return num.toLocaleString(undefined, {
-                      minimumFractionDigits: 2,
-                      maximumFractionDigits: 2,
-                    });
+      <script>
+        function goHome() {
+          window.location.href = "?page=Home";
+        }
+      </script>
+      <script>
+        $(document).ready(function () {
+          $.fn.dataTable.moment("DD/MM/YYYY");
+          const table = $("#invoiceTable").DataTable({
+            dom: "lrtip",
+            orderCellsTop: true,
+            columnDefs: [
+              {
+                targets: 4, // колонка Total (индекс 4)
+                className: "dt-body-right dt-head-center", // данные вправо, заголовок по центру
+                render: function (data, type, row) {
+                  if (type === "display" && data) {
+                    // Форматируем число с запятыми для отображения
+                    const num = parseFloat(data);
+                    if (!isNaN(num)) {
+                      return num.toLocaleString(undefined, {
+                        minimumFractionDigits: 2,
+                        maximumFractionDigits: 2,
+                      });
+                    }
                   }
-                }
-                return data;
+                  return data;
+                },
               },
-            },
-            {
-              targets: [0, 1, 2, 3, 5, 6], // все колонки кроме Total (4)
-              className: "dt-body-left dt-head-center", // данные влево, заголовок по центру
-            },
-          ],
-        });
-
-        new $.fn.dataTable.FixedHeader(table);
-
-        $("#invoiceTable thead tr:eq(1) th").each(function (i) {
-          $("input", this).on("keyup change", function () {
-            if (table.column(i).search() !== this.value) {
-              table.column(i).search(this.value).draw();
-            }
+              {
+                targets: [0, 1, 2, 3, 5, 6], // все колонки кроме Total (4)
+                className: "dt-body-left dt-head-center", // данные влево, заголовок по центру
+              },
+            ],
           });
-        });
 
-        google.script.run
-          .withSuccessHandler(function (data) {
-            if (!Array.isArray(data) || data.length === 0) {
-              table.clear().draw();
-              document.getElementById("invoiceTable").style.display = "";
-              return;
-            }
+          new $.fn.dataTable.FixedHeader(table);
 
-            data.forEach((row) => {
-              table.row.add([
-                row.projectName || "",
-                row.invoiceNumber || "",
-                row.invoiceDate || "",
-                row.dueDate || "",
-                row.total || "",
-                row.currency || "",
-                `
+          $("#invoiceTable thead tr:eq(1) th").each(function (i) {
+            $("input", this).on("keyup change", function () {
+              if (table.column(i).search() !== this.value) {
+                table.column(i).search(this.value).draw();
+              }
+            });
+          });
+
+          google.script.run
+            .withSuccessHandler(function (data) {
+              if (!Array.isArray(data) || data.length === 0) {
+                table.clear().draw();
+                document.getElementById("invoiceTable").style.display = "";
+                return;
+              }
+
+              data.forEach((row) => {
+                table.row.add([
+                  row.projectName || "",
+                  row.invoiceNumber || "",
+                  row.invoiceDate || "",
+                  row.dueDate || "",
+                  row.total || "",
+                  row.currency || "",
+                  `
                   <a href="<?= baseUrl ?>?page=InvoiceGenerator&id=${row.id}&mode=view" class="btn btn-sm btn-outline-primary me-1">View</a>
                   <a href="<?= baseUrl ?>?page=InvoiceGenerator&id=${row.id}&mode=edit" class="btn btn-sm btn-outline-secondary me-1">Edit</a>
                   <a href="<?= baseUrl ?>?page=InvoiceGenerator&id=${row.id}&mode=delete" class="btn btn-sm btn-outline-danger me-1">Delete</a>
                   <a href="<?= baseUrl ?>?page=InvoiceGenerator&id=${row.id}&mode=copy" class="btn btn-sm btn-outline-success">Copy</a>
                 `,
-              ]);
-            });
+                ]);
+              });
 
-            table.draw();
-            document.getElementById("invoiceTable").style.display = "";
-          })
-          .withFailureHandler(function (error) {
-            console.error("Error loading invoice list:", error);
-            alert("Failed to load invoice list.");
-          })
-          .getInvoiceList();
-      });
-    </script>
+              table.draw();
+              document.getElementById("invoiceTable").style.display = "";
+            })
+            .withFailureHandler(function (error) {
+              console.error("Error loading invoice list:", error);
+              alert("Failed to load invoice list.");
+            })
+            .getInvoiceList();
+        });
+      </script>
 
-    <!-- Modal for deletion info -->
-    <div
-      class="modal fade"
-      id="deletedModal"
-      tabindex="-1"
-      aria-labelledby="deletedModalLabel"
-      aria-hidden="true"
-    >
-      <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content">
-          <div class="modal-header">
-            <h5 class="modal-title" id="deletedModalLabel">Invoice Deleted</h5>
-            <button
-              type="button"
-              class="btn-close"
-              data-bs-dismiss="modal"
-              aria-label="Close"
-            ></button>
+      <!-- Modal for deletion info -->
+      <div
+        class="modal fade"
+        id="deletedModal"
+        tabindex="-1"
+        aria-labelledby="deletedModalLabel"
+        aria-hidden="true"
+      >
+        <div class="modal-dialog modal-dialog-centered">
+          <div class="modal-content">
+            <div class="modal-header">
+              <h5 class="modal-title" id="deletedModalLabel">
+                Invoice Deleted
+              </h5>
+              <button
+                type="button"
+                class="btn-close"
+                data-bs-dismiss="modal"
+                aria-label="Close"
+              ></button>
+            </div>
+            <div class="modal-body">The invoice was deleted.</div>
           </div>
-          <div class="modal-body">The invoice was deleted.</div>
         </div>
       </div>
+      <script>
+        // Show modal if deleted=1 in URL
+        $(function () {
+          const params = new URLSearchParams(window.location.search);
+          if (params.get("deleted") === "1") {
+            const modal = new bootstrap.Modal(
+              document.getElementById("deletedModal")
+            );
+            modal.show();
+          }
+        });
+      </script>
     </div>
+    <!-- Close main-content -->
+
     <script>
-      // Show modal if deleted=1 in URL
-      $(function () {
-        const params = new URLSearchParams(window.location.search);
-        if (params.get("deleted") === "1") {
-          const modal = new bootstrap.Modal(
-            document.getElementById("deletedModal")
-          );
-          modal.show();
-        }
-      });
+      function showComingSoon(feature) {
+        alert(`${feature} feature is coming soon!`);
+      }
     </script>
   </body>
 </html>
