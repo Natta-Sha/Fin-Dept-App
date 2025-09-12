@@ -12,6 +12,7 @@ function doGet(e) {
     const template = HtmlService.createTemplateFromFile(page);
     template.baseUrl = ScriptApp.getService().getUrl();
     template.invoiceId = e.parameter.invoiceId || e.parameter.id || "";
+    template.creditNoteId = e.parameter.creditNoteId || e.parameter.id || "";
     template.mode = e.parameter.mode || "";
 
     // Set active page for navigation
@@ -97,6 +98,23 @@ function getInvoiceDataById(id) {
   return getInvoiceDataByIdFromData(id);
 }
 
+/**
+ * Get credit notes list
+ * @returns {Array} Credit notes data
+ */
+function getCreditNotesList() {
+  return getCreditNotesListFromData();
+}
+
+/**
+ * Get credit note data by ID
+ * @param {string} id - Credit Note ID
+ * @returns {Object} Credit note data
+ */
+function getCreditNoteDataById(id) {
+  return getCreditNoteDataByIdFromData(id);
+}
+
 // Error handling and performance monitoring removed for cleaner code
 
 // Performance monitoring removed for cleaner code
@@ -150,6 +168,25 @@ function updateInvoiceById(id, data) {
 }
 
 /**
+ * Delete credit note by ID
+ * @param {string} id - Credit Note ID
+ * @returns {Object} Operation result
+ */
+function deleteCreditNoteById(id) {
+  return deleteCreditNoteByIdFromData(id);
+}
+
+/**
+ * Update credit note by ID
+ * @param {string} id - Credit Note ID
+ * @param {Object} data - Updated credit note data
+ * @returns {Object} Operation result
+ */
+function updateCreditNoteById(id, data) {
+  return updateCreditNoteByIdFromData(id, data);
+}
+
+/**
  * Get navigation HTML with active page highlighting
  * @param {string} activePage - Current active page identifier
  * @returns {string} Navigation HTML
@@ -175,6 +212,11 @@ function getActivePageForNavigation(page, params = {}) {
       return "invoices";
     case "InvoiceGenerator":
       // InvoiceGenerator doesn't have specific navigation highlighting
+      return "";
+    case "CreditNotesList":
+      return "creditnotes";
+    case "CreditNotesGenerator":
+      // CreditNotesGenerator doesn't have specific navigation highlighting
       return "";
     default:
       return "";

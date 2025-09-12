@@ -759,3 +759,213 @@ function updateInvoiceByIdFromData(id, data) {
     return { success: false, message: error.message };
   }
 }
+
+// ============================================================================
+// CREDIT NOTES FUNCTIONS
+// ============================================================================
+
+/**
+ * Get credit notes list from data
+ * @returns {Array} Credit notes data
+ */
+function getCreditNotesListFromData() {
+  try {
+    var cache = CacheService.getScriptCache();
+    var cached = cache.get("creditNotesList");
+    if (cached) {
+      return JSON.parse(cached);
+    }
+
+    const spreadsheet = getSpreadsheet(CONFIG.SPREADSHEET_ID);
+    const sheet = getSheet(spreadsheet, "CreditNotes");
+    const data = sheet.getDataRange().getValues();
+
+    if (data.length < 2) return [];
+
+    const headers = data[0].map((h) => (h || "").toString().trim());
+
+    const colIndex = {
+      id: headers.indexOf("ID"),
+      projectName: headers.indexOf("Project Name"),
+      creditNoteNumber: headers.indexOf("Invoice Number"), // Same column as Invoice Number for now
+      creditNoteDate: headers.indexOf("Invoice Date"), // Same column as Invoice Date for now
+      dueDate: headers.indexOf("Due Date"),
+      total: headers.indexOf("Total"),
+      currency: headers.indexOf("Currency"),
+    };
+
+    const result = data
+      .slice(1)
+      .map((row, index) => {
+        if (!row[colIndex.id] || row[colIndex.id].toString().trim() === "") {
+          return null;
+        }
+
+        return {
+          id: row[colIndex.id]?.toString().trim() || "",
+          projectName: row[colIndex.projectName]?.toString().trim() || "",
+          creditNoteNumber:
+            row[colIndex.creditNoteNumber]?.toString().trim() || "",
+          creditNoteDate:
+            formatDateForDisplay(row[colIndex.creditNoteDate]) || "",
+          dueDate: formatDateForDisplay(row[colIndex.dueDate]) || "",
+          total: parseFloat(row[colIndex.total]) || 0,
+          currency: row[colIndex.currency]?.toString().trim() || "",
+        };
+      })
+      .filter(Boolean);
+
+    cache.put("creditNotesList", JSON.stringify(result), 300);
+    return result;
+  } catch (error) {
+    console.error("Error in getCreditNotesListFromData:", error);
+    return [];
+  }
+}
+
+/**
+ * Get credit note data by ID from data
+ * @param {string} id - Credit Note ID
+ * @returns {Object} Credit note data
+ */
+function getCreditNoteDataByIdFromData(id) {
+  try {
+    if (!id) throw new Error("Credit Note ID is required");
+
+    const spreadsheet = getSpreadsheet(CONFIG.SPREADSHEET_ID);
+    const sheet = getSheet(spreadsheet, "CreditNotes");
+    const data = sheet.getDataRange().getValues();
+
+    if (data.length < 2) {
+      throw new Error("No credit note data found");
+    }
+
+    const headers = data[0];
+    const targetRow = data.find(
+      (row) => row[0]?.toString().trim() === id.toString().trim()
+    );
+
+    if (!targetRow) {
+      throw new Error(`Credit note with ID ${id} not found`);
+    }
+
+    const result = {};
+    headers.forEach((header, index) => {
+      if (header && targetRow[index] !== undefined) {
+        result[header.toString().trim()] = targetRow[index];
+      }
+    });
+
+    return result;
+  } catch (error) {
+    console.error("Error in getCreditNoteDataByIdFromData:", error);
+    throw error;
+  }
+}
+
+/**
+ * Delete credit note by ID from data
+ * @param {string} id - Credit Note ID
+ * @returns {Object} Operation result
+ */
+function deleteCreditNoteByIdFromData(id) {
+  try {
+    if (!id) throw new Error("Credit Note ID is required");
+
+    const spreadsheet = getSpreadsheet(CONFIG.SPREADSHEET_ID);
+    const sheet = getSheet(spreadsheet, "CreditNotes");
+    const data = sheet.getDataRange().getValues();
+
+    const targetRowIndex = data.findIndex(
+      (row, index) =>
+        index > 0 && row[0]?.toString().trim() === id.toString().trim()
+    );
+
+    if (targetRowIndex === -1) {
+      throw new Error(`Credit note with ID ${id} not found`);
+    }
+
+    // Get the credit note data before deletion (for document cleanup if needed)
+    const creditNoteData = data[targetRowIndex];
+
+    // Delete the row (targetRowIndex + 1 because Sheets are 1-indexed)
+    sheet.deleteRow(targetRowIndex + 1);
+
+    // Clear cache
+    var cache = CacheService.getScriptCache();
+    cache.remove("creditNotesList");
+
+    return {
+      success: true,
+      message: "Credit note deleted successfully",
+      deletedData: creditNoteData,
+    };
+  } catch (error) {
+    console.error("Error in deleteCreditNoteByIdFromData:", error);
+    return {
+      success: false,
+      message: error.message,
+    };
+  }
+}
+
+/**
+ * Update credit note by ID from data
+ * @param {string} id - Credit Note ID
+ * @param {Object} data - Updated credit note data
+ * @returns {Object} Operation result
+ */
+function updateCreditNoteByIdFromData(id, data) {
+  try {
+    if (!id) throw new Error("Credit Note ID is required");
+    if (!data) throw new Error("Credit note data is required");
+
+    const spreadsheet = getSpreadsheet(CONFIG.SPREADSHEET_ID);
+    const sheet = getSheet(spreadsheet, "CreditNotes");
+    const sheetData = sheet.getDataRange().getValues();
+
+    if (sheetData.length < 2) {
+      throw new Error("No credit note data found");
+    }
+
+    const headers = sheetData[0];
+    const targetRowIndex = sheetData.findIndex(
+      (row, index) =>
+        index > 0 && row[0]?.toString().trim() === id.toString().trim()
+    );
+
+    if (targetRowIndex === -1) {
+      throw new Error(`Credit note with ID ${id} not found`);
+    }
+
+    // Update the row data
+    const updatedRow = [...sheetData[targetRowIndex]];
+    headers.forEach((header, index) => {
+      const headerKey = header.toString().trim();
+      if (data.hasOwnProperty(headerKey)) {
+        updatedRow[index] = data[headerKey];
+      }
+    });
+
+    // Write the updated row back to the sheet
+    sheet
+      .getRange(targetRowIndex + 1, 1, 1, updatedRow.length)
+      .setValues([updatedRow]);
+
+    // Clear cache
+    var cache = CacheService.getScriptCache();
+    cache.remove("creditNotesList");
+
+    return {
+      success: true,
+      message: "Credit note updated successfully",
+      updatedData: updatedRow,
+    };
+  } catch (error) {
+    console.error("Error in updateCreditNoteByIdFromData:", error);
+    return {
+      success: false,
+      message: error.message,
+    };
+  }
+}
