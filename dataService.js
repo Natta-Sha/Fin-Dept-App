@@ -777,8 +777,8 @@ function getCreditNotesListFromData() {
     }
 
     const spreadsheet = getSpreadsheet(CONFIG.SPREADSHEET_ID);
-    console.log("Looking for Invoices sheet (temporary test)...");
-    const sheet = getSheet(spreadsheet, CONFIG.SHEETS.INVOICES);
+    console.log("Looking for CreditNotes sheet...");
+    const sheet = getSheet(spreadsheet, CONFIG.SHEETS.CREDITNOTES);
     console.log("Found Invoices sheet:", sheet ? "YES" : "NO");
     const data = sheet.getDataRange().getValues();
     console.log("CreditNotes data rows:", data.length);
@@ -790,8 +790,8 @@ function getCreditNotesListFromData() {
     const colIndex = {
       id: headers.indexOf("ID"),
       projectName: headers.indexOf("Project Name"),
-      creditNoteNumber: headers.indexOf("Invoice Number"), // Временно берем из Invoice Number
-      creditNoteDate: headers.indexOf("Invoice Date"), // Временно берем из Invoice Date
+      creditNoteNumber: headers.indexOf("Credit Note Number"), // Ищем Credit Note Number
+      creditNoteDate: headers.indexOf("Credit Note Date"), // Ищем Credit Note Date
       dueDate: headers.indexOf("Due Date"),
       total: headers.indexOf("Total"),
       currency: headers.indexOf("Currency"),
