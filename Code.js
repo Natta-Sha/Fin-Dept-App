@@ -14,6 +14,9 @@ function doGet(e) {
     template.invoiceId = e.parameter.invoiceId || e.parameter.id || "";
     template.mode = e.parameter.mode || "";
 
+    // Set active page for navigation
+    template.activePage = getActivePageForNavigation(page, e.parameter);
+
     // Pass invoice ID if provided
     if (e.parameter.invoiceId || e.parameter.id) {
       template.invoiceId = e.parameter.invoiceId || e.parameter.id;
@@ -144,4 +147,36 @@ function testLogger(message) {
  */
 function updateInvoiceById(id, data) {
   return updateInvoiceByIdFromData(id, data);
+}
+
+/**
+ * Get navigation HTML with active page highlighting
+ * @param {string} activePage - Current active page identifier
+ * @returns {string} Navigation HTML
+ */
+function getNavigation(activePage = "") {
+  const template = HtmlService.createTemplateFromFile("Navigation");
+  template.activePage = activePage;
+  template.baseUrl = ScriptApp.getService().getUrl();
+  return template.evaluate().getContent();
+}
+
+/**
+ * Determine active page for navigation based on current page and parameters
+ * @param {string} page - Current page name
+ * @param {Object} params - URL parameters
+ * @returns {string} Active page identifier for navigation
+ */
+function getActivePageForNavigation(page, params = {}) {
+  switch (page) {
+    case "Home":
+      return "home";
+    case "InvoicesList":
+      return "invoices";
+    case "InvoiceGenerator":
+      // InvoiceGenerator doesn't have specific navigation highlighting
+      return "";
+    default:
+      return "";
+  }
 }
