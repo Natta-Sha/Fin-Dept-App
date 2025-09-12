@@ -199,7 +199,7 @@ function getInvoiceDataByIdFromData(id) {
     }
 
     const spreadsheet = getSpreadsheet(CONFIG.SPREADSHEET_ID);
-    const sheet = spreadsheet.getSheets()[0];
+    const sheet = getSheet(spreadsheet, CONFIG.SHEETS.INVOICES);
     const data = sheet.getDataRange().getValues();
     const headers = data[0];
     const indexMap = headers.reduce((acc, h, i) => {
@@ -829,45 +829,47 @@ function getCreditNotesListFromData() {
  */
 function getCreditNoteDataByIdFromData(id) {
   try {
-    if (!id) throw new Error("Credit Note ID is required");
-    console.log("Looking for credit note with ID:", id);
+    // Validate input (точно как в инвойсах)
+    if (!id || id.toString().trim() === "") {
+      console.log("Invalid ID provided to getCreditNoteDataByIdFromData");
+      return {};
+    }
 
     const spreadsheet = getSpreadsheet(CONFIG.SPREADSHEET_ID);
     const sheet = getSheet(spreadsheet, CONFIG.SHEETS.CREDITNOTES);
     const data = sheet.getDataRange().getValues();
-
-    console.log("CreditNotes data rows:", data.length);
-    if (data.length > 1) {
-      console.log(
-        "First data row IDs:",
-        data.slice(1, 5).map((row) => row[0])
-      );
-    }
-
-    if (data.length < 2) {
-      throw new Error("No credit note data found");
-    }
-
     const headers = data[0];
-    const targetRow = data.find(
-      (row) => row[0]?.toString().trim() === id.toString().trim()
-    );
+    const indexMap = headers.reduce((acc, h, i) => {
+      acc[h] = i;
+      return acc;
+    }, {});
 
-    if (!targetRow) {
-      throw new Error(`Credit note with ID ${id} not found`);
+    let row = null;
+    for (let i = 1; i < data.length; i++) {
+      if (data[i][indexMap["ID"]] === id) {
+        // Точно как в инвойсах
+        row = data[i];
+        break;
+      }
     }
 
+    if (!row) {
+      console.log("Credit note not found for ID:", id);
+      return {};
+    }
+
+    // Формируем результат точно как в инвойсах
     const result = {};
     headers.forEach((header, index) => {
-      if (header && targetRow[index] !== undefined) {
-        result[header.toString().trim()] = targetRow[index];
+      if (header && row[index] !== undefined) {
+        result[header.toString().trim()] = row[index];
       }
     });
 
     return result;
   } catch (error) {
     console.error("Error in getCreditNoteDataByIdFromData:", error);
-    throw error;
+    return {};
   }
 }
 
