@@ -420,6 +420,13 @@
           >
             Generate Invoice
           </button>
+          <button
+            id="cancel-create-btn"
+            class="btn btn-outline-secondary ms-2"
+            onclick="safeNavigateToInvoicesList()"
+          >
+            Cancel
+          </button>
           <div
             id="spinner"
             class="spinner-border text-primary ms-3"
@@ -1214,12 +1221,16 @@
         <strong>Invoice created!</strong><br>
         <a href="${result.docUrl}" class="btn btn-outline-secondary mt-2" target="_blank">Open Google Doc</a>
         <a href="${result.pdfUrl}" class="btn btn-outline-secondary mt-2" target="_blank">Open PDF</a>
+        <br><br>
+        <button class="btn btn-primary" onclick="safeNavigateToInvoicesList()">Back to the list</button>
       </div>
     `;
 
               // 🔒 Keep form disabled and hide generate button after success
               setFormInputsDisabled(true);
               document.getElementById("generate-btn").style.display = "none";
+              document.getElementById("cancel-create-btn").style.display =
+                "none";
               // Hide copy buttons (if copy flow)
               const copyBtns = document.getElementById(
                 "copy-bottom-btn-container"
@@ -1392,6 +1403,8 @@
               );
               if (viewBtns) viewBtns.style.display = "none";
               document.getElementById("generate-btn").style.display = "none";
+              document.getElementById("cancel-create-btn").style.display =
+                "none";
 
               // Add event handler for delete button
               document
@@ -1488,6 +1501,8 @@
               );
               if (viewBtns) viewBtns.style.display = "block";
               document.getElementById("generate-btn").style.display = "none";
+              document.getElementById("cancel-create-btn").style.display =
+                "none";
 
               // Add Back button handler for view mode
               const viewBackBtn = document.getElementById("view-back-btn");
@@ -1586,6 +1601,8 @@
         <strong>Invoice updated!</strong><br>
         <a href="${res.docUrl}" class="btn btn-outline-secondary mt-2" target="_blank">Open Google Doc</a>
         <a href="${res.pdfUrl}" class="btn btn-outline-secondary mt-2" target="_blank">Open PDF</a>
+        <br><br>
+        <button class="btn btn-primary" onclick="safeNavigateToInvoicesList()">Back to the list</button>
       </div>
     `;
                         // Hide edit action buttons after successful update and keep form disabled
@@ -1668,6 +1685,8 @@
                 });
               }
               document.getElementById("generate-btn").style.display = "none";
+              document.getElementById("cancel-create-btn").style.display =
+                "none";
             } else if (mode === "copy") {
               document.getElementById("page-title").textContent =
                 "Invoice - Copy";
@@ -1818,6 +1837,8 @@
                   .getProjectDetails(selectedProjectCopy);
               })();
               document.getElementById("generate-btn").style.display = "none";
+              document.getElementById("cancel-create-btn").style.display =
+                "none";
             } else {
               document.getElementById("page-title").textContent =
                 "Invoice - View";
