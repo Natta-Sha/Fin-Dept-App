@@ -866,8 +866,16 @@ function getCreditNoteDataByIdFromData(id) {
     Logger.log("IndexMap created: " + JSON.stringify(indexMap));
 
     let row = null;
+    Logger.log("Searching for ID: '" + id + "' (type: " + typeof id + ")");
+
     for (let i = 1; i < data.length; i++) {
+      const rowId = data[i][indexMap["ID"]];
+      Logger.log(
+        "Row " + i + " ID: '" + rowId + "' (type: " + typeof rowId + ")"
+      );
+
       if (data[i][indexMap["ID"]] === id) {
+        Logger.log("MATCH FOUND at row " + i);
         row = data[i];
         break;
       }
@@ -887,7 +895,7 @@ function getCreditNoteDataByIdFromData(id) {
     const items = [];
     // Credit Notes items: 4 columns per row (Row N #, Row N Description, Row N Period, Row N Amount)
     const CREDITNOTE_COLUMNS_PER_ROW = 4;
-    const CREDITNOTE_ITEMS_START = 21; // After main fields
+    const CREDITNOTE_ITEMS_START = 18; // After PDF Link column (index 17)
 
     for (let i = 0; i < CONFIG.INVOICE_TABLE.MAX_ROWS; i++) {
       const base = CREDITNOTE_ITEMS_START + i * CREDITNOTE_COLUMNS_PER_ROW;
@@ -915,7 +923,7 @@ function getCreditNoteDataByIdFromData(id) {
       items: items,
     };
 
-    Logger.log("Returning credit note data: " + JSON.stringify(result));
+    Logger.log("Successfully returning credit note data");
     return result;
   } catch (error) {
     console.error("Error getting credit note data by ID:", error);
