@@ -787,9 +787,8 @@ function getCreditNotesListFromData() {
     const colIndex = {
       id: headers.indexOf("ID"),
       projectName: headers.indexOf("Project Name"),
-      invoiceNumber: headers.indexOf("Invoice Number"),
-      invoiceDate: headers.indexOf("Invoice Date"),
-      dueDate: headers.indexOf("Due Date"),
+      creditNoteNumber: headers.indexOf("CN Number"),
+      creditNoteDate: headers.indexOf("CN Date"),
       total: headers.indexOf("Total"),
       currency: headers.indexOf("Currency"),
     };
@@ -804,9 +803,8 @@ function getCreditNotesListFromData() {
     const result = data.slice(1).map((row) => ({
       id: row[colIndex.id] || "",
       projectName: row[colIndex.projectName] || "",
-      invoiceNumber: row[colIndex.invoiceNumber] || "",
-      invoiceDate: formatDate(row[colIndex.invoiceDate]),
-      dueDate: formatDate(row[colIndex.dueDate]),
+      creditNoteNumber: row[colIndex.creditNoteNumber] || "",
+      creditNoteDate: formatDate(row[colIndex.creditNoteDate]),
       total:
         row[colIndex.total] !== undefined && row[colIndex.total] !== ""
           ? parseFloat(row[colIndex.total]).toFixed(2)
