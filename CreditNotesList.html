@@ -220,8 +220,24 @@
             orderCellsTop: true,
             columnDefs: [
               {
-                targets: 3, // колонка Total (теперь индекс 3)
-                className: "dt-body-right dt-head-center", // данные вправо, заголовок по центру
+                targets: 0, // Project Name
+                width: "25%",
+                className: "dt-body-left dt-head-center",
+              },
+              {
+                targets: 1, // Credit Note Number
+                width: "15%",
+                className: "dt-body-center dt-head-center",
+              },
+              {
+                targets: 2, // Credit Note Date
+                width: "15%",
+                className: "dt-body-center dt-head-center",
+              },
+              {
+                targets: 3, // Total
+                width: "15%",
+                className: "dt-body-right dt-head-center",
                 render: function (data, type, row) {
                   if (type === "display" && data) {
                     // Форматируем число с запятыми для отображения
@@ -237,8 +253,15 @@
                 },
               },
               {
-                targets: [0, 1, 2, 4, 5], // все колонки кроме Total (3)
-                className: "dt-body-left dt-head-center", // данные влево, заголовок по центру
+                targets: 4, // Currency
+                width: "10%",
+                className: "dt-body-center dt-head-center",
+              },
+              {
+                targets: 5, // Actions
+                width: "20%",
+                className: "dt-body-center dt-head-center",
+                orderable: false,
               },
             ],
           });
@@ -255,9 +278,7 @@
 
           google.script.run
             .withSuccessHandler(function (data) {
-              console.log("Received credit notes data:", data);
               if (!Array.isArray(data) || data.length === 0) {
-                console.log("No data or empty array received");
                 table.clear().draw();
                 document.getElementById("creditNotesTable").style.display = "";
                 return;
@@ -284,8 +305,7 @@
             })
             .withFailureHandler(function (error) {
               console.error("Error loading credit notes list:", error);
-              console.error("Error details:", error.message, error.stack);
-              alert("Failed to load credit notes list: " + error.message);
+              alert("Failed to load credit notes list.");
             })
             .getCreditNotesList();
         });
