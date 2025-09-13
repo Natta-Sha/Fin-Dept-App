@@ -12,7 +12,6 @@ function doGet(e) {
     const template = HtmlService.createTemplateFromFile(page);
     template.baseUrl = ScriptApp.getService().getUrl();
     template.invoiceId = e.parameter.invoiceId || e.parameter.id || "";
-    template.creditNoteId = e.parameter.creditNoteId || e.parameter.id || "";
     template.mode = e.parameter.mode || "";
 
     // Set active page for navigation
