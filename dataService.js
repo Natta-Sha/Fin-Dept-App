@@ -199,7 +199,7 @@ function getInvoiceDataByIdFromData(id) {
     }
 
     const spreadsheet = getSpreadsheet(CONFIG.SPREADSHEET_ID);
-    const sheet = spreadsheet.getSheets()[0];
+    const sheet = getSheet(spreadsheet, CONFIG.SHEETS.INVOICES);
     const data = sheet.getDataRange().getValues();
     const headers = data[0];
     const indexMap = headers.reduce((acc, h, i) => {

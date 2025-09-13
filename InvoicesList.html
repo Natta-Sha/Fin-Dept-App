@@ -103,6 +103,209 @@
         padding: 20px;
       }
 
+      /* Universal button styles */
+      .btn {
+        font-weight: 600 !important;
+        border-radius: 25px !important;
+        padding: 0.75rem 2rem !important;
+        font-size: 1.1rem !important;
+        transition: all 0.3s ease !important;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1) !important;
+        border: none !important;
+      }
+
+      .btn:hover {
+        transform: translateY(-1px) !important;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2) !important;
+      }
+
+      .btn:focus,
+      .btn:active {
+        transform: translateY(-1px) !important;
+      }
+
+      /* Small buttons */
+      .btn-sm {
+        padding: 0.25rem 0.75rem !important;
+        font-size: 0.8rem !important;
+        border-radius: 15px !important;
+      }
+
+      /* Primary buttons (главные действия) */
+      .btn-primary,
+      .btn-nav {
+        background: linear-gradient(
+          135deg,
+          #667eea 0%,
+          #764ba2 100%
+        ) !important;
+        color: white !important;
+      }
+
+      .btn-primary:hover,
+      .btn-nav:hover {
+        background: linear-gradient(
+          135deg,
+          #5a6fd8 0%,
+          #6b4190 100%
+        ) !important;
+        color: white !important;
+      }
+
+      .btn-primary:focus,
+      .btn-primary:active,
+      .btn-nav:focus,
+      .btn-nav:active {
+        background: linear-gradient(
+          135deg,
+          #5a6fd8 0%,
+          #6b4190 100%
+        ) !important;
+        color: white !important;
+        box-shadow: 0 0 0 0.25rem rgba(102, 126, 234, 0.25) !important;
+      }
+
+      /* Success buttons (создание/копирование) */
+      .btn-success {
+        background: linear-gradient(
+          135deg,
+          #28a745 0%,
+          #20692b 100%
+        ) !important;
+        color: white !important;
+      }
+
+      .btn-success:hover {
+        background: linear-gradient(
+          135deg,
+          #218838 0%,
+          #1e5e26 100%
+        ) !important;
+        color: white !important;
+      }
+
+      .btn-success:focus,
+      .btn-success:active {
+        background: linear-gradient(
+          135deg,
+          #218838 0%,
+          #1e5e26 100%
+        ) !important;
+        color: white !important;
+        box-shadow: 0 0 0 0.25rem rgba(40, 167, 69, 0.25) !important;
+      }
+
+      /* Danger buttons (удаление) */
+      .btn-danger {
+        background: linear-gradient(
+          135deg,
+          #dc3545 0%,
+          #b02a37 100%
+        ) !important;
+        color: white !important;
+      }
+
+      .btn-danger:hover {
+        background: linear-gradient(
+          135deg,
+          #c82333 0%,
+          #9e2530 100%
+        ) !important;
+        color: white !important;
+      }
+
+      .btn-danger:focus,
+      .btn-danger:active {
+        background: linear-gradient(
+          135deg,
+          #c82333 0%,
+          #9e2530 100%
+        ) !important;
+        color: white !important;
+        box-shadow: 0 0 0 0.25rem rgba(220, 53, 69, 0.25) !important;
+      }
+
+      /* Outline buttons (secondary actions) */
+      .btn-outline-primary {
+        background: linear-gradient(
+          135deg,
+          rgba(102, 126, 234, 0.1) 0%,
+          rgba(118, 75, 162, 0.1) 100%
+        ) !important;
+        color: #667eea !important;
+        border: 2px solid #667eea !important;
+      }
+
+      .btn-outline-primary:hover {
+        background: linear-gradient(
+          135deg,
+          #667eea 0%,
+          #764ba2 100%
+        ) !important;
+        color: white !important;
+        border-color: #667eea !important;
+      }
+
+      .btn-outline-secondary {
+        background: linear-gradient(
+          135deg,
+          rgba(108, 117, 125, 0.1) 0%,
+          rgba(73, 80, 87, 0.1) 100%
+        ) !important;
+        color: #6c757d !important;
+        border: 2px solid #6c757d !important;
+      }
+
+      .btn-outline-secondary:hover {
+        background: linear-gradient(
+          135deg,
+          #6c757d 0%,
+          #495057 100%
+        ) !important;
+        color: white !important;
+        border-color: #6c757d !important;
+      }
+
+      .btn-outline-danger {
+        background: linear-gradient(
+          135deg,
+          rgba(220, 53, 69, 0.1) 0%,
+          rgba(176, 42, 55, 0.1) 100%
+        ) !important;
+        color: #dc3545 !important;
+        border: 2px solid #dc3545 !important;
+      }
+
+      .btn-outline-danger:hover {
+        background: linear-gradient(
+          135deg,
+          #dc3545 0%,
+          #b02a37 100%
+        ) !important;
+        color: white !important;
+        border-color: #dc3545 !important;
+      }
+
+      .btn-outline-success {
+        background: linear-gradient(
+          135deg,
+          rgba(40, 167, 69, 0.1) 0%,
+          rgba(32, 105, 43, 0.1) 100%
+        ) !important;
+        color: #28a745 !important;
+        border: 2px solid #28a745 !important;
+      }
+
+      .btn-outline-success:hover {
+        background: linear-gradient(
+          135deg,
+          #28a745 0%,
+          #20692b 100%
+        ) !important;
+        color: white !important;
+        border-color: #28a745 !important;
+      }
+
       th,
       td {
         padding: 4px 8px !important; /* компактнее строки */
@@ -165,7 +368,7 @@
       <div class="mb-3 d-flex justify-content-start">
         <a
           href="<?= baseUrl ?>?page=InvoiceGenerator&mode=create"
-          class="btn btn-primary"
+          class="btn btn-nav"
         >
           Generate Invoice
         </a>
