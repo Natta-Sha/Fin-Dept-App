@@ -853,10 +853,17 @@ function getCreditNoteDataByIdFromData(id) {
     const sheet = getSheet(spreadsheet, CONFIG.SHEETS.CREDITNOTES);
     const data = sheet.getDataRange().getValues();
     const headers = data[0];
+
+    Logger.log(
+      "Available headers in CreditNotes sheet: " + JSON.stringify(headers)
+    );
+
     const indexMap = headers.reduce((acc, h, i) => {
       acc[h] = i;
       return acc;
     }, {});
+
+    Logger.log("IndexMap created: " + JSON.stringify(indexMap));
 
     let row = null;
     for (let i = 1; i < data.length; i++) {
