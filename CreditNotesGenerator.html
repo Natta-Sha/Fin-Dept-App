@@ -309,10 +309,8 @@
         <thead class="table-light">
           <tr>
             <th>#</th>
-            <th>Service</th>
+            <th>Description</th>
             <th>Period</th>
-            <th>Quantity</th>
-            <th>Rate/hour</th>
             <th>Amount</th>
             <th></th>
           </tr>
@@ -325,23 +323,19 @@
             <td>
               <input
                 type="text"
-                class="form-control"
-                oninput="updateTotals()"
-              />
-            </td>
-            <td>
-              <input
-                type="text"
-                class="form-control"
-                oninput="updateTotals()"
-              />
-            </td>
-            <td>
-              <input
-                type="text"
                 class="form-control amount"
                 onfocus="markManualAmount(event)"
+                oninput="updateTotals()"
               />
+            </td>
+            <td>
+              <button
+                type="button"
+                class="btn btn-sm btn-outline-danger"
+                onclick="removeRow(this)"
+              >
+                Remove
+              </button>
             </td>
           </tr>
         </tbody>
@@ -786,10 +780,6 @@
                   document.getElementById("currency").textContent =
                     currencyMap[data.currency] || data.currency;
 
-                  document.getElementById("").textContent =
-                    data. || "";
-                  document.getElementById("").textContent =
-                    data. || "";
                   document.getElementById("credit_note_date").value = formatInputDate(
                     data.creditNoteDate
                   );
