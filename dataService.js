@@ -851,9 +851,15 @@ function getCreditNoteDataByIdFromData(id) {
 
     const spreadsheet = getSpreadsheet(CONFIG.SPREADSHEET_ID);
     const sheet = getSheet(spreadsheet, CONFIG.SHEETS.CREDITNOTES);
+
+    // Force refresh - clear any potential caching
+    SpreadsheetApp.flush();
+
     const data = sheet.getDataRange().getValues();
     const headers = data[0];
-    Logger.log("CreditNotes sheet has " + headers.length + " columns");
+    Logger.log(
+      "CreditNotes sheet has " + headers.length + " columns (should be 98)"
+    );
 
     const indexMap = headers.reduce((acc, h, i) => {
       acc[h] = i;
