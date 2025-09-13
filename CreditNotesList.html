@@ -108,6 +108,33 @@
         padding: 4px 8px !important; /* компактнее строки */
       }
 
+      /* Ширина колонок как в инвойсах */
+      th:nth-child(1),
+      td:nth-child(1) {
+        width: 20%;
+      }
+      th:nth-child(2),
+      td:nth-child(2) {
+        width: 15%;
+      }
+      th:nth-child(3),
+      td:nth-child(3) {
+        width: 15%;
+      }
+      th:nth-child(4),
+      td:nth-child(4) {
+        width: 12%;
+      }
+      th:nth-child(5),
+      td:nth-child(5) {
+        width: 12%;
+      }
+      th:nth-child(6),
+      td:nth-child(6) {
+        width: 26%;
+        white-space: nowrap;
+      }
+
       table.dataTable {
         width: 100% !important;
       }
@@ -218,25 +245,26 @@
           const table = $("#creditNotesTable").DataTable({
             dom: "lrtip",
             orderCellsTop: true,
+            autoWidth: false,
             columnDefs: [
               {
                 targets: 0, // Project Name
-                width: "25%",
+                width: "20%",
                 className: "dt-body-left dt-head-center",
               },
               {
                 targets: 1, // Credit Note Number
                 width: "15%",
-                className: "dt-body-center dt-head-center",
+                className: "dt-body-left dt-head-center",
               },
               {
                 targets: 2, // Credit Note Date
                 width: "15%",
-                className: "dt-body-center dt-head-center",
+                className: "dt-body-left dt-head-center",
               },
               {
                 targets: 3, // Total
-                width: "15%",
+                width: "12%",
                 className: "dt-body-right dt-head-center",
                 render: function (data, type, row) {
                   if (type === "display" && data) {
@@ -254,14 +282,17 @@
               },
               {
                 targets: 4, // Currency
-                width: "10%",
-                className: "dt-body-center dt-head-center",
+                width: "12%",
+                className: "dt-body-left dt-head-center",
               },
               {
                 targets: 5, // Actions
-                width: "20%",
-                className: "dt-body-center dt-head-center",
+                width: "26%",
+                className: "dt-body-left dt-head-center",
                 orderable: false,
+                createdCell: function (td, cellData, rowData, row, col) {
+                  $(td).css("white-space", "nowrap");
+                },
               },
             ],
           });
