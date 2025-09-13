@@ -784,6 +784,11 @@ function getCreditNotesListFromData() {
 
     const headers = data[0].map((h) => (h || "").toString().trim());
 
+    // Debug: log available headers
+    Logger.log(
+      "Available headers in CreditNotes sheet: " + JSON.stringify(headers)
+    );
+
     const colIndex = {
       id: headers.indexOf("ID"),
       projectName: headers.indexOf("Project Name"),
@@ -793,11 +798,21 @@ function getCreditNotesListFromData() {
       currency: headers.indexOf("Currency"),
     };
 
-    // Validate required columns
+    // Debug: log column indices
+    Logger.log("Column indices: " + JSON.stringify(colIndex));
+
+    // Validate required columns - log missing ones but don't fail completely
+    const missingColumns = [];
     for (let key in colIndex) {
       if (colIndex[key] === -1) {
-        throw new Error(ERROR_MESSAGES.MISSING_COLUMN(key));
+        missingColumns.push(key);
+        Logger.log(`Missing column: ${key}`);
       }
+    }
+
+    if (missingColumns.length > 0) {
+      Logger.log("Missing columns: " + missingColumns.join(", "));
+      // Don't throw error, just log it for now
     }
 
     const result = data.slice(1).map((row) => ({

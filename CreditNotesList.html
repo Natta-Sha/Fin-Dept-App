@@ -220,7 +220,7 @@
             orderCellsTop: true,
             columnDefs: [
               {
-                targets: 4, // колонка Total (индекс 4)
+                targets: 3, // колонка Total (теперь индекс 3)
                 className: "dt-body-right dt-head-center", // данные вправо, заголовок по центру
                 render: function (data, type, row) {
                   if (type === "display" && data) {
@@ -237,7 +237,7 @@
                 },
               },
               {
-                targets: [0, 1, 2, 3, 5, 6], // все колонки кроме Total (4)
+                targets: [0, 1, 2, 4, 5], // все колонки кроме Total (3)
                 className: "dt-body-left dt-head-center", // данные влево, заголовок по центру
               },
             ],
@@ -255,7 +255,9 @@
 
           google.script.run
             .withSuccessHandler(function (data) {
+              console.log("Received credit notes data:", data);
               if (!Array.isArray(data) || data.length === 0) {
+                console.log("No data or empty array received");
                 table.clear().draw();
                 document.getElementById("creditNotesTable").style.display = "";
                 return;
@@ -282,7 +284,8 @@
             })
             .withFailureHandler(function (error) {
               console.error("Error loading credit notes list:", error);
-              alert("Failed to load credit notes list.");
+              console.error("Error details:", error.message, error.stack);
+              alert("Failed to load credit notes list: " + error.message);
             })
             .getCreditNotesList();
         });
