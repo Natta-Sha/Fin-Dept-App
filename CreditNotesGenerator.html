@@ -205,10 +205,10 @@
         </div>
         <div class="col-md-3">
           <label class="form-label"
-            >Invoice Number <span class="text-danger">*</span></label
+            >Credit Note Number <span class="text-danger">*</span></label
           >
           <input
-            id="invoice_number"
+            id="credit_note_number"
             type="text"
             class="form-control"
             required
@@ -260,19 +260,9 @@
 
         <div class="col-md-3">
           <label class="form-label"
-            >Invoice Date <span class="text-danger">*</span></label
+            >Credit Note Date <span class="text-danger">*</span></label
           >
-          <input id="invoice_date" type="date" class="form-control" />
-        </div>
-        <div class="col-md-3">
-          <label class="form-label">Due Date</label>
-          <p class="form-control-plaintext" id="due_date"></p>
-          <input
-            id="due_date_input"
-            type="date"
-            class="form-control"
-            style="display: none"
-          />
+          <input id="credit_note_date" type="date" class="form-control" />
         </div>
         <div class="col-md-3">
           <label class="form-label" for="exchange_rate" id="exchange_rate_label"
@@ -615,8 +605,8 @@
 
           const payload = {
             projectName: projectValue,
-            invoiceNumber: document
-              .getElementById("invoice_number")
+            creditNoteNumber: document
+              .getElementById("credit_note_number")
               .value.trim(),
             clientName: document
               .getElementById("client_name_input")
@@ -627,10 +617,9 @@
             clientNumber: document
               .getElementById("client_number_input")
               .value.trim(),
-            invoiceDate: document.getElementById("invoice_date").value.trim(),
-            dueDate: toDDMMYYYY(
-              (document.getElementById("due_date_input").value || "").trim()
-            ),
+            creditNoteDate: document
+              .getElementById("credit_note_date")
+              .value.trim(),
             tax: document.getElementById("tax").textContent.trim(),
             subtotal: document.getElementById("subtotal").innerText.trim(),
             total: document.getElementById("total").innerText.trim(),
@@ -722,20 +711,6 @@
           document.getElementById("bank_details_2").textContent =
             details.bankDetails2 || "";
 
-          const invoiceDate = document.getElementById("invoice_date").value;
-          if (invoiceDate) {
-            let baseDate = new Date(invoiceDate);
-            let dueDate;
-            if (details.dayType === "WD") {
-              dueDate = addWorkingDays(baseDate, details.paymentDelay);
-            } else {
-              dueDate = new Date(baseDate);
-              dueDate.setDate(dueDate.getDate() + details.paymentDelay);
-            }
-            document.getElementById("due_date").textContent =
-              formatDateDDMMYYYY(dueDate);
-          }
-
           const exchangeInput = document.getElementById("exchange_rate");
           const exchangeDisplay = document.getElementById(
             "exchange_rate_display"
@@ -759,7 +734,8 @@
 
         function renderSavedDataRaw(data) {
           document.getElementById("project_name").value = data.projectName;
-          document.getElementById("invoice_number").value = data.invoiceNumber;
+          document.getElementById("credit_note_number").value =
+            data.creditNoteNumber;
           document.getElementById("client_name").textContent = data.clientName;
           document.getElementById("client_address").textContent =
             data.clientAddress;
@@ -778,10 +754,9 @@
           document.getElementById("bank_details_2").textContent =
             data.bankDetails2 || "";
 
-          document.getElementById("invoice_date").value = formatInputDate(
-            data.invoiceDate
+          document.getElementById("credit_note_date").value = formatInputDate(
+            data.creditNoteDate
           );
-          document.getElementById("due_date").textContent = data.dueDate || "";
 
           if (data.currency === "$") {
             document.getElementById("exchange_rate").style.display = "block";
@@ -820,7 +795,8 @@
 
         function fillInvoiceFormFromSavedData(data) {
           document.getElementById("project_name").value = data.projectName;
-          document.getElementById("invoice_number").value = data.invoiceNumber;
+          document.getElementById("credit_note_number").value =
+            data.creditNoteNumber;
           document.getElementById("client_name").textContent = data.clientName;
           document.getElementById("client_address").textContent =
             data.clientAddress;
@@ -838,10 +814,9 @@
             data.bankDetails1 || "";
           document.getElementById("bank_details_2").textContent =
             data.bankDetails2 || "";
-          document.getElementById("invoice_date").value = formatInputDate(
-            data.invoiceDate
+          document.getElementById("credit_note_date").value = formatInputDate(
+            data.creditNoteDate
           );
-          document.getElementById("due_date").textContent = data.dueDate || "";
 
           if (data.currency === "$") {
             document.getElementById("exchange_rate").style.display = "block";
@@ -919,7 +894,7 @@
             });
 
           document
-            .getElementById("invoice_date")
+            .getElementById("credit_note_date")
             .addEventListener("change", function () {
               const value = this.value.trim();
               const project = document
@@ -1068,15 +1043,16 @@
             "Test from client before invoice submit"
           );
 
-          const invoiceNumberEl = document.getElementById("invoice_number");
-          const invoiceDateEl = document.getElementById("invoice_date");
+          const creditNoteNumberEl =
+            document.getElementById("credit_note_number");
+          const creditNoteDateEl = document.getElementById("credit_note_date");
           const projectNameEl = document.getElementById("project_name");
 
-          const invoiceNumber = invoiceNumberEl.value.trim();
-          const invoiceDate = invoiceDateEl.value.trim();
+          const creditNoteNumber = creditNoteNumberEl.value.trim();
+          const creditNoteDate = creditNoteDateEl.value.trim();
           const projectValue = projectNameEl.value.trim();
 
-          [projectNameEl, invoiceNumberEl, invoiceDateEl].forEach((el) =>
+          [projectNameEl, creditNoteNumberEl, creditNoteDateEl].forEach((el) =>
             el.classList.remove("is-invalid")
           );
 
@@ -1084,13 +1060,13 @@
             errors.push("Project Name must be selected from the list.");
             projectNameEl.classList.add("is-invalid");
           }
-          if (!invoiceNumber) {
+          if (!creditNoteNumber) {
             errors.push("Invoice Number is required.");
-            invoiceNumberEl.classList.add("is-invalid");
+            creditNoteNumberEl.classList.add("is-invalid");
           }
-          if (!invoiceDate) {
+          if (!creditNoteDate) {
             errors.push("Invoice Date is required.");
-            invoiceDateEl.classList.add("is-invalid");
+            creditNoteDateEl.classList.add("is-invalid");
           }
 
           if (errors.length > 0) {
@@ -1133,8 +1109,8 @@
 
           const data = {
             projectName: projectValue,
-            invoiceNumber: document
-              .getElementById("invoice_number")
+            creditNoteNumber: document
+              .getElementById("credit_note_number")
               .value.trim(),
             clientName:
               mode === "edit"
@@ -1148,11 +1124,9 @@
               mode === "edit"
                 ? document.getElementById("client_number_input").value.trim()
                 : document.getElementById("client_number").textContent.trim(),
-            invoiceDate: document.getElementById("invoice_date").value.trim(),
-            dueDate:
-              mode === "edit"
-                ? (document.getElementById("due_date_input").value || "").trim()
-                : document.getElementById("due_date").textContent.trim(),
+            creditNoteDate: document
+              .getElementById("credit_note_date")
+              .value.trim(),
             tax: document.getElementById("tax").textContent.trim(),
             subtotal: document.getElementById("subtotal").innerText.trim(),
             total: document.getElementById("total").innerText.trim(),
@@ -1319,7 +1293,6 @@
                       "bank_details_2",
                       "tax",
                       "currency",
-                      "due_date",
                     ].forEach(clearText);
 
                     // Load fresh client data from Lists
@@ -1332,10 +1305,10 @@
                           window.currentProjectDetails = details || {};
                           fillProjectDetails(details || {});
                           // Compute due date based on invoice date and Lists data
-                          const invoiceDateVal =
-                            document.getElementById("invoice_date").value;
-                          if (invoiceDateVal) {
-                            let baseDate = new Date(invoiceDateVal);
+                          const creditNoteDateVal =
+                            document.getElementById("credit_note_date").value;
+                          if (creditNoteDateVal) {
+                            let baseDate = new Date(creditNoteDateVal);
                             let due;
                             if ((details && details.dayType) === "WD") {
                               due = addWorkingDays(
@@ -1402,8 +1375,6 @@
                   data.bankDetails1 || "";
                 document.getElementById("bank_details_2_input").value =
                   data.bankDetails2 || "";
-                document.getElementById("due_date_input").value =
-                  formatInputDate(data.dueDate || "");
               })
               .getCreditNoteDataById(creditNoteId);
 
@@ -1780,7 +1751,7 @@
               }
 
               // In copy mode, enable inputs for editable fields and refresh client-derived details
-              const inputsToEnable = ["invoice_number", "invoice_date"];
+              const inputsToEnable = ["credit_note_number", "credit_note_date"];
               inputsToEnable.forEach((id) => {
                 const el = document.getElementById(id);
                 if (el) el.disabled = false;
@@ -1823,7 +1794,6 @@
                   "bank_details_2",
                   "tax",
                   "currency",
-                  "due_date",
                 ].forEach(clearText);
                 google.script.run
                   .withSuccessHandler(function (details) {
@@ -1833,11 +1803,11 @@
                     window.currentProjectNameCached = selectedProjectCopy;
                     // Recompute due date immediately
                     try {
-                      const invoiceDateVal =
-                        document.getElementById("invoice_date").value;
+                      const creditNoteDateVal =
+                        document.getElementById("credit_note_date").value;
                       let due = null;
-                      if (invoiceDateVal) {
-                        let baseDate = new Date(invoiceDateVal);
+                      if (creditNoteDateVal) {
+                        let baseDate = new Date(creditNoteDateVal);
                         if ((details && details.dayType) === "WD") {
                           due = addWorkingDays(
                             baseDate,
@@ -1918,7 +1888,6 @@
               toggleEditField("our_company", "our_company_input");
               toggleEditField("bank_details_1", "bank_details_1_input");
               toggleEditField("bank_details_2", "bank_details_2_input");
-              toggleEditField("due_date", "due_date_input");
             } else {
               if (commentInput) commentInput.style.display = "none";
               if (commentDisplay) commentDisplay.style.display = "block";
@@ -1928,7 +1897,6 @@
               toggleEditField("our_company", "our_company_input");
               toggleEditField("bank_details_1", "bank_details_1_input");
               toggleEditField("bank_details_2", "bank_details_2_input");
-              toggleEditField("due_date", "due_date_input");
             }
 
             // Make plaintext fields editable in edit mode
@@ -1948,7 +1916,6 @@
                 "our_company",
                 "bank_details_1",
                 "bank_details_2",
-                "due_date",
               ].forEach(makeEditable);
             }
           } else {
@@ -1983,12 +1950,14 @@
         }
 
         if (["create", "edit"].includes(mode)) {
-          ["project_name", "invoice_number", "invoice_date"].forEach((id) => {
-            document.getElementById(id).addEventListener("input", () => {
-              document.getElementById(id).classList.remove("is-invalid");
-              document.getElementById("result").innerHTML = "";
-            });
-          });
+          ["project_name", "credit_note_number", "credit_note_date"].forEach(
+            (id) => {
+              document.getElementById(id).addEventListener("input", () => {
+                document.getElementById(id).classList.remove("is-invalid");
+                document.getElementById("result").innerHTML = "";
+              });
+            }
+          );
         }
 
         function showModalDialog(message, onConfirm) {

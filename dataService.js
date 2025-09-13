@@ -880,12 +880,11 @@ function getCreditNoteDataByIdFromData(id) {
 
     return {
       projectName: row[indexMap["Project Name"]],
-      invoiceNumber: row[indexMap["Invoice Number"]],
+      creditNoteNumber: row[indexMap["CN Number"]],
       clientName: row[indexMap["Client Name"]],
       clientAddress: row[indexMap["Client Address"]],
       clientNumber: row[indexMap["Client Number"]],
-      invoiceDate: formatDateForInput(row[indexMap["Invoice Date"]]),
-      dueDate: formatDateForInput(row[indexMap["Due Date"]]),
+      creditNoteDate: formatDateForInput(row[indexMap["CN Date"]]),
       tax: row[indexMap["Tax Rate (%)"]],
       subtotal: row[indexMap["Subtotal"]],
       total: row[indexMap["Total"]],
