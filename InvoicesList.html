@@ -103,6 +103,45 @@
         padding: 20px;
       }
 
+      /* Navigation-style button */
+      .btn-nav {
+        background: linear-gradient(
+          135deg,
+          #667eea 0%,
+          #764ba2 100%
+        ) !important;
+        color: white !important;
+        font-weight: 600 !important;
+        border: none !important;
+        border-radius: 25px !important;
+        padding: 0.75rem 2rem !important;
+        font-size: 1.1rem !important;
+        transition: all 0.3s ease !important;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1) !important;
+      }
+
+      .btn-nav:hover {
+        background: linear-gradient(
+          135deg,
+          #5a6fd8 0%,
+          #6b4190 100%
+        ) !important;
+        transform: translateY(-1px) !important;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2) !important;
+        color: white !important;
+      }
+
+      .btn-nav:focus,
+      .btn-nav:active {
+        background: linear-gradient(
+          135deg,
+          #5a6fd8 0%,
+          #6b4190 100%
+        ) !important;
+        color: white !important;
+        box-shadow: 0 0 0 0.25rem rgba(102, 126, 234, 0.25) !important;
+      }
+
       th,
       td {
         padding: 4px 8px !important; /* компактнее строки */
@@ -165,7 +204,7 @@
       <div class="mb-3 d-flex justify-content-start">
         <a
           href="<?= baseUrl ?>?page=InvoiceGenerator&mode=create"
-          class="btn btn-primary"
+          class="btn btn-nav"
         >
           Generate Invoice
         </a>
