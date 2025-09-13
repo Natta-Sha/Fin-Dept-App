@@ -174,8 +174,8 @@ function getActivePageForNavigation(page, params = {}) {
     case "InvoicesList":
       return "invoices";
     case "InvoiceGenerator":
-      // InvoiceGenerator doesn't have specific navigation highlighting
-      return "";
+      // InvoiceGenerator is part of invoices section
+      return "invoices";
     default:
       return "";
   }
