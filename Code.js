@@ -121,7 +121,13 @@ function getCreditNotesList() {
  * @returns {Object} Credit note data
  */
 function getCreditNoteDataById(id) {
-  return getCreditNoteDataByIdFromData(id);
+  Logger.log("getCreditNoteDataById called with ID: " + id);
+  const result = getCreditNoteDataByIdFromData(id);
+  Logger.log(
+    "getCreditNoteDataById returning: " +
+      (result ? "data object" : "null/empty")
+  );
+  return result;
 }
 
 // Error handling and performance monitoring removed for cleaner code

@@ -842,9 +842,10 @@ function getCreditNotesListFromData() {
  */
 function getCreditNoteDataByIdFromData(id) {
   try {
+    Logger.log("getCreditNoteDataByIdFromData called with ID: " + id);
     // Validate input
     if (!id || id.toString().trim() === "") {
-      console.log("Invalid ID provided to getCreditNoteDataByIdFromData");
+      Logger.log("Invalid ID provided to getCreditNoteDataByIdFromData");
       return {};
     }
 
@@ -865,9 +866,16 @@ function getCreditNoteDataByIdFromData(id) {
       }
     }
     if (!row) {
-      console.log(`Credit note with ID ${id} not found.`);
+      Logger.log(
+        `Credit note with ID ${id} not found in sheet. Available IDs: ${data
+          .slice(1)
+          .map((r) => r[indexMap["ID"]])
+          .join(", ")}`
+      );
       return {};
     }
+
+    Logger.log("Found credit note row, processing data...");
 
     const items = [];
     // Credit Notes items: 4 columns per row (Row N #, Row N Description, Row N Period, Row N Amount)
@@ -882,7 +890,7 @@ function getCreditNoteDataByIdFromData(id) {
       }
     }
 
-    return {
+    const result = {
       projectName: row[indexMap["Project Name"]],
       creditNoteNumber: row[indexMap["CN Number"]],
       clientName: row[indexMap["Client Name"]],
@@ -899,6 +907,9 @@ function getCreditNoteDataByIdFromData(id) {
       comment: row[indexMap["Comment"]],
       items: items,
     };
+
+    Logger.log("Returning credit note data: " + JSON.stringify(result));
+    return result;
   } catch (error) {
     console.error("Error getting credit note data by ID:", error);
     return {};
