@@ -1221,8 +1221,11 @@
         <strong>Invoice created!</strong><br>
         <a href="${result.docUrl}" class="btn btn-outline-secondary mt-2" target="_blank">Open Google Doc</a>
         <a href="${result.pdfUrl}" class="btn btn-outline-secondary mt-2" target="_blank">Open PDF</a>
-        <br><br>
-        <button class="btn btn-primary" onclick="safeNavigateToInvoicesList()">Back to the list</button>
+      </div>
+      <div class="row mt-4">
+        <div class="col-md-12 d-flex justify-content-end gap-2">
+          <button class="btn btn-primary px-5 fw-bold" onclick="safeNavigateToInvoicesList()">Back to the list</button>
+        </div>
       </div>
     `;
 
@@ -1601,8 +1604,11 @@
         <strong>Invoice updated!</strong><br>
         <a href="${res.docUrl}" class="btn btn-outline-secondary mt-2" target="_blank">Open Google Doc</a>
         <a href="${res.pdfUrl}" class="btn btn-outline-secondary mt-2" target="_blank">Open PDF</a>
-        <br><br>
-        <button class="btn btn-primary" onclick="safeNavigateToInvoicesList()">Back to the list</button>
+      </div>
+      <div class="row mt-4">
+        <div class="col-md-12 d-flex justify-content-end gap-2">
+          <button class="btn btn-primary px-5 fw-bold" onclick="safeNavigateToInvoicesList()">Back to the list</button>
+        </div>
       </div>
     `;
                         // Hide edit action buttons after successful update and keep form disabled
