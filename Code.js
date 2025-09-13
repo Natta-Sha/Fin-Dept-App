@@ -60,15 +60,6 @@ function processForm(data) {
   return processInvoiceCreation(data);
 }
 
-/**
- * Process credit note form data
- * @param {Object} data - Form data
- * @returns {Object} Processing result
- */
-function processCreditNoteForm(data) {
-  return saveCreditNoteData(data);
-}
-
 // Export functions for use in other modules
 // Note: In Google Apps Script, all functions are globally available
 // These comments help with documentation and IDE support
@@ -105,29 +96,6 @@ function getInvoiceList() {
  */
 function getInvoiceDataById(id) {
   return getInvoiceDataByIdFromData(id);
-}
-
-/**
- * Get credit notes list
- * @returns {Array} Credit notes data
- */
-function getCreditNotesList() {
-  return getCreditNotesListFromData();
-}
-
-/**
- * Get credit note data by ID
- * @param {string} id - Credit Note ID
- * @returns {Object} Credit note data
- */
-function getCreditNoteDataById(id) {
-  Logger.log("getCreditNoteDataById called with ID: " + id);
-  const result = getCreditNoteDataByIdFromData(id);
-  Logger.log(
-    "getCreditNoteDataById returning: " +
-      (result ? "data object" : "null/empty")
-  );
-  return result;
 }
 
 // Error handling and performance monitoring removed for cleaner code
@@ -183,25 +151,6 @@ function updateInvoiceById(id, data) {
 }
 
 /**
- * Delete credit note by ID
- * @param {string} id - Credit Note ID
- * @returns {Object} Operation result
- */
-function deleteCreditNoteById(id) {
-  return deleteCreditNoteByIdFromData(id);
-}
-
-/**
- * Update credit note by ID
- * @param {string} id - Credit Note ID
- * @param {Object} data - Updated credit note data
- * @returns {Object} Operation result
- */
-function updateCreditNoteById(id, data) {
-  return updateCreditNoteByIdFromData(id, data);
-}
-
-/**
  * Get navigation HTML with active page highlighting
  * @param {string} activePage - Current active page identifier
  * @returns {string} Navigation HTML
@@ -227,11 +176,6 @@ function getActivePageForNavigation(page, params = {}) {
       return "invoices";
     case "InvoiceGenerator":
       // InvoiceGenerator doesn't have specific navigation highlighting
-      return "";
-    case "CreditNotesList":
-      return "creditnotes";
-    case "CreditNotesGenerator":
-      // CreditNotesGenerator doesn't have specific navigation highlighting
       return "";
     default:
       return "";
