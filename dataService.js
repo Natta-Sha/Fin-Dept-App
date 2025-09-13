@@ -870,9 +870,13 @@ function getCreditNoteDataByIdFromData(id) {
     }
 
     const items = [];
+    // Credit Notes items: 4 columns per row (Row N #, Row N Description, Row N Period, Row N Amount)
+    const CREDITNOTE_COLUMNS_PER_ROW = 4;
+    const CREDITNOTE_ITEMS_START = 21; // After main fields
+
     for (let i = 0; i < CONFIG.INVOICE_TABLE.MAX_ROWS; i++) {
-      const base = 21 + i * CONFIG.INVOICE_TABLE.COLUMNS_PER_ROW;
-      const item = row.slice(base, base + CONFIG.INVOICE_TABLE.COLUMNS_PER_ROW);
+      const base = CREDITNOTE_ITEMS_START + i * CREDITNOTE_COLUMNS_PER_ROW;
+      const item = row.slice(base, base + CREDITNOTE_COLUMNS_PER_ROW);
       if (item.some((cell) => cell && cell.toString().trim() !== "")) {
         items.push(item);
       }
@@ -891,8 +895,6 @@ function getCreditNoteDataByIdFromData(id) {
       exchangeRate: row[indexMap["Exchange Rate"]],
       currency: row[indexMap["Currency"]],
       amountInEUR: row[indexMap["Amount in EUR"]],
-      bankDetails1: row[indexMap["Bank Details 1"]],
-      bankDetails2: row[indexMap["Bank Details 2"]],
       ourCompany: row[indexMap["Our Company"]],
       comment: row[indexMap["Comment"]],
       items: items,
