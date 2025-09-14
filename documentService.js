@@ -347,8 +347,7 @@ function createCreditNoteDocument(data, uniqueId) {
       `createCreditNoteDocument: Starting for credit note: ${data.creditNoteNumber}`
     );
 
-    const templateId =
-      data.templateId || "10ATzUFN-6j2ceAQQJYo6sivX1Hdq8g-dspRN14WF-4c";
+    const templateId = data.templateId;
     const folderId = getProjectFolderId(data.projectName);
 
     const template = DriveApp.getFileById(templateId);
