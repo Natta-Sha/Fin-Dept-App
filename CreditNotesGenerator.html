@@ -339,10 +339,144 @@
     <div class="main-content container">
       <h2 id="page-title">Create Credit Note</h2>
 
-      <!-- Form will be added here later -->
-      <div class="mt-4">
-        <p class="text-muted">Credit Note form coming soon...</p>
-      </div>
+      <!-- Credit Note Form -->
+      <form id="credit-note-form">
+        <!-- Basic Information -->
+        <div class="row mb-3">
+          <div class="col-md-3">
+            <label class="form-label"
+              >Project Name <span class="text-danger">*</span></label
+            >
+            <input
+              list="project_list"
+              id="project_name"
+              class="form-control"
+              required
+            />
+            <datalist id="project_list"></datalist>
+          </div>
+          <div class="col-md-3">
+            <label class="form-label"
+              >Credit Note Number <span class="text-danger">*</span></label
+            >
+            <input
+              id="credit_note_number"
+              type="text"
+              class="form-control"
+              required
+            />
+          </div>
+          <div class="col-md-3">
+            <label class="form-label">Client Name</label>
+            <p class="form-control-plaintext" id="client_name"></p>
+          </div>
+          <div class="col-md-3">
+            <label class="form-label">Client Address</label>
+            <p class="form-control-plaintext" id="client_address"></p>
+          </div>
+        </div>
+
+        <div class="row mb-3">
+          <div class="col-md-3">
+            <label class="form-label">Client Number</label>
+            <p class="form-control-plaintext" id="client_number"></p>
+          </div>
+          <div class="col-md-3">
+            <label class="form-label"
+              >Credit Note Date <span class="text-danger">*</span></label
+            >
+            <input
+              id="credit_note_date"
+              type="date"
+              class="form-control"
+              required
+            />
+          </div>
+          <div class="col-md-3">
+            <label class="form-label">Exchange Rate</label>
+            <p class="form-control-plaintext" id="exchange_rate_display"></p>
+          </div>
+          <div class="col-md-3">
+            <label class="form-label">Currency</label>
+            <p class="form-control-plaintext" id="currency">USD</p>
+          </div>
+        </div>
+
+        <div class="row mb-3">
+          <div class="col-md-6">
+            <label class="form-label">Our Company</label>
+            <p class="form-control-plaintext" id="our_company"></p>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">Comment</label>
+            <textarea
+              id="comment"
+              class="form-control"
+              rows="3"
+              placeholder="Optional field for credit note"
+            ></textarea>
+          </div>
+        </div>
+
+        <!-- Items table -->
+        <h5 class="mb-3">Items</h5>
+        <button
+          class="btn btn-outline-primary mb-3"
+          onclick="addRow()"
+          id="add-row-btn"
+        >
+          + Add Row
+        </button>
+
+        <table class="table table-bordered" id="credit-note-table">
+          <thead class="table-light">
+            <tr>
+              <th>#</th>
+              <th>Description</th>
+              <th>Period</th>
+              <th>Amount</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="credit-note-body">
+            <tr>
+              <td>
+                <input type="text" class="form-control" value="1" readonly />
+              </td>
+              <td><input type="text" class="form-control" /></td>
+              <td><input type="text" class="form-control" /></td>
+              <td>
+                <input
+                  type="number"
+                  class="form-control amount-input"
+                  step="0.01"
+                />
+              </td>
+              <td></td>
+            </tr>
+          </tbody>
+        </table>
+
+        <!-- Totals -->
+        <div class="row mb-3">
+          <div class="col-md-3">
+            <label class="form-label">Tax (%)</label>
+            <p class="form-control-plaintext" id="tax">19</p>
+          </div>
+          <div class="col-md-3">
+            <label class="form-label">Subtotal</label>
+            <p class="form-control-plaintext" id="subtotal">0.00</p>
+          </div>
+          <div class="col-md-3">
+            <label class="form-label">Total</label>
+            <p class="form-control-plaintext" id="total">0.00</p>
+          </div>
+          <div class="col-md-3">
+            <label class="form-label">Amount in EUR</label>
+            <p class="form-control-plaintext" id="amount_in_eur">0.00</p>
+          </div>
+        </div>
+      </form>
 
       <div class="row mt-4">
         <div
@@ -376,23 +510,108 @@
     </div>
 
     <script>
+      let rowCount = 1;
+
       // Navigation function
       function safeNavigateToCreditNotesList() {
         window.location.href = "<?= baseUrl ?>?page=CreditNotesList";
       }
 
+      // Add row function
+      function addRow() {
+        rowCount++;
+        const tbody = document.getElementById("credit-note-body");
+        const newRow = document.createElement("tr");
+        newRow.innerHTML = `
+          <td><input type="text" class="form-control" value="${rowCount}" readonly /></td>
+          <td><input type="text" class="form-control" /></td>
+          <td><input type="text" class="form-control" /></td>
+          <td><input type="number" class="form-control amount-input" step="0.01" onchange="calculateTotals()" /></td>
+          <td>
+            <button type="button" class="icon-button" onclick="removeRow(this)">
+              <i class="bi bi-trash"></i>
+            </button>
+          </td>
+        `;
+        tbody.appendChild(newRow);
+        updateRowNumbers();
+      }
+
+      // Remove row function
+      function removeRow(button) {
+        const row = button.closest("tr");
+        const tbody = document.getElementById("credit-note-body");
+        if (tbody.children.length > 1) {
+          row.remove();
+          updateRowNumbers();
+          calculateTotals();
+        }
+      }
+
+      // Update row numbers
+      function updateRowNumbers() {
+        const rows = document.querySelectorAll("#credit-note-body tr");
+        rows.forEach((row, index) => {
+          const numberInput = row.querySelector("input[type='text']");
+          if (numberInput) {
+            numberInput.value = index + 1;
+          }
+        });
+      }
+
+      // Calculate totals
+      function calculateTotals() {
+        const amountInputs = document.querySelectorAll(".amount-input");
+        let subtotal = 0;
+
+        amountInputs.forEach((input) => {
+          const value = parseFloat(input.value) || 0;
+          subtotal += value;
+        });
+
+        const taxRate = 19; // Default tax rate
+        const tax = (subtotal * taxRate) / 100;
+        const total = subtotal + tax;
+
+        document.getElementById("subtotal").textContent = subtotal.toFixed(2);
+        document.getElementById("total").textContent = total.toFixed(2);
+        document.getElementById("amount_in_eur").textContent = total.toFixed(2);
+      }
+
       // Form submission (placeholder)
       function submitForm() {
+        // Basic validation
+        const projectName = document
+          .getElementById("project_name")
+          .value.trim();
+        const creditNoteNumber = document
+          .getElementById("credit_note_number")
+          .value.trim();
+        const creditNoteDate =
+          document.getElementById("credit_note_date").value;
+
+        if (!projectName || !creditNoteNumber || !creditNoteDate) {
+          alert("Please fill in all required fields (marked with *)");
+          return;
+        }
+
         alert("Generate Credit Note functionality coming soon!");
       }
 
-      // Initialize tooltips
+      // Initialize tooltips and event listeners
       document.addEventListener("DOMContentLoaded", function () {
         var tooltipTriggerList = [].slice.call(
           document.querySelectorAll('[data-bs-toggle="tooltip"]')
         );
         var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
           return new bootstrap.Tooltip(tooltipTriggerEl);
+        });
+
+        // Add event listeners for amount inputs
+        document.addEventListener("change", function (e) {
+          if (e.target.classList.contains("amount-input")) {
+            calculateTotals();
+          }
         });
       });
     </script>
