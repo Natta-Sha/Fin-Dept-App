@@ -612,14 +612,6 @@
       function setFormInputsDisabled(isDisabled) {
         try {
           document.querySelectorAll("input, textarea").forEach((el) => {
-            // Don't disable project_name field until project is selected
-            if (
-              el.id === "project_name" &&
-              isDisabled &&
-              !window.currentProjectDetails
-            ) {
-              return; // Skip disabling project_name if no project selected yet
-            }
             el.disabled = isDisabled;
           });
           const addRowBtnEl = document.getElementById("add-row-btn");
@@ -676,29 +668,19 @@
         populateProjectNames();
 
         // Add event listener for project name changes
-        function handleProjectChange() {
-          const value = this.value.trim();
-          console.log("Project name changed to:", value);
-          console.log("Is valid project?", validProjectNames.includes(value));
-          console.log("Valid project names:", validProjectNames);
-          if (value && validProjectNames.length > 0) {
-            console.log("Calling getProjectDetails for:", value);
-            google.script.run
-              .withSuccessHandler(fillProjectDetails)
-              .withFailureHandler(function (error) {
-                console.error("Failed to load project details:", error);
-              })
-              .getProjectDetails(value);
-          }
-        }
-
         document
           .getElementById("project_name")
-          .addEventListener("change", handleProjectChange);
-
-        document
-          .getElementById("project_name")
-          .addEventListener("input", handleProjectChange);
+          .addEventListener("change", function () {
+            const value = this.value.trim();
+            if (validProjectNames.includes(value)) {
+              google.script.run
+                .withSuccessHandler(fillProjectDetails)
+                .withFailureHandler(function (error) {
+                  console.error("Failed to load project details:", error);
+                })
+                .getProjectDetails(value);
+            }
+          });
 
         // Add event listeners for all existing table inputs
         document
