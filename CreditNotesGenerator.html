@@ -594,94 +594,39 @@
 
       // Calculate totals function
       function updateTotals() {
-        try {
-          console.log("updateTotals: Starting...");
-          const amountInputs = document.querySelectorAll(
-            "#credit-note-body input[type='number']"
+        const tbody = document.getElementById("credit-note-body");
+        let subtotal = 0;
+
+        for (let row of tbody.rows) {
+          const inputs = row.getElementsByTagName("input");
+          const amountCell = inputs[2]; // Amount is the 3rd input (index 2)
+          subtotal += parseFloat(amountCell.value) || 0;
+        }
+
+        document.getElementById("subtotal").innerText = subtotal.toFixed(2);
+
+        const tax = parseFloat(document.getElementById("tax").textContent) || 0;
+        const total = subtotal + (subtotal * tax) / 100;
+        document.getElementById("total").innerText = total.toFixed(2);
+
+        // Calculate Amount in EUR based on currency
+        const currency = document
+          .getElementById("currency")
+          .textContent.trim()
+          .split(" ")[0];
+
+        const amountInEurEl = document.getElementById("amount_in_eur");
+
+        if (currency === "$") {
+          const exchangeRate = parseFloat(
+            document.getElementById("exchange_rate").value
           );
-          console.log(
-            "updateTotals: Found amount inputs:",
-            amountInputs.length
-          );
-
-          let subtotal = 0;
-
-          amountInputs.forEach((input) => {
-            const value = parseFloat(input.value) || 0;
-            subtotal += value;
-          });
-
-          console.log("updateTotals: Subtotal:", subtotal);
-
-          const taxElement = document.getElementById("tax");
-          console.log("updateTotals: Tax element:", taxElement);
-
-          const taxRate = parseFloat(taxElement.textContent) || 0;
-          const tax = (subtotal * taxRate) / 100;
-          const total = subtotal + tax;
-
-          console.log(
-            "updateTotals: Tax rate:",
-            taxRate,
-            "Tax:",
-            tax,
-            "Total:",
-            total
-          );
-
-          const subtotalEl = document.getElementById("subtotal");
-          const totalEl = document.getElementById("total");
-          console.log(
-            "updateTotals: Subtotal element:",
-            subtotalEl,
-            "Total element:",
-            totalEl
-          );
-
-          subtotalEl.textContent = subtotal.toFixed(2);
-          totalEl.textContent = total.toFixed(2);
-
-          // Calculate Amount in EUR based on currency
-          const currencyEl = document.getElementById("currency");
-          console.log("updateTotals: Currency element:", currencyEl);
-
-          const currency = currencyEl.textContent.trim().split(" ")[0];
-
-          const amountInEurEl = document.getElementById("amount_in_eur");
-          console.log("updateTotals: Amount in EUR element:", amountInEurEl);
-
-          if (currency === "$") {
-            const exchangeRateEl = document.getElementById("exchange_rate");
-            console.log("updateTotals: Exchange rate element:", exchangeRateEl);
-
-            const exchangeRate = parseFloat(exchangeRateEl.value);
-            amountInEurEl.textContent =
-              exchangeRate > 0 ? (total / exchangeRate).toFixed(2) : "0.00";
-          } else {
-            amountInEurEl.textContent = "";
-          }
-
-          console.log("updateTotals: Completed successfully");
-        } catch (error) {
-          console.error("updateTotals: Error occurred:", error);
-          alert("Error in updateTotals: " + error.message);
+          amountInEurEl.innerText =
+            exchangeRate > 0 ? (total / exchangeRate).toFixed(2) : "0.00";
+        } else {
+          amountInEurEl.innerText = "";
         }
       }
-
-      // Global error handler to prevent page redirects
-      window.addEventListener("error", function (event) {
-        console.error("Global error caught:", event.error);
-        alert("An error occurred: " + event.error.message);
-        event.preventDefault();
-        return false;
-      });
-
-      window.addEventListener("unhandledrejection", function (event) {
-        console.error("Unhandled promise rejection:", event.reason);
-        alert("An unhandled error occurred: " + event.reason);
-        event.preventDefault();
-        return false;
-      });
 
       // Initialize page
       document.addEventListener("DOMContentLoaded", function () {
@@ -715,58 +660,33 @@
 
       // Add row function
       function addRow() {
-        try {
-          console.log("addRow: Starting...");
-          const tbody = document.getElementById("credit-note-body");
-          console.log("addRow: Found tbody:", tbody);
+        const tbody = document.getElementById("credit-note-body");
+        const rowNumber = tbody.rows.length + 1;
+        const row = tbody.insertRow();
 
-          const rowNumber = tbody.rows.length + 1;
-          console.log("addRow: Row number:", rowNumber);
-
-          const row = tbody.insertRow();
-          console.log("addRow: Created row:", row);
-
-          // Create cells and inputs like in invoices
-          for (let i = 0; i < 4; i++) {
-            console.log("addRow: Creating cell", i);
-            const cell = row.insertCell();
-            const input = document.createElement("input");
-            input.className = "form-control";
-            input.type = i === 3 ? "number" : "text";
-            if (i === 0) {
-              input.value = rowNumber;
-              input.readOnly = true;
-            }
-            if (i === 3) {
-              input.classList.add("amount-input");
-              input.step = "0.01";
-            }
-            if (i === 3) {
-              input.oninput = function () {
-                try {
-                  updateTotals();
-                } catch (error) {
-                  console.error("Error in amount input:", error);
-                }
-              };
-            }
-            cell.appendChild(input);
-            console.log("addRow: Added input to cell", i);
+        for (let i = 0; i < 3; i++) {
+          const cell = row.insertCell();
+          const input = document.createElement("input");
+          input.className = "form-control";
+          input.type = i === 2 ? "number" : "text";
+          if (i === 0) {
+            input.value = rowNumber;
+            input.readOnly = true;
           }
-
-          // Add delete button cell
-          console.log("addRow: Adding delete button");
-          const deleteCell = row.insertCell();
-          deleteCell.innerHTML = `
-            <button type="button" class="icon-button" onclick="removeRow(this)" title="Delete row">
-              <i class="bi bi-trash"></i>
-            </button>
-          `;
-          console.log("addRow: Completed successfully");
-        } catch (error) {
-          console.error("addRow: Error occurred:", error);
-          alert("Error in addRow: " + error.message);
+          if (i === 2) {
+            input.classList.add("amount");
+            input.step = "0.01";
+          }
+          input.oninput = updateTotals;
+          cell.appendChild(input);
         }
+
+        const deleteCell = row.insertCell();
+        deleteCell.innerHTML = `
+          <button type="button" class="icon-button" onclick="removeRow(this)" title="Delete row">
+            <i class="bi bi-trash"></i>
+          </button>
+        `;
       }
 
       // Remove row function
