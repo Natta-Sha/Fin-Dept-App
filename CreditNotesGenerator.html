@@ -574,6 +574,24 @@
       // Global variable to store valid project names
       let validProjectNames = [];
 
+      // Function to disable/enable form inputs
+      function setFormInputsDisabled(isDisabled) {
+        try {
+          document.querySelectorAll("input, textarea").forEach((el) => {
+            el.disabled = isDisabled;
+          });
+          const addRowBtnEl = document.getElementById("add-row-btn");
+          if (addRowBtnEl) addRowBtnEl.disabled = isDisabled;
+
+          // Hide/show delete buttons based on form state
+          if (isDisabled) {
+            document.body.classList.add("form-submitted");
+          } else {
+            document.body.classList.remove("form-submitted");
+          }
+        } catch (_) {}
+      }
+
       // Calculate totals function
       function updateTotals() {
         const tbody = document.getElementById("credit-note-body");
@@ -642,9 +660,7 @@
 
       // Add row function
       function addRow() {
-        console.log("addRow function called");
         const tbody = document.getElementById("credit-note-body");
-        console.log("tbody found:", tbody);
         const rowNumber = tbody.rows.length + 1;
         const row = tbody.insertRow();
 
@@ -703,6 +719,7 @@
         if (!window.currentProjectDetails && projectValue) {
           document.getElementById("generate-btn").disabled = true;
           document.getElementById("spinner").style.display = "inline-block";
+          setFormInputsDisabled(true);
 
           google.script.run
             .withSuccessHandler(function (details) {
@@ -716,6 +733,7 @@
               alert("Failed to load project details. Please try again.");
               document.getElementById("generate-btn").disabled = false;
               document.getElementById("spinner").style.display = "none";
+              setFormInputsDisabled(false);
             })
             .getProjectDetails(projectValue);
           return;
@@ -782,12 +800,14 @@
         // Enable spinner and disable button + form
         document.getElementById("generate-btn").disabled = true;
         document.getElementById("spinner").style.display = "inline-block";
+        setFormInputsDisabled(true);
         document.getElementById("result").innerHTML = "";
 
         google.script.run
           .withFailureHandler(function (error) {
             document.getElementById("spinner").style.display = "none";
             document.getElementById("generate-btn").disabled = false;
+            setFormInputsDisabled(false);
             alert(
               "An error occurred: " +
                 error.message +
