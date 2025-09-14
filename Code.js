@@ -176,6 +176,11 @@ function getActivePageForNavigation(page, params = {}) {
     case "InvoiceGenerator":
       // InvoiceGenerator is part of invoices section
       return "invoices";
+    case "CreditNotesList":
+      return "creditnotes";
+    case "CreditNotesGenerator":
+      // CreditNotesGenerator is part of credit notes section
+      return "creditnotes";
     default:
       return "";
   }

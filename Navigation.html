@@ -22,7 +22,7 @@
           <div class="nav-item dropdown mx-3">
             <a
               href="#"
-              class="nav-link dropdown-toggle <?= activePage === 'invoices' ? 'active' : '' ?>"
+              class="nav-link dropdown-toggle <?= activePage === 'invoices' || activePage === 'creditnotes' ? 'active' : '' ?>"
               role="button"
               data-bs-toggle="dropdown"
             >
@@ -60,12 +60,8 @@
               </li>
               <li>
                 <a
-                  href="#"
-                  class="dropdown-item"
-                  data-bs-toggle="tooltip"
-                  title="Coming soon"
-                  style="cursor: not-allowed; opacity: 0.6"
-                  onclick="return false;"
+                  href="<?= baseUrl ?>?page=CreditNotesList"
+                  class="dropdown-item <?= activePage === 'creditnotes' ? 'active' : '' ?>"
                   >Credit Notes</a
                 >
               </li>
