@@ -474,9 +474,24 @@
     <script>
       let rowCount = 1;
 
-      // Navigation function
+      // Robust navigation back to credit notes list for both web-app and sidebar contexts
       function safeNavigateToCreditNotesList() {
-        window.location.href = "<?= baseUrl ?>?page=CreditNotesList";
+        const target = "<?= baseUrl ?>?page=CreditNotesList";
+        try {
+          window.top.location.href = target;
+          return;
+        } catch (e) {}
+        try {
+          window.location.href = target;
+          return;
+        } catch (e2) {}
+        if (
+          typeof google !== "undefined" &&
+          google.script &&
+          google.script.host
+        ) {
+          google.script.host.close();
+        }
       }
 
       // Add row function
