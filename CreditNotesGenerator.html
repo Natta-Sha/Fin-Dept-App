@@ -555,7 +555,12 @@
         console.log("[populateProjectNames] running...");
         google.script.run
           .withSuccessHandler(function (projects) {
+            console.log("[populateProjectNames] received projects:", projects);
             validProjectNames = projects;
+            console.log(
+              "[populateProjectNames] validProjectNames set to:",
+              validProjectNames
+            );
             const datalist = document.getElementById("project_list");
             datalist.innerHTML = "";
             projects.forEach((name) => {
@@ -567,6 +572,10 @@
               "[populateProjectNames] populated",
               projects.length,
               "projects"
+            );
+            console.log(
+              "[populateProjectNames] CityFALCON included?",
+              projects.includes("CityFALCON")
             );
           })
           .withFailureHandler(function (error) {
@@ -652,7 +661,8 @@
             const value = this.value.trim();
             console.log("Project name changed to:", value);
             console.log("Is valid project?", validProjectNames.includes(value));
-            if (validProjectNames.includes(value)) {
+            console.log("Valid project names:", validProjectNames);
+            if (value && validProjectNames.length > 0) {
               console.log("Calling getProjectDetails for:", value);
               google.script.run
                 .withSuccessHandler(fillProjectDetails)
