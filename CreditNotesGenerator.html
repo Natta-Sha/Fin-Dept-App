@@ -49,9 +49,10 @@
         box-shadow: none;
       }
 
-      /* Top navigation bar styling */
+      /* Navigation styles */
       .top-nav {
         background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
         padding: 0.75rem 0;
         box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
       }
@@ -70,11 +71,11 @@
       .nav-link {
         color: white !important;
         font-weight: 500;
-        text-decoration: none;
-        padding: 0.75rem 1.5rem;
+        padding: 0.75rem 2rem !important;
         border-radius: 25px;
         transition: all 0.3s ease;
         display: block;
+        text-decoration: none;
       }
 
       .nav-link:hover {
@@ -115,6 +116,30 @@
 
       .main-content {
         padding-top: 1rem;
+      }
+
+      /* Table column widths */
+      #credit-note-table th:nth-child(1),
+      #credit-note-table td:nth-child(1) {
+        width: 5% !important;
+        min-width: 50px;
+      }
+      #credit-note-table th:nth-child(2),
+      #credit-note-table td:nth-child(2) {
+        width: 50% !important;
+      }
+      #credit-note-table th:nth-child(3),
+      #credit-note-table td:nth-child(3) {
+        width: 20% !important;
+      }
+      #credit-note-table th:nth-child(4),
+      #credit-note-table td:nth-child(4) {
+        width: 20% !important;
+      }
+      #credit-note-table th:nth-child(5),
+      #credit-note-table td:nth-child(5) {
+        width: 5% !important;
+        min-width: 50px;
       }
 
       /* Universal button styles */
