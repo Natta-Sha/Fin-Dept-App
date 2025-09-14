@@ -511,14 +511,35 @@
         console.log("fillProjectDetails called with:", details);
         window.currentProjectDetails = details;
 
+        const clientNameEl = document.getElementById("client_name");
+        const clientAddressEl = document.getElementById("client_address");
+        const clientNumberEl = document.getElementById("client_number");
+
+        console.log("client_name element:", clientNameEl);
+        console.log("client_address element:", clientAddressEl);
+        console.log("client_number element:", clientNumberEl);
+
         console.log("Setting client_name to:", details.clientName);
-        document.getElementById("client_name").textContent = details.clientName;
+        if (clientNameEl) clientNameEl.textContent = details.clientName;
+        console.log(
+          "After setting client_name:",
+          clientNameEl ? clientNameEl.textContent : "element not found"
+        );
+
         console.log("Setting client_address to:", details.clientAddress);
-        document.getElementById("client_address").textContent =
-          details.clientAddress;
+        if (clientAddressEl)
+          clientAddressEl.textContent = details.clientAddress;
+        console.log(
+          "After setting client_address:",
+          clientAddressEl ? clientAddressEl.textContent : "element not found"
+        );
+
         console.log("Setting client_number to:", details.clientNumber);
-        document.getElementById("client_number").textContent =
-          details.clientNumber;
+        if (clientNumberEl) clientNumberEl.textContent = details.clientNumber;
+        console.log(
+          "After setting client_number:",
+          clientNumberEl ? clientNumberEl.textContent : "element not found"
+        );
         document.getElementById("our_company").textContent =
           details.ourCompany || "";
         document.getElementById("tax").textContent = details.tax;
