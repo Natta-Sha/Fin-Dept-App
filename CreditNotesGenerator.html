@@ -337,7 +337,7 @@
 
     <!-- Main Content -->
     <div class="main-content container">
-      <h2 id="page-title">Create Credit Note</h2>
+      <h2 id="page-title" class="mb-4">Create Credit Note</h2>
 
       <!-- Credit Note Form -->
       <form id="credit-note-form">
@@ -351,6 +351,7 @@
               list="project_list"
               id="project_name"
               class="form-control"
+              placeholder="Start typing to search..."
               required
             />
             <datalist id="project_list"></datalist>
@@ -382,6 +383,10 @@
             <p class="form-control-plaintext" id="client_number"></p>
           </div>
           <div class="col-md-3">
+            <label class="form-label">Our Company</label>
+            <p class="form-control-plaintext" id="our_company"></p>
+          </div>
+          <div class="col-md-3">
             <label class="form-label"
               >Credit Note Date <span class="text-danger">*</span></label
             >
@@ -396,38 +401,27 @@
             <label class="form-label">Exchange Rate</label>
             <p class="form-control-plaintext" id="exchange_rate_display"></p>
           </div>
-          <div class="col-md-3">
-            <label class="form-label">Currency</label>
-            <p class="form-control-plaintext" id="currency">USD</p>
-          </div>
         </div>
 
         <div class="row mb-3">
-          <div class="col-md-6">
-            <label class="form-label">Our Company</label>
-            <p class="form-control-plaintext" id="our_company"></p>
-          </div>
-          <div class="col-md-6">
-            <label class="form-label">Comment</label>
-            <textarea
-              id="comment"
-              class="form-control"
-              rows="3"
-              placeholder="Optional field for credit note"
-            ></textarea>
+          <div class="col-md-3">
+            <label class="form-label">Currency</label>
+            <p class="form-control-plaintext" id="currency">$ (USD)</p>
           </div>
         </div>
 
-        <!-- Items table -->
-        <h5 class="mb-3">Items</h5>
-        <button
-          class="btn btn-outline-primary mb-3"
-          onclick="addRow()"
-          id="add-row-btn"
-        >
-          + Add Row
-        </button>
+        <!-- Comment -->
+        <div class="mb-3">
+          <label class="form-label">Comment</label>
+          <input
+            type="text"
+            id="comment"
+            class="form-control"
+            placeholder="Optional comment for credit note"
+          />
+        </div>
 
+        <!-- Items table -->
         <table class="table table-bordered" id="credit-note-table">
           <thead class="table-light">
             <tr>
@@ -457,6 +451,14 @@
           </tbody>
         </table>
 
+        <button
+          class="btn btn-outline-primary mb-3"
+          onclick="addRow()"
+          id="add-row-btn"
+        >
+          + Add Row
+        </button>
+
         <!-- Totals -->
         <div class="row mb-3">
           <div class="col-md-3">
@@ -473,12 +475,12 @@
           </div>
           <div class="col-md-3">
             <label class="form-label">Amount in EUR</label>
-            <p class="form-control-plaintext" id="amount_in_eur">0.00</p>
+            <p class="form-control-plaintext" id="amount_in_eur"></p>
           </div>
         </div>
       </form>
 
-      <div class="row mt-4">
+      <div class="row mt-4 mb-4">
         <div
           class="col-md-12 d-flex justify-content-end gap-2"
           id="action-buttons"
@@ -575,7 +577,8 @@
 
         document.getElementById("subtotal").textContent = subtotal.toFixed(2);
         document.getElementById("total").textContent = total.toFixed(2);
-        document.getElementById("amount_in_eur").textContent = total.toFixed(2);
+        // Amount in EUR will be calculated when needed (like in invoices)
+        document.getElementById("amount_in_eur").textContent = "";
       }
 
       // Form submission (placeholder)
