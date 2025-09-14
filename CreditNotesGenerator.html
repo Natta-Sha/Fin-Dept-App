@@ -592,6 +592,45 @@
       // Global variable to store valid project names
       let validProjectNames = [];
 
+      // Calculate totals function
+      function updateTotals() {
+        const amountInputs = document.querySelectorAll(
+          "#credit-note-body input[type='number']"
+        );
+        let subtotal = 0;
+
+        amountInputs.forEach((input) => {
+          const value = parseFloat(input.value) || 0;
+          subtotal += value;
+        });
+
+        const taxRate =
+          parseFloat(document.getElementById("tax").textContent) || 0;
+        const tax = (subtotal * taxRate) / 100;
+        const total = subtotal + tax;
+
+        document.getElementById("subtotal").textContent = subtotal.toFixed(2);
+        document.getElementById("total").textContent = total.toFixed(2);
+
+        // Calculate Amount in EUR based on currency
+        const currency = document
+          .getElementById("currency")
+          .textContent.trim()
+          .split(" ")[0];
+
+        const amountInEurEl = document.getElementById("amount_in_eur");
+
+        if (currency === "$") {
+          const exchangeRate = parseFloat(
+            document.getElementById("exchange_rate").value
+          );
+          amountInEurEl.textContent =
+            exchangeRate > 0 ? (total / exchangeRate).toFixed(2) : "0.00";
+        } else {
+          amountInEurEl.textContent = "";
+        }
+      }
+
       // Initialize page
       document.addEventListener("DOMContentLoaded", function () {
         // Populate project names
@@ -662,43 +701,6 @@
             numberInput.value = index + 1;
           }
         });
-      }
-
-      // Calculate totals
-      function calculateTotals() {
-        const amountInputs = document.querySelectorAll(".amount-input");
-        let subtotal = 0;
-
-        amountInputs.forEach((input) => {
-          const value = parseFloat(input.value) || 0;
-          subtotal += value;
-        });
-
-        const taxRate =
-          parseFloat(document.getElementById("tax").textContent) || 0;
-        const tax = (subtotal * taxRate) / 100;
-        const total = subtotal + tax;
-
-        document.getElementById("subtotal").textContent = subtotal.toFixed(2);
-        document.getElementById("total").textContent = total.toFixed(2);
-
-        // Calculate Amount in EUR based on currency
-        const currency = document
-          .getElementById("currency")
-          .textContent.trim()
-          .split(" ")[0];
-
-        const amountInEurEl = document.getElementById("amount_in_eur");
-
-        if (currency === "$") {
-          const exchangeRate = parseFloat(
-            document.getElementById("exchange_rate").value
-          );
-          amountInEurEl.textContent =
-            exchangeRate > 0 ? (total / exchangeRate).toFixed(2) : "0.00";
-        } else {
-          amountInEurEl.textContent = "";
-        }
       }
 
       // Form submission
