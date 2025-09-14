@@ -87,6 +87,61 @@
         flex-grow: 1;
         padding: 20px;
       }
+
+      /* Universal button styles */
+      .btn {
+        font-weight: 600 !important;
+        border-radius: 25px !important;
+        padding: 0.75rem 2rem !important;
+        font-size: 1.1rem !important;
+        transition: all 0.3s ease !important;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1) !important;
+        border: none !important;
+      }
+
+      .btn:hover {
+        transform: translateY(-1px) !important;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2) !important;
+      }
+
+      .btn:focus,
+      .btn:active {
+        transform: translateY(-1px) !important;
+      }
+
+      /* Primary buttons (главные действия) */
+      .btn-primary,
+      .btn-nav {
+        background: linear-gradient(
+          135deg,
+          #667eea 0%,
+          #764ba2 100%
+        ) !important;
+        color: white !important;
+      }
+
+      .btn-primary:hover,
+      .btn-nav:hover {
+        background: linear-gradient(
+          135deg,
+          #5a6fd8 0%,
+          #6b4190 100%
+        ) !important;
+        color: white !important;
+      }
+
+      .btn-primary:focus,
+      .btn-primary:active,
+      .btn-nav:focus,
+      .btn-nav:active {
+        background: linear-gradient(
+          135deg,
+          #5a6fd8 0%,
+          #6b4190 100%
+        ) !important;
+        color: white !important;
+        box-shadow: 0 0 0 0.25rem rgba(102, 126, 234, 0.25) !important;
+      }
     </style>
 
     <!-- Bootstrap JS -->
