@@ -358,8 +358,22 @@
             />
           </div>
           <div class="col-md-3">
-            <label class="form-label">Exchange Rate</label>
+            <label
+              class="form-label"
+              for="exchange_rate"
+              id="exchange_rate_label"
+              >Exchange Rate</label
+            >
             <p class="form-control-plaintext" id="exchange_rate_display"></p>
+            <input
+              id="exchange_rate"
+              type="number"
+              step="0.0001"
+              class="form-control"
+              value="1.0000"
+              oninput="updateTotals()"
+              style="display: none"
+            />
           </div>
         </div>
 
@@ -397,13 +411,26 @@
               <td>
                 <input type="text" class="form-control" value="1" readonly />
               </td>
-              <td><input type="text" class="form-control" /></td>
-              <td><input type="text" class="form-control" /></td>
+              <td>
+                <input
+                  type="text"
+                  class="form-control"
+                  oninput="updateTotals()"
+                />
+              </td>
+              <td>
+                <input
+                  type="text"
+                  class="form-control"
+                  oninput="updateTotals()"
+                />
+              </td>
               <td>
                 <input
                   type="number"
                   class="form-control amount-input"
                   step="0.01"
+                  oninput="updateTotals()"
                 />
               </td>
               <td></td>
@@ -510,6 +537,27 @@
         const currencySymbol = details.currency;
         document.getElementById("currency").textContent =
           currencyMap[currencySymbol] || currencySymbol;
+
+        // Handle Exchange Rate field based on currency
+        const exchangeInput = document.getElementById("exchange_rate");
+        const exchangeDisplay = document.getElementById(
+          "exchange_rate_display"
+        );
+
+        if (currencySymbol !== "$") {
+          exchangeInput.style.display = "none";
+          exchangeDisplay.textContent = "";
+          document.getElementById("amount_in_eur").textContent = "";
+        } else {
+          exchangeInput.style.display = "block";
+          exchangeInput.value = "1.0000";
+          exchangeDisplay.innerHTML = `
+            Exchange Rate (EUR 1 = USD ...)
+            <a href="https://www.bundesbank.de/dynamic/action/en/statistics/time-series-databases/time-series-databases/745582/745582?dateSelect=2025&tsTab=0&listId=www_sdks_b01012_3&tsId=BBEX3.D.USD.EUR.BB.AC.000&id=0" target="_blank" class="ms-1 btn btn-link btn-sm p-0">Link</a>
+          `;
+        }
+
+        updateTotals();
       }
 
       // Populate project names in datalist
@@ -559,6 +607,15 @@
                 .getProjectDetails(value);
             }
           });
+
+        // Add event listeners for all existing table inputs
+        document
+          .querySelectorAll("#credit-note-body input")
+          .forEach(function (input) {
+            if (input.type !== "text" || !input.readOnly) {
+              input.addEventListener("input", updateTotals);
+            }
+          });
       });
 
       // Add row function
@@ -568,9 +625,9 @@
         const newRow = document.createElement("tr");
         newRow.innerHTML = `
           <td><input type="text" class="form-control" value="${rowCount}" readonly /></td>
-          <td><input type="text" class="form-control" /></td>
-          <td><input type="text" class="form-control" /></td>
-          <td><input type="number" class="form-control amount-input" step="0.01" onchange="calculateTotals()" /></td>
+          <td><input type="text" class="form-control" oninput="updateTotals()" /></td>
+          <td><input type="text" class="form-control" oninput="updateTotals()" /></td>
+          <td><input type="number" class="form-control amount-input" step="0.01" oninput="updateTotals()" /></td>
           <td>
             <button type="button" class="icon-button" onclick="removeRow(this)">
               <i class="bi bi-trash"></i>
@@ -619,8 +676,24 @@
 
         document.getElementById("subtotal").textContent = subtotal.toFixed(2);
         document.getElementById("total").textContent = total.toFixed(2);
-        // Amount in EUR will be calculated when needed (like in invoices)
-        document.getElementById("amount_in_eur").textContent = "";
+
+        // Calculate Amount in EUR based on currency
+        const currency = document
+          .getElementById("currency")
+          .textContent.trim()
+          .split(" ")[0];
+
+        const amountInEurEl = document.getElementById("amount_in_eur");
+
+        if (currency === "$") {
+          const exchangeRate = parseFloat(
+            document.getElementById("exchange_rate").value
+          );
+          amountInEurEl.textContent =
+            exchangeRate > 0 ? (total / exchangeRate).toFixed(2) : "0.00";
+        } else {
+          amountInEurEl.textContent = "";
+        }
       }
 
       // Form submission (placeholder)
