@@ -655,23 +655,29 @@
         populateProjectNames();
 
         // Add event listener for project name changes
+        function handleProjectChange() {
+          const value = this.value.trim();
+          console.log("Project name changed to:", value);
+          console.log("Is valid project?", validProjectNames.includes(value));
+          console.log("Valid project names:", validProjectNames);
+          if (value && validProjectNames.length > 0) {
+            console.log("Calling getProjectDetails for:", value);
+            google.script.run
+              .withSuccessHandler(fillProjectDetails)
+              .withFailureHandler(function (error) {
+                console.error("Failed to load project details:", error);
+              })
+              .getProjectDetails(value);
+          }
+        }
+
         document
           .getElementById("project_name")
-          .addEventListener("change", function () {
-            const value = this.value.trim();
-            console.log("Project name changed to:", value);
-            console.log("Is valid project?", validProjectNames.includes(value));
-            console.log("Valid project names:", validProjectNames);
-            if (value && validProjectNames.length > 0) {
-              console.log("Calling getProjectDetails for:", value);
-              google.script.run
-                .withSuccessHandler(fillProjectDetails)
-                .withFailureHandler(function (error) {
-                  console.error("Failed to load project details:", error);
-                })
-                .getProjectDetails(value);
-            }
-          });
+          .addEventListener("change", handleProjectChange);
+
+        document
+          .getElementById("project_name")
+          .addEventListener("input", handleProjectChange);
 
         // Add event listeners for all existing table inputs
         document
