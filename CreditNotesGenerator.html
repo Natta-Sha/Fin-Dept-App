@@ -508,11 +508,15 @@
 
       // Fill project details from client database
       function fillProjectDetails(details) {
+        console.log("fillProjectDetails called with:", details);
         window.currentProjectDetails = details;
 
+        console.log("Setting client_name to:", details.clientName);
         document.getElementById("client_name").textContent = details.clientName;
+        console.log("Setting client_address to:", details.clientAddress);
         document.getElementById("client_address").textContent =
           details.clientAddress;
+        console.log("Setting client_number to:", details.clientNumber);
         document.getElementById("client_number").textContent =
           details.clientNumber;
         document.getElementById("our_company").textContent =
@@ -646,7 +650,10 @@
           .getElementById("project_name")
           .addEventListener("change", function () {
             const value = this.value.trim();
+            console.log("Project name changed to:", value);
+            console.log("Is valid project?", validProjectNames.includes(value));
             if (validProjectNames.includes(value)) {
+              console.log("Calling getProjectDetails for:", value);
               google.script.run
                 .withSuccessHandler(fillProjectDetails)
                 .withFailureHandler(function (error) {
