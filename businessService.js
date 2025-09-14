@@ -39,6 +39,86 @@ function processInvoiceCreation(data) {
 }
 
 /**
+ * Process credit note creation - Main business logic for credit notes
+ * @param {Object} data - Credit note form data from frontend
+ * @returns {Object} Result with document and PDF URLs
+ */
+function processCreditNoteCreation(data) {
+  try {
+    Logger.log(
+      "processCreditNoteCreation: Starting credit note creation process."
+    );
+    Logger.log(
+      `processCreditNoteCreation: Processing credit note for project: ${data.projectName}, credit note: ${data.creditNoteNumber}`
+    );
+
+    // Validate required data
+    const validation = validateCreditNoteData(data);
+    if (!validation.isValid) {
+      throw new Error(`Validation failed: ${validation.errors.join(", ")}`);
+    }
+
+    // Get project details and folder ID
+    const projectDetails = getProjectDetailsWithValidation(data.projectName);
+    const projectFolderId = getProjectFolderId(data.projectName);
+    Logger.log(">>> Using folderId: " + projectFolderId);
+
+    if (!projectFolderId) {
+      throw new Error("Missing folderId for this project.");
+    }
+
+    // Use dataService to handle the entire process
+    return processCreditNoteFormFromData(data);
+  } catch (error) {
+    Logger.log(`processCreditNoteCreation: ERROR - ${error.toString()}`);
+    Logger.log(`Stack Trace: ${error.stack}`);
+    throw error;
+  }
+}
+
+/**
+ * Validate credit note data before processing
+ * @param {Object} data - Credit note data to validate
+ * @returns {Object} Validation result
+ */
+function validateCreditNoteData(data) {
+  const errors = [];
+  const requiredFields = [
+    "projectName",
+    "creditNoteNumber",
+    "clientName",
+    "clientAddress",
+    "clientNumber",
+    "creditNoteDate",
+    "tax",
+    "subtotal",
+    "total",
+    "currency",
+    "ourCompany",
+    "items",
+  ];
+
+  requiredFields.forEach((field) => {
+    if (
+      !data[field] ||
+      (typeof data[field] === "string" && data[field].trim() === "")
+    ) {
+      errors.push(`${field} is required`);
+    }
+  });
+
+  // Validate items array
+  if (data.items && data.items.length === 0) {
+    errors.push("At least one item is required");
+  }
+
+  return {
+    isValid: errors.length === 0,
+    errors: errors,
+  };
+}
+
+/**
  * Validate invoice data before processing
  * @param {Object} data - Invoice data to validate
  * @returns {Object} Validation result

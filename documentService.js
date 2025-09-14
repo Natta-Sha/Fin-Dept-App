@@ -334,3 +334,119 @@ function getProjectFolderId(projectName) {
   );
   return CONFIG.FOLDER_ID;
 }
+
+/**
+ * Create credit note document from template
+ * @param {Object} data - Credit note data
+ * @param {string} uniqueId - Unique ID for the credit note
+ * @returns {Object} Result with document and PDF URLs
+ */
+function createCreditNoteDocument(data, uniqueId) {
+  try {
+    Logger.log(
+      `createCreditNoteDocument: Starting for credit note: ${data.creditNoteNumber}`
+    );
+
+    const templateId =
+      data.templateId || "10ATzUFN-6j2ceAQQJYo6sivX1Hdq8g-dspRN14WF-4c";
+    const folderId = getProjectFolderId(data.projectName);
+
+    const template = DriveApp.getFileById(templateId);
+    const folder = DriveApp.getFolderById(folderId);
+
+    const filename = `${data.creditNoteNumber}_${data.projectName}_CreditNote_${uniqueId}`;
+    Logger.log(`createCreditNoteDocument: Generated filename: ${filename}`);
+
+    const copy = template.makeCopy(filename, folder);
+    const doc = DocumentApp.openById(copy.getId());
+    const body = doc.getBody();
+
+    // Replace placeholders in the document
+    replaceCreditNotePlaceholders(body, data);
+
+    // Save the document
+    doc.saveAndClose();
+
+    // Create PDF
+    const pdfBlob = DriveApp.getFileById(copy.getId()).getAs("application/pdf");
+    const pdfFile = folder.createFile(pdfBlob);
+    pdfFile.setName(filename + ".pdf");
+
+    Logger.log(
+      `createCreditNoteDocument: Created document and PDF successfully`
+    );
+    return {
+      success: true,
+      docUrl: doc.getUrl(),
+      pdfUrl: pdfFile.getUrl(),
+    };
+  } catch (error) {
+    Logger.log(`createCreditNoteDocument: ERROR - ${error.toString()}`);
+    throw error;
+  }
+}
+
+/**
+ * Replace placeholders in credit note document
+ * @param {Body} body - Document body
+ * @param {Object} data - Credit note data
+ */
+function replaceCreditNotePlaceholders(body, data) {
+  const formattedDate = formatDate(new Date(data.creditNoteDate));
+  const subtotalNum = parseFloat(data.subtotal) || 0;
+  const taxRate = parseFloat(data.tax) || 0;
+  const taxAmount = (subtotalNum * taxRate) / 100;
+  const totalAmount = subtotalNum + taxAmount;
+
+  // Replace basic placeholders
+  const replacements = {
+    "{{Project Name}}": data.projectName,
+    "{{CN Number}}": data.creditNoteNumber,
+    "{{Client Name}}": data.clientName,
+    "{{Client Address}}": data.clientAddress,
+    "{{Client Number}}": data.clientNumber,
+    "{{CN Date}}": formattedDate,
+    "{{Tax Rate (%)}}": taxRate.toFixed(0),
+    "{{Subtotal}}": subtotalNum.toFixed(2),
+    "{{Tax Amount}}": taxAmount.toFixed(2),
+    "{{Total}}": totalAmount.toFixed(2),
+    "{{Exchange Rate}}":
+      data.currency === "$" ? parseFloat(data.exchangeRate).toFixed(4) : "",
+    "{{Currency}}": data.currency,
+    "{{Amount in EUR}}":
+      data.currency === "$" ? parseFloat(data.amountInEUR).toFixed(2) : "",
+    "{{Our Company}}": data.ourCompany,
+    "{{Comment}}": data.comment || "",
+  };
+
+  // Replace all placeholders
+  Object.entries(replacements).forEach(([placeholder, value]) => {
+    body.replaceText(placeholder, value);
+  });
+
+  // Replace items table
+  replaceCreditNoteItemsTable(body, data.items);
+}
+
+/**
+ * Replace items table in credit note document
+ * @param {Body} body - Document body
+ * @param {Array} items - Items array
+ */
+function replaceCreditNoteItemsTable(body, items) {
+  // Find the items table and replace it
+  // This is a simplified version - you may need to adjust based on your template structure
+  items.forEach((item, index) => {
+    const rowNumber = index + 1;
+    const replacements = {
+      [`{{Row ${rowNumber} #}}`]: item[0] || "",
+      [`{{Row ${rowNumber} Description}}`]: item[1] || "",
+      [`{{Row ${rowNumber} Period}}`]: item[2] || "",
+      [`{{Row ${rowNumber} Amount}}`]: item[3] || "",
+    };
+
+    Object.entries(replacements).forEach(([placeholder, value]) => {
+      body.replaceText(placeholder, value);
+    });
+  });
+}

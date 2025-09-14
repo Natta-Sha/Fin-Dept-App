@@ -59,6 +59,10 @@ function processForm(data) {
   return processInvoiceCreation(data);
 }
 
+function processCreditNoteForm(data) {
+  return processCreditNoteCreation(data);
+}
+
 // Export functions for use in other modules
 // Note: In Google Apps Script, all functions are globally available
 // These comments help with documentation and IDE support

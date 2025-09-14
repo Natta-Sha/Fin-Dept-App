@@ -553,9 +553,9 @@
           exchangeInput.style.display = "block";
           exchangeInput.value = "1.0000";
           exchangeDisplay.innerHTML = `
-            Exchange Rate (EUR 1 = USD ...)
-            <a href="https://www.bundesbank.de/dynamic/action/en/statistics/time-series-databases/time-series-databases/745582/745582?dateSelect=2025&tsTab=0&listId=www_sdks_b01012_3&tsId=BBEX3.D.USD.EUR.BB.AC.000&id=0" target="_blank" class="ms-1 btn btn-link btn-sm p-0">Link</a>
-          `;
+    Exchange Rate (EUR 1 = USD ...)
+    <a href="https://www.bundesbank.de/dynamic/action/en/statistics/time-series-databases/time-series-databases/745582/745582?dateSelect=2025&tsTab=0&listId=www_sdks_b01012_3&tsId=BBEX3.D.USD.EUR.BB.AC.000&id=0" target="_blank" class="ms-1 btn btn-link btn-sm p-0">Link</a>
+  `;
         }
 
         updateTotals();
@@ -631,8 +631,8 @@
           <td><input type="number" class="form-control amount-input" step="0.01" oninput="updateTotals()" /></td>
           <td>
             <button type="button" class="icon-button" onclick="removeRow(this)">
-              <i class="bi bi-trash"></i>
-            </button>
+    <i class="bi bi-trash"></i>
+  </button>
           </td>
         `;
         tbody.appendChild(newRow);
@@ -698,24 +698,128 @@
         }
       }
 
-      // Form submission (placeholder)
+      // Form submission
       function submitForm() {
-        // Basic validation
-        const projectName = document
+        const projectValue = document
           .getElementById("project_name")
           .value.trim();
-        const creditNoteNumber = document
-          .getElementById("credit_note_number")
-          .value.trim();
-        const creditNoteDate =
-          document.getElementById("credit_note_date").value;
 
-        if (!projectName || !creditNoteNumber || !creditNoteDate) {
-          alert("Please fill in all required fields (marked with *)");
+        // Check if we need to load project details first
+        if (!window.currentProjectDetails && projectValue) {
+          document.getElementById("generate-btn").disabled = true;
+          document.getElementById("spinner").style.display = "inline-block";
+
+          google.script.run
+            .withSuccessHandler(function (details) {
+              window.currentProjectDetails = details;
+              console.log("Project details loaded:", details);
+              // Now submit the form with the loaded details
+              submitFormWithData();
+            })
+            .withFailureHandler(function (error) {
+              console.error("Failed to load project details:", error);
+              alert("Failed to load project details. Please try again.");
+              document.getElementById("generate-btn").disabled = false;
+              document.getElementById("spinner").style.display = "none";
+            })
+            .getProjectDetails(projectValue);
           return;
         }
 
-        alert("Generate Credit Note functionality coming soon!");
+        // If project details are already loaded, submit directly
+        submitFormWithData();
+      }
+
+      function submitFormWithData() {
+        const projectValue = document
+          .getElementById("project_name")
+          .value.trim();
+
+        const data = {
+          projectName: projectValue,
+          creditNoteNumber: document
+            .getElementById("credit_note_number")
+            .value.trim(),
+          clientName: document.getElementById("client_name").textContent.trim(),
+          clientAddress: document
+            .getElementById("client_address")
+            .textContent.trim(),
+          clientNumber: document
+            .getElementById("client_number")
+            .textContent.trim(),
+          creditNoteDate: document
+            .getElementById("credit_note_date")
+            .value.trim(),
+          tax: document.getElementById("tax").textContent.trim(),
+          subtotal: document.getElementById("subtotal").textContent.trim(),
+          total: document.getElementById("total").textContent.trim(),
+          exchangeRate: document.getElementById("exchange_rate").value.trim(),
+          currency: document
+            .getElementById("currency")
+            .textContent.trim()
+            .split(" ")[0],
+          amountInEUR: document
+            .getElementById("amount_in_eur")
+            .textContent.trim(),
+          ourCompany: document.getElementById("our_company").textContent.trim(),
+          comment: document.getElementById("comment").value.trim(),
+          items: [],
+          templateId: "10ATzUFN-6j2ceAQQJYo6sivX1Hdq8g-dspRN14WF-4c", // Hardcoded as requested
+        };
+
+        // Calculate tax amount
+        const subtotal = parseFloat(data.subtotal) || 0;
+        const taxRate = parseFloat(data.tax) || 0;
+        data.taxAmount = ((subtotal * taxRate) / 100).toFixed(2);
+
+        // Collect items from table
+        const tbody = document.getElementById("credit-note-body");
+        for (let row of tbody.rows) {
+          const inputs = row.getElementsByTagName("input");
+          const rowData = Array.from(inputs).map((i) => i.value.trim());
+          data.items.push(rowData);
+        }
+
+        console.log(
+          "Data being sent to server:",
+          JSON.stringify(data, null, 2)
+        );
+
+        // Enable spinner and disable button + form
+        document.getElementById("generate-btn").disabled = true;
+        document.getElementById("spinner").style.display = "inline-block";
+        document.getElementById("result").innerHTML = "";
+
+        google.script.run
+          .withFailureHandler(function (error) {
+            document.getElementById("spinner").style.display = "none";
+            document.getElementById("generate-btn").disabled = false;
+            alert(
+              "An error occurred: " +
+                error.message +
+                "\n\nPlease check the browser console for more details."
+            );
+            console.error("Server-side call failed:", error);
+          })
+          .withSuccessHandler(function (result) {
+            document.getElementById("spinner").style.display = "none";
+            document.getElementById("result").innerHTML = `
+              <div class="alert alert-success mt-4">
+                <strong>Credit Note saved successfully!</strong><br>
+                <small class="text-muted">Document creation will be implemented later.</small>
+              </div>
+              <div class="row mt-4">
+                <div class="col-md-12 d-flex justify-content-end gap-2">
+                  <button class="btn btn-primary px-5 fw-bold" onclick="safeNavigateToCreditNotesList()">Back to the list</button>
+                </div>
+              </div>
+            `;
+
+            // Hide generate button after success
+            document.getElementById("generate-btn").style.display = "none";
+            document.getElementById("cancel-create-btn").style.display = "none";
+          })
+          .processCreditNoteForm(data);
       }
 
       // Initialize tooltips and event listeners

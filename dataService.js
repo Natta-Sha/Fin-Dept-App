@@ -759,3 +759,121 @@ function updateInvoiceByIdFromData(id, data) {
     return { success: false, message: error.message };
   }
 }
+
+/**
+ * Process credit note form data and create documents
+ * @param {Object} data - Credit note form data
+ * @returns {Object} Result with document and PDF URLs
+ */
+function processCreditNoteFormFromData(data) {
+  try {
+    Logger.log("processCreditNoteFormFromData: Starting credit note creation.");
+    Logger.log(
+      `processCreditNoteFormFromData: Received data for project: ${data.projectName}, credit note: ${data.creditNoteNumber}`
+    );
+
+    const spreadsheet = getSpreadsheet(CONFIG.SPREADSHEET_ID);
+    const sheet = getSheet(spreadsheet, CONFIG.SHEETS.CREDITNOTES);
+    const uniqueId = Utilities.getUuid();
+    Logger.log(
+      `processCreditNoteFormFromData: Generated new unique ID: ${uniqueId}`
+    );
+
+    if (sheet.getLastRow() === 0) {
+      const baseHeaders = [
+        "ID",
+        "Project Name",
+        "CN Number",
+        "Client Name",
+        "Client Address",
+        "Client Number",
+        "CN Date",
+        "Tax Rate (%)",
+        "Subtotal",
+        "Tax Amount",
+        "Total",
+        "Exchange Rate",
+        "Currency",
+        "Amount in EUR",
+        "Our Company",
+        "Comment",
+        "Google Doc Link",
+        "PDF Link",
+      ];
+
+      const itemHeaders = [];
+      for (let i = 1; i <= 20; i++) {
+        // Max 20 rows as requested
+        itemHeaders.push(
+          `Row ${i} #`,
+          `Row ${i} Description`,
+          `Row ${i} Period`,
+          `Row ${i} Amount`
+        );
+      }
+      sheet.appendRow([...baseHeaders, ...itemHeaders]);
+      Logger.log(
+        "processCreditNoteFormFromData: Sheet was empty, headers created."
+      );
+    }
+
+    const formattedDate = formatDate(data.creditNoteDate);
+
+    const subtotalNum = parseFloat(data.subtotal) || 0;
+    const taxRate = parseFloat(data.tax) || 0;
+    const taxAmount = (subtotalNum * taxRate) / 100;
+    const totalAmount = subtotalNum + taxAmount;
+
+    const itemCells = [];
+    data.items.forEach((row, i) => {
+      const newRow = [...row];
+      newRow[0] = (i + 1).toString();
+      // Force Period field (index 2) to be saved as text to prevent Google Sheets from converting it to date
+      if (newRow[2]) {
+        newRow[2] = `'${newRow[2].toString()}`; // Add single quote prefix to force text format
+      }
+      itemCells.push(...newRow);
+    });
+
+    const row = [
+      uniqueId,
+      data.projectName,
+      data.creditNoteNumber,
+      data.clientName,
+      data.clientAddress,
+      data.clientNumber,
+      new Date(data.creditNoteDate),
+      taxRate.toFixed(0),
+      subtotalNum.toFixed(2),
+      taxAmount.toFixed(2),
+      totalAmount.toFixed(2),
+      data.currency === "$" ? parseFloat(data.exchangeRate).toFixed(4) : "",
+      data.currency,
+      data.currency === "$" ? parseFloat(data.amountInEUR).toFixed(2) : "",
+      data.ourCompany || "",
+      data.comment || "",
+      "",
+      "", // placeholders for doc & pdf
+    ].concat(itemCells);
+
+    const newRowIndex = sheet.getLastRow() + 1;
+    sheet.getRange(newRowIndex, 1, 1, row.length).setValues([row]);
+    Logger.log(
+      `processCreditNoteFormFromData: Data saved to row ${newRowIndex}`
+    );
+
+    // Documents creation is not implemented yet - fields remain empty
+    Logger.log(
+      "processCreditNoteFormFromData: Credit note creation completed successfully (documents not created yet)."
+    );
+    return {
+      success: true,
+      message:
+        "Credit note saved successfully. Document creation will be implemented later.",
+    };
+  } catch (error) {
+    Logger.log(`processCreditNoteFormFromData: ERROR - ${error.toString()}`);
+    Logger.log(`Stack Trace: ${error.stack}`);
+    throw error;
+  }
+}
