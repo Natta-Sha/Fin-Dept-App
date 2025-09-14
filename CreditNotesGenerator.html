@@ -668,6 +668,21 @@
         }
       }
 
+      // Global error handler to prevent page redirects
+      window.addEventListener("error", function (event) {
+        console.error("Global error caught:", event.error);
+        alert("An error occurred: " + event.error.message);
+        event.preventDefault();
+        return false;
+      });
+
+      window.addEventListener("unhandledrejection", function (event) {
+        console.error("Unhandled promise rejection:", event.reason);
+        alert("An unhandled error occurred: " + event.reason);
+        event.preventDefault();
+        return false;
+      });
+
       // Initialize page
       document.addEventListener("DOMContentLoaded", function () {
         // Populate project names
@@ -726,7 +741,15 @@
               input.classList.add("amount-input");
               input.step = "0.01";
             }
-            // input.oninput = updateTotals; // Temporarily disabled
+            if (i === 3) {
+              input.oninput = function () {
+                try {
+                  updateTotals();
+                } catch (error) {
+                  console.error("Error in amount input:", error);
+                }
+              };
+            }
             cell.appendChild(input);
             console.log("addRow: Added input to cell", i);
           }
