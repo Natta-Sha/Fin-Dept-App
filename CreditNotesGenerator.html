@@ -312,7 +312,6 @@
               id="project_name"
               class="form-control"
               placeholder="Start typing to search..."
-              required
             />
             <datalist id="project_list"></datalist>
           </div>
@@ -320,12 +319,7 @@
             <label class="form-label"
               >Credit Note Number <span class="text-danger">*</span></label
             >
-            <input
-              id="credit_note_number"
-              type="text"
-              class="form-control"
-              required
-            />
+            <input id="credit_note_number" type="text" class="form-control" />
           </div>
           <div class="col-md-3">
             <label class="form-label">Client Name</label>
@@ -350,12 +344,7 @@
             <label class="form-label"
               >Credit Note Date <span class="text-danger">*</span></label
             >
-            <input
-              id="credit_note_date"
-              type="date"
-              class="form-control"
-              required
-            />
+            <input id="credit_note_date" type="date" class="form-control" />
           </div>
           <div class="col-md-3">
             <label
@@ -412,21 +401,16 @@
                 <input type="text" class="form-control" value="1" readonly />
               </td>
               <td>
-                <input
-                  type="text"
-                  class="form-control"
-                  placeholder="Description"
-                />
+                <input type="text" class="form-control" />
               </td>
               <td>
-                <input type="text" class="form-control" placeholder="Period" />
+                <input type="text" class="form-control" />
               </td>
               <td>
                 <input
                   type="number"
                   class="form-control amount-input"
                   step="0.01"
-                  placeholder="0.00"
                   oninput="updateTotals()"
                 />
               </td>
@@ -665,21 +649,12 @@
           const cell = row.insertCell();
           const input = document.createElement("input");
           input.className = "form-control";
-          input.type = i === 3 ? "number" : "text";
-          if (i === 0) {
-            input.value = rowNumber;
-            input.readOnly = true;
-          }
-          if (i === 1) {
-            input.placeholder = "Description";
-          }
-          if (i === 2) {
-            input.placeholder = "Period";
-          }
+          input.type = "text";
+          if (i === 0) input.value = rowNumber;
           if (i === 3) {
             input.classList.add("amount");
+            input.type = "number";
             input.step = "0.01";
-            input.placeholder = "0.00";
           }
           input.oninput = updateTotals;
           cell.appendChild(input);
