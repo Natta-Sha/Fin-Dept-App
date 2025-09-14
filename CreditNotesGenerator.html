@@ -532,6 +532,7 @@
           details.clientNumber;
         document.getElementById("our_company").textContent =
           details.ourCompany || "";
+        document.getElementById("tax").textContent = details.tax;
 
         const currencyMap = { $: "$ (USD)", "€": "€ (EUR)", "₴": "₴ (UAH)" };
         const currencySymbol = details.currency;
@@ -670,7 +671,8 @@
           subtotal += value;
         });
 
-        const taxRate = 19; // Default tax rate
+        const taxRate =
+          parseFloat(document.getElementById("tax").textContent) || 0;
         const tax = (subtotal * taxRate) / 100;
         const total = subtotal + tax;
 
