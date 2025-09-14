@@ -420,6 +420,7 @@
         </table>
 
         <button
+          type="button"
           class="btn btn-outline-primary mb-3"
           onclick="addRow()"
           id="add-row-btn"
@@ -641,7 +642,9 @@
 
       // Add row function
       function addRow() {
+        console.log("addRow function called");
         const tbody = document.getElementById("credit-note-body");
+        console.log("tbody found:", tbody);
         const rowNumber = tbody.rows.length + 1;
         const row = tbody.insertRow();
 
