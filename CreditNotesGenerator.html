@@ -663,22 +663,35 @@
 
       // Add row function
       function addRow() {
-        rowCount++;
         const tbody = document.getElementById("credit-note-body");
-        const newRow = document.createElement("tr");
-        newRow.innerHTML = `
-          <td><input type="text" class="form-control" value="${rowCount}" readonly /></td>
-          <td><input type="text" class="form-control" oninput="updateTotals()" /></td>
-          <td><input type="text" class="form-control" oninput="updateTotals()" /></td>
-          <td><input type="number" class="form-control amount-input" step="0.01" oninput="updateTotals()" /></td>
-          <td>
-            <button type="button" class="icon-button" onclick="removeRow(this)">
-              <i class="bi bi-trash"></i>
-            </button>
-          </td>
+        const rowNumber = tbody.rows.length + 1;
+        const row = tbody.insertRow();
+
+        // Create cells and inputs like in invoices
+        for (let i = 0; i < 4; i++) {
+          const cell = row.insertCell();
+          const input = document.createElement("input");
+          input.className = "form-control";
+          input.type = i === 3 ? "number" : "text";
+          if (i === 0) {
+            input.value = rowNumber;
+            input.readOnly = true;
+          }
+          if (i === 3) {
+            input.classList.add("amount-input");
+            input.step = "0.01";
+          }
+          input.oninput = updateTotals;
+          cell.appendChild(input);
+        }
+
+        // Add delete button cell
+        const deleteCell = row.insertCell();
+        deleteCell.innerHTML = `
+          <button type="button" class="icon-button" onclick="removeRow(this)" title="Delete row">
+            <i class="bi bi-trash"></i>
+          </button>
         `;
-        tbody.appendChild(newRow);
-        updateRowNumbers();
       }
 
       // Remove row function
