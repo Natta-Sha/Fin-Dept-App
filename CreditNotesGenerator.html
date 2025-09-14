@@ -422,7 +422,7 @@
                 <input
                   type="text"
                   class="form-control"
-                  oninput="updateTotals()"
+                  placeholder="Description"
                 />
               </td>
               <td>
@@ -430,6 +430,7 @@
                   type="number"
                   class="form-control amount-input"
                   step="0.01"
+                  placeholder="0.00"
                   oninput="updateTotals()"
                 />
               </td>
@@ -673,9 +674,13 @@
             input.value = rowNumber;
             input.readOnly = true;
           }
+          if (i === 1) {
+            input.placeholder = "Description";
+          }
           if (i === 2) {
             input.classList.add("amount");
             input.step = "0.01";
+            input.placeholder = "0.00";
           }
           input.oninput = updateTotals;
           cell.appendChild(input);
