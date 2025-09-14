@@ -1,24 +1,80 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
   <head>
+    <base target="_top" />
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Credit Notes</title>
+
     <!-- Bootstrap CSS -->
     <link
       href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
       rel="stylesheet"
     />
-    <!-- DataTables CSS -->
-    <link
-      rel="stylesheet"
-      type="text/css"
-      href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css"
-    />
 
     <style>
-      body {
+      /* Top navigation bar styling */
+      .top-nav {
         background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        padding: 0.75rem 0;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+      }
+
+      .nav-brand {
+        color: white !important;
+        font-weight: bold;
+        font-size: 1.5rem;
+        text-decoration: none;
+      }
+
+      .nav-item {
+        position: relative;
+      }
+
+      .nav-link {
+        color: white !important;
+        font-weight: 500;
+        text-decoration: none;
+        padding: 0.75rem 1.5rem;
+        border-radius: 25px;
+        transition: all 0.3s ease;
+        display: block;
+      }
+
+      .nav-link:hover {
+        background-color: rgba(255, 255, 255, 0.1);
+        transform: translateY(-2px);
+        color: white !important;
+      }
+
+      .nav-link.active {
+        background-color: rgba(255, 255, 255, 0.2);
+        font-weight: 600;
+        box-shadow: 0 2px 8px rgba(255, 255, 255, 0.2);
+      }
+
+      .dropdown-menu {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border: none;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+        border-radius: 15px;
+        padding: 0.5rem 0;
+        margin-top: 0.5rem;
+      }
+
+      .dropdown-item {
+        color: white !important;
+        padding: 0.75rem 1.5rem;
+        transition: all 0.3s ease;
+        border-radius: 10px;
+        margin: 0 0.5rem;
+      }
+
+      .dropdown-item:hover {
+        background-color: rgba(255, 255, 255, 0.1);
+        transform: translateX(5px);
+      }
+
+      body {
         margin: 0;
         min-height: 100vh;
         display: flex;
@@ -29,266 +85,10 @@
         flex-grow: 1;
         padding: 20px;
       }
-
-      /* Universal button styles */
-      .btn {
-        font-weight: 600 !important;
-        border-radius: 25px !important;
-        padding: 0.75rem 2rem !important;
-        font-size: 1.1rem !important;
-        transition: all 0.3s ease !important;
-        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1) !important;
-        border: none !important;
-      }
-
-      .btn:hover {
-        transform: translateY(-1px) !important;
-        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2) !important;
-      }
-
-      .btn:focus,
-      .btn:active {
-        transform: translateY(-1px) !important;
-      }
-
-      /* Small buttons */
-      .btn-sm {
-        padding: 0.25rem 0.75rem !important;
-        font-size: 0.8rem !important;
-        border-radius: 15px !important;
-      }
-
-      /* Primary buttons (главные действия) */
-      .btn-primary,
-      .btn-nav {
-        background: linear-gradient(
-          135deg,
-          #667eea 0%,
-          #764ba2 100%
-        ) !important;
-        color: white !important;
-      }
-
-      .btn-primary:hover,
-      .btn-nav:hover {
-        background: linear-gradient(
-          135deg,
-          #5a6fd8 0%,
-          #6b4190 100%
-        ) !important;
-        color: white !important;
-      }
-
-      .btn-primary:focus,
-      .btn-primary:active,
-      .btn-nav:focus,
-      .btn-nav:active {
-        background: linear-gradient(
-          135deg,
-          #5a6fd8 0%,
-          #6b4190 100%
-        ) !important;
-        color: white !important;
-        box-shadow: 0 0 0 0.25rem rgba(102, 126, 234, 0.25) !important;
-      }
-
-      /* Success buttons (создание/копирование) */
-      .btn-success {
-        background: linear-gradient(
-          135deg,
-          #28a745 0%,
-          #20692b 100%
-        ) !important;
-        color: white !important;
-      }
-
-      .btn-success:hover {
-        background: linear-gradient(
-          135deg,
-          #218838 0%,
-          #1e5e26 100%
-        ) !important;
-        color: white !important;
-      }
-
-      .btn-success:focus,
-      .btn-success:active {
-        background: linear-gradient(
-          135deg,
-          #218838 0%,
-          #1e5e26 100%
-        ) !important;
-        color: white !important;
-        box-shadow: 0 0 0 0.25rem rgba(40, 167, 69, 0.25) !important;
-      }
-
-      /* Danger buttons (удаление) */
-      .btn-danger {
-        background: linear-gradient(
-          135deg,
-          #dc3545 0%,
-          #b02a37 100%
-        ) !important;
-        color: white !important;
-      }
-
-      .btn-danger:hover {
-        background: linear-gradient(
-          135deg,
-          #c82333 0%,
-          #9e2530 100%
-        ) !important;
-        color: white !important;
-      }
-
-      .btn-danger:focus,
-      .btn-danger:active {
-        background: linear-gradient(
-          135deg,
-          #c82333 0%,
-          #9e2530 100%
-        ) !important;
-        color: white !important;
-        box-shadow: 0 0 0 0.25rem rgba(220, 53, 69, 0.25) !important;
-      }
-
-      /* Outline buttons (secondary actions) */
-      .btn-outline-primary {
-        background: linear-gradient(
-          135deg,
-          rgba(102, 126, 234, 0.1) 0%,
-          rgba(118, 75, 162, 0.1) 100%
-        ) !important;
-        color: #667eea !important;
-        border: 2px solid #667eea !important;
-      }
-
-      .btn-outline-primary:hover {
-        background: linear-gradient(
-          135deg,
-          #667eea 0%,
-          #764ba2 100%
-        ) !important;
-        color: white !important;
-        border-color: #667eea !important;
-      }
-
-      .btn-outline-secondary {
-        background: linear-gradient(
-          135deg,
-          rgba(108, 117, 125, 0.1) 0%,
-          rgba(73, 80, 87, 0.1) 100%
-        ) !important;
-        color: #6c757d !important;
-        border: 2px solid #6c757d !important;
-      }
-
-      .btn-outline-secondary:hover {
-        background: linear-gradient(
-          135deg,
-          #6c757d 0%,
-          #495057 100%
-        ) !important;
-        color: white !important;
-        border-color: #6c757d !important;
-      }
-
-      .btn-outline-danger {
-        background: linear-gradient(
-          135deg,
-          rgba(220, 53, 69, 0.1) 0%,
-          rgba(176, 42, 55, 0.1) 100%
-        ) !important;
-        color: #dc3545 !important;
-        border: 2px solid #dc3545 !important;
-      }
-
-      .btn-outline-danger:hover {
-        background: linear-gradient(
-          135deg,
-          #dc3545 0%,
-          #b02a37 100%
-        ) !important;
-        color: white !important;
-        border-color: #dc3545 !important;
-      }
-
-      .btn-outline-success {
-        background: linear-gradient(
-          135deg,
-          rgba(40, 167, 69, 0.1) 0%,
-          rgba(32, 105, 43, 0.1) 100%
-        ) !important;
-        color: #28a745 !important;
-        border: 2px solid #28a745 !important;
-      }
-
-      .btn-outline-success:hover {
-        background: linear-gradient(
-          135deg,
-          #28a745 0%,
-          #20692b 100%
-        ) !important;
-        color: white !important;
-        border-color: #28a745 !important;
-      }
-
-      th,
-      td {
-        padding: 4px 8px !important; /* компактнее строки */
-      }
-
-      /* Specific column widths for the invoices table */
-      #creditNotesTable th:nth-child(1),
-      #creditNotesTable td:nth-child(1) {
-        width: 10%;
-      }
-      #creditNotesTable th:nth-child(2),
-      #creditNotesTable td:nth-child(2) {
-        width: 25%;
-      }
-      #creditNotesTable th:nth-child(3),
-      #creditNotesTable td:nth-child(3) {
-        width: 15%;
-      }
-      #creditNotesTable th:nth-child(4),
-      #creditNotesTable td:nth-child(4) {
-        width: 15%;
-      }
-      #creditNotesTable th:nth-child(5),
-      #creditNotesTable td:nth-child(5) {
-        width: 15%;
-      }
-      #creditNotesTable th:nth-child(6),
-      #creditNotesTable td:nth-child(6) {
-        width: 20%;
-      }
-
-      .table-container {
-        background: white;
-        border-radius: 15px;
-        padding: 20px;
-        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
-      }
-
-      .success-alert {
-        position: fixed;
-        top: 100px;
-        right: 20px;
-        z-index: 1050;
-        width: 300px;
-      }
     </style>
-
-    <!-- jQuery (required for DataTables) -->
-    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
 
     <!-- Bootstrap JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-
-    <!-- DataTables JS -->
-    <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
-    <script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.min.js"></script>
   </head>
   <body>
     <!-- Top Navigation -->
@@ -296,55 +96,20 @@
 
     <!-- Main Content -->
     <div class="main-content container">
-      <div class="mb-3 d-flex justify-content-start">
-        <a
-          href="<?= baseUrl ?>?page=CreditNotesGenerator&mode=create"
-          class="btn btn-nav"
-        >
-          Generate Credit Note
-        </a>
+      <div
+        class="d-flex justify-content-center align-items-center"
+        style="min-height: 60vh"
+      >
+        <div class="text-center">
+          <h1 class="mb-4">Credit Notes</h1>
+          <p class="lead">Coming soon...</p>
+        </div>
       </div>
-
-      <div class="table-container">
-        <h2 class="mb-4">Credit Notes</h2>
-
-        <table id="creditNotesTable" class="table table-striped">
-          <thead>
-            <tr>
-              <th>CN Number</th>
-              <th>Project Name</th>
-              <th>CN Date</th>
-              <th>Total (USD)</th>
-              <th>Status</th>
-              <th>Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            <!-- Data will be populated by JavaScript -->
-          </tbody>
-        </table>
-      </div>
-    </div>
-
-    <!-- Success Alert Template (hidden by default) -->
-    <div
-      id="success-alert"
-      class="alert alert-success alert-dismissible success-alert"
-      style="display: none"
-    >
-      <strong>Success!</strong> <span id="success-message"></span>
-      <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
     </div>
 
     <script>
-      let table;
-
-      // Initialize DataTable when document is ready
-      $(document).ready(function () {
-        console.log("Initializing Credit Notes table...");
-        loadCreditNotesList();
-
-        // Initialize tooltips
+      // Initialize tooltips
+      document.addEventListener("DOMContentLoaded", function () {
         var tooltipTriggerList = [].slice.call(
           document.querySelectorAll('[data-bs-toggle="tooltip"]')
         );
@@ -352,63 +117,6 @@
           return new bootstrap.Tooltip(tooltipTriggerEl);
         });
       });
-
-      function loadCreditNotesList() {
-        console.log("Loading credit notes list...");
-
-        // For now, show empty table with message
-        const tbody = document.querySelector("#creditNotesTable tbody");
-        tbody.innerHTML = `
-          <tr>
-            <td colspan="6" class="text-center text-muted py-4">
-              <em>Credit Notes functionality coming soon...</em>
-            </td>
-          </tr>
-        `;
-
-        // Initialize DataTable
-        table = $("#creditNotesTable").DataTable({
-          searching: true,
-          paging: true,
-          info: true,
-          autoWidth: false,
-          columnDefs: [
-            { targets: [0], width: "10%" },
-            { targets: [1], width: "25%" },
-            { targets: [2], width: "15%" },
-            { targets: [3], width: "15%" },
-            { targets: [4], width: "15%" },
-            {
-              targets: [5],
-              width: "20%",
-              createdCell: function (td, cellData, rowData, row, col) {
-                td.style.whiteSpace = "nowrap";
-              },
-            },
-          ],
-          language: {
-            search: "Search credit notes:",
-            lengthMenu: "Show _MENU_ credit notes per page",
-            info: "Showing _START_ to _END_ of _TOTAL_ credit notes",
-            infoEmpty: "No credit notes available",
-            infoFiltered: "(filtered from _MAX_ total credit notes)",
-            emptyTable: "No credit notes found",
-            zeroRecords: "No matching credit notes found",
-          },
-        });
-      }
-
-      function showSuccess(message) {
-        const alert = document.getElementById("success-alert");
-        const messageSpan = document.getElementById("success-message");
-        messageSpan.textContent = message;
-        alert.style.display = "block";
-
-        // Auto-hide after 5 seconds
-        setTimeout(() => {
-          alert.style.display = "none";
-        }, 5000);
-      }
     </script>
   </body>
 </html>
