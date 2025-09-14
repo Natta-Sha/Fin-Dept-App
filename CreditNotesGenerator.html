@@ -494,6 +494,73 @@
         }
       }
 
+      // Fill project details from client database
+      function fillProjectDetails(details) {
+        window.currentProjectDetails = details;
+
+        document.getElementById("client_name").textContent = details.clientName;
+        document.getElementById("client_address").textContent =
+          details.clientAddress;
+        document.getElementById("client_number").textContent =
+          details.clientNumber;
+        document.getElementById("our_company").textContent =
+          details.ourCompany || "";
+
+        const currencyMap = { $: "$ (USD)", "€": "€ (EUR)", "₴": "₴ (UAH)" };
+        const currencySymbol = details.currency;
+        document.getElementById("currency").textContent =
+          currencyMap[currencySymbol] || currencySymbol;
+      }
+
+      // Populate project names in datalist
+      function populateProjectNames() {
+        console.log("[populateProjectNames] running...");
+        google.script.run
+          .withSuccessHandler(function (projects) {
+            validProjectNames = projects;
+            const datalist = document.getElementById("project_list");
+            datalist.innerHTML = "";
+            projects.forEach((name) => {
+              const opt = document.createElement("option");
+              opt.value = name;
+              datalist.appendChild(opt);
+            });
+            console.log(
+              "[populateProjectNames] populated",
+              projects.length,
+              "projects"
+            );
+          })
+          .withFailureHandler(function (error) {
+            console.error("[populateProjectNames] failed:", error);
+          })
+          .getProjectNames();
+      }
+
+      // Global variable to store valid project names
+      let validProjectNames = [];
+
+      // Initialize page
+      document.addEventListener("DOMContentLoaded", function () {
+        // Populate project names
+        populateProjectNames();
+
+        // Add event listener for project name changes
+        document
+          .getElementById("project_name")
+          .addEventListener("change", function () {
+            const value = this.value.trim();
+            if (validProjectNames.includes(value)) {
+              google.script.run
+                .withSuccessHandler(fillProjectDetails)
+                .withFailureHandler(function (error) {
+                  console.error("Failed to load project details:", error);
+                })
+                .getProjectDetails(value);
+            }
+          });
+      });
+
       // Add row function
       function addRow() {
         rowCount++;
