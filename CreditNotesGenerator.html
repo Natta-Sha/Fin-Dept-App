@@ -415,15 +415,11 @@
                 <input
                   type="text"
                   class="form-control"
-                  oninput="updateTotals()"
+                  placeholder="Description"
                 />
               </td>
               <td>
-                <input
-                  type="text"
-                  class="form-control"
-                  placeholder="Description"
-                />
+                <input type="text" class="form-control" placeholder="Period" />
               </td>
               <td>
                 <input
@@ -600,7 +596,7 @@
 
         for (let row of tbody.rows) {
           const inputs = row.getElementsByTagName("input");
-          const amountCell = inputs[2]; // Amount is the 3rd input (index 2)
+          const amountCell = inputs[3]; // Amount is the 4th input (index 3)
           subtotal += parseFloat(amountCell.value) || 0;
         }
 
@@ -665,11 +661,11 @@
         const rowNumber = tbody.rows.length + 1;
         const row = tbody.insertRow();
 
-        for (let i = 0; i < 3; i++) {
+        for (let i = 0; i < 4; i++) {
           const cell = row.insertCell();
           const input = document.createElement("input");
           input.className = "form-control";
-          input.type = i === 2 ? "number" : "text";
+          input.type = i === 3 ? "number" : "text";
           if (i === 0) {
             input.value = rowNumber;
             input.readOnly = true;
@@ -678,6 +674,9 @@
             input.placeholder = "Description";
           }
           if (i === 2) {
+            input.placeholder = "Period";
+          }
+          if (i === 3) {
             input.classList.add("amount");
             input.step = "0.01";
             input.placeholder = "0.00";
