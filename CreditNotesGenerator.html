@@ -598,6 +598,9 @@
               "[populateProjectNames] CityFALCON included?",
               projects.includes("CityFALCON")
             );
+
+            // Add project selection handlers AFTER projects are loaded
+            setupProjectSelectionHandlers();
           })
           .withFailureHandler(function (error) {
             console.error("[populateProjectNames] failed:", error);
@@ -607,6 +610,34 @@
 
       // Global variable to store valid project names
       let validProjectNames = [];
+
+      // Setup project selection handlers (called after projects are loaded)
+      function setupProjectSelectionHandlers() {
+        function handleProjectSelection() {
+          const value = this.value.trim();
+          console.log("Project selection event triggered, value:", value);
+          if (validProjectNames.includes(value)) {
+            console.log("Valid project selected, loading details...");
+            google.script.run
+              .withSuccessHandler(fillProjectDetails)
+              .withFailureHandler(function (error) {
+                console.error("Failed to load project details:", error);
+              })
+              .getProjectDetails(value);
+          } else {
+            console.log(
+              "Project not in valid list:",
+              validProjectNames.includes(value)
+            );
+          }
+        }
+
+        const projectNameField = document.getElementById("project_name");
+        projectNameField.addEventListener("change", handleProjectSelection);
+        projectNameField.addEventListener("input", handleProjectSelection);
+        projectNameField.addEventListener("blur", handleProjectSelection);
+        console.log("Project selection handlers setup complete");
+      }
 
       // Function to disable/enable form inputs
       function setFormInputsDisabled(isDisabled) {
@@ -666,31 +697,6 @@
       document.addEventListener("DOMContentLoaded", function () {
         // Populate project names
         populateProjectNames();
-
-        // Add event listener for project name changes
-        function handleProjectSelection() {
-          const value = this.value.trim();
-          console.log("Project selection event triggered, value:", value);
-          if (validProjectNames.includes(value)) {
-            console.log("Valid project selected, loading details...");
-            google.script.run
-              .withSuccessHandler(fillProjectDetails)
-              .withFailureHandler(function (error) {
-                console.error("Failed to load project details:", error);
-              })
-              .getProjectDetails(value);
-          } else {
-            console.log(
-              "Project not in valid list:",
-              validProjectNames.includes(value)
-            );
-          }
-        }
-
-        const projectNameField = document.getElementById("project_name");
-        projectNameField.addEventListener("change", handleProjectSelection);
-        projectNameField.addEventListener("input", handleProjectSelection);
-        projectNameField.addEventListener("blur", handleProjectSelection);
 
         // Add event listeners for all existing table inputs
         document
