@@ -869,6 +869,7 @@
           })
           .withSuccessHandler(function (result) {
             document.getElementById("spinner").style.display = "none";
+            setFormInputsDisabled(true);
             document.getElementById("result").innerHTML = `
               <div class="alert alert-success mt-4">
                 <strong>Credit Note saved successfully!</strong><br>
