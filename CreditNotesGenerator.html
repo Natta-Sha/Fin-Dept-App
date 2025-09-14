@@ -688,7 +688,7 @@
         if (tbody.children.length > 1) {
           row.remove();
           updateRowNumbers();
-          calculateTotals();
+          updateTotals();
         }
       }
 
@@ -838,7 +838,7 @@
         // Add event listeners for amount inputs
         document.addEventListener("change", function (e) {
           if (e.target.classList.contains("amount-input")) {
-            calculateTotals();
+            updateTotals();
           }
         });
       });
