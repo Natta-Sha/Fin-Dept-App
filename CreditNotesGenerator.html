@@ -578,6 +578,14 @@
       function setFormInputsDisabled(isDisabled) {
         try {
           document.querySelectorAll("input, textarea").forEach((el) => {
+            // Don't disable project_name field until project is selected
+            if (
+              el.id === "project_name" &&
+              isDisabled &&
+              !window.currentProjectDetails
+            ) {
+              return; // Skip disabling project_name if no project selected yet
+            }
             el.disabled = isDisabled;
           });
           const addRowBtnEl = document.getElementById("add-row-btn");
