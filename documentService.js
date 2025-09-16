@@ -89,9 +89,15 @@ function handleExchangeRateSection(body, data) {
     for (let i = 0; i < paragraphs.length; i++) {
       const text = paragraphs[i].getText();
       if (text.includes("Exchange Rate Notice")) {
-        paragraphs[i].removeFromParent();
-        if (i + 1 < paragraphs.length) {
-          paragraphs[i + 1].removeFromParent();
+        // Check if we can safely remove paragraphs
+        if (paragraphs.length > 1) {
+          paragraphs[i].removeFromParent();
+          if (i < paragraphs.length - 1) {
+            paragraphs[i + 1].removeFromParent();
+          }
+        } else {
+          // Instead of removing, just clear the text
+          paragraphs[i].clear();
         }
         break;
       }
@@ -417,14 +423,15 @@ function createCreditNoteDoc(
  */
 function handleCreditNoteExchangeRateSection(body, data) {
   if (data.currency !== "$") {
-    // Remove exchange rate notice for non-USD currencies (same as invoices)
+    // Clear exchange rate notice for non-USD currencies (instead of removing paragraphs)
     const paragraphs = body.getParagraphs();
     for (let i = 0; i < paragraphs.length; i++) {
       const text = paragraphs[i].getText();
       if (text.includes("Exchange Rate Notice")) {
-        paragraphs[i].removeFromParent();
+        // Clear the text instead of removing the paragraph
+        paragraphs[i].clear();
         if (i + 1 < paragraphs.length) {
-          paragraphs[i + 1].removeFromParent();
+          paragraphs[i + 1].clear();
         }
         break;
       }
@@ -451,15 +458,31 @@ function updateCreditNoteTable(body, data) {
   const tables = body.getTables();
   let targetTable = null;
 
+  Logger.log(
+    `updateCreditNoteTable: Found ${tables.length} tables in document`
+  );
+
   // Find the correct table - look for table with specific headers
-  for (const table of tables) {
-    if (table.getNumRows() === 0) continue;
+  for (let tableIndex = 0; tableIndex < tables.length; tableIndex++) {
+    const table = tables[tableIndex];
+    if (table.getNumRows() === 0) {
+      Logger.log(
+        `updateCreditNoteTable: Table ${tableIndex} has no rows, skipping`
+      );
+      continue;
+    }
 
     const headers = [];
     const headerRow = table.getRow(0);
     for (let i = 0; i < headerRow.getNumCells(); i++) {
       headers.push(headerRow.getCell(i).getText().trim());
     }
+
+    Logger.log(
+      `updateCreditNoteTable: Table ${tableIndex} headers: [${headers.join(
+        ", "
+      )}]`
+    );
 
     // Check if this is the credit note items table
     // Look for a table with headers like "#", "Description", "Period", "Amount"
@@ -475,6 +498,9 @@ function updateCreditNoteTable(body, data) {
         headers[3].toLowerCase().includes("сумма"))
     ) {
       targetTable = table;
+      Logger.log(
+        `updateCreditNoteTable: Found matching table at index ${tableIndex}`
+      );
       break;
     }
   }
