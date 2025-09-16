@@ -455,90 +455,102 @@ function handleCreditNoteExchangeRateSection(body, data) {
  * @param {Object} data - Credit note data
  */
 function updateCreditNoteTable(body, data) {
-  const tables = body.getTables();
-  let targetTable = null;
-
-  Logger.log(
-    `updateCreditNoteTable: Found ${tables.length} tables in document`
-  );
-
-  // Find the correct table - look for table with specific headers
-  for (let tableIndex = 0; tableIndex < tables.length; tableIndex++) {
-    const table = tables[tableIndex];
-    if (table.getNumRows() === 0) {
-      Logger.log(
-        `updateCreditNoteTable: Table ${tableIndex} has no rows, skipping`
-      );
-      continue;
-    }
-
-    const headers = [];
-    const headerRow = table.getRow(0);
-    for (let i = 0; i < headerRow.getNumCells(); i++) {
-      headers.push(headerRow.getCell(i).getText().trim());
-    }
+  try {
+    const tables = body.getTables();
+    let targetTable = null;
 
     Logger.log(
-      `updateCreditNoteTable: Table ${tableIndex} headers: [${headers.join(
-        ", "
-      )}]`
+      `updateCreditNoteTable: Found ${tables.length} tables in document`
     );
 
-    // Check if this is the credit note items table
-    // Look for a table with headers like "#", "Description", "Period", "Amount"
-    if (
-      headers.length >= 4 &&
-      (headers[0] === "#" || headers[0] === "№") &&
-      (headers[1].toLowerCase().includes("description") ||
-        headers[1].toLowerCase().includes("описание") ||
-        headers[1].toLowerCase().includes("services")) &&
-      (headers[2].toLowerCase().includes("period") ||
-        headers[2].toLowerCase().includes("период")) &&
-      (headers[3].toLowerCase().includes("amount") ||
-        headers[3].toLowerCase().includes("сумма"))
-    ) {
-      targetTable = table;
-      Logger.log(
-        `updateCreditNoteTable: Found matching table at index ${tableIndex}`
-      );
-      break;
-    }
-  }
-
-  if (!targetTable) {
-    Logger.log(
-      "updateCreditNoteTable: No suitable table found, skipping table update"
-    );
-    return;
-  }
-
-  // Clear existing rows (keep header)
-  const numRows = targetTable.getNumRows();
-  for (let i = numRows - 1; i > 0; i--) {
-    targetTable.removeRow(i);
-  }
-
-  // Add new rows
-  data.items.forEach((row) => {
-    const newRow = targetTable.appendTableRow();
-    row.forEach((cell, index) => {
-      const cellElement = newRow.appendTableCell(
-        index === 3 // Amount column
-          ? cell
-            ? formatCurrencyFromUtils(cell, data.currency)
-            : ""
-          : cell || ""
-      );
-
-      // Right-align amount column
-      if (index === 3) {
-        cellElement
-          .getChild(0)
-          .asParagraph()
-          .setAlignment(DocumentApp.HorizontalAlignment.RIGHT);
+    // Find the correct table - look for table with specific headers
+    for (let tableIndex = 0; tableIndex < tables.length; tableIndex++) {
+      const table = tables[tableIndex];
+      if (table.getNumRows() === 0) {
+        Logger.log(
+          `updateCreditNoteTable: Table ${tableIndex} has no rows, skipping`
+        );
+        continue;
       }
-    });
-  });
+
+      const headers = [];
+      const headerRow = table.getRow(0);
+      for (let i = 0; i < headerRow.getNumCells(); i++) {
+        headers.push(headerRow.getCell(i).getText().trim());
+      }
+
+      Logger.log(
+        `updateCreditNoteTable: Table ${tableIndex} headers: [${headers.join(
+          ", "
+        )}]`
+      );
+
+      // Check if this is the credit note items table
+      // Look for a table with headers like "#", "Description", "Period", "Amount"
+      if (
+        headers.length >= 4 &&
+        (headers[0] === "#" || headers[0] === "№") &&
+        (headers[1].toLowerCase().includes("description") ||
+          headers[1].toLowerCase().includes("описание") ||
+          headers[1].toLowerCase().includes("services")) &&
+        (headers[2].toLowerCase().includes("period") ||
+          headers[2].toLowerCase().includes("период")) &&
+        (headers[3].toLowerCase().includes("amount") ||
+          headers[3].toLowerCase().includes("сумма"))
+      ) {
+        targetTable = table;
+        Logger.log(
+          `updateCreditNoteTable: Found matching table at index ${tableIndex}`
+        );
+        break;
+      }
+    }
+
+    if (!targetTable) {
+      Logger.log(
+        "updateCreditNoteTable: No suitable table found, skipping table update"
+      );
+      return;
+    }
+
+    // Clear existing rows (keep header)
+    const numRows = targetTable.getNumRows();
+    for (let i = numRows - 1; i > 0; i--) {
+      targetTable.removeRow(i);
+    }
+
+    // Add new rows
+    if (data.items && data.items.length > 0) {
+      data.items.forEach((row) => {
+        const newRow = targetTable.appendTableRow();
+        row.forEach((cell, index) => {
+          const cellElement = newRow.appendTableCell(
+            index === 3 // Amount column
+              ? cell
+                ? formatCurrencyFromUtils(cell, data.currency)
+                : ""
+              : cell || ""
+          );
+
+          // Right-align amount column
+          if (index === 3) {
+            cellElement
+              .getChild(0)
+              .asParagraph()
+              .setAlignment(DocumentApp.HorizontalAlignment.RIGHT);
+          }
+        });
+      });
+    } else {
+      Logger.log("updateCreditNoteTable: No items to add to table");
+    }
+  } catch (error) {
+    Logger.log(`updateCreditNoteTable: Error occurred - ${error.toString()}`);
+    Logger.log(
+      `updateCreditNoteTable: Continuing with placeholder replacement...`
+    );
+    // Don't throw error - let the main function continue
+  }
 }
 
 /**
@@ -559,7 +571,7 @@ function replaceCreditNoteDocumentPlaceholders(
   totalAmount
 ) {
   Logger.log(
-    `replaceCreditNoteDocumentPlaceholders: taxRate=${taxRate}, taxAmount=${taxAmount}, totalAmount=${totalAmount}`
+    `replaceCreditNoteDocumentPlaceholders: STARTING - taxRate=${taxRate}, taxAmount=${taxAmount}, totalAmount=${totalAmount}`
   );
 
   // Basic credit note information
@@ -575,12 +587,20 @@ function replaceCreditNoteDocumentPlaceholders(
     "\\{Комментарий\\}": data.comment || "",
   };
 
+  Logger.log(
+    `replaceCreditNoteDocumentPlaceholders: About to replace ${
+      Object.keys(replacements).length
+    } placeholders`
+  );
+
   // Apply basic replacements
   Object.entries(replacements).forEach(([placeholder, value]) => {
     Logger.log(`Replacing ${placeholder} with "${value}"`);
     const result = body.replaceText(placeholder, value);
     Logger.log(`Replace result: ${result}`);
   });
+
+  Logger.log(`replaceCreditNoteDocumentPlaceholders: COMPLETED`);
 
   // Item-specific placeholders are handled by updateCreditNoteTable function
   // No need to replace them here as the table is already updated
