@@ -364,6 +364,9 @@ function createCreditNoteDoc(
   folderId
 ) {
   Logger.log(`createCreditNoteDoc: Starting for template ID: ${templateId}`);
+  Logger.log(
+    `createCreditNoteDoc: Parameters - subtotal=${subtotal}, taxRate=${taxRate}, taxAmount=${taxAmount}, totalAmount=${totalAmount}`
+  );
   if (!templateId) {
     Logger.log("createCreditNoteDoc: ERROR - No templateId provided.");
     throw new Error("No credit note template found for the selected project.");
@@ -598,6 +601,24 @@ function replaceCreditNoteDocumentPlaceholders(
     Logger.log(`Replacing ${placeholder} with "${value}"`);
     const result = body.replaceText(placeholder, value);
     Logger.log(`Replace result: ${result}`);
+
+    // Additional check for tax and total placeholders
+    if (
+      placeholder.includes("VAT%") ||
+      placeholder.includes("Сумма НДС") ||
+      placeholder.includes("Сумма общая")
+    ) {
+      Logger.log(`SPECIAL CHECK: ${placeholder} = "${value}"`);
+      // Try alternative formats
+      const altPlaceholder1 = placeholder
+        .replace("\\{", "{")
+        .replace("\\}", "}");
+      const altPlaceholder2 = placeholder.replace("\\{", "").replace("\\}", "");
+      Logger.log(`Trying alternative format 1: ${altPlaceholder1}`);
+      Logger.log(`Trying alternative format 2: ${altPlaceholder2}`);
+      body.replaceText(altPlaceholder1, value);
+      body.replaceText(altPlaceholder2, value);
+    }
   });
 
   Logger.log(`replaceCreditNoteDocumentPlaceholders: COMPLETED`);
