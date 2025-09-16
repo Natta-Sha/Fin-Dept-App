@@ -796,10 +796,11 @@
           return;
         }
 
-        // Check if we need to load project details first
+        // Check if we need to load project details first (like in invoices)
         if (
           !window.currentProjectDetails ||
-          !window.currentProjectDetails.clientName
+          !window.currentProjectDetails.clientName ||
+          !window.currentProjectDetails.templateId
         ) {
           console.log("Project details not loaded, loading now...");
           document.getElementById("generate-btn").disabled = true;
