@@ -398,9 +398,27 @@ function createCreditNoteDoc(
     const allText = body.getText();
     const placeholderMatches = allText.match(/\{[^}]+\}/g);
     if (placeholderMatches) {
-      Logger.log(`Found placeholders: ${placeholderMatches.join(", ")}`);
+      Logger.log(
+        `Found placeholders in body.getText(): ${placeholderMatches.join(", ")}`
+      );
     } else {
-      Logger.log("No placeholders found in document");
+      Logger.log("No placeholders found in body.getText()");
+    }
+
+    // Also search in tables
+    Logger.log("=== Searching for placeholders in tables ===");
+    const tables = body.getTables();
+    for (let i = 0; i < tables.length; i++) {
+      const table = tables[i];
+      Logger.log(`Table ${i}:`);
+      for (let row = 0; row < table.getNumRows(); row++) {
+        for (let col = 0; col < table.getRow(row).getNumCells(); col++) {
+          const cellText = table.getRow(row).getCell(col).getText();
+          if (cellText.includes("{") && cellText.includes("}")) {
+            Logger.log(`  Row ${row}, Col ${col}: "${cellText}"`);
+          }
+        }
+      }
     }
 
     // Also search for tax-related text
@@ -417,7 +435,17 @@ function createCreditNoteDoc(
     if (allText.includes("Сумма")) {
       Logger.log("Found 'Сумма' in document");
     }
+
     Logger.log("=== END DEBUGGING ===");
+
+    // Add tax and total fields if they don't exist
+    addTaxAndTotalFieldsIfMissing(
+      body,
+      taxRate,
+      taxAmount,
+      totalAmount,
+      data.currency
+    );
 
     // Replace placeholders
     replaceCreditNoteDocumentPlaceholders(
@@ -583,6 +611,69 @@ function updateCreditNoteTable(body, data) {
 }
 
 /**
+ * Add tax and total fields to document if they don't exist
+ * @param {Body} body - Document body
+ * @param {number} taxRate - Tax rate
+ * @param {number} taxAmount - Tax amount
+ * @param {number} totalAmount - Total amount
+ * @param {string} currency - Currency symbol
+ */
+function addTaxAndTotalFieldsIfMissing(
+  body,
+  taxRate,
+  taxAmount,
+  totalAmount,
+  currency
+) {
+  const allText = body.getText();
+
+  // Check if tax/total fields already exist
+  if (
+    allText.includes("Tax") ||
+    allText.includes("Total") ||
+    allText.includes("VAT") ||
+    allText.includes("Сумма")
+  ) {
+    Logger.log(
+      "addTaxAndTotalFieldsIfMissing: Tax/Total fields already exist, skipping"
+    );
+    return;
+  }
+
+  Logger.log(
+    "addTaxAndTotalFieldsIfMissing: Adding tax and total fields to document"
+  );
+
+  // Find the last table and add fields after it
+  const tables = body.getTables();
+  if (tables.length > 0) {
+    const lastTable = tables[tables.length - 1];
+    const tableElement = lastTable.getParent();
+
+    // Add tax and total fields after the table
+    const taxText = `Tax ${taxRate}%: ${formatCurrencyFromUtils(
+      taxAmount,
+      currency
+    )}`;
+    const totalText = `Total: ${formatCurrencyFromUtils(
+      totalAmount,
+      currency
+    )}`;
+
+    // Insert after the table
+    const insertIndex = body.getChildIndex(tableElement) + 1;
+    body.insertParagraph(insertIndex, taxText);
+    body.insertParagraph(insertIndex + 1, totalText);
+
+    Logger.log(`addTaxAndTotalFieldsIfMissing: Added tax and total fields`);
+  } else {
+    Logger.log(
+      "addTaxAndTotalFieldsIfMissing: No tables found, cannot add fields"
+    );
+  }
+}
+
+/**
  * Replace placeholders in credit note document
  * @param {Body} body - Document body
  * @param {Object} data - Credit note data
@@ -627,6 +718,36 @@ function replaceCreditNoteDocumentPlaceholders(
     Logger.log(`Replacing ${placeholder} with "${value}"`);
     const result = body.replaceText(placeholder, value);
     Logger.log(`Replace result: ${result}`);
+
+    // If replacement failed, try in tables
+    if (result === body) {
+      Logger.log(`Replacement failed in body, trying in tables...`);
+      const tables = body.getTables();
+      for (let i = 0; i < tables.length; i++) {
+        const table = tables[i];
+        for (let row = 0; row < table.getNumRows(); row++) {
+          for (let col = 0; col < table.getRow(row).getNumCells(); col++) {
+            const cell = table.getRow(row).getCell(col);
+            const cellText = cell.getText();
+            if (
+              cellText.includes(
+                placeholder.replace("\\{", "{").replace("\\}", "}")
+              )
+            ) {
+              Logger.log(
+                `Found placeholder in table ${i}, row ${row}, col ${col}`
+              );
+              cell.setText(
+                cellText.replace(
+                  placeholder.replace("\\{", "{").replace("\\}", "}"),
+                  value
+                )
+              );
+            }
+          }
+        }
+      }
+    }
 
     // Additional check for tax and total placeholders
     if (
