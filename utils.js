@@ -89,9 +89,9 @@ function generateCreditNoteFilenameFromUtils(data) {
  * @returns {string} Formatted amount
  */
 function formatCurrencyFromUtils(amount, currency) {
-  if (!amount) return "";
   const num = parseFloat(amount);
   if (isNaN(num)) return "";
+  if (num === 0) return `${currency}0.00`;
 
   // Format the number first, then add currency symbol in the correct position
   const formattedNumber = num.toLocaleString(undefined, {
