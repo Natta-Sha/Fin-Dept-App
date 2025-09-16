@@ -417,9 +417,28 @@ function createCreditNoteDoc(
  */
 function handleCreditNoteExchangeRateSection(body, data) {
   if (data.currency !== "$") {
-    // Remove exchange rate section if not USD
-    body.replaceText("\\{Exchange Rate\\}", "");
-    body.replaceText("\\{Amount in EUR\\}", "");
+    // Remove exchange rate notice for non-USD currencies (same as invoices)
+    const paragraphs = body.getParagraphs();
+    for (let i = 0; i < paragraphs.length; i++) {
+      const text = paragraphs[i].getText();
+      if (text.includes("Exchange Rate Notice")) {
+        paragraphs[i].removeFromParent();
+        if (i + 1 < paragraphs.length) {
+          paragraphs[i + 1].removeFromParent();
+        }
+        break;
+      }
+    }
+  } else {
+    // Update exchange rate placeholders for USD
+    body.replaceText(
+      "\\{Exchange Rate\\}",
+      parseFloat(data.exchangeRate).toFixed(4)
+    );
+    body.replaceText(
+      "\\{Amount in EUR\\}",
+      `€${parseFloat(data.amountInEUR).toFixed(2)}`
+    );
   }
 }
 
@@ -523,18 +542,25 @@ function replaceCreditNoteDocumentPlaceholders(
     "\\{VAT%\\}": taxRate.toFixed(0),
     "\\{Сумма НДС\\}": formatCurrencyFromUtils(taxAmount, data.currency),
     "\\{Сумма общая\\}": formatCurrencyFromUtils(totalAmount, data.currency),
-    "\\{Exchange Rate\\}":
-      data.currency === "$" ? data.exchangeRate || "1.0000" : "",
-    "\\{Amount in EUR\\}":
-      data.currency === "$"
-        ? formatCurrencyFromUtils(data.amountInEUR || 0, "€")
-        : "",
     "\\{Комментарий\\}": data.comment || "",
   };
 
+  Logger.log(
+    `replaceCreditNoteDocumentPlaceholders: taxRate=${taxRate}, taxAmount=${taxAmount}, totalAmount=${totalAmount}`
+  );
+  Logger.log(
+    `replaceCreditNoteDocumentPlaceholders: currency=${data.currency}`
+  );
+  Logger.log(
+    `replaceCreditNoteDocumentPlaceholders: replacements=`,
+    replacements
+  );
+
   // Apply basic replacements
   Object.entries(replacements).forEach(([placeholder, value]) => {
-    body.replaceText(placeholder, value);
+    Logger.log(`Replacing ${placeholder} with ${value}`);
+    const result = body.replaceText(placeholder, value);
+    Logger.log(`Replace result for ${placeholder}: ${result}`);
   });
 
   // Replace item-specific placeholders
