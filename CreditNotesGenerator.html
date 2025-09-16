@@ -706,6 +706,16 @@
               input.addEventListener("input", updateTotals);
             }
           });
+
+        // Check if project is already selected and load its details
+        const selectedProject = document
+          .getElementById("project_name")
+          .value.trim();
+        if (selectedProject && validProjectNames.includes(selectedProject)) {
+          google.script.run
+            .withSuccessHandler(fillProjectDetails)
+            .getProjectDetails(selectedProject);
+        }
       });
 
       // Add row function
@@ -805,12 +815,14 @@
           console.log("Project details not loaded, loading now...");
           document.getElementById("generate-btn").disabled = true;
           document.getElementById("spinner").style.display = "inline-block";
-          setFormInputsDisabled(true);
+          // Don't disable form inputs here - let fillProjectDetails work
 
           google.script.run
             .withSuccessHandler(function (details) {
               window.currentProjectDetails = details;
               console.log("Project details loaded:", details);
+              // Fill the form fields with loaded details
+              fillProjectDetails(details);
               // Now submit the form with the loaded details
               submitFormWithData();
             })
@@ -819,7 +831,6 @@
               alert("Failed to load project details. Please try again.");
               document.getElementById("generate-btn").disabled = false;
               document.getElementById("spinner").style.display = "none";
-              setFormInputsDisabled(false);
             })
             .getProjectDetails(projectValue);
           return;
