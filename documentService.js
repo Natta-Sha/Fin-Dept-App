@@ -580,34 +580,6 @@ function replaceCreditNoteDocumentPlaceholders(
     body.replaceText(placeholder, value);
   });
 
-  // Replace item-specific placeholders
-  for (let i = 0; i < 20; i++) {
-    // Max 20 rows
-    const item = data.items[i];
-    if (item && item.length >= 4) {
-      const itemReplacements = {
-        [`\\{Описание-${i + 1}\\}`]: item[1] || "",
-        [`\\{Период работы-${i + 1}\\}`]: item[2] || "",
-        [`\\{Сумма-${i + 1}\\}`]: formatCurrencyFromUtils(
-          item[3] || 0,
-          data.currency
-        ),
-      };
-
-      Object.entries(itemReplacements).forEach(([placeholder, value]) => {
-        body.replaceText(placeholder, value);
-      });
-    } else {
-      // Clear placeholders for empty rows
-      const emptyReplacements = {
-        [`\\{Описание-${i + 1}\\}`]: "",
-        [`\\{Период работы-${i + 1}\\}`]: "",
-        [`\\{Сумма-${i + 1}\\}`]: "",
-      };
-
-      Object.entries(emptyReplacements).forEach(([placeholder, value]) => {
-        body.replaceText(placeholder, value);
-      });
-    }
-  }
+  // Item-specific placeholders are handled by updateCreditNoteTable function
+  // No need to replace them here as the table is already updated
 }

@@ -894,11 +894,13 @@
         const taxRate = parseFloat(data.tax) || 0;
         data.taxAmount = ((subtotal * taxRate) / 100).toFixed(2);
 
-        // Collect items from table
+        // Collect items from table (only first 4 columns for credit notes)
         const tbody = document.getElementById("credit-note-body");
         for (let row of tbody.rows) {
           const inputs = row.getElementsByTagName("input");
-          const rowData = Array.from(inputs).map((i) => i.value.trim());
+          const rowData = Array.from(inputs)
+            .slice(0, 4)
+            .map((i) => i.value.trim());
           data.items.push(rowData);
         }
 
