@@ -577,7 +577,9 @@ function replaceCreditNoteDocumentPlaceholders(
 
   // Apply basic replacements
   Object.entries(replacements).forEach(([placeholder, value]) => {
-    body.replaceText(placeholder, value);
+    Logger.log(`Replacing ${placeholder} with "${value}"`);
+    const result = body.replaceText(placeholder, value);
+    Logger.log(`Replace result: ${result}`);
   });
 
   // Item-specific placeholders are handled by updateCreditNoteTable function
