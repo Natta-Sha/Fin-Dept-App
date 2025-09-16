@@ -424,46 +424,75 @@ function handleCreditNoteExchangeRateSection(body, data) {
 }
 
 /**
- * Update credit note table
+ * Update credit note table in document
  * @param {Body} body - Document body
  * @param {Object} data - Credit note data
  */
 function updateCreditNoteTable(body, data) {
-  // Find and update table with credit note items
   const tables = body.getTables();
-  if (tables.length === 0) return;
+  let targetTable = null;
 
-  const table = tables[0]; // Assume first table is the items table
-  const numRows = table.getNumRows();
+  // Find the correct table - look for table with specific headers
+  for (const table of tables) {
+    if (table.getNumRows() === 0) continue;
 
-  // Update existing rows and add new ones as needed
-  data.items.forEach((item, index) => {
-    if (index < 20) {
-      // Max 20 rows as per requirements
-      const rowIndex = index + 1; // Skip header row
-      let row;
-
-      if (rowIndex < numRows) {
-        row = table.getRow(rowIndex);
-      } else {
-        row = table.appendTableRow();
-      }
-
-      // Update cells based on credit note structure
-      const cells = row.getCells();
-      if (cells.length >= 4) {
-        cells[0].setText((index + 1).toString()); // Row number
-        cells[1].setText(item[1] || ""); // Description
-        cells[2].setText(item[2] || ""); // Period
-        cells[3].setText(formatCurrencyFromUtils(item[3] || 0, data.currency)); // Amount
-
-        // Right-align amount column
-        cells[3]
-          .getChildElements()[0]
-          .asText()
-          .setTextAlignment(DocumentApp.HorizontalAlignment.RIGHT);
-      }
+    const headers = [];
+    const headerRow = table.getRow(0);
+    for (let i = 0; i < headerRow.getNumCells(); i++) {
+      headers.push(headerRow.getCell(i).getText().trim());
     }
+
+    // Check if this is the credit note items table
+    // Look for a table with headers like "#", "Description", "Period", "Amount"
+    if (
+      headers.length >= 4 &&
+      (headers[0] === "#" || headers[0] === "№") &&
+      (headers[1].toLowerCase().includes("description") ||
+        headers[1].toLowerCase().includes("описание") ||
+        headers[1].toLowerCase().includes("services")) &&
+      (headers[2].toLowerCase().includes("period") ||
+        headers[2].toLowerCase().includes("период")) &&
+      (headers[3].toLowerCase().includes("amount") ||
+        headers[3].toLowerCase().includes("сумма"))
+    ) {
+      targetTable = table;
+      break;
+    }
+  }
+
+  if (!targetTable) {
+    Logger.log(
+      "updateCreditNoteTable: No suitable table found, skipping table update"
+    );
+    return;
+  }
+
+  // Clear existing rows (keep header)
+  const numRows = targetTable.getNumRows();
+  for (let i = numRows - 1; i > 0; i--) {
+    targetTable.removeRow(i);
+  }
+
+  // Add new rows
+  data.items.forEach((row) => {
+    const newRow = targetTable.appendTableRow();
+    row.forEach((cell, index) => {
+      const cellElement = newRow.appendTableCell(
+        index === 3 // Amount column
+          ? cell
+            ? formatCurrencyFromUtils(cell, data.currency)
+            : ""
+          : cell || ""
+      );
+
+      // Right-align amount column
+      if (index === 3) {
+        cellElement
+          .getChild(0)
+          .asParagraph()
+          .setAlignment(DocumentApp.HorizontalAlignment.RIGHT);
+      }
+    });
   });
 }
 
@@ -512,7 +541,7 @@ function replaceCreditNoteDocumentPlaceholders(
   for (let i = 0; i < 20; i++) {
     // Max 20 rows
     const item = data.items[i];
-    if (item) {
+    if (item && item.length >= 4) {
       const itemReplacements = {
         [`\\{Описание-${i + 1}\\}`]: item[1] || "",
         [`\\{Период работы-${i + 1}\\}`]: item[2] || "",
@@ -523,6 +552,17 @@ function replaceCreditNoteDocumentPlaceholders(
       };
 
       Object.entries(itemReplacements).forEach(([placeholder, value]) => {
+        body.replaceText(placeholder, value);
+      });
+    } else {
+      // Clear placeholders for empty rows
+      const emptyReplacements = {
+        [`\\{Описание-${i + 1}\\}`]: "",
+        [`\\{Период работы-${i + 1}\\}`]: "",
+        [`\\{Сумма-${i + 1}\\}`]: "",
+      };
+
+      Object.entries(emptyReplacements).forEach(([placeholder, value]) => {
         body.replaceText(placeholder, value);
       });
     }
