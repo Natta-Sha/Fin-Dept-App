@@ -558,6 +558,22 @@ function replaceCreditNoteDocumentPlaceholders(
   taxAmount,
   totalAmount
 ) {
+  Logger.log(`replaceCreditNoteDocumentPlaceholders: Starting with values:`);
+  Logger.log(`  - taxRate: ${taxRate} (type: ${typeof taxRate})`);
+  Logger.log(`  - taxAmount: ${taxAmount} (type: ${typeof taxAmount})`);
+  Logger.log(`  - totalAmount: ${totalAmount} (type: ${typeof totalAmount})`);
+  Logger.log(`  - currency: ${data.currency}`);
+  Logger.log(`  - creditNoteNumber: ${data.creditNoteNumber}`);
+
+  // First, let's find all placeholders in the document
+  const fullText = body.getText();
+  const placeholderMatches = fullText.match(/\{[^}]+\}/g);
+  Logger.log(
+    `Found placeholders in document: ${
+      placeholderMatches ? placeholderMatches.join(", ") : "none"
+    }`
+  );
+
   // Basic credit note information
   const replacements = {
     "\\{Номер CN\\}": data.creditNoteNumber,
@@ -587,6 +603,14 @@ function replaceCreditNoteDocumentPlaceholders(
     Logger.log(`Replacing ${placeholder} with ${value}`);
     const result = body.replaceText(placeholder, value);
     Logger.log(`Replace result for ${placeholder}: ${result}`);
+
+    // Also try without escaping curly braces
+    const unescapedPlaceholder = placeholder.replace(/\\/g, "");
+    Logger.log(`Also trying unescaped: ${unescapedPlaceholder}`);
+    const unescapedResult = body.replaceText(unescapedPlaceholder, value);
+    Logger.log(
+      `Unescaped replace result for ${unescapedPlaceholder}: ${unescapedResult}`
+    );
   });
 
   // Replace item-specific placeholders

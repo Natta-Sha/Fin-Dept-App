@@ -833,6 +833,20 @@
           .getElementById("project_name")
           .value.trim();
 
+        // Debug logging
+        console.log(
+          "window.currentProjectDetails:",
+          window.currentProjectDetails
+        );
+        console.log(
+          "tax from currentProjectDetails:",
+          window.currentProjectDetails?.tax
+        );
+        console.log(
+          "tax from DOM:",
+          document.getElementById("tax").textContent.trim()
+        );
+
         const data = {
           projectName: projectValue,
           creditNoteNumber: document
