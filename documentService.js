@@ -393,6 +393,32 @@ function createCreditNoteDoc(
     // Update credit note table
     updateCreditNoteTable(body, data);
 
+    // Debug: Find all placeholders in document
+    Logger.log("=== DEBUGGING: Searching for all placeholders in document ===");
+    const allText = body.getText();
+    const placeholderMatches = allText.match(/\{[^}]+\}/g);
+    if (placeholderMatches) {
+      Logger.log(`Found placeholders: ${placeholderMatches.join(", ")}`);
+    } else {
+      Logger.log("No placeholders found in document");
+    }
+
+    // Also search for tax-related text
+    Logger.log("=== Searching for tax-related text ===");
+    if (allText.includes("Tax")) {
+      Logger.log("Found 'Tax' in document");
+    }
+    if (allText.includes("Total")) {
+      Logger.log("Found 'Total' in document");
+    }
+    if (allText.includes("VAT")) {
+      Logger.log("Found 'VAT' in document");
+    }
+    if (allText.includes("Сумма")) {
+      Logger.log("Found 'Сумма' in document");
+    }
+    Logger.log("=== END DEBUGGING ===");
+
     // Replace placeholders
     replaceCreditNoteDocumentPlaceholders(
       body,
