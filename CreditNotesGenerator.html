@@ -761,12 +761,47 @@
 
       // Form submission
       function submitForm() {
-        const projectValue = document
-          .getElementById("project_name")
-          .value.trim();
+        const errors = [];
+
+        const creditNoteNumberEl =
+          document.getElementById("credit_note_number");
+        const creditNoteDateEl = document.getElementById("credit_note_date");
+        const projectNameEl = document.getElementById("project_name");
+
+        const creditNoteNumber = creditNoteNumberEl.value.trim();
+        const creditNoteDate = creditNoteDateEl.value.trim();
+        const projectValue = projectNameEl.value.trim();
+
+        // Clear previous validation errors
+        [projectNameEl, creditNoteNumberEl, creditNoteDateEl].forEach((el) =>
+          el.classList.remove("is-invalid")
+        );
+
+        // Validate required fields
+        if (!validProjectNames.includes(projectValue)) {
+          errors.push("Project Name must be selected from the list.");
+          projectNameEl.classList.add("is-invalid");
+        }
+        if (!creditNoteNumber) {
+          errors.push("Credit Note Number is required.");
+          creditNoteNumberEl.classList.add("is-invalid");
+        }
+        if (!creditNoteDate) {
+          errors.push("Credit Note Date is required.");
+          creditNoteDateEl.classList.add("is-invalid");
+        }
+
+        if (errors.length > 0) {
+          alert("Please fix the following errors:\n• " + errors.join("\n• "));
+          return;
+        }
 
         // Check if we need to load project details first
-        if (!window.currentProjectDetails && projectValue) {
+        if (
+          !window.currentProjectDetails ||
+          !window.currentProjectDetails.clientName
+        ) {
+          console.log("Project details not loaded, loading now...");
           document.getElementById("generate-btn").disabled = true;
           document.getElementById("spinner").style.display = "inline-block";
           setFormInputsDisabled(true);
@@ -803,28 +838,39 @@
           creditNoteNumber: document
             .getElementById("credit_note_number")
             .value.trim(),
-          clientName: document.getElementById("client_name").textContent.trim(),
-          clientAddress: document
-            .getElementById("client_address")
-            .textContent.trim(),
-          clientNumber: document
-            .getElementById("client_number")
-            .textContent.trim(),
+          // Use data from currentProjectDetails if available, fallback to textContent
+          clientName:
+            window.currentProjectDetails?.clientName ||
+            document.getElementById("client_name").textContent.trim(),
+          clientAddress:
+            window.currentProjectDetails?.clientAddress ||
+            document.getElementById("client_address").textContent.trim(),
+          clientNumber:
+            window.currentProjectDetails?.clientNumber ||
+            document.getElementById("client_number").textContent.trim(),
+          ourCompany:
+            window.currentProjectDetails?.ourCompany ||
+            document.getElementById("our_company").textContent.trim(),
           creditNoteDate: document
             .getElementById("credit_note_date")
             .value.trim(),
-          tax: document.getElementById("tax").textContent.trim(),
+          tax:
+            window.currentProjectDetails?.tax ||
+            document.getElementById("tax").textContent.trim(),
           subtotal: document.getElementById("subtotal").textContent.trim(),
           total: document.getElementById("total").textContent.trim(),
           exchangeRate: document.getElementById("exchange_rate").value.trim(),
-          currency: document
-            .getElementById("currency")
-            .textContent.trim()
-            .split(" ")[0],
+          currency:
+            window.currentProjectDetails?.currency ||
+            document
+              .getElementById("currency")
+              .textContent.trim()
+              .split(" ")[0],
           amountInEUR: document
             .getElementById("amount_in_eur")
             .textContent.trim(),
-          ourCompany: document.getElementById("our_company").textContent.trim(),
+          bankDetails1: window.currentProjectDetails?.bankDetails1 || "",
+          bankDetails2: window.currentProjectDetails?.bankDetails2 || "",
           comment: document.getElementById("comment").value.trim(),
           items: [],
         };
