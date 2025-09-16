@@ -364,9 +364,6 @@ function createCreditNoteDoc(
   folderId
 ) {
   Logger.log(`createCreditNoteDoc: Starting for template ID: ${templateId}`);
-  Logger.log(
-    `createCreditNoteDoc: Parameters - subtotal=${subtotal}, taxRate=${taxRate}, taxAmount=${taxAmount}, totalAmount=${totalAmount}`
-  );
   if (!templateId) {
     Logger.log("createCreditNoteDoc: ERROR - No templateId provided.");
     throw new Error("No credit note template found for the selected project.");
@@ -392,60 +389,6 @@ function createCreditNoteDoc(
 
     // Update credit note table
     updateCreditNoteTable(body, data);
-
-    // Debug: Find all placeholders in document
-    Logger.log("=== DEBUGGING: Searching for all placeholders in document ===");
-    const allText = body.getText();
-    const placeholderMatches = allText.match(/\{[^}]+\}/g);
-    if (placeholderMatches) {
-      Logger.log(
-        `Found placeholders in body.getText(): ${placeholderMatches.join(", ")}`
-      );
-    } else {
-      Logger.log("No placeholders found in body.getText()");
-    }
-
-    // Also search in tables
-    Logger.log("=== Searching for placeholders in tables ===");
-    const tables = body.getTables();
-    for (let i = 0; i < tables.length; i++) {
-      const table = tables[i];
-      Logger.log(`Table ${i}:`);
-      for (let row = 0; row < table.getNumRows(); row++) {
-        for (let col = 0; col < table.getRow(row).getNumCells(); col++) {
-          const cellText = table.getRow(row).getCell(col).getText();
-          if (cellText.includes("{") && cellText.includes("}")) {
-            Logger.log(`  Row ${row}, Col ${col}: "${cellText}"`);
-          }
-        }
-      }
-    }
-
-    // Also search for tax-related text
-    Logger.log("=== Searching for tax-related text ===");
-    if (allText.includes("Tax")) {
-      Logger.log("Found 'Tax' in document");
-    }
-    if (allText.includes("Total")) {
-      Logger.log("Found 'Total' in document");
-    }
-    if (allText.includes("VAT")) {
-      Logger.log("Found 'VAT' in document");
-    }
-    if (allText.includes("Сумма")) {
-      Logger.log("Found 'Сумма' in document");
-    }
-
-    Logger.log("=== END DEBUGGING ===");
-
-    // Search for tax/total placeholders in paragraphs (not just tables)
-    searchForTaxTotalInParagraphs(
-      body,
-      taxRate,
-      taxAmount,
-      totalAmount,
-      data.currency
-    );
 
     // Replace placeholders
     replaceCreditNoteDocumentPlaceholders(
@@ -516,17 +459,10 @@ function updateCreditNoteTable(body, data) {
     const tables = body.getTables();
     let targetTable = null;
 
-    Logger.log(
-      `updateCreditNoteTable: Found ${tables.length} tables in document`
-    );
-
     // Find the correct table - look for table with specific headers
     for (let tableIndex = 0; tableIndex < tables.length; tableIndex++) {
       const table = tables[tableIndex];
       if (table.getNumRows() === 0) {
-        Logger.log(
-          `updateCreditNoteTable: Table ${tableIndex} has no rows, skipping`
-        );
         continue;
       }
 
@@ -535,12 +471,6 @@ function updateCreditNoteTable(body, data) {
       for (let i = 0; i < headerRow.getNumCells(); i++) {
         headers.push(headerRow.getCell(i).getText().trim());
       }
-
-      Logger.log(
-        `updateCreditNoteTable: Table ${tableIndex} headers: [${headers.join(
-          ", "
-        )}]`
-      );
 
       // Check if this is the credit note items table
       // Look for a table with headers like "#", "Description", "Period", "Amount"
@@ -556,17 +486,11 @@ function updateCreditNoteTable(body, data) {
           headers[3].toLowerCase().includes("сумма"))
       ) {
         targetTable = table;
-        Logger.log(
-          `updateCreditNoteTable: Found matching table at index ${tableIndex}`
-        );
         break;
       }
     }
 
     if (!targetTable) {
-      Logger.log(
-        "updateCreditNoteTable: No suitable table found, skipping table update"
-      );
       return;
     }
 
@@ -599,66 +523,9 @@ function updateCreditNoteTable(body, data) {
         });
       });
     } else {
-      Logger.log("updateCreditNoteTable: No items to add to table");
     }
   } catch (error) {
-    Logger.log(`updateCreditNoteTable: Error occurred - ${error.toString()}`);
-    Logger.log(
-      `updateCreditNoteTable: Continuing with placeholder replacement...`
-    );
     // Don't throw error - let the main function continue
-  }
-}
-
-/**
- * Search for tax and total placeholders in paragraphs and replace them
- * @param {Body} body - Document body
- * @param {number} taxRate - Tax rate
- * @param {number} taxAmount - Tax amount
- * @param {number} totalAmount - Total amount
- * @param {string} currency - Currency symbol
- */
-function searchForTaxTotalInParagraphs(
-  body,
-  taxRate,
-  taxAmount,
-  totalAmount,
-  currency
-) {
-  Logger.log(
-    "searchForTaxTotalInParagraphs: Searching for tax/total placeholders in paragraphs"
-  );
-
-  const paragraphs = body.getParagraphs();
-  for (let i = 0; i < paragraphs.length; i++) {
-    const paragraph = paragraphs[i];
-    const text = paragraph.getText();
-
-    Logger.log(`Paragraph ${i}: "${text}"`);
-
-    // Check if this paragraph contains tax/total placeholders
-    if (
-      text.includes("{VAT%}") ||
-      text.includes("{Сумма НДС}") ||
-      text.includes("{Сумма общая}")
-    ) {
-      Logger.log(`Found tax/total placeholders in paragraph ${i}: "${text}"`);
-
-      // Replace placeholders in this paragraph
-      let newText = text;
-      newText = newText.replace(/\{VAT%\}/g, taxRate.toString());
-      newText = newText.replace(
-        /\{Сумма НДС\}/g,
-        formatCurrencyFromUtils(taxAmount, currency)
-      );
-      newText = newText.replace(
-        /\{Сумма общая\}/g,
-        formatCurrencyFromUtils(totalAmount, currency)
-      );
-
-      Logger.log(`Replacing paragraph ${i} with: "${newText}"`);
-      paragraph.setText(newText);
-    }
   }
 }
 
@@ -679,10 +546,6 @@ function replaceCreditNoteDocumentPlaceholders(
   taxAmount,
   totalAmount
 ) {
-  Logger.log(
-    `replaceCreditNoteDocumentPlaceholders: STARTING - taxRate=${taxRate}, taxAmount=${taxAmount}, totalAmount=${totalAmount}`
-  );
-
   // Basic credit note information
   const replacements = {
     "\\{Номер CN\\}": data.creditNoteNumber,
@@ -696,69 +559,8 @@ function replaceCreditNoteDocumentPlaceholders(
     "\\{Комментарий\\}": data.comment || "",
   };
 
-  Logger.log(
-    `replaceCreditNoteDocumentPlaceholders: About to replace ${
-      Object.keys(replacements).length
-    } placeholders`
-  );
-
-  // Apply basic replacements
+  // Apply basic replacements (same as in invoices)
   Object.entries(replacements).forEach(([placeholder, value]) => {
-    Logger.log(`Replacing ${placeholder} with "${value}"`);
-    const result = body.replaceText(placeholder, value);
-    Logger.log(`Replace result: ${result}`);
-
-    // If replacement failed, try in tables
-    if (result === body) {
-      Logger.log(`Replacement failed in body, trying in tables...`);
-      const tables = body.getTables();
-      for (let i = 0; i < tables.length; i++) {
-        const table = tables[i];
-        for (let row = 0; row < table.getNumRows(); row++) {
-          for (let col = 0; col < table.getRow(row).getNumCells(); col++) {
-            const cell = table.getRow(row).getCell(col);
-            const cellText = cell.getText();
-            if (
-              cellText.includes(
-                placeholder.replace("\\{", "{").replace("\\}", "}")
-              )
-            ) {
-              Logger.log(
-                `Found placeholder in table ${i}, row ${row}, col ${col}`
-              );
-              cell.setText(
-                cellText.replace(
-                  placeholder.replace("\\{", "{").replace("\\}", "}"),
-                  value
-                )
-              );
-            }
-          }
-        }
-      }
-    }
-
-    // Additional check for tax and total placeholders
-    if (
-      placeholder.includes("VAT%") ||
-      placeholder.includes("Сумма НДС") ||
-      placeholder.includes("Сумма общая")
-    ) {
-      Logger.log(`SPECIAL CHECK: ${placeholder} = "${value}"`);
-      // Try alternative formats
-      const altPlaceholder1 = placeholder
-        .replace("\\{", "{")
-        .replace("\\}", "}");
-      const altPlaceholder2 = placeholder.replace("\\{", "").replace("\\}", "");
-      Logger.log(`Trying alternative format 1: ${altPlaceholder1}`);
-      Logger.log(`Trying alternative format 2: ${altPlaceholder2}`);
-      body.replaceText(altPlaceholder1, value);
-      body.replaceText(altPlaceholder2, value);
-    }
+    body.replaceText(placeholder, value);
   });
-
-  Logger.log(`replaceCreditNoteDocumentPlaceholders: COMPLETED`);
-
-  // Item-specific placeholders are handled by updateCreditNoteTable function
-  // No need to replace them here as the table is already updated
 }
