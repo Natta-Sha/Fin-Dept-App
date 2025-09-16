@@ -438,8 +438,8 @@ function createCreditNoteDoc(
 
     Logger.log("=== END DEBUGGING ===");
 
-    // Add tax and total fields if they don't exist
-    addTaxAndTotalFieldsIfMissing(
+    // Search for tax/total placeholders in paragraphs (not just tables)
+    searchForTaxTotalInParagraphs(
       body,
       taxRate,
       taxAmount,
@@ -611,65 +611,54 @@ function updateCreditNoteTable(body, data) {
 }
 
 /**
- * Add tax and total fields to document if they don't exist
+ * Search for tax and total placeholders in paragraphs and replace them
  * @param {Body} body - Document body
  * @param {number} taxRate - Tax rate
  * @param {number} taxAmount - Tax amount
  * @param {number} totalAmount - Total amount
  * @param {string} currency - Currency symbol
  */
-function addTaxAndTotalFieldsIfMissing(
+function searchForTaxTotalInParagraphs(
   body,
   taxRate,
   taxAmount,
   totalAmount,
   currency
 ) {
-  const allText = body.getText();
-
-  // Check if tax/total fields already exist
-  if (
-    allText.includes("Tax") ||
-    allText.includes("Total") ||
-    allText.includes("VAT") ||
-    allText.includes("Сумма")
-  ) {
-    Logger.log(
-      "addTaxAndTotalFieldsIfMissing: Tax/Total fields already exist, skipping"
-    );
-    return;
-  }
-
   Logger.log(
-    "addTaxAndTotalFieldsIfMissing: Adding tax and total fields to document"
+    "searchForTaxTotalInParagraphs: Searching for tax/total placeholders in paragraphs"
   );
 
-  // Find the last table and add fields after it
-  const tables = body.getTables();
-  if (tables.length > 0) {
-    const lastTable = tables[tables.length - 1];
-    const tableElement = lastTable.getParent();
+  const paragraphs = body.getParagraphs();
+  for (let i = 0; i < paragraphs.length; i++) {
+    const paragraph = paragraphs[i];
+    const text = paragraph.getText();
 
-    // Add tax and total fields after the table
-    const taxText = `Tax ${taxRate}%: ${formatCurrencyFromUtils(
-      taxAmount,
-      currency
-    )}`;
-    const totalText = `Total: ${formatCurrencyFromUtils(
-      totalAmount,
-      currency
-    )}`;
+    Logger.log(`Paragraph ${i}: "${text}"`);
 
-    // Insert after the table
-    const insertIndex = body.getChildIndex(tableElement) + 1;
-    body.insertParagraph(insertIndex, taxText);
-    body.insertParagraph(insertIndex + 1, totalText);
+    // Check if this paragraph contains tax/total placeholders
+    if (
+      text.includes("{VAT%}") ||
+      text.includes("{Сумма НДС}") ||
+      text.includes("{Сумма общая}")
+    ) {
+      Logger.log(`Found tax/total placeholders in paragraph ${i}: "${text}"`);
 
-    Logger.log(`addTaxAndTotalFieldsIfMissing: Added tax and total fields`);
-  } else {
-    Logger.log(
-      "addTaxAndTotalFieldsIfMissing: No tables found, cannot add fields"
-    );
+      // Replace placeholders in this paragraph
+      let newText = text;
+      newText = newText.replace(/\{VAT%\}/g, taxRate.toString());
+      newText = newText.replace(
+        /\{Сумма НДС\}/g,
+        formatCurrencyFromUtils(taxAmount, currency)
+      );
+      newText = newText.replace(
+        /\{Сумма общая\}/g,
+        formatCurrencyFromUtils(totalAmount, currency)
+      );
+
+      Logger.log(`Replacing paragraph ${i} with: "${newText}"`);
+      paragraph.setText(newText);
+    }
   }
 }
 
