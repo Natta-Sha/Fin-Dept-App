@@ -866,19 +866,59 @@
             console.error("Server-side call failed:", error);
           })
           .withSuccessHandler(function (result) {
+            console.log("Credit Note generation result:", result);
             document.getElementById("spinner").style.display = "none";
             setFormInputsDisabled(true);
-            document.getElementById("result").innerHTML = `
-              <div class="alert alert-success mt-4">
-                <strong>Credit Note saved successfully!</strong><br>
-                <small class="text-muted">Document creation will be implemented later.</small>
-              </div>
+
+            let resultHtml = `
+      <div class="alert alert-success mt-4">
+                <strong>Credit Note created successfully!</strong>
+      </div>
+    `;
+
+            // Add document links if available
+            if (result && (result.docUrl || result.pdfUrl)) {
+              resultHtml += `
+                <div class="card mt-3" style="background-color: #d4edda; border-color: #c3e6cb;">
+                  <div class="card-body">
+                    <h6 class="card-title text-success mb-3">
+                      <i class="bi bi-check-circle"></i> Documents Generated
+                    </h6>
+                    <div class="d-flex flex-wrap gap-2">
+              `;
+
+              if (result.docUrl) {
+                resultHtml += `
+                  <a href="${result.docUrl}" target="_blank" class="btn btn-outline-success btn-sm">
+                    <i class="bi bi-file-earmark-text"></i> Open Google Doc
+                  </a>
+                `;
+              }
+
+              if (result.pdfUrl) {
+                resultHtml += `
+                  <a href="${result.pdfUrl}" target="_blank" class="btn btn-outline-success btn-sm">
+                    <i class="bi bi-file-earmark-pdf"></i> Open PDF
+                  </a>
+                `;
+              }
+
+              resultHtml += `
+                    </div>
+                  </div>
+      </div>
+    `;
+            }
+
+            resultHtml += `
               <div class="row mt-4">
                 <div class="col-md-12 d-flex justify-content-end gap-2">
                   <button class="btn btn-primary px-5 fw-bold" onclick="safeNavigateToCreditNotesList()">Back to the list</button>
                 </div>
-              </div>
-            `;
+          </div>
+        `;
+
+            document.getElementById("result").innerHTML = resultHtml;
 
             // Hide generate button after success
             document.getElementById("generate-btn").style.display = "none";

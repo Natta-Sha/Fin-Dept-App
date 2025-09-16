@@ -862,15 +862,85 @@ function processCreditNoteFormFromData(data) {
       `processCreditNoteFormFromData: Data saved to row ${newRowIndex}`
     );
 
-    // Documents creation is not implemented yet - fields remain empty
-    Logger.log(
-      "processCreditNoteFormFromData: Credit note creation completed successfully (documents not created yet)."
+    // Create Google Doc and PDF
+    const folderId = getProjectFolderId(data.projectName);
+    Logger.log(">>> Resolved folderId: " + folderId);
+
+    // Hardcoded template ID as requested
+    const templateId = "1yCKAx3nyIz-L_u3FPSK1zMof5Mo0m2-gsNzl1cCQsuQ";
+
+    const doc = createCreditNoteDoc(
+      data,
+      formattedDate,
+      subtotalNum,
+      taxRate,
+      taxAmount,
+      totalAmount,
+      templateId,
+      folderId
     );
-    return {
-      success: true,
-      message:
-        "Credit note saved successfully. Document creation will be implemented later.",
+    if (!doc) {
+      Logger.log(
+        "processCreditNoteFormFromData: ERROR - createCreditNoteDoc returned null or undefined."
+      );
+      throw new Error(
+        "Failed to create the Google Doc. The returned document object was empty."
+      );
+    }
+    Logger.log(
+      `processCreditNoteFormFromData: createCreditNoteDoc successful. Doc ID: ${doc.getId()}, URL: ${doc.getUrl()}`
+    );
+
+    Utilities.sleep(1000);
+    Logger.log("processCreditNoteFormFromData: Woke up from 1-second sleep.");
+
+    const pdf = doc.getAs("application/pdf");
+    if (!pdf) {
+      Logger.log(
+        "processCreditNoteFormFromData: ERROR - doc.getAs('application/pdf') returned a null blob."
+      );
+      throw new Error("Failed to generate PDF content from the document.");
+    }
+    Logger.log(
+      `processCreditNoteFormFromData: Got PDF blob. Name: ${pdf.getName()}, Type: ${pdf.getContentType()}, Size: ${
+        pdf.getBytes().length
+      } bytes.`
+    );
+
+    const folder = DriveApp.getFolderById(CONFIG.FOLDER_ID);
+
+    const cleanCompany = (data.ourCompany || "")
+      .replace(/[\\/:*?"<>|]/g, "")
+      .trim();
+    const cleanClient = (data.clientName || "")
+      .replace(/[\\/:*?"<>|]/g, "")
+      .trim();
+    const filename = `${data.creditNoteDate}_CreditNote${data.creditNoteNumber}_${cleanCompany}-${cleanClient}`;
+
+    const pdfFile = folder.createFile(pdf).setName(`${filename}.pdf`);
+    Logger.log(
+      `processCreditNoteFormFromData: Created PDF file. ID: ${pdfFile.getId()}, URL: ${pdfFile.getUrl()}`
+    );
+
+    // Update the row with Doc and PDF URLs (columns 17 and 18)
+    sheet.getRange(newRowIndex, 17).setValue(doc.getUrl());
+    sheet.getRange(newRowIndex, 18).setValue(pdfFile.getUrl());
+    SpreadsheetApp.flush();
+    Logger.log(
+      `processCreditNoteFormFromData: Wrote Doc and PDF URLs to sheet at row ${newRowIndex}.`
+    );
+
+    const result = {
+      docUrl: doc.getUrl(),
+      pdfUrl: pdfFile.getUrl(),
     };
+    Logger.log(
+      "processCreditNoteFormFromData: Successfully completed. Returning URLs to client."
+    );
+
+    CacheService.getScriptCache().remove("creditNoteList");
+
+    return result;
   } catch (error) {
     Logger.log(`processCreditNoteFormFromData: ERROR - ${error.toString()}`);
     Logger.log(`Stack Trace: ${error.stack}`);
