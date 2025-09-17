@@ -585,6 +585,15 @@
         updateTotals();
       }
 
+      // Format date for input type="date" (same as in InvoiceGenerator)
+      function formatInputDate(dateVal) {
+        if (typeof dateVal === "string" && dateVal.includes("/")) {
+          const [dd, mm, yyyy] = dateVal.split("/");
+          return `${yyyy}-${mm.padStart(2, "0")}-${dd.padStart(2, "0")}`;
+        }
+        return dateVal;
+      }
+
       // Render saved credit note data for view mode
       function renderSavedDataRaw(data) {
         console.log("renderSavedDataRaw called with data:", data);
@@ -619,7 +628,7 @@
           );
         }
 
-        // Handle exchange rate
+        // Handle exchange rate (same logic as InvoiceGenerator)
         if (data.currency === "$") {
           document.getElementById("exchange_rate").style.display = "block";
           document.getElementById("exchange_rate").value =
@@ -634,26 +643,30 @@
 
         document.getElementById("comment").value = data.comment || "";
 
-        // Add rows to the table
+        // Add rows to the table (same logic as InvoiceGenerator)
         const tbody = document.getElementById("credit-note-body");
         tbody.innerHTML = ""; // Clear
-        if (data.items && data.items.length > 0) {
-          data.items.forEach((item, i) => {
-            const row = document.createElement("tr");
-            row.innerHTML = `
-              <td>${i + 1}</td>
-              <td>${item[1] || ""}</td>
-              <td>${item[2] || ""}</td>
-              <td class="text-end">${item[3] || ""}</td>
-            `;
-            tbody.appendChild(row);
-          });
-        }
 
-        // Update totals
-        document.getElementById("subtotal").textContent =
-          data.subtotal || "0.00";
-        document.getElementById("total").textContent = data.total || "0.00";
+        data.items.forEach((item) => {
+          const row = document.createElement("tr");
+          item.forEach((value, j) => {
+            const cell = document.createElement("td");
+            const input = document.createElement("input");
+            input.type = "text";
+            input.className = "form-control";
+            input.value = value;
+            if (j === 3) input.classList.add("amount"); // Amount column
+            input.disabled = true; // запретить редактирование
+            cell.appendChild(input);
+            row.appendChild(cell);
+          });
+          row.appendChild(document.createElement("td")); // пустая ячейка под кнопки
+          tbody.appendChild(row);
+        });
+
+        // Update totals (same logic as InvoiceGenerator)
+        document.getElementById("subtotal").innerText = data.subtotal || "0.00";
+        document.getElementById("total").innerText = data.total || "0.00";
 
         console.log("renderSavedDataRaw completed");
       }
