@@ -401,11 +401,23 @@ function getCreditNoteDataByIdFromData(id) {
     }
 
     const items = [];
-    for (let i = 0; i < CONFIG.INVOICE_TABLE.MAX_ROWS; i++) {
-      const base = 21 + i * CONFIG.INVOICE_TABLE.COLUMNS_PER_ROW;
-      const item = row.slice(base, base + CONFIG.INVOICE_TABLE.COLUMNS_PER_ROW);
+    console.log(
+      "getCreditNoteDataByIdFromData: CONFIG.CREDIT_NOTE_TABLE.COLUMNS_PER_ROW =",
+      CONFIG.CREDIT_NOTE_TABLE.COLUMNS_PER_ROW
+    );
+    for (let i = 0; i < CONFIG.CREDIT_NOTE_TABLE.MAX_ROWS; i++) {
+      const base = 21 + i * CONFIG.CREDIT_NOTE_TABLE.COLUMNS_PER_ROW;
+      const item = row.slice(
+        base,
+        base + CONFIG.CREDIT_NOTE_TABLE.COLUMNS_PER_ROW
+      );
+      console.log(
+        `getCreditNoteDataByIdFromData: Row ${i}, base=${base}, item=`,
+        item
+      );
       if (item.some((cell) => cell && cell.toString().trim() !== "")) {
         items.push(item);
+        console.log(`getCreditNoteDataByIdFromData: Added item ${i}:`, item);
       }
     }
 
