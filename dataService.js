@@ -356,6 +356,74 @@ function getInvoiceDataByIdFromData(id) {
 }
 
 /**
+ * Get credit note data by ID from spreadsheet
+ * @param {string} id - Credit note ID
+ * @returns {Object} Credit note data
+ */
+function getCreditNoteDataByIdFromData(id) {
+  try {
+    // Validate input
+    if (!id || id.toString().trim() === "") {
+      console.log("Invalid ID provided to getCreditNoteDataByIdFromData");
+      return {};
+    }
+
+    const spreadsheet = getSpreadsheet(CONFIG.SPREADSHEET_ID);
+    const sheet = getSheet(spreadsheet, CONFIG.SHEETS.CREDITNOTES);
+    const data = sheet.getDataRange().getValues();
+    const headers = data[0];
+    const indexMap = headers.reduce((acc, h, i) => {
+      acc[h] = i;
+      return acc;
+    }, {});
+
+    let row = null;
+    for (let i = 1; i < data.length; i++) {
+      if (data[i][indexMap["ID"]] === id) {
+        row = data[i];
+        break;
+      }
+    }
+    if (!row) {
+      console.log(`Credit note with ID ${id} not found.`);
+      return {};
+    }
+
+    const items = [];
+    for (let i = 0; i < CONFIG.INVOICE_TABLE.MAX_ROWS; i++) {
+      const base = 21 + i * CONFIG.INVOICE_TABLE.COLUMNS_PER_ROW;
+      const item = row.slice(base, base + CONFIG.INVOICE_TABLE.COLUMNS_PER_ROW);
+      if (item.some((cell) => cell && cell.toString().trim() !== "")) {
+        items.push(item);
+      }
+    }
+
+    return {
+      projectName: row[indexMap["Project Name"]],
+      creditNoteNumber: row[indexMap["CN Number"]],
+      clientName: row[indexMap["Client Name"]],
+      clientAddress: row[indexMap["Client Address"]],
+      clientNumber: row[indexMap["Client Number"]],
+      creditNoteDate: formatDateForInput(row[indexMap["CN Date"]]),
+      tax: row[indexMap["Tax Rate (%)"]],
+      subtotal: row[indexMap["Subtotal"]],
+      total: row[indexMap["Total"]],
+      exchangeRate: row[indexMap["Exchange Rate"]],
+      currency: row[indexMap["Currency"]],
+      amountInEUR: row[indexMap["Amount in EUR"]],
+      bankDetails1: row[indexMap["Bank Details 1"]],
+      bankDetails2: row[indexMap["Bank Details 2"]],
+      ourCompany: row[indexMap["Our Company"]],
+      comment: row[indexMap["Comment"]],
+      items: items,
+    };
+  } catch (error) {
+    console.error("Error getting credit note data by ID:", error);
+    return {};
+  }
+}
+
+/**
  * Save invoice data to spreadsheet
  * @param {Object} data - Invoice data to save
  * @returns {Object} Result with doc and PDF URLs

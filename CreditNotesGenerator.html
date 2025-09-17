@@ -571,6 +571,66 @@
         updateTotals();
       }
 
+      // Render saved credit note data for view mode
+      function renderSavedDataRaw(data) {
+        document.getElementById("project_name").value = data.projectName;
+        document.getElementById("credit_note_number").value =
+          data.creditNoteNumber;
+        document.getElementById("client_name").textContent = data.clientName;
+        document.getElementById("client_address").textContent =
+          data.clientAddress;
+        document.getElementById("client_number").textContent =
+          data.clientNumber;
+        document.getElementById("our_company").textContent =
+          data.ourCompany || "";
+        document.getElementById("tax").textContent = data.tax || "0";
+
+        const currencyMap = { $: "$ (USD)", "€": "€ (EUR)", "₴": "₴ (UAH)" };
+        document.getElementById("currency").textContent =
+          currencyMap[data.currency] || data.currency;
+
+        document.getElementById("bank_details_1").textContent =
+          data.bankDetails1 || "";
+        document.getElementById("bank_details_2").textContent =
+          data.bankDetails2 || "";
+
+        document.getElementById("credit_note_date").value = formatInputDate(
+          data.creditNoteDate
+        );
+
+        if (data.currency === "$") {
+          document.getElementById("exchange_rate").style.display = "block";
+          document.getElementById("exchange_rate").value =
+            data.exchangeRate || "1.0000";
+          document.getElementById("amount_in_eur").textContent =
+            data.amountInEUR || "";
+        } else {
+          document.getElementById("exchange_rate").style.display = "none";
+          document.getElementById("exchange_rate_display").textContent = "";
+          document.getElementById("amount_in_eur").textContent = "";
+        }
+
+        document.getElementById("comment").value = data.comment || "";
+
+        // Add rows to the table
+        const tbody = document.getElementById("credit-note-body");
+        tbody.innerHTML = ""; // Clear
+        data.items.forEach((item, i) => {
+          const row = document.createElement("tr");
+          row.innerHTML = `
+            <td>${i + 1}</td>
+            <td>${item[1] || ""}</td>
+            <td>${item[2] || ""}</td>
+            <td class="text-end">${item[3] || ""}</td>
+          `;
+          tbody.appendChild(row);
+        });
+
+        // Update totals
+        document.getElementById("subtotal").textContent = data.subtotal || "0";
+        document.getElementById("total").textContent = data.total || "0";
+      }
+
       // Populate project names in datalist
       function populateProjectNames() {
         console.log("[populateProjectNames] running...");
@@ -610,6 +670,11 @@
 
       // Global variable to store valid project names
       let validProjectNames = [];
+
+      // Get URL parameters for view/edit modes
+      const urlParams = new URLSearchParams(window.location.search);
+      const creditNoteId = urlParams.get("id") || "";
+      const mode = urlParams.get("mode") || "";
 
       // Setup project selection handlers (called after projects are loaded)
       function setupProjectSelectionHandlers() {
@@ -707,14 +772,71 @@
             }
           });
 
-        // Check if project is already selected and load its details
-        const selectedProject = document
-          .getElementById("project_name")
-          .value.trim();
-        if (selectedProject && validProjectNames.includes(selectedProject)) {
+        // Handle view/edit modes
+        if (creditNoteId) {
+          console.log(
+            "Loading credit note data for ID:",
+            creditNoteId,
+            "mode:",
+            mode
+          );
           google.script.run
-            .withSuccessHandler(fillProjectDetails)
-            .getProjectDetails(selectedProject);
+            .withSuccessHandler(function (data) {
+              console.log("Loaded credit note data:", data);
+              if (!data || !data.projectName) {
+                console.error("Invalid credit note data received:", data);
+                alert(
+                  "Error loading credit note data. The credit note may have invalid data in the database."
+                );
+                window.location.href = "?page=CreditNotesList";
+                return;
+              }
+              if (["view", "delete"].includes(mode)) {
+                renderSavedDataRaw(data);
+                // Hide form elements for view mode
+                if (mode === "view") {
+                  document.getElementById("page-title").textContent =
+                    "Credit Note - View";
+                  document.getElementById("generate-btn").style.display =
+                    "none";
+                  document.getElementById("cancel-create-btn").style.display =
+                    "none";
+
+                  // Disable all form inputs
+                  document
+                    .querySelectorAll("input, textarea, select")
+                    .forEach(function (element) {
+                      element.disabled = true;
+                    });
+
+                  // Hide add/remove row buttons
+                  document
+                    .querySelectorAll(".add-row-btn, .icon-button")
+                    .forEach(function (button) {
+                      button.style.display = "none";
+                    });
+                }
+              } else {
+                // For edit/copy modes, we'll handle differently
+                renderSavedDataRaw(data);
+              }
+            })
+            .withFailureHandler(function (error) {
+              console.error("Failed to load credit note data:", error);
+              alert("Failed to load credit note data.");
+              window.location.href = "?page=CreditNotesList";
+            })
+            .getCreditNoteDataByIdFromData(creditNoteId);
+        } else {
+          // Check if project is already selected and load its details
+          const selectedProject = document
+            .getElementById("project_name")
+            .value.trim();
+          if (selectedProject && validProjectNames.includes(selectedProject)) {
+            google.script.run
+              .withSuccessHandler(fillProjectDetails)
+              .getProjectDetails(selectedProject);
+          }
         }
       });
 
