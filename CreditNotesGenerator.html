@@ -811,6 +811,39 @@
                 // For edit/copy modes, we'll handle differently
                 renderSavedDataRaw(data);
               }
+
+              // Set up the page based on mode AFTER data is loaded
+              console.log("Setting up page for mode:", mode);
+              if (mode === "view") {
+                console.log("Setting up view mode...");
+                document.getElementById("page-title").textContent =
+                  "Credit Note - View";
+                document.getElementById(
+                  "view-bottom-btn-container"
+                ).style.display = "block";
+                document.getElementById("generate-btn").style.display = "none";
+                document.getElementById("cancel-create-btn").style.display =
+                  "none";
+
+                // Add Back button handler for view mode
+                const viewBackBtn = document.getElementById("view-back-btn");
+                if (viewBackBtn) {
+                  viewBackBtn.addEventListener("click", function () {
+                    safeNavigateToCreditNotesList();
+                  });
+                }
+
+                // Hide add row button in view mode
+                const addRowBtn = document.getElementById("add-row-btn");
+                if (addRowBtn) addRowBtn.style.display = "none";
+
+                // Disable all form inputs in view mode
+                document
+                  .querySelectorAll("input, textarea, select")
+                  .forEach(function (element) {
+                    element.disabled = true;
+                  });
+              }
             })
             .withFailureHandler(function (error) {
               console.error("Failed to load credit note data:", error);
@@ -818,28 +851,6 @@
               window.location.href = "?page=CreditNotesList";
             })
             .getCreditNoteDataByIdFromData(creditNoteId);
-
-          // Set up the page based on mode
-          if (mode === "view") {
-            document.getElementById("page-title").textContent =
-              "Credit Note - View";
-            document.getElementById("view-bottom-btn-container").style.display =
-              "block";
-            document.getElementById("generate-btn").style.display = "none";
-            document.getElementById("cancel-create-btn").style.display = "none";
-
-            // Add Back button handler for view mode
-            const viewBackBtn = document.getElementById("view-back-btn");
-            if (viewBackBtn) {
-              viewBackBtn.addEventListener("click", function () {
-                safeNavigateToCreditNotesList();
-              });
-            }
-
-            // Hide add row button in view mode
-            const addRowBtn = document.getElementById("add-row-btn");
-            if (addRowBtn) addRowBtn.style.display = "none";
-          }
         } else {
           // Check if project is already selected and load its details
           const selectedProject = document
