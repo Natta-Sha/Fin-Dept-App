@@ -368,19 +368,30 @@ function getCreditNoteDataByIdFromData(id) {
       return {};
     }
 
+    console.log("getCreditNoteDataByIdFromData: Looking for ID:", id);
     const spreadsheet = getSpreadsheet(CONFIG.SPREADSHEET_ID);
     const sheet = getSheet(spreadsheet, CONFIG.SHEETS.CREDITNOTES);
     const data = sheet.getDataRange().getValues();
     const headers = data[0];
+    console.log("getCreditNoteDataByIdFromData: Headers:", headers);
+
     const indexMap = headers.reduce((acc, h, i) => {
       acc[h] = i;
       return acc;
     }, {});
+    console.log("getCreditNoteDataByIdFromData: Index map:", indexMap);
 
     let row = null;
     for (let i = 1; i < data.length; i++) {
-      if (data[i][indexMap["ID"]] === id) {
+      const rowId = data[i][indexMap["ID"]];
+      console.log(
+        `getCreditNoteDataByIdFromData: Checking row ${i}, ID: ${rowId} (type: ${typeof rowId}), looking for: ${id} (type: ${typeof id})`
+      );
+
+      // Try both string and number comparison
+      if (rowId == id || rowId === id || rowId.toString() === id.toString()) {
         row = data[i];
+        console.log("getCreditNoteDataByIdFromData: Found matching row:", row);
         break;
       }
     }
@@ -398,13 +409,13 @@ function getCreditNoteDataByIdFromData(id) {
       }
     }
 
-    return {
+    const result = {
       projectName: row[indexMap["Project Name"]],
       creditNoteNumber: row[indexMap["CN Number"]],
       clientName: row[indexMap["Client Name"]],
       clientAddress: row[indexMap["Client Address"]],
       clientNumber: row[indexMap["Client Number"]],
-      creditNoteDate: formatDateForInput(row[indexMap["CN Date"]]),
+      creditNoteDate: formatDateForInputFromUtils(row[indexMap["CN Date"]]),
       tax: row[indexMap["Tax Rate (%)"]],
       subtotal: row[indexMap["Subtotal"]],
       total: row[indexMap["Total"]],
@@ -417,6 +428,9 @@ function getCreditNoteDataByIdFromData(id) {
       comment: row[indexMap["Comment"]],
       items: items,
     };
+
+    console.log("getCreditNoteDataByIdFromData: Returning result:", result);
+    return result;
   } catch (error) {
     console.error("Error getting credit note data by ID:", error);
     return {};
