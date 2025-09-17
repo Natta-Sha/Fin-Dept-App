@@ -603,6 +603,17 @@
           data.creditNoteDate
         );
         console.log("renderSavedDataRaw: data.items =", data.items);
+        console.log(
+          "renderSavedDataRaw: data.items length =",
+          data.items.length
+        );
+        if (data.items && data.items.length > 0) {
+          console.log("renderSavedDataRaw: first item =", data.items[0]);
+          console.log(
+            "renderSavedDataRaw: first item length =",
+            data.items[0].length
+          );
+        }
         console.log("renderSavedDataRaw: data.subtotal =", data.subtotal);
         console.log("renderSavedDataRaw: data.total =", data.total);
 
@@ -694,17 +705,19 @@
 
           data.items.forEach((item) => {
             const row = document.createElement("tr");
-            item.forEach((value, j) => {
+            // Credit note table has only 4 columns: #, Description, Period, Amount
+            // So we only take the first 4 elements from the item array
+            for (let j = 0; j < 4; j++) {
               const cell = document.createElement("td");
               const input = document.createElement("input");
               input.type = "text";
               input.className = "form-control";
-              input.value = value;
+              input.value = item[j] || ""; // Use item[j] or empty string if undefined
               if (j === 3) input.classList.add("amount"); // Amount column
               input.disabled = true; // запретить редактирование
               cell.appendChild(input);
               row.appendChild(cell);
-            });
+            }
             row.appendChild(document.createElement("td")); // пустая ячейка под кнопки
             tbody.appendChild(row);
           });
