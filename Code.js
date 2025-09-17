@@ -12,6 +12,7 @@ function doGet(e) {
     const template = HtmlService.createTemplateFromFile(page);
     template.baseUrl = ScriptApp.getService().getUrl();
     template.invoiceId = e.parameter.invoiceId || e.parameter.id || "";
+    template.creditNoteId = e.parameter.invoiceId || e.parameter.id || "";
     template.mode = e.parameter.mode || "";
 
     // Set active page for navigation
@@ -20,6 +21,10 @@ function doGet(e) {
     // Pass invoice ID if provided
     if (e.parameter.invoiceId || e.parameter.id) {
       template.invoiceId = e.parameter.invoiceId || e.parameter.id;
+    }
+    // Pass credit note ID if provided (same as invoice ID for now)
+    if (e.parameter.invoiceId || e.parameter.id) {
+      template.creditNoteId = e.parameter.invoiceId || e.parameter.id;
     }
     if (e.parameter.mode) {
       template.mode = e.parameter.mode;
