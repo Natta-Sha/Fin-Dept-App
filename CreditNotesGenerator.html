@@ -606,88 +606,135 @@
         console.log("renderSavedDataRaw: data.subtotal =", data.subtotal);
         console.log("renderSavedDataRaw: data.total =", data.total);
 
-        // Fill basic fields
-        document.getElementById("project_name").value = data.projectName || "";
-        document.getElementById("credit_note_number").value =
-          data.creditNoteNumber || "";
-        document.getElementById("client_name").textContent =
-          data.clientName || "";
-        document.getElementById("client_address").textContent =
-          data.clientAddress || "";
-        document.getElementById("client_number").textContent =
-          data.clientNumber || "";
-        document.getElementById("our_company").textContent =
-          data.ourCompany || "";
-        document.getElementById("tax").textContent = data.tax || "0";
+        // Fill basic fields with null checks
+        const projectNameEl = document.getElementById("project_name");
+        if (projectNameEl) projectNameEl.value = data.projectName || "";
+
+        const creditNoteNumberEl =
+          document.getElementById("credit_note_number");
+        if (creditNoteNumberEl)
+          creditNoteNumberEl.value = data.creditNoteNumber || "";
+
+        const clientNameEl = document.getElementById("client_name");
+        if (clientNameEl) clientNameEl.textContent = data.clientName || "";
+
+        const clientAddressEl = document.getElementById("client_address");
+        if (clientAddressEl)
+          clientAddressEl.textContent = data.clientAddress || "";
+
+        const clientNumberEl = document.getElementById("client_number");
+        if (clientNumberEl)
+          clientNumberEl.textContent = data.clientNumber || "";
+
+        const ourCompanyEl = document.getElementById("our_company");
+        if (ourCompanyEl) ourCompanyEl.textContent = data.ourCompany || "";
+
+        const taxEl = document.getElementById("tax");
+        if (taxEl) taxEl.textContent = data.tax || "0";
 
         const currencyMap = { $: "$ (USD)", "€": "€ (EUR)", "₴": "₴ (UAH)" };
-        document.getElementById("currency").textContent =
-          currencyMap[data.currency] || data.currency || "";
+        const currencyEl = document.getElementById("currency");
+        if (currencyEl)
+          currencyEl.textContent =
+            currencyMap[data.currency] || data.currency || "";
 
-        document.getElementById("bank_details_1").textContent =
-          data.bankDetails1 || "";
-        document.getElementById("bank_details_2").textContent =
-          data.bankDetails2 || "";
+        const bankDetails1El = document.getElementById("bank_details_1");
+        if (bankDetails1El)
+          bankDetails1El.textContent = data.bankDetails1 || "";
+
+        const bankDetails2El = document.getElementById("bank_details_2");
+        if (bankDetails2El)
+          bankDetails2El.textContent = data.bankDetails2 || "";
 
         // Format and set date
         if (data.creditNoteDate) {
-          document.getElementById("credit_note_date").value = formatInputDate(
-            data.creditNoteDate
-          );
+          const creditNoteDateEl = document.getElementById("credit_note_date");
+          if (creditNoteDateEl) {
+            creditNoteDateEl.value = formatInputDate(data.creditNoteDate);
+          }
         }
 
         // Handle exchange rate (same logic as InvoiceGenerator)
         if (data.currency === "$") {
-          document.getElementById("exchange_rate").style.display = "block";
-          document.getElementById("exchange_rate").value =
-            data.exchangeRate || "1.0000";
-          document.getElementById("amount_in_eur").textContent =
-            data.amountInEUR || "";
+          const exchangeRateEl = document.getElementById("exchange_rate");
+          if (exchangeRateEl) {
+            exchangeRateEl.style.display = "block";
+            exchangeRateEl.value = data.exchangeRate || "1.0000";
+          }
+          const amountInEUREl = document.getElementById("amount_in_eur");
+          if (amountInEUREl) {
+            amountInEUREl.textContent = data.amountInEUR || "";
+          }
         } else {
-          document.getElementById("exchange_rate").style.display = "none";
-          document.getElementById("exchange_rate_display").textContent = "";
-          document.getElementById("amount_in_eur").textContent = "";
+          const exchangeRateEl = document.getElementById("exchange_rate");
+          if (exchangeRateEl) {
+            exchangeRateEl.style.display = "none";
+          }
+          const exchangeRateDisplayEl = document.getElementById(
+            "exchange_rate_display"
+          );
+          if (exchangeRateDisplayEl) {
+            exchangeRateDisplayEl.textContent = "";
+          }
+          const amountInEUREl = document.getElementById("amount_in_eur");
+          if (amountInEUREl) {
+            amountInEUREl.textContent = "";
+          }
         }
 
-        document.getElementById("comment").value = data.comment || "";
+        const commentEl = document.getElementById("comment");
+        if (commentEl) {
+          commentEl.value = data.comment || "";
+        }
 
         // Add rows to the table (same logic as InvoiceGenerator)
         const tbody = document.getElementById("credit-note-body");
-        tbody.innerHTML = ""; // Clear
+        if (tbody) {
+          tbody.innerHTML = ""; // Clear
 
-        data.items.forEach((item) => {
-          const row = document.createElement("tr");
-          item.forEach((value, j) => {
-            const cell = document.createElement("td");
-            const input = document.createElement("input");
-            input.type = "text";
-            input.className = "form-control";
-            input.value = value;
-            if (j === 3) input.classList.add("amount"); // Amount column
-            input.disabled = true; // запретить редактирование
-            cell.appendChild(input);
-            row.appendChild(cell);
+          data.items.forEach((item) => {
+            const row = document.createElement("tr");
+            item.forEach((value, j) => {
+              const cell = document.createElement("td");
+              const input = document.createElement("input");
+              input.type = "text";
+              input.className = "form-control";
+              input.value = value;
+              if (j === 3) input.classList.add("amount"); // Amount column
+              input.disabled = true; // запретить редактирование
+              cell.appendChild(input);
+              row.appendChild(cell);
+            });
+            row.appendChild(document.createElement("td")); // пустая ячейка под кнопки
+            tbody.appendChild(row);
           });
-          row.appendChild(document.createElement("td")); // пустая ячейка под кнопки
-          tbody.appendChild(row);
-        });
+        }
 
         // Update totals (same logic as InvoiceGenerator)
-        document.getElementById("subtotal").innerText = data.subtotal || "0.00";
-        document.getElementById("total").innerText = data.total || "0.00";
+        const subtotalEl = document.getElementById("subtotal");
+        if (subtotalEl) {
+          subtotalEl.innerText = data.subtotal || "0.00";
+        }
+        const totalEl = document.getElementById("total");
+        if (totalEl) {
+          totalEl.innerText = data.total || "0.00";
+        }
 
         console.log("renderSavedDataRaw completed");
+        const finalSubtotalEl = document.getElementById("subtotal");
         console.log(
           "renderSavedDataRaw: Final subtotal element text =",
-          document.getElementById("subtotal").innerText
+          finalSubtotalEl ? finalSubtotalEl.innerText : "element not found"
         );
+        const finalTotalEl = document.getElementById("total");
         console.log(
           "renderSavedDataRaw: Final total element text =",
-          document.getElementById("total").innerText
+          finalTotalEl ? finalTotalEl.innerText : "element not found"
         );
+        const finalDateEl = document.getElementById("credit_note_date");
         console.log(
           "renderSavedDataRaw: Final date input value =",
-          document.getElementById("credit_note_date").value
+          finalDateEl ? finalDateEl.value : "element not found"
         );
       }
 
