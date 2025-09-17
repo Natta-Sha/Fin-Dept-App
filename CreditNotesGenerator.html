@@ -703,21 +703,49 @@
         if (tbody) {
           tbody.innerHTML = ""; // Clear
 
-          data.items.forEach((item) => {
+          data.items.forEach((item, index) => {
             const row = document.createElement("tr");
-            // Credit note table has only 4 columns: #, Description, Period, Amount
-            // So we only take the first 4 elements from the item array
-            for (let j = 0; j < 4; j++) {
-              const cell = document.createElement("td");
-              const input = document.createElement("input");
-              input.type = "text";
-              input.className = "form-control";
-              input.value = item[j] || ""; // Use item[j] or empty string if undefined
-              if (j === 3) input.classList.add("amount"); // Amount column
-              input.disabled = true; // запретить редактирование
-              cell.appendChild(input);
-              row.appendChild(cell);
-            }
+
+            // First column: Row number (index + 1)
+            const cell1 = document.createElement("td");
+            const input1 = document.createElement("input");
+            input1.type = "text";
+            input1.className = "form-control";
+            input1.value = (index + 1).toString(); // Row number: 1, 2, 3, etc.
+            input1.disabled = true;
+            cell1.appendChild(input1);
+            row.appendChild(cell1);
+
+            // Second column: Description (item[1])
+            const cell2 = document.createElement("td");
+            const input2 = document.createElement("input");
+            input2.type = "text";
+            input2.className = "form-control";
+            input2.value = item[1] || ""; // Description
+            input2.disabled = true;
+            cell2.appendChild(input2);
+            row.appendChild(cell2);
+
+            // Third column: Period (item[2])
+            const cell3 = document.createElement("td");
+            const input3 = document.createElement("input");
+            input3.type = "text";
+            input3.className = "form-control";
+            input3.value = item[2] || ""; // Period
+            input3.disabled = true;
+            cell3.appendChild(input3);
+            row.appendChild(cell3);
+
+            // Fourth column: Amount (item[3])
+            const cell4 = document.createElement("td");
+            const input4 = document.createElement("input");
+            input4.type = "text";
+            input4.className = "form-control amount";
+            input4.value = item[3] || ""; // Amount
+            input4.disabled = true;
+            cell4.appendChild(input4);
+            row.appendChild(cell4);
+
             row.appendChild(document.createElement("td")); // пустая ячейка под кнопки
             tbody.appendChild(row);
           });
