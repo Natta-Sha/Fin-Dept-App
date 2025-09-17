@@ -479,6 +479,20 @@
         </div>
       </div>
 
+      <!-- View mode bottom actions -->
+      <div id="view-bottom-btn-container" style="display: none">
+        <div class="row mt-4">
+          <div class="col-md-12 d-flex justify-content-end gap-2">
+            <button
+              id="view-back-btn"
+              class="btn btn-outline-primary px-5 fw-bold"
+            >
+              Back
+            </button>
+          </div>
+        </div>
+      </div>
+
       <!-- Result area -->
       <div id="result"></div>
     </div>
@@ -793,29 +807,6 @@
               }
               if (["view", "delete"].includes(mode)) {
                 renderSavedDataRaw(data);
-                // Hide form elements for view mode
-                if (mode === "view") {
-                  document.getElementById("page-title").textContent =
-                    "Credit Note - View";
-                  document.getElementById("generate-btn").style.display =
-                    "none";
-                  document.getElementById("cancel-create-btn").style.display =
-                    "none";
-
-                  // Disable all form inputs
-                  document
-                    .querySelectorAll("input, textarea, select")
-                    .forEach(function (element) {
-                      element.disabled = true;
-                    });
-
-                  // Hide add/remove row buttons
-                  document
-                    .querySelectorAll(".add-row-btn, .icon-button")
-                    .forEach(function (button) {
-                      button.style.display = "none";
-                    });
-                }
               } else {
                 // For edit/copy modes, we'll handle differently
                 renderSavedDataRaw(data);
@@ -827,6 +818,28 @@
               window.location.href = "?page=CreditNotesList";
             })
             .getCreditNoteDataByIdFromData(creditNoteId);
+
+          // Set up the page based on mode
+          if (mode === "view") {
+            document.getElementById("page-title").textContent =
+              "Credit Note - View";
+            document.getElementById("view-bottom-btn-container").style.display =
+              "block";
+            document.getElementById("generate-btn").style.display = "none";
+            document.getElementById("cancel-create-btn").style.display = "none";
+
+            // Add Back button handler for view mode
+            const viewBackBtn = document.getElementById("view-back-btn");
+            if (viewBackBtn) {
+              viewBackBtn.addEventListener("click", function () {
+                safeNavigateToCreditNotesList();
+              });
+            }
+
+            // Hide add row button in view mode
+            const addRowBtn = document.getElementById("add-row-btn");
+            if (addRowBtn) addRowBtn.style.display = "none";
+          }
         } else {
           // Check if project is already selected and load its details
           const selectedProject = document
@@ -864,9 +877,9 @@
         const deleteCell = row.insertCell();
         deleteCell.innerHTML = `
           <button type="button" class="icon-button" onclick="removeRow(this)" title="Delete row">
-            <i class="bi bi-trash"></i>
-          </button>
-        `;
+    <i class="bi bi-trash"></i>
+  </button>
+`;
       }
 
       // Remove row function
