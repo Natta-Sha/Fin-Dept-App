@@ -191,19 +191,35 @@ function getInvoiceListFromData() {
  */
 function getCreditNoteListFromData() {
   try {
+    Logger.log("=== getCreditNoteListFromData: Starting ===");
+
     var cache = CacheService.getScriptCache();
     var cached = cache.get("creditNoteList");
     if (cached) {
+      Logger.log("getCreditNoteListFromData: Returning cached data");
       return JSON.parse(cached);
     }
 
+    Logger.log(
+      "getCreditNoteListFromData: CONFIG.SHEETS.CREDITNOTES = " +
+        CONFIG.SHEETS.CREDITNOTES
+    );
     const spreadsheet = getSpreadsheet(CONFIG.SPREADSHEET_ID);
     const sheet = getSheet(spreadsheet, CONFIG.SHEETS.CREDITNOTES);
-    const data = sheet.getDataRange().getValues();
+    Logger.log("getCreditNoteListFromData: Sheet found: " + sheet.getName());
 
-    if (data.length < 2) return [];
+    const data = sheet.getDataRange().getValues();
+    Logger.log("getCreditNoteListFromData: Data rows count: " + data.length);
+
+    if (data.length < 2) {
+      Logger.log("getCreditNoteListFromData: No data rows found (less than 2)");
+      return [];
+    }
 
     const headers = data[0].map((h) => (h || "").toString().trim());
+    Logger.log(
+      "getCreditNoteListFromData: Headers found: " + JSON.stringify(headers)
+    );
 
     const colIndex = {
       id: headers.indexOf("ID"),
@@ -214,28 +230,57 @@ function getCreditNoteListFromData() {
       currency: headers.indexOf("Currency"),
     };
 
+    Logger.log(
+      "getCreditNoteListFromData: Column indexes: " + JSON.stringify(colIndex)
+    );
+
     // Validate required columns
     for (let key in colIndex) {
       if (colIndex[key] === -1) {
+        Logger.log("getCreditNoteListFromData: Missing column: " + key);
         throw new Error(ERROR_MESSAGES.MISSING_COLUMN(key));
       }
     }
 
-    const result = data.slice(1).map((row) => ({
-      id: row[colIndex.id] || "",
-      projectName: row[colIndex.projectName] || "",
-      creditNoteNumber: row[colIndex.creditNoteNumber] || "",
-      creditNoteDate: formatDate(row[colIndex.creditNoteDate]),
-      total:
-        row[colIndex.total] !== undefined && row[colIndex.total] !== ""
-          ? parseFloat(row[colIndex.total]).toFixed(2)
-          : "",
-      currency: row[colIndex.currency] || "",
-    }));
+    const result = data.slice(1).map((row, index) => {
+      const rowData = {
+        id: row[colIndex.id] || "",
+        projectName: row[colIndex.projectName] || "",
+        creditNoteNumber: row[colIndex.creditNoteNumber] || "",
+        creditNoteDate: formatDate(row[colIndex.creditNoteDate]),
+        total:
+          row[colIndex.total] !== undefined && row[colIndex.total] !== ""
+            ? parseFloat(row[colIndex.total]).toFixed(2)
+            : "",
+        currency: row[colIndex.currency] || "",
+      };
+
+      if (index < 3) {
+        // Log first 3 rows for debugging
+        Logger.log(
+          "getCreditNoteListFromData: Row " +
+            (index + 1) +
+            ": " +
+            JSON.stringify(rowData)
+        );
+      }
+
+      return rowData;
+    });
+
+    Logger.log(
+      "getCreditNoteListFromData: Processed " + result.length + " rows"
+    );
+    Logger.log(
+      "getCreditNoteListFromData: First result: " +
+        JSON.stringify(result[0] || {})
+    );
 
     cache.put("creditNoteList", JSON.stringify(result), 300); // cache for 5 minutes
     return result;
   } catch (error) {
+    Logger.log("getCreditNoteListFromData: ERROR - " + error.toString());
+    Logger.log("getCreditNoteListFromData: Stack trace: " + error.stack);
     console.error("Error getting credit note list:", error);
     return [];
   }

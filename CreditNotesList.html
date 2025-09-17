@@ -388,13 +388,37 @@
 
           google.script.run
             .withSuccessHandler(function (data) {
+              console.log(
+                "Credit Notes List: Received data from server:",
+                data
+              );
+              console.log("Credit Notes List: Data type:", typeof data);
+              console.log("Credit Notes List: Is array:", Array.isArray(data));
+              console.log(
+                "Credit Notes List: Data length:",
+                data ? data.length : "undefined"
+              );
+
               if (!Array.isArray(data) || data.length === 0) {
+                console.log(
+                  "Credit Notes List: No data or empty array, clearing table"
+                );
                 table.clear().draw();
                 document.getElementById("creditNoteTable").style.display = "";
                 return;
               }
 
-              data.forEach((row) => {
+              console.log(
+                "Credit Notes List: Processing " + data.length + " rows"
+              );
+              data.forEach((row, index) => {
+                if (index < 3) {
+                  // Log first 3 rows
+                  console.log(
+                    "Credit Notes List: Row " + (index + 1) + ":",
+                    row
+                  );
+                }
                 table.row.add([
                   row.projectName || "",
                   row.creditNoteNumber || "",
@@ -414,8 +438,17 @@
               document.getElementById("creditNoteTable").style.display = "";
             })
             .withFailureHandler(function (error) {
-              console.error("Error loading credit note list:", error);
-              alert("Failed to load credit note list.");
+              console.error(
+                "Credit Notes List: Error loading credit note list:",
+                error
+              );
+              console.error(
+                "Credit Notes List: Error details:",
+                JSON.stringify(error)
+              );
+              alert(
+                "Failed to load credit note list. Check console for details."
+              );
             })
             .getCreditNoteListFromData();
         });
