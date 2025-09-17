@@ -101,6 +101,23 @@ function getInvoiceDataById(id) {
   return getInvoiceDataByIdFromData(id);
 }
 
+/**
+ * Get credit note data by ID
+ * @param {string} id - Credit note ID
+ * @returns {Object} Credit note data
+ */
+function getCreditNoteDataById(id) {
+  return getCreditNoteDataByIdFromData(id);
+}
+
+/**
+ * Get credit note list
+ * @returns {Array} Credit note list
+ */
+function getCreditNoteList() {
+  return getCreditNoteListFromData();
+}
+
 // Error handling and performance monitoring removed for cleaner code
 
 // Performance monitoring removed for cleaner code

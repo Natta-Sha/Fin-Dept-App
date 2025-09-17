@@ -690,6 +690,13 @@
       const creditNoteId = urlParams.get("id") || "";
       const mode = urlParams.get("mode") || "";
 
+      console.log("URL parameters:", {
+        creditNoteId: creditNoteId,
+        mode: mode,
+        fullUrl: window.location.href,
+        search: window.location.search,
+      });
+
       // Setup project selection handlers (called after projects are loaded)
       function setupProjectSelectionHandlers() {
         function handleProjectSelection() {
@@ -774,6 +781,9 @@
 
       // Initialize page
       document.addEventListener("DOMContentLoaded", function () {
+        console.log("DOMContentLoaded - Starting initialization");
+        console.log("Current mode:", mode, "creditNoteId:", creditNoteId);
+
         // Populate project names
         populateProjectNames();
 
@@ -850,7 +860,7 @@
               alert("Failed to load credit note data.");
               window.location.href = "?page=CreditNotesList";
             })
-            .getCreditNoteDataByIdFromData(creditNoteId);
+            .getCreditNoteDataById(creditNoteId);
         } else {
           // Check if project is already selected and load its details
           const selectedProject = document
