@@ -685,12 +685,11 @@
       // Global variable to store valid project names
       let validProjectNames = [];
 
-      // Get URL parameters for view/edit modes
-      const urlParams = new URLSearchParams(window.location.search);
-      const creditNoteId = urlParams.get("id") || "";
-      const mode = urlParams.get("mode") || "";
+      // Get parameters from server-side template variables
+      const creditNoteId = "<?= creditNoteId ?>" || "";
+      const mode = "<?= mode ?>" || "";
 
-      console.log("URL parameters:", {
+      console.log("Template parameters:", {
         creditNoteId: creditNoteId,
         mode: mode,
         fullUrl: window.location.href,
