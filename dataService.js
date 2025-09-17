@@ -224,8 +224,8 @@ function getCreditNoteListFromData() {
     const colIndex = {
       id: headers.indexOf("ID"),
       projectName: headers.indexOf("Project Name"),
-      creditNoteNumber: headers.indexOf("Credit Note Number"),
-      creditNoteDate: headers.indexOf("Credit Note Date"),
+      creditNoteNumber: headers.indexOf("CN Number"),
+      creditNoteDate: headers.indexOf("CN Date"),
       total: headers.indexOf("Total"),
       currency: headers.indexOf("Currency"),
     };
