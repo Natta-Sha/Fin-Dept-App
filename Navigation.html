@@ -1,3 +1,72 @@
+<style>
+  /* Navigation styles */
+  .top-nav {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 0.75rem 0;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  }
+
+  .nav-brand {
+    color: white !important;
+    font-weight: bold;
+    font-size: 1.5rem;
+    text-decoration: none;
+  }
+
+  .nav-item {
+    position: relative;
+  }
+
+  .nav-link {
+    color: white !important;
+    font-weight: 500;
+    padding: 0.75rem 2rem !important;
+    border-radius: 25px;
+    transition: all 0.3s ease;
+    background: rgba(255, 255, 255, 0.1);
+    margin: 0 0.5rem;
+    font-size: 1.1rem;
+    display: block;
+    text-decoration: none;
+  }
+
+  .nav-link:hover {
+    background: rgba(255, 255, 255, 0.2);
+    transform: translateY(-1px);
+    color: white !important;
+  }
+
+  .nav-link.active {
+    background: rgba(255, 255, 255, 0.3) !important;
+    font-weight: 600;
+  }
+
+  /* Dropdown styling */
+  .dropdown-menu {
+    border: none;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+    border-radius: 8px;
+    margin-top: 0.5rem;
+  }
+
+  .dropdown-item {
+    padding: 0.75rem 1.5rem;
+    transition: all 0.2s ease;
+  }
+
+  .dropdown-item:hover {
+    background-color: #f8f9fa;
+    transform: translateX(5px);
+  }
+
+  .dropdown-item.active {
+    background-color: #e3f2fd;
+    color: #1976d2;
+    font-weight: 500;
+  }
+</style>
+
 <nav class="top-nav">
   <div class="container-fluid">
     <div class="d-flex align-items-center justify-content-between">
@@ -22,7 +91,7 @@
           <div class="nav-item dropdown mx-3">
             <a
               href="#"
-              class="nav-link dropdown-toggle <?= activePage === 'clients' ? 'active' : '' ?>"
+              class="nav-link dropdown-toggle <?= activePage === 'invoices' || activePage === 'creditnotes' ? 'active' : '' ?>"
               role="button"
               data-bs-toggle="dropdown"
             >
@@ -60,12 +129,8 @@
               </li>
               <li>
                 <a
-                  href="#"
-                  class="dropdown-item"
-                  data-bs-toggle="tooltip"
-                  title="Coming soon"
-                  style="cursor: not-allowed; opacity: 0.6"
-                  onclick="return false;"
+                  href="<?= baseUrl ?>?page=CreditNotesList"
+                  class="dropdown-item <?= activePage === 'creditnotes' ? 'active' : '' ?>"
                   >Credit Notes</a
                 >
               </li>

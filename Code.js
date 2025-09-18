@@ -12,6 +12,7 @@ function doGet(e) {
     const template = HtmlService.createTemplateFromFile(page);
     template.baseUrl = ScriptApp.getService().getUrl();
     template.invoiceId = e.parameter.invoiceId || e.parameter.id || "";
+    template.creditNoteId = e.parameter.invoiceId || e.parameter.id || "";
     template.mode = e.parameter.mode || "";
 
     // Set active page for navigation
@@ -20,6 +21,10 @@ function doGet(e) {
     // Pass invoice ID if provided
     if (e.parameter.invoiceId || e.parameter.id) {
       template.invoiceId = e.parameter.invoiceId || e.parameter.id;
+    }
+    // Pass credit note ID if provided (same as invoice ID for now)
+    if (e.parameter.invoiceId || e.parameter.id) {
+      template.creditNoteId = e.parameter.invoiceId || e.parameter.id;
     }
     if (e.parameter.mode) {
       template.mode = e.parameter.mode;
@@ -57,6 +62,10 @@ function loadPage(name) {
  */
 function processForm(data) {
   return processInvoiceCreation(data);
+}
+
+function processCreditNoteForm(data) {
+  return processCreditNoteCreation(data);
 }
 
 // Export functions for use in other modules
@@ -97,6 +106,23 @@ function getInvoiceDataById(id) {
   return getInvoiceDataByIdFromData(id);
 }
 
+/**
+ * Get credit note data by ID
+ * @param {string} id - Credit note ID
+ * @returns {Object} Credit note data
+ */
+function getCreditNoteDataById(id) {
+  return getCreditNoteDataByIdFromData(id);
+}
+
+/**
+ * Get credit note list
+ * @returns {Array} Credit note list
+ */
+function getCreditNoteList() {
+  return getCreditNoteListFromData();
+}
+
 // Error handling and performance monitoring removed for cleaner code
 
 // Performance monitoring removed for cleaner code
@@ -133,6 +159,15 @@ function formatDateForInput(val) {
  */
 function deleteInvoiceById(id) {
   return deleteInvoiceByIdFromData(id);
+}
+
+/**
+ * Delete credit note by ID (global endpoint for frontend)
+ * @param {string} id - Credit Note ID
+ * @returns {Object} { success: true } or { success: false, message }
+ */
+function deleteCreditNoteById(id) {
+  return deleteCreditNoteByIdFromData(id);
 }
 
 function testLogger(message) {
@@ -174,8 +209,13 @@ function getActivePageForNavigation(page, params = {}) {
     case "InvoicesList":
       return "invoices";
     case "InvoiceGenerator":
-      // InvoiceGenerator doesn't have specific navigation highlighting
-      return "";
+      // InvoiceGenerator is part of invoices section
+      return "invoices";
+    case "CreditNotesList":
+      return "creditnotes";
+    case "CreditNotesGenerator":
+      // CreditNotesGenerator is part of credit notes section
+      return "creditnotes";
     default:
       return "";
   }

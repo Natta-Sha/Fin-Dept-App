@@ -72,15 +72,26 @@ function generateInvoiceFilenameFromUtils(data) {
 }
 
 /**
+ * Generate credit note filename
+ * @param {Object} data - Credit note data
+ * @returns {string} Generated filename
+ */
+function generateCreditNoteFilenameFromUtils(data) {
+  const cleanCompany = cleanFilename(data.ourCompany);
+  const cleanClient = cleanFilename(data.clientName);
+  return `${data.creditNoteDate}_CreditNote${data.creditNoteNumber}_${cleanCompany}-${cleanClient}`;
+}
+
+/**
  * Format currency amount with symbol
  * @param {number|string} amount - Amount to format
  * @param {string} currency - Currency symbol
  * @returns {string} Formatted amount
  */
 function formatCurrencyFromUtils(amount, currency) {
-  if (!amount) return "";
   const num = parseFloat(amount);
   if (isNaN(num)) return "";
+  if (num === 0) return `${currency}0.00`;
 
   // Format the number first, then add currency symbol in the correct position
   const formattedNumber = num.toLocaleString(undefined, {

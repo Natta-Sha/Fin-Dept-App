@@ -186,6 +186,107 @@ function getInvoiceListFromData() {
 }
 
 /**
+ * Get credit note list from the Credit Notes sheet
+ * @returns {Array} Array of credit note objects
+ */
+function getCreditNoteListFromData() {
+  try {
+    Logger.log("=== getCreditNoteListFromData: Starting ===");
+
+    var cache = CacheService.getScriptCache();
+    var cached = cache.get("creditNoteList");
+    if (cached) {
+      Logger.log("getCreditNoteListFromData: Returning cached data");
+      return JSON.parse(cached);
+    }
+
+    Logger.log(
+      "getCreditNoteListFromData: CONFIG.SHEETS.CREDITNOTES = " +
+        CONFIG.SHEETS.CREDITNOTES
+    );
+    const spreadsheet = getSpreadsheet(CONFIG.SPREADSHEET_ID);
+    const sheet = getSheet(spreadsheet, CONFIG.SHEETS.CREDITNOTES);
+    Logger.log("getCreditNoteListFromData: Sheet found: " + sheet.getName());
+
+    const data = sheet.getDataRange().getValues();
+    Logger.log("getCreditNoteListFromData: Data rows count: " + data.length);
+
+    if (data.length < 2) {
+      Logger.log("getCreditNoteListFromData: No data rows found (less than 2)");
+      return [];
+    }
+
+    const headers = data[0].map((h) => (h || "").toString().trim());
+    Logger.log(
+      "getCreditNoteListFromData: Headers found: " + JSON.stringify(headers)
+    );
+
+    const colIndex = {
+      id: headers.indexOf("ID"),
+      projectName: headers.indexOf("Project Name"),
+      creditNoteNumber: headers.indexOf("CN Number"),
+      creditNoteDate: headers.indexOf("CN Date"),
+      total: headers.indexOf("Total"),
+      currency: headers.indexOf("Currency"),
+    };
+
+    Logger.log(
+      "getCreditNoteListFromData: Column indexes: " + JSON.stringify(colIndex)
+    );
+
+    // Validate required columns
+    for (let key in colIndex) {
+      if (colIndex[key] === -1) {
+        Logger.log("getCreditNoteListFromData: Missing column: " + key);
+        throw new Error(ERROR_MESSAGES.MISSING_COLUMN(key));
+      }
+    }
+
+    const result = data.slice(1).map((row, index) => {
+      const rowData = {
+        id: row[colIndex.id] || "",
+        projectName: row[colIndex.projectName] || "",
+        creditNoteNumber: row[colIndex.creditNoteNumber] || "",
+        creditNoteDate: formatDate(row[colIndex.creditNoteDate]),
+        total:
+          row[colIndex.total] !== undefined && row[colIndex.total] !== ""
+            ? parseFloat(row[colIndex.total]).toFixed(2)
+            : "",
+        currency: row[colIndex.currency] || "",
+      };
+
+      if (index < 3) {
+        // Log first 3 rows for debugging
+        Logger.log(
+          "getCreditNoteListFromData: Row " +
+            (index + 1) +
+            ": " +
+            JSON.stringify(rowData)
+        );
+      }
+
+      return rowData;
+    });
+
+    Logger.log(
+      "getCreditNoteListFromData: Processed " + result.length + " rows"
+    );
+    Logger.log(
+      "getCreditNoteListFromData: First result: " +
+        JSON.stringify(result[0] || {})
+    );
+
+    cache.put("creditNoteList", JSON.stringify(result), 300); // cache for 5 minutes
+    return result;
+  } catch (error) {
+    Logger.log("getCreditNoteListFromData: ERROR - " + error.toString());
+    Logger.log("getCreditNoteListFromData: Stack trace: " + error.stack);
+    console.error("Error getting credit note list:", error);
+    return [];
+  }
+}
+
+/**
  * Get invoice data by ID
  * @param {string} id - Invoice ID
  * @returns {Object} Invoice data object
@@ -251,6 +352,99 @@ function getInvoiceDataByIdFromData(id) {
   } catch (error) {
     console.error("Error getting invoice data by ID:", error);
     return {}; // ⚠️ тоже вернём пустой объект
+  }
+}
+
+/**
+ * Get credit note data by ID from spreadsheet
+ * @param {string} id - Credit note ID
+ * @returns {Object} Credit note data
+ */
+function getCreditNoteDataByIdFromData(id) {
+  try {
+    // Validate input
+    if (!id || id.toString().trim() === "") {
+      console.log("Invalid ID provided to getCreditNoteDataByIdFromData");
+      return {};
+    }
+
+    console.log("getCreditNoteDataByIdFromData: Looking for ID:", id);
+    const spreadsheet = getSpreadsheet(CONFIG.SPREADSHEET_ID);
+    const sheet = getSheet(spreadsheet, CONFIG.SHEETS.CREDITNOTES);
+    const data = sheet.getDataRange().getValues();
+    const headers = data[0];
+    console.log("getCreditNoteDataByIdFromData: Headers:", headers);
+
+    const indexMap = headers.reduce((acc, h, i) => {
+      acc[h] = i;
+      return acc;
+    }, {});
+    console.log("getCreditNoteDataByIdFromData: Index map:", indexMap);
+
+    let row = null;
+    for (let i = 1; i < data.length; i++) {
+      const rowId = data[i][indexMap["ID"]];
+      console.log(
+        `getCreditNoteDataByIdFromData: Checking row ${i}, ID: ${rowId} (type: ${typeof rowId}), looking for: ${id} (type: ${typeof id})`
+      );
+
+      // Try both string and number comparison
+      if (rowId == id || rowId === id || rowId.toString() === id.toString()) {
+        row = data[i];
+        console.log("getCreditNoteDataByIdFromData: Found matching row:", row);
+        break;
+      }
+    }
+    if (!row) {
+      console.log(`Credit note with ID ${id} not found.`);
+      return {};
+    }
+
+    const items = [];
+    console.log(
+      "getCreditNoteDataByIdFromData: CONFIG.CREDIT_NOTE_TABLE.COLUMNS_PER_ROW =",
+      CONFIG.CREDIT_NOTE_TABLE.COLUMNS_PER_ROW
+    );
+    // Base fields: 18 columns (ID through PDF Link)
+    // First table row starts at column 19 (Row 1 #, Row 1 Description, Row 1 Period, Row 1 Amount)
+    for (let i = 0; i < CONFIG.CREDIT_NOTE_TABLE.MAX_ROWS; i++) {
+      const base = 18 + i * 4; // Start from column 19, 4 columns per row
+      const item = row.slice(base, base + 4);
+      console.log(
+        `getCreditNoteDataByIdFromData: Row ${i}, base=${base}, item=`,
+        item
+      );
+      if (item.some((cell) => cell && cell.toString().trim() !== "")) {
+        items.push(item);
+        console.log(`getCreditNoteDataByIdFromData: Added item ${i}:`, item);
+      }
+    }
+
+    const result = {
+      projectName: row[indexMap["Project Name"]],
+      creditNoteNumber: row[indexMap["CN Number"]],
+      clientName: row[indexMap["Client Name"]],
+      clientAddress: row[indexMap["Client Address"]],
+      clientNumber: row[indexMap["Client Number"]],
+      creditNoteDate: formatDateForInputFromUtils(row[indexMap["CN Date"]]),
+      tax: row[indexMap["Tax Rate (%)"]],
+      subtotal: row[indexMap["Subtotal"]],
+      total: row[indexMap["Total"]],
+      exchangeRate: row[indexMap["Exchange Rate"]],
+      currency: row[indexMap["Currency"]],
+      amountInEUR: row[indexMap["Amount in EUR"]],
+      bankDetails1: row[indexMap["Bank Details 1"]],
+      bankDetails2: row[indexMap["Bank Details 2"]],
+      ourCompany: row[indexMap["Our Company"]],
+      comment: row[indexMap["Comment"]],
+      items: items,
+    };
+
+    console.log("getCreditNoteDataByIdFromData: Returning result:", result);
+    return result;
+  } catch (error) {
+    console.error("Error getting credit note data by ID:", error);
+    return {};
   }
 }
 
@@ -756,6 +950,281 @@ function updateInvoiceByIdFromData(id, data) {
     return { success: true, docUrl: doc.getUrl(), pdfUrl: pdfFile.getUrl() };
   } catch (error) {
     console.error("Error updating invoice:", error);
+    return { success: false, message: error.message };
+  }
+}
+
+/**
+ * Process credit note form data and create documents
+ * @param {Object} data - Credit note form data
+ * @returns {Object} Result with document and PDF URLs
+ */
+function processCreditNoteFormFromData(data) {
+  try {
+    Logger.log("processCreditNoteFormFromData: Starting credit note creation.");
+    Logger.log(
+      `processCreditNoteFormFromData: Received data for project: ${data.projectName}, credit note: ${data.creditNoteNumber}`
+    );
+
+    const spreadsheet = getSpreadsheet(CONFIG.SPREADSHEET_ID);
+    const sheet = getSheet(spreadsheet, CONFIG.SHEETS.CREDITNOTES);
+    const uniqueId = Utilities.getUuid();
+    Logger.log(
+      `processCreditNoteFormFromData: Generated new unique ID: ${uniqueId}`
+    );
+
+    if (sheet.getLastRow() === 0) {
+      const baseHeaders = [
+        "ID",
+        "Project Name",
+        "CN Number",
+        "Client Name",
+        "Client Address",
+        "Client Number",
+        "CN Date",
+        "Tax Rate (%)",
+        "Subtotal",
+        "Tax Amount",
+        "Total",
+        "Exchange Rate",
+        "Currency",
+        "Amount in EUR",
+        "Our Company",
+        "Comment",
+        "Google Doc Link",
+        "PDF Link",
+      ];
+
+      const itemHeaders = [];
+      for (let i = 1; i <= 20; i++) {
+        // Max 20 rows as requested
+        itemHeaders.push(
+          `Row ${i} #`,
+          `Row ${i} Description`,
+          `Row ${i} Period`,
+          `Row ${i} Amount`
+        );
+      }
+      sheet.appendRow([...baseHeaders, ...itemHeaders]);
+      Logger.log(
+        "processCreditNoteFormFromData: Sheet was empty, headers created."
+      );
+    }
+
+    const formattedDate = formatDate(data.creditNoteDate);
+
+    const subtotalNum = parseFloat(data.subtotal) || 0;
+    const taxRate = parseFloat(data.tax) || 0;
+    const taxAmount = (subtotalNum * taxRate) / 100;
+    const totalAmount = subtotalNum + taxAmount;
+
+    const itemCells = [];
+    data.items.forEach((row, i) => {
+      const newRow = [...row];
+      newRow[0] = (i + 1).toString();
+      // Force Period field (index 2) to be saved as text to prevent Google Sheets from converting it to date
+      if (newRow[2]) {
+        newRow[2] = `'${newRow[2].toString()}`; // Add single quote prefix to force text format
+      }
+      itemCells.push(...newRow);
+    });
+
+    const row = [
+      uniqueId,
+      data.projectName,
+      data.creditNoteNumber,
+      data.clientName,
+      data.clientAddress,
+      data.clientNumber,
+      new Date(data.creditNoteDate),
+      taxRate.toFixed(0),
+      subtotalNum.toFixed(2),
+      taxAmount.toFixed(2),
+      totalAmount.toFixed(2),
+      data.currency === "$" ? parseFloat(data.exchangeRate).toFixed(4) : "",
+      data.currency,
+      data.currency === "$" ? parseFloat(data.amountInEUR).toFixed(2) : "",
+      data.ourCompany || "",
+      data.comment || "",
+      "",
+      "", // placeholders for doc & pdf
+    ].concat(itemCells);
+
+    const newRowIndex = sheet.getLastRow() + 1;
+    sheet.getRange(newRowIndex, 1, 1, row.length).setValues([row]);
+    Logger.log(
+      `processCreditNoteFormFromData: Data saved to row ${newRowIndex}`
+    );
+
+    // Create Google Doc and PDF
+    const folderId = getProjectFolderId(data.projectName);
+    Logger.log(">>> Resolved folderId: " + folderId);
+
+    // Hardcoded template ID as requested
+    const templateId = "1yCKAx3nyIz-L_u3FPSK1zMof5Mo0m2-gsNzl1cCQsuQ";
+
+    const doc = createCreditNoteDoc(
+      data,
+      formattedDate,
+      subtotalNum,
+      taxRate,
+      taxAmount,
+      totalAmount,
+      templateId,
+      folderId
+    );
+    if (!doc) {
+      Logger.log(
+        "processCreditNoteFormFromData: ERROR - createCreditNoteDoc returned null or undefined."
+      );
+      throw new Error(
+        "Failed to create the Google Doc. The returned document object was empty."
+      );
+    }
+    Logger.log(
+      `processCreditNoteFormFromData: createCreditNoteDoc successful. Doc ID: ${doc.getId()}, URL: ${doc.getUrl()}`
+    );
+
+    Utilities.sleep(1000);
+    Logger.log("processCreditNoteFormFromData: Woke up from 1-second sleep.");
+
+    const pdf = doc.getAs("application/pdf");
+    if (!pdf) {
+      Logger.log(
+        "processCreditNoteFormFromData: ERROR - doc.getAs('application/pdf') returned a null blob."
+      );
+      throw new Error("Failed to generate PDF content from the document.");
+    }
+    Logger.log(
+      `processCreditNoteFormFromData: Got PDF blob. Name: ${pdf.getName()}, Type: ${pdf.getContentType()}, Size: ${
+        pdf.getBytes().length
+      } bytes.`
+    );
+
+    const folder = DriveApp.getFolderById(CONFIG.FOLDER_ID);
+
+    const cleanCompany = (data.ourCompany || "")
+      .replace(/[\\/:*?"<>|]/g, "")
+      .trim();
+    const cleanClient = (data.clientName || "")
+      .replace(/[\\/:*?"<>|]/g, "")
+      .trim();
+    const filename = `${data.creditNoteDate}_CreditNote${data.creditNoteNumber}_${cleanCompany}-${cleanClient}`;
+
+    const pdfFile = folder.createFile(pdf).setName(`${filename}.pdf`);
+    Logger.log(
+      `processCreditNoteFormFromData: Created PDF file. ID: ${pdfFile.getId()}, URL: ${pdfFile.getUrl()}`
+    );
+
+    // Update the row with Doc and PDF URLs (columns 17 and 18)
+    sheet.getRange(newRowIndex, 17).setValue(doc.getUrl());
+    sheet.getRange(newRowIndex, 18).setValue(pdfFile.getUrl());
+    SpreadsheetApp.flush();
+    Logger.log(
+      `processCreditNoteFormFromData: Wrote Doc and PDF URLs to sheet at row ${newRowIndex}.`
+    );
+
+    const result = {
+      docUrl: doc.getUrl(),
+      pdfUrl: pdfFile.getUrl(),
+    };
+    Logger.log(
+      "processCreditNoteFormFromData: Successfully completed. Returning URLs to client."
+    );
+
+    CacheService.getScriptCache().remove("creditNoteList");
+
+    return result;
+  } catch (error) {
+    Logger.log(`processCreditNoteFormFromData: ERROR - ${error.toString()}`);
+    Logger.log(`Stack Trace: ${error.stack}`);
+    throw error;
+  }
+}
+
+/**
+ * Delete credit note by ID from the Credit Notes sheet
+ * @param {string} id - Credit Note ID
+ * @returns {Object} { success: true } or { success: false, message }
+ */
+function deleteCreditNoteByIdFromData(id) {
+  try {
+    // Validate input
+    if (!id || id.toString().trim() === "") {
+      console.log("Invalid ID provided to deleteCreditNoteByIdFromData");
+      return { success: false, message: "Invalid credit note ID provided" };
+    }
+
+    const spreadsheet = getSpreadsheet(CONFIG.SPREADSHEET_ID);
+    const sheet = getSheet(spreadsheet, CONFIG.SHEETS.CREDITNOTES);
+    const data = sheet.getDataRange().getValues();
+    const headers = data[0];
+
+    const idCol = headers.indexOf("ID");
+    const docLinkCol = headers.indexOf("Google Doc Link");
+    const pdfLinkCol = headers.indexOf("PDF Link");
+
+    if (idCol === -1) throw new Error("ID column not found.");
+
+    let rowToDelete = -1;
+    let docUrl = "";
+    let pdfUrl = "";
+
+    for (let i = 1; i < data.length; i++) {
+      if (data[i][idCol] === id) {
+        rowToDelete = i + 1; // 1-based index
+        docUrl = data[i][docLinkCol] || "";
+        pdfUrl = data[i][pdfLinkCol] || "";
+        break;
+      }
+    }
+
+    if (rowToDelete === -1) {
+      return { success: false, message: "Credit note not found." };
+    }
+
+    // 🔹 Удаляем файлы (если есть), логируем ошибки
+    let deletedNotes = [];
+
+    if (docUrl && docUrl.trim() !== "") {
+      try {
+        const docId = extractFileIdFromUrl(docUrl);
+        if (docId) {
+          DriveApp.getFileById(docId).setTrashed(true);
+        }
+      } catch (err) {
+        const msg = "Google Doc already deleted or not found.";
+        Logger.log(msg + " " + err.message);
+        deletedNotes.push(msg);
+      }
+    }
+
+    if (pdfUrl && pdfUrl.trim() !== "") {
+      try {
+        const pdfId = extractFileIdFromUrl(pdfUrl);
+        if (pdfId) {
+          DriveApp.getFileById(pdfId).setTrashed(true);
+        }
+      } catch (err) {
+        const msg = "PDF already deleted or not found.";
+        Logger.log(msg + " " + err.message);
+        deletedNotes.push(msg);
+      }
+    }
+
+    // 🧹 Удаляем строку
+    sheet.deleteRow(rowToDelete);
+
+    // 🧼 Очищаем кэш
+    CacheService.getScriptCache().remove("creditNoteList");
+
+    // ✅ Возвращаем результат
+    return {
+      success: true,
+      note: deletedNotes.length ? deletedNotes.join(" ") : undefined,
+    };
+  } catch (error) {
+    console.error("Error deleting credit note:", error);
     return { success: false, message: error.message };
   }
 }

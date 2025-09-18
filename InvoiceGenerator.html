@@ -54,64 +54,6 @@
         display: none !important;
       }
 
-      /* Navigation styles */
-      .top-nav {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        color: white;
-        padding: 0.75rem 0;
-        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-      }
-
-      .nav-brand {
-        color: white !important;
-        font-weight: bold;
-        font-size: 1.5rem;
-        text-decoration: none;
-      }
-
-      .nav-item {
-        position: relative;
-      }
-
-      .nav-link {
-        color: white !important;
-        font-weight: 500;
-        padding: 0.75rem 2rem !important;
-        border-radius: 25px;
-        transition: all 0.3s ease;
-        background: rgba(255, 255, 255, 0.1);
-        margin: 0 0.5rem;
-        font-size: 1.1rem;
-      }
-
-      .nav-link:hover {
-        background: rgba(255, 255, 255, 0.2);
-        transform: translateY(-1px);
-      }
-
-      .nav-link.active {
-        background: rgba(255, 255, 255, 0.3) !important;
-        font-weight: 600;
-      }
-
-      /* Dropdown styling */
-      .dropdown-menu {
-        border: none;
-        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
-        border-radius: 8px;
-        margin-top: 0.5rem;
-      }
-
-      .dropdown-item {
-        padding: 0.75rem 1.5rem;
-        transition: all 0.2s ease;
-      }
-
-      .dropdown-item:hover {
-        background-color: #f8f9fa;
-        transform: translateX(5px);
-      }
-
       .main-content {
         padding-top: 1rem;
       }
@@ -1423,18 +1365,56 @@
             })
             .withSuccessHandler(function (result) {
               document.getElementById("spinner").style.display = "none";
-              document.getElementById("result").innerHTML = `
+
+              let resultHtml = `
       <div class="alert alert-success mt-4">
-        <strong>Invoice created!</strong><br>
-        <a href="${result.docUrl}" class="btn btn-outline-secondary mt-2" target="_blank">Open Google Doc</a>
-        <a href="${result.pdfUrl}" class="btn btn-outline-secondary mt-2" target="_blank">Open PDF</a>
-      </div>
-      <div class="row mt-4">
-        <div class="col-md-12 d-flex justify-content-end gap-2">
-          <button class="btn btn-primary px-5 fw-bold" onclick="safeNavigateToInvoicesList()">Back to the list</button>
-        </div>
+        <strong>Invoice created successfully!</strong>
       </div>
     `;
+
+              // Add document links if available
+              if (result && (result.docUrl || result.pdfUrl)) {
+                resultHtml += `
+                  <div class="card mt-3" style="background-color: #d4edda; border-color: #c3e6cb;">
+                    <div class="card-body">
+                      <h6 class="card-title text-success mb-3">
+                        <i class="bi bi-check-circle"></i> Documents Generated
+                      </h6>
+                      <div class="d-flex flex-wrap gap-2">
+                `;
+
+                if (result.docUrl) {
+                  resultHtml += `
+                    <a href="${result.docUrl}" target="_blank" class="btn btn-outline-success btn-sm">
+                      <i class="bi bi-file-earmark-text"></i> Open Google Doc
+                    </a>
+                  `;
+                }
+
+                if (result.pdfUrl) {
+                  resultHtml += `
+                    <a href="${result.pdfUrl}" target="_blank" class="btn btn-outline-success btn-sm">
+                      <i class="bi bi-file-earmark-pdf"></i> Open PDF
+                    </a>
+                  `;
+                }
+
+                resultHtml += `
+                      </div>
+                    </div>
+      </div>
+    `;
+              }
+
+              resultHtml += `
+                <div class="row mt-4">
+                  <div class="col-md-12 d-flex justify-content-end gap-2">
+                    <button class="btn btn-primary px-5 fw-bold" onclick="safeNavigateToInvoicesList()">Back to the list</button>
+                  </div>
+                </div>
+              `;
+
+              document.getElementById("result").innerHTML = resultHtml;
 
               // 🔒 Keep form disabled and hide generate button after success
               setFormInputsDisabled(true);
@@ -1806,18 +1786,56 @@
                           return;
                         }
                         // Render links like after creation
-                        document.getElementById("result").innerHTML = `
+                        let resultHtml = `
       <div class="alert alert-success mt-4">
-        <strong>Invoice updated!</strong><br>
-        <a href="${res.docUrl}" class="btn btn-outline-secondary mt-2" target="_blank">Open Google Doc</a>
-        <a href="${res.pdfUrl}" class="btn btn-outline-secondary mt-2" target="_blank">Open PDF</a>
-      </div>
-      <div class="row mt-4">
-        <div class="col-md-12 d-flex justify-content-end gap-2">
-          <button class="btn btn-primary px-5 fw-bold" onclick="safeNavigateToInvoicesList()">Back to the list</button>
-        </div>
+        <strong>Invoice updated successfully!</strong>
       </div>
     `;
+
+                        // Add document links if available
+                        if (res && (res.docUrl || res.pdfUrl)) {
+                          resultHtml += `
+                            <div class="card mt-3" style="background-color: #d4edda; border-color: #c3e6cb;">
+                              <div class="card-body">
+                                <h6 class="card-title text-success mb-3">
+                                  <i class="bi bi-check-circle"></i> Documents Generated
+                                </h6>
+                                <div class="d-flex flex-wrap gap-2">
+                          `;
+
+                          if (res.docUrl) {
+                            resultHtml += `
+                              <a href="${res.docUrl}" target="_blank" class="btn btn-outline-success btn-sm">
+                                <i class="bi bi-file-earmark-text"></i> Open Google Doc
+                              </a>
+                            `;
+                          }
+
+                          if (res.pdfUrl) {
+                            resultHtml += `
+                              <a href="${res.pdfUrl}" target="_blank" class="btn btn-outline-success btn-sm">
+                                <i class="bi bi-file-earmark-pdf"></i> Open PDF
+                              </a>
+                            `;
+                          }
+
+                          resultHtml += `
+                                </div>
+                              </div>
+            </div>
+          `;
+                        }
+
+                        resultHtml += `
+                          <div class="row mt-4">
+                            <div class="col-md-12 d-flex justify-content-end gap-2">
+                              <button class="btn btn-primary px-5 fw-bold" onclick="safeNavigateToInvoicesList()">Back to the list</button>
+                            </div>
+                          </div>
+                        `;
+
+                        document.getElementById("result").innerHTML =
+                          resultHtml;
                         // Hide edit action buttons after successful update and keep form disabled
                         const editBtnsAfter = document.getElementById(
                           "edit-bottom-btn-container"

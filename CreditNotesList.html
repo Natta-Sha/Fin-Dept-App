@@ -3,7 +3,7 @@
   <head>
     <base target="_top" />
     <meta charset="UTF-8" />
-    <title>List of Invoices</title>
+    <title>List of Credit Notes</title>
 
     <!-- Стили -->
     <link
@@ -258,15 +258,15 @@
       }
       th:nth-child(2),
       td:nth-child(2) {
-        width: 10%;
+        width: 15%;
       }
       th:nth-child(3),
       td:nth-child(3) {
-        width: 12%;
+        width: 15%;
       }
       th:nth-child(4),
       td:nth-child(4) {
-        width: 12%;
+        width: 15%;
       }
       th:nth-child(5),
       td:nth-child(5) {
@@ -274,11 +274,7 @@
       }
       th:nth-child(6),
       td:nth-child(6) {
-        width: 10%;
-      }
-      th:nth-child(7),
-      td:nth-child(7) {
-        width: 26%;
+        width: 25%;
         white-space: nowrap;
       }
 
@@ -289,13 +285,12 @@
       }
 
       /* Выравнивание заголовков по центру */
-      #invoiceTable thead th {
+      #creditNoteTable thead th {
         text-align: center !important;
       }
     </style>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
   </head>
-
   <body>
     <!-- Top Navigation -->
     <?!= getNavigation(activePage) ?>
@@ -304,10 +299,10 @@
     <div class="main-content container">
       <div class="mb-3 d-flex justify-content-start">
         <a
-          href="<?= baseUrl ?>?page=InvoiceGenerator&mode=create"
+          href="<?= baseUrl ?>?page=CreditNotesGenerator&mode=create"
           class="btn btn-nav"
         >
-          Generate Invoice
+          Generate Credit Note
         </a>
       </div>
 
@@ -317,19 +312,18 @@
         }
       </script>
 
-      <h2 class="mb-4">List of Invoices</h2>
+      <h2 class="mb-4">List of Credit Notes</h2>
 
       <table
-        id="invoiceTable"
+        id="creditNoteTable"
         class="display table table-bordered"
         style="width: 100%; display: none"
       >
         <thead class="table-light">
           <tr>
             <th>Project Name</th>
-            <th>Invoice Number</th>
-            <th>Invoice Date</th>
-            <th>Due Date</th>
+            <th>Credit Note Number</th>
+            <th>Credit Note Date</th>
             <th>Total</th>
             <th>Currency</th>
             <th>Actions</th>
@@ -338,7 +332,6 @@
             <th><input type="text" placeholder="Search Project" /></th>
             <th><input type="text" placeholder="Search Number" /></th>
             <th><input type="text" placeholder="Search Date" /></th>
-            <th><input type="text" placeholder="Search Due" /></th>
             <th><input type="text" placeholder="Search Total" /></th>
             <th><input type="text" placeholder="Search Currency" /></th>
             <th></th>
@@ -355,12 +348,12 @@
       <script>
         $(document).ready(function () {
           $.fn.dataTable.moment("DD/MM/YYYY");
-          const table = $("#invoiceTable").DataTable({
+          const table = $("#creditNoteTable").DataTable({
             dom: "lrtip",
             orderCellsTop: true,
             columnDefs: [
               {
-                targets: 4, // колонка Total (индекс 4)
+                targets: 3, // колонка Total (индекс 3)
                 className: "dt-body-right dt-head-center", // данные вправо, заголовок по центру
                 render: function (data, type, row) {
                   if (type === "display" && data) {
@@ -377,7 +370,7 @@
                 },
               },
               {
-                targets: [0, 1, 2, 3, 5, 6], // все колонки кроме Total (4)
+                targets: [0, 1, 2, 4, 5], // все колонки кроме Total (3)
                 className: "dt-body-left dt-head-center", // данные влево, заголовок по центру
               },
             ],
@@ -385,7 +378,7 @@
 
           new $.fn.dataTable.FixedHeader(table);
 
-          $("#invoiceTable thead tr:eq(1) th").each(function (i) {
+          $("#creditNoteTable thead tr:eq(1) th").each(function (i) {
             $("input", this).on("keyup change", function () {
               if (table.column(i).search() !== this.value) {
                 table.column(i).search(this.value).draw();
@@ -395,37 +388,69 @@
 
           google.script.run
             .withSuccessHandler(function (data) {
+              console.log(
+                "Credit Notes List: Received data from server:",
+                data
+              );
+              console.log("Credit Notes List: Data type:", typeof data);
+              console.log("Credit Notes List: Is array:", Array.isArray(data));
+              console.log(
+                "Credit Notes List: Data length:",
+                data ? data.length : "undefined"
+              );
+
               if (!Array.isArray(data) || data.length === 0) {
+                console.log(
+                  "Credit Notes List: No data or empty array, clearing table"
+                );
                 table.clear().draw();
-                document.getElementById("invoiceTable").style.display = "";
+                document.getElementById("creditNoteTable").style.display = "";
                 return;
               }
 
-              data.forEach((row) => {
+              console.log(
+                "Credit Notes List: Processing " + data.length + " rows"
+              );
+              data.forEach((row, index) => {
+                if (index < 3) {
+                  // Log first 3 rows
+                  console.log(
+                    "Credit Notes List: Row " + (index + 1) + ":",
+                    row
+                  );
+                }
                 table.row.add([
                   row.projectName || "",
-                  row.invoiceNumber || "",
-                  row.invoiceDate || "",
-                  row.dueDate || "",
+                  row.creditNoteNumber || "",
+                  row.creditNoteDate || "",
                   row.total || "",
                   row.currency || "",
                   `
-                  <a href="<?= baseUrl ?>?page=InvoiceGenerator&id=${row.id}&mode=view" class="btn btn-sm btn-outline-primary me-1">View</a>
-                  <a href="<?= baseUrl ?>?page=InvoiceGenerator&id=${row.id}&mode=edit" class="btn btn-sm btn-outline-secondary me-1">Edit</a>
-                  <a href="<?= baseUrl ?>?page=InvoiceGenerator&id=${row.id}&mode=delete" class="btn btn-sm btn-outline-danger me-1">Delete</a>
-                  <a href="<?= baseUrl ?>?page=InvoiceGenerator&id=${row.id}&mode=copy" class="btn btn-sm btn-outline-success">Copy</a>
+                  <a href="<?= baseUrl ?>?page=CreditNotesGenerator&id=${row.id}&mode=view" class="btn btn-sm btn-outline-primary me-1">View</a>
+                  <button class="btn btn-sm btn-outline-secondary me-1" onclick="showComingSoon('Edit Credit Note')">Edit</button>
+                  <a href="<?= baseUrl ?>?page=CreditNotesGenerator&id=${row.id}&mode=delete" class="btn btn-sm btn-outline-danger me-1">Delete</a>
+                  <button class="btn btn-sm btn-outline-success" onclick="showComingSoon('Copy Credit Note')">Copy</button>
                 `,
                 ]);
               });
 
               table.draw();
-              document.getElementById("invoiceTable").style.display = "";
+              document.getElementById("creditNoteTable").style.display = "";
             })
             .withFailureHandler(function (error) {
-              console.error("Error loading invoice list:", error);
-              alert("Failed to load invoice list.");
+              console.error(
+                "Credit Notes List: Error loading credit note list:",
+                error
+              );
+              console.error(
+                "Credit Notes List: Error details:",
+                JSON.stringify(error)
+              );
+              alert(
+                "Failed to load credit note list. Check console for details."
+              );
             })
-            .getInvoiceList();
+            .getCreditNoteList();
         });
       </script>
 
@@ -441,7 +466,7 @@
           <div class="modal-content">
             <div class="modal-header">
               <h5 class="modal-title" id="deletedModalLabel">
-                Invoice Deleted
+                Credit Note Deleted
               </h5>
               <button
                 type="button"
@@ -450,7 +475,7 @@
                 aria-label="Close"
               ></button>
             </div>
-            <div class="modal-body">The invoice was deleted.</div>
+            <div class="modal-body">The credit note was deleted.</div>
           </div>
         </div>
       </div>
