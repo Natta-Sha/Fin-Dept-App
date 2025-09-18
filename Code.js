@@ -112,7 +112,10 @@ function getInvoiceDataById(id) {
  * @returns {Object} Credit note data
  */
 function getCreditNoteDataById(id) {
-  return getCreditNoteDataByIdFromData(id);
+  console.log("getCreditNoteDataById called with ID:", id);
+  const result = getCreditNoteDataByIdFromData(id);
+  console.log("getCreditNoteDataById returning:", result);
+  return result;
 }
 
 /**

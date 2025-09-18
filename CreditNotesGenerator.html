@@ -636,7 +636,7 @@
 
       // Robust navigation back to credit notes list for both web-app and sidebar contexts
       function safeNavigateToCreditNotesList() {
-        const target = "<?= baseUrl ?>?page=CreditNotesList";
+        const target = BASE_URL + "?page=CreditNotesList";
         try {
           window.top.location.href = target;
           return;
@@ -784,12 +784,16 @@
             currencyMap[data.currency] || data.currency || "";
 
         const bankDetails1El = document.getElementById("bank_details_1");
-        if (bankDetails1El)
+        if (bankDetails1El) {
           bankDetails1El.textContent = data.bankDetails1 || "";
+          console.log("renderSavedDataRaw: bankDetails1 =", data.bankDetails1);
+        }
 
         const bankDetails2El = document.getElementById("bank_details_2");
-        if (bankDetails2El)
+        if (bankDetails2El) {
           bankDetails2El.textContent = data.bankDetails2 || "";
+          console.log("renderSavedDataRaw: bankDetails2 =", data.bankDetails2);
+        }
 
         // Format and set date
         if (data.creditNoteDate) {
@@ -831,6 +835,7 @@
         const commentInputEl = document.getElementById("comment");
         if (commentDisplayEl) {
           commentDisplayEl.textContent = data.comment || "";
+          console.log("renderSavedDataRaw: comment =", data.comment);
           // Show comment display and hide input for view/delete modes
           if (["view", "delete"].includes(mode)) {
             commentDisplayEl.style.display = "block";
@@ -962,6 +967,7 @@
       // Get parameters from server-side template variables
       const creditNoteId = "<?= creditNoteId ?>" || "";
       const mode = "<?= mode ?>" || "";
+      const BASE_URL = "<?= baseUrl ?>";
 
       console.log("Template parameters:", {
         creditNoteId: creditNoteId,
@@ -1001,6 +1007,53 @@
               safeNavigateToCreditNotesList();
             });
           }
+        });
+      } else if (mode === "edit") {
+        console.log("EDIT MODE DETECTED - Setting up edit mode immediately");
+        // Set up edit mode immediately
+        document.addEventListener("DOMContentLoaded", function () {
+          console.log("DOMContentLoaded - Setting up edit mode");
+          document.getElementById("page-title").textContent =
+            "Credit Note - Edit";
+          document.getElementById("edit-bottom-btn-container").style.display =
+            "block";
+          document.getElementById("generate-btn").style.display = "none";
+          document.getElementById("cancel-create-btn").style.display = "none";
+
+          // Hide add row button in edit mode
+          const addRowBtn = document.getElementById("add-row-btn");
+          if (addRowBtn) addRowBtn.style.display = "none";
+
+          // Enable all form inputs in edit mode
+          document
+            .querySelectorAll("input, textarea, select")
+            .forEach(function (element) {
+              element.disabled = false;
+            });
+
+          // Show comment input, hide display
+          const commentInputEl = document.getElementById("comment");
+          const commentDisplayEl = document.getElementById("comment-display");
+          if (commentInputEl && commentDisplayEl) {
+            commentInputEl.style.display = "block";
+            commentDisplayEl.style.display = "none";
+          }
+
+          // Toggle edit fields - show inputs, hide plaintext
+          const toggleEditField = (plainId, inputId) => {
+            const plain = document.getElementById(plainId);
+            const input = document.getElementById(inputId);
+            if (!plain || !input) return;
+            plain.style.display = "none";
+            input.style.display = "block";
+          };
+
+          toggleEditField("client_name", "client_name_input");
+          toggleEditField("client_address", "client_address_input");
+          toggleEditField("client_number", "client_number_input");
+          toggleEditField("our_company", "our_company_input");
+          toggleEditField("bank_details_1", "bank_details_1_input");
+          toggleEditField("bank_details_2", "bank_details_2_input");
         });
       } else if (mode === "delete") {
         console.log(
@@ -1743,9 +1796,9 @@
               }
 
               resultHtml += `
-                    </div>
-                  </div>
-      </div>
+            </div>
+            </div>
+            </div>
     `;
             }
 
@@ -1753,8 +1806,8 @@
               <div class="row mt-4">
                 <div class="col-md-12 d-flex justify-content-end gap-2">
                   <button class="btn btn-primary px-5 fw-bold" onclick="safeNavigateToCreditNotesList()">Back to the list</button>
-                </div>
           </div>
+        </div>
         `;
 
             document.getElementById("result").innerHTML = resultHtml;

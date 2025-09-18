@@ -365,7 +365,7 @@ function getCreditNoteDataByIdFromData(id) {
     // Validate input
     if (!id || id.toString().trim() === "") {
       console.log("Invalid ID provided to getCreditNoteDataByIdFromData");
-      return {};
+      return null; // Return null to match what client expects
     }
 
     console.log("getCreditNoteDataByIdFromData: Looking for ID:", id);
@@ -374,6 +374,14 @@ function getCreditNoteDataByIdFromData(id) {
     const data = sheet.getDataRange().getValues();
     const headers = data[0];
     console.log("getCreditNoteDataByIdFromData: Headers:", headers);
+    console.log(
+      "getCreditNoteDataByIdFromData: Total rows in sheet:",
+      data.length
+    );
+    console.log(
+      "getCreditNoteDataByIdFromData: First few IDs in sheet:",
+      data.slice(1, 4).map((row) => row[0])
+    );
 
     const indexMap = headers.reduce((acc, h, i) => {
       acc[h] = i;
@@ -397,7 +405,11 @@ function getCreditNoteDataByIdFromData(id) {
     }
     if (!row) {
       console.log(`Credit note with ID ${id} not found.`);
-      return {};
+      console.log(
+        "Available IDs in sheet:",
+        data.slice(1).map((row, index) => ({ row: index + 1, id: row[0] }))
+      );
+      return null; // Return null to match what client expects
     }
 
     const items = [];
@@ -444,7 +456,8 @@ function getCreditNoteDataByIdFromData(id) {
     return result;
   } catch (error) {
     console.error("Error getting credit note data by ID:", error);
-    return {};
+    console.error("Error stack:", error.stack);
+    return null; // Return null to match what client expects
   }
 }
 
