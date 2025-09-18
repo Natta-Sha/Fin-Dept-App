@@ -1156,7 +1156,7 @@ function deleteCreditNoteByIdFromData(id) {
     }
 
     const spreadsheet = getSpreadsheet(CONFIG.SPREADSHEET_ID);
-    const sheet = getSheet(spreadsheet, CONFIG.SHEETS.CREDIT_NOTES);
+    const sheet = getSheet(spreadsheet, CONFIG.SHEETS.CREDITNOTES);
     const data = sheet.getDataRange().getValues();
     const headers = data[0];
 
