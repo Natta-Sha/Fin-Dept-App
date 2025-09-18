@@ -1334,10 +1334,8 @@ function updateCreditNoteByIdFromData(data) {
 
     // Resolve template and folder like in creation flow
     const detailsForTemplate = getProjectDetailsFromData(data.projectName);
-    const templateId = detailsForTemplate && detailsForTemplate.templateId;
-    if (!templateId) {
-      throw new Error(ERROR_MESSAGES.NO_TEMPLATE_ID);
-    }
+    // Hardcoded template ID for credit notes as in creation flow
+    const templateId = "1yCKAx3nyIz-L_u3FPSK1zMof5Mo0m2-gsNzl1cCQsuQ";
     const folderId = getProjectFolderId(data.projectName);
 
     // Create updated data object with project details for template filling
