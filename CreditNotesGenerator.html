@@ -297,6 +297,31 @@
 
     <!-- Main Content -->
     <div class="main-content container py-4">
+      <div
+        class="modal fade"
+        id="deleteSuccessModal"
+        tabindex="-1"
+        aria-labelledby="deleteSuccessLabel"
+        aria-hidden="true"
+      >
+        <div class="modal-dialog">
+          <div class="modal-content">
+            <div class="modal-header">
+              <h5 class="modal-title" id="deleteSuccessLabel">Success</h5>
+              <button
+                type="button"
+                class="btn-close"
+                data-bs-dismiss="modal"
+                aria-label="Close"
+              ></button>
+            </div>
+            <div class="modal-body">
+              The credit note was successfully deleted.
+            </div>
+          </div>
+        </div>
+      </div>
+
       <h2 id="page-title" class="mb-4">Create Credit Note</h2>
 
       <!-- Credit Note Form -->
@@ -726,8 +751,14 @@
         }
 
         const commentDisplayEl = document.getElementById("comment-display");
+        const commentInputEl = document.getElementById("comment");
         if (commentDisplayEl) {
           commentDisplayEl.textContent = data.comment || "";
+          // Show comment display and hide input for view/delete modes
+          if (["view", "delete"].includes(mode)) {
+            commentDisplayEl.style.display = "block";
+            if (commentInputEl) commentInputEl.style.display = "none";
+          }
         }
 
         // Add rows to the table (same logic as InvoiceGenerator)
@@ -936,15 +967,28 @@
               google.script.run
                 .withSuccessHandler(function (result) {
                   if (result.success) {
-                    // Show success message
-                    let message = "Credit note deleted successfully!";
-                    if (result.note) {
-                      message += " " + result.note;
-                    }
-                    alert(message);
+                    // Show success modal and stop spinner
+                    const bottomSpinDone = document.getElementById(
+                      "delete-bottom-spinner"
+                    );
+                    if (bottomSpinDone) bottomSpinDone.style.display = "none";
 
-                    // Navigate back to list
-                    safeNavigateToCreditNotesList();
+                    // Show success modal
+                    const modal = new bootstrap.Modal(
+                      document.getElementById("deleteSuccessModal")
+                    );
+                    modal.show();
+
+                    // Redirect when modal is closed
+                    document
+                      .getElementById("deleteSuccessModal")
+                      .addEventListener(
+                        "hidden.bs.modal",
+                        function () {
+                          safeNavigateToCreditNotesList();
+                        },
+                        { once: true }
+                      );
                   } else {
                     alert(
                       "Error deleting credit note: " +
