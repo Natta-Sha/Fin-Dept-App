@@ -322,39 +322,6 @@
         </div>
       </div>
 
-      <!-- Update success modal -->
-      <div
-        class="modal fade"
-        id="updateSuccessModal"
-        tabindex="-1"
-        aria-labelledby="updateSuccessLabel"
-        aria-hidden="true"
-      >
-        <div class="modal-dialog">
-          <div class="modal-content">
-            <div class="modal-header">
-              <h5 class="modal-title" id="updateSuccessLabel">Success</h5>
-              <button
-                type="button"
-                class="btn-close"
-                data-bs-dismiss="modal"
-                aria-label="Close"
-              ></button>
-            </div>
-            <div class="modal-body">Credit note changes have been saved.</div>
-            <div class="modal-footer">
-              <button
-                type="button"
-                class="btn btn-primary"
-                data-bs-dismiss="modal"
-              >
-                OK
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-
       <h2 id="page-title" class="mb-4">Create Credit Note</h2>
 
       <!-- Credit Note Form -->
@@ -1479,22 +1446,91 @@
                     google.script.run
                       .withSuccessHandler(function (result) {
                         if (result.success) {
-                          // Show success modal
-                          const modal = new bootstrap.Modal(
-                            document.getElementById("updateSuccessModal")
-                          );
-                          modal.show();
+                          // Render success message like in invoices
+                          let resultHtml = `
+                <div class="alert alert-success mt-4">
+                  <strong>Credit note updated successfully!</strong>
+                </div>
+              `;
 
-                          // Redirect when modal is closed
-                          document
-                            .getElementById("updateSuccessModal")
-                            .addEventListener(
-                              "hidden.bs.modal",
-                              function () {
-                                safeNavigateToCreditNotesList();
-                              },
-                              { once: true }
-                            );
+                          // Add document links if available
+                          if (result && (result.docUrl || result.pdfUrl)) {
+                            resultHtml += `
+                  <div class="card mt-3" style="background-color: #d4edda; border-color: #c3e6cb;">
+                    <div class="card-body">
+                      <h6 class="card-title text-success mb-3">
+                        <i class="bi bi-check-circle"></i> Documents Generated
+                      </h6>
+                      <div class="d-flex flex-wrap gap-2">
+                `;
+
+                            if (result.docUrl) {
+                              resultHtml += `
+                    <a href="${result.docUrl}" target="_blank" class="btn btn-outline-success btn-sm">
+                      <i class="bi bi-file-earmark-text"></i> Open Google Doc
+                    </a>
+                  `;
+                            }
+
+                            if (result.pdfUrl) {
+                              resultHtml += `
+                    <a href="${result.pdfUrl}" target="_blank" class="btn btn-outline-success btn-sm">
+                      <i class="bi bi-file-earmark-pdf"></i> Open PDF
+                    </a>
+                  `;
+                            }
+
+                            resultHtml += `
+                      </div>
+                    </div>
+                  </div>
+                `;
+                          }
+
+                          resultHtml += `
+                <div class="row mt-4">
+                  <div class="col-md-12 d-flex justify-content-end gap-2">
+                    <button class="btn btn-primary px-5 fw-bold" onclick="safeNavigateToCreditNotesList()">Back to the list</button>
+                  </div>
+                </div>
+              `;
+
+                          // Show result in the result div
+                          const resultDiv = document.getElementById("result");
+                          if (resultDiv) {
+                            resultDiv.innerHTML = resultHtml;
+                          }
+
+                          // Hide edit action buttons after successful update
+                          const editBtnsAfter = document.getElementById(
+                            "edit-bottom-btn-container"
+                          );
+                          if (editBtnsAfter)
+                            editBtnsAfter.style.display = "none";
+
+                          // Deactivate all form inputs
+                          setFormInputsDisabled(true);
+
+                          // Ensure currency becomes non-editable and shown as plaintext
+                          const currencyEl =
+                            document.getElementById("currency");
+                          if (currencyEl) {
+                            currencyEl.contentEditable = "false";
+                            currencyEl.classList.remove("form-control");
+                            currencyEl.classList.add("form-control-plaintext");
+                          }
+
+                          // Swap comment input to plaintext to avoid placeholder
+                          const commentInputEl =
+                            document.getElementById("comment");
+                          const commentDisplayEl =
+                            document.getElementById("comment-display");
+                          if (commentInputEl && commentDisplayEl) {
+                            commentDisplayEl.textContent =
+                              commentInputEl.value || "";
+                            commentInputEl.style.display = "none";
+                            commentDisplayEl.style.display = "block";
+                          }
                         } else {
                           alert(
                             "Error updating credit note: " +
