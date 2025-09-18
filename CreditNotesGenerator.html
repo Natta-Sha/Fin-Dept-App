@@ -349,10 +349,22 @@
           <div class="col-md-3">
             <label class="form-label">Client Name</label>
             <p class="form-control-plaintext" id="client_name"></p>
+            <input
+              id="client_name_input"
+              type="text"
+              class="form-control"
+              style="display: none"
+            />
           </div>
           <div class="col-md-3">
             <label class="form-label">Client Address</label>
             <p class="form-control-plaintext" id="client_address"></p>
+            <input
+              id="client_address_input"
+              type="text"
+              class="form-control"
+              style="display: none"
+            />
           </div>
         </div>
 
@@ -360,10 +372,22 @@
           <div class="col-md-3">
             <label class="form-label">Client Number</label>
             <p class="form-control-plaintext" id="client_number"></p>
+            <input
+              id="client_number_input"
+              type="text"
+              class="form-control"
+              style="display: none"
+            />
           </div>
           <div class="col-md-3">
             <label class="form-label">Our Company</label>
             <p class="form-control-plaintext" id="our_company"></p>
+            <input
+              id="our_company_input"
+              type="text"
+              class="form-control"
+              style="display: none"
+            />
           </div>
           <div class="col-md-3">
             <label class="form-label"
@@ -523,6 +547,36 @@
         </div>
       </div>
 
+      <!-- Edit mode bottom actions -->
+      <div id="edit-bottom-btn-container" style="display: none">
+        <div class="row mt-4">
+          <div
+            class="col-md-12 d-flex justify-content-end gap-2 align-items-center"
+          >
+            <button
+              id="save-with-changes-btn"
+              class="btn btn-primary px-5 fw-bold"
+            >
+              Save changes
+            </button>
+            <button
+              id="save-without-changes-btn"
+              class="btn btn-outline-secondary px-5 fw-bold"
+            >
+              Cancel
+            </button>
+            <div
+              id="edit-spinner"
+              class="spinner-border text-primary ms-2"
+              style="display: none"
+              role="status"
+            >
+              <span class="visually-hidden">Saving...</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <!-- Delete mode bottom actions -->
       <div id="delete-bottom-btn-container" style="display: none">
         <div class="row mt-4">
@@ -559,20 +613,35 @@
 
       // Robust navigation back to credit notes list for both web-app and sidebar contexts
       function safeNavigateToCreditNotesList() {
-        const target = "<?= baseUrl ?>?page=CreditNotesList";
+        const target = BASE_URL + "?page=CreditNotesList";
+        console.log("safeNavigateToCreditNotesList: BASE_URL =", BASE_URL);
+        console.log("safeNavigateToCreditNotesList: target =", target);
         try {
           window.top.location.href = target;
           return;
-        } catch (e) {}
+        } catch (e) {
+          console.log(
+            "safeNavigateToCreditNotesList: window.top.location.href failed:",
+            e
+          );
+        }
         try {
           window.location.href = target;
           return;
-        } catch (e2) {}
+        } catch (e2) {
+          console.log(
+            "safeNavigateToCreditNotesList: window.location.href failed:",
+            e2
+          );
+        }
         if (
           typeof google !== "undefined" &&
           google.script &&
           google.script.host
         ) {
+          console.log(
+            "safeNavigateToCreditNotesList: using google.script.host.close()"
+          );
           google.script.host.close();
         }
       }
@@ -706,14 +775,6 @@
           currencyEl.textContent =
             currencyMap[data.currency] || data.currency || "";
 
-        const bankDetails1El = document.getElementById("bank_details_1");
-        if (bankDetails1El)
-          bankDetails1El.textContent = data.bankDetails1 || "";
-
-        const bankDetails2El = document.getElementById("bank_details_2");
-        if (bankDetails2El)
-          bankDetails2El.textContent = data.bankDetails2 || "";
-
         // Format and set date
         if (data.creditNoteDate) {
           const creditNoteDateEl = document.getElementById("credit_note_date");
@@ -754,11 +815,16 @@
         const commentInputEl = document.getElementById("comment");
         if (commentDisplayEl) {
           commentDisplayEl.textContent = data.comment || "";
+          console.log("renderSavedDataRaw: comment =", data.comment);
           // Show comment display and hide input for view/delete modes
           if (["view", "delete"].includes(mode)) {
             commentDisplayEl.style.display = "block";
             if (commentInputEl) commentInputEl.style.display = "none";
           }
+        }
+        // Also populate the input field for edit mode
+        if (commentInputEl) {
+          commentInputEl.value = data.comment || "";
         }
 
         // Add rows to the table (same logic as InvoiceGenerator)
@@ -885,6 +951,11 @@
       // Get parameters from server-side template variables
       const creditNoteId = "<?= creditNoteId ?>" || "";
       const mode = "<?= mode ?>" || "";
+      const BASE_URL = "<?= baseUrl ?>";
+
+      console.log("BASE_URL:", BASE_URL);
+      console.log("creditNoteId:", creditNoteId);
+      console.log("mode:", mode);
 
       console.log("Template parameters:", {
         creditNoteId: creditNoteId,
@@ -924,6 +995,51 @@
               safeNavigateToCreditNotesList();
             });
           }
+        });
+      } else if (mode === "edit") {
+        console.log("EDIT MODE DETECTED - Setting up edit mode immediately");
+        // Set up edit mode immediately
+        document.addEventListener("DOMContentLoaded", function () {
+          console.log("DOMContentLoaded - Setting up edit mode");
+          document.getElementById("page-title").textContent =
+            "Credit Note - Edit";
+          document.getElementById("edit-bottom-btn-container").style.display =
+            "block";
+          document.getElementById("generate-btn").style.display = "none";
+          document.getElementById("cancel-create-btn").style.display = "none";
+
+          // Hide add row button in edit mode
+          const addRowBtn = document.getElementById("add-row-btn");
+          if (addRowBtn) addRowBtn.style.display = "none";
+
+          // Enable all form inputs in edit mode
+          document
+            .querySelectorAll("input, textarea, select")
+            .forEach(function (element) {
+              element.disabled = false;
+            });
+
+          // Show comment input, hide display
+          const commentInputEl = document.getElementById("comment");
+          const commentDisplayEl = document.getElementById("comment-display");
+          if (commentInputEl && commentDisplayEl) {
+            commentInputEl.style.display = "block";
+            commentDisplayEl.style.display = "none";
+          }
+
+          // Toggle edit fields - show inputs, hide plaintext
+          const toggleEditField = (plainId, inputId) => {
+            const plain = document.getElementById(plainId);
+            const input = document.getElementById(inputId);
+            if (!plain || !input) return;
+            plain.style.display = "none";
+            input.style.display = "block";
+          };
+
+          toggleEditField("client_name", "client_name_input");
+          toggleEditField("client_address", "client_address_input");
+          toggleEditField("client_number", "client_number_input");
+          toggleEditField("our_company", "our_company_input");
         });
       } else if (mode === "delete") {
         console.log(
@@ -1199,6 +1315,262 @@
                 if (commentInputEl && commentDisplayEl) {
                   commentDisplayEl.style.display = "block";
                   commentInputEl.style.display = "none";
+                }
+              } else if (mode === "edit") {
+                console.log("Setting up edit mode...");
+                document.getElementById("page-title").textContent =
+                  "Credit Note - Edit";
+                document.getElementById(
+                  "edit-bottom-btn-container"
+                ).style.display = "block";
+                document.getElementById("generate-btn").style.display = "none";
+                document.getElementById("cancel-create-btn").style.display =
+                  "none";
+
+                // Hide add row button in edit mode
+                const addRowBtn = document.getElementById("add-row-btn");
+                if (addRowBtn) addRowBtn.style.display = "none";
+
+                // Enable all form inputs in edit mode
+                document
+                  .querySelectorAll("input, textarea, select")
+                  .forEach(function (element) {
+                    element.disabled = false;
+                  });
+
+                // Show comment input, hide display
+                const commentInputEl = document.getElementById("comment");
+                const commentDisplayEl =
+                  document.getElementById("comment-display");
+                if (commentInputEl && commentDisplayEl) {
+                  commentInputEl.style.display = "block";
+                  commentDisplayEl.style.display = "none";
+                }
+
+                // Toggle edit fields - show inputs, hide plaintext
+                const toggleEditField = (plainId, inputId) => {
+                  const plain = document.getElementById(plainId);
+                  const input = document.getElementById(inputId);
+                  if (!plain || !input) return;
+                  plain.style.display = "none";
+                  input.style.display = "block";
+                };
+
+                toggleEditField("client_name", "client_name_input");
+                toggleEditField("client_address", "client_address_input");
+                toggleEditField("client_number", "client_number_input");
+                toggleEditField("our_company", "our_company_input");
+
+                // Populate hidden edit inputs with existing values
+                document.getElementById("client_name_input").value =
+                  data.clientName || "";
+                document.getElementById("client_address_input").value =
+                  data.clientAddress || "";
+                document.getElementById("client_number_input").value =
+                  data.clientNumber || "";
+                document.getElementById("our_company_input").value =
+                  data.ourCompany || "";
+
+                // Add Save button handler
+                const saveBtn = document.getElementById(
+                  "save-with-changes-btn"
+                );
+                if (saveBtn) {
+                  saveBtn.addEventListener("click", function () {
+                    // Show spinner
+                    const editSpin = document.getElementById("edit-spinner");
+                    if (editSpin) editSpin.style.display = "inline-block";
+
+                    // Disable button
+                    this.disabled = true;
+
+                    // Collect form data and submit
+                    const formData = {
+                      id: creditNoteId,
+                      projectName: document
+                        .getElementById("project_name")
+                        .value.trim(),
+                      creditNoteNumber: document
+                        .getElementById("credit_note_number")
+                        .value.trim(),
+                      clientName: document
+                        .getElementById("client_name_input")
+                        .value.trim(),
+                      clientAddress: document
+                        .getElementById("client_address_input")
+                        .value.trim(),
+                      clientNumber: document
+                        .getElementById("client_number_input")
+                        .value.trim(),
+                      ourCompany: document
+                        .getElementById("our_company_input")
+                        .value.trim(),
+                      creditNoteDate: document
+                        .getElementById("credit_note_date")
+                        .value.trim(),
+                      tax: document.getElementById("tax").textContent.trim(),
+                      subtotal: document
+                        .getElementById("subtotal")
+                        .textContent.trim(),
+                      total: document
+                        .getElementById("total")
+                        .textContent.trim(),
+                      exchangeRate: document
+                        .getElementById("exchange_rate")
+                        .value.trim(),
+                      currency: document
+                        .getElementById("currency")
+                        .textContent.trim()
+                        .split(" ")[0],
+                      amountInEUR: document
+                        .getElementById("amount_in_eur")
+                        .textContent.trim(),
+                      comment: document.getElementById("comment").value.trim(),
+                      items: [],
+                    };
+
+                    // Collect table items
+                    const tbody = document.getElementById("credit-note-body");
+                    if (tbody) {
+                      const rows = tbody.querySelectorAll("tr");
+                      rows.forEach((row, index) => {
+                        const cells = row.querySelectorAll("input");
+                        if (cells.length >= 4) {
+                          formData.items.push([
+                            (index + 1).toString(),
+                            cells[1].value.trim(),
+                            cells[2].value.trim(),
+                            cells[3].value.trim(),
+                          ]);
+                        }
+                      });
+                    }
+
+                    // Submit to server
+                    google.script.run
+                      .withSuccessHandler(function (result) {
+                        if (result.success) {
+                          // Render success message like in invoices
+                          let resultHtml = `
+                <div class="alert alert-success mt-4">
+                  <strong>Credit note updated successfully!</strong>
+                </div>
+              `;
+
+                          // Add document links if available
+                          if (result && (result.docUrl || result.pdfUrl)) {
+                            resultHtml += `
+                  <div class="card mt-3" style="background-color: #d4edda; border-color: #c3e6cb;">
+                    <div class="card-body">
+                      <h6 class="card-title text-success mb-3">
+                        <i class="bi bi-check-circle"></i> Documents Generated
+                      </h6>
+                      <div class="d-flex flex-wrap gap-2">
+                `;
+
+                            if (result.docUrl) {
+                              resultHtml += `
+                    <a href="${result.docUrl}" target="_blank" class="btn btn-outline-success btn-sm">
+                      <i class="bi bi-file-earmark-text"></i> Open Google Doc
+                    </a>
+                  `;
+                            }
+
+                            if (result.pdfUrl) {
+                              resultHtml += `
+                    <a href="${result.pdfUrl}" target="_blank" class="btn btn-outline-success btn-sm">
+                      <i class="bi bi-file-earmark-pdf"></i> Open PDF
+                    </a>
+                  `;
+                            }
+
+                            resultHtml += `
+                      </div>
+                    </div>
+                  </div>
+                `;
+                          }
+
+                          resultHtml += `
+                <div class="row mt-4">
+                  <div class="col-md-12 d-flex justify-content-end gap-2">
+                    <button class="btn btn-primary px-5 fw-bold" onclick="safeNavigateToCreditNotesList()">Back to the list</button>
+                  </div>
+                </div>
+              `;
+
+                          // Show result in the result div
+                          const resultDiv = document.getElementById("result");
+                          if (resultDiv) {
+                            resultDiv.innerHTML = resultHtml;
+                          }
+
+                          // Hide edit action buttons after successful update
+                          const editBtnsAfter = document.getElementById(
+                            "edit-bottom-btn-container"
+                          );
+                          if (editBtnsAfter)
+                            editBtnsAfter.style.display = "none";
+
+                          // Deactivate all form inputs
+                          setFormInputsDisabled(true);
+
+                          // Ensure currency becomes non-editable and shown as plaintext
+                          const currencyEl =
+                            document.getElementById("currency");
+                          if (currencyEl) {
+                            currencyEl.contentEditable = "false";
+                            currencyEl.classList.remove("form-control");
+                            currencyEl.classList.add("form-control-plaintext");
+                          }
+
+                          // Swap comment input to plaintext to avoid placeholder
+                          const commentInputEl =
+                            document.getElementById("comment");
+                          const commentDisplayEl =
+                            document.getElementById("comment-display");
+                          if (commentInputEl && commentDisplayEl) {
+                            commentDisplayEl.textContent =
+                              commentInputEl.value || "";
+                            commentInputEl.style.display = "none";
+                            commentDisplayEl.style.display = "block";
+                          }
+                        } else {
+                          alert(
+                            "Error updating credit note: " +
+                              (result.message || "Unknown error")
+                          );
+                          // Re-enable button
+                          document.getElementById(
+                            "save-with-changes-btn"
+                          ).disabled = false;
+                          const editSpin2 =
+                            document.getElementById("edit-spinner");
+                          if (editSpin2) editSpin2.style.display = "none";
+                        }
+                      })
+                      .withFailureHandler(function (error) {
+                        alert("Error updating credit note: " + error.message);
+                        // Re-enable button
+                        document.getElementById(
+                          "save-with-changes-btn"
+                        ).disabled = false;
+                        const editSpin3 =
+                          document.getElementById("edit-spinner");
+                        if (editSpin3) editSpin3.style.display = "none";
+                      })
+                      .updateCreditNoteById(formData);
+                  });
+                }
+
+                // Add Cancel button handler for edit mode
+                const editCancelBtn = document.getElementById(
+                  "save-without-changes-btn"
+                );
+                if (editCancelBtn) {
+                  editCancelBtn.addEventListener("click", function () {
+                    safeNavigateToCreditNotesList();
+                  });
                 }
               }
             })
@@ -1481,9 +1853,9 @@
               }
 
               resultHtml += `
-                    </div>
-                  </div>
-      </div>
+            </div>
+            </div>
+            </div>
     `;
             }
 
@@ -1491,8 +1863,8 @@
               <div class="row mt-4">
                 <div class="col-md-12 d-flex justify-content-end gap-2">
                   <button class="btn btn-primary px-5 fw-bold" onclick="safeNavigateToCreditNotesList()">Back to the list</button>
-                </div>
           </div>
+        </div>
         `;
 
             document.getElementById("result").innerHTML = resultHtml;

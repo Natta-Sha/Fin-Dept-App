@@ -116,8 +116,6 @@ function getProjectDetailsFromData(projectName) {
         .toString()
         .trim()
         .toUpperCase(),
-      bankDetails1: bankMap.get(shortBank1) || "",
-      bankDetails2: bankMap.get(shortBank2) || "",
       ourCompany: projectRow[CONFIG.COLUMNS.OUR_COMPANY] || "",
       templateId: selectedTemplateId,
     };
@@ -343,8 +341,6 @@ function getInvoiceDataByIdFromData(id) {
       exchangeRate: row[indexMap["Exchange Rate"]],
       currency: row[indexMap["Currency"]],
       amountInEUR: row[indexMap["Amount in EUR"]],
-      bankDetails1: row[indexMap["Bank Details 1"]],
-      bankDetails2: row[indexMap["Bank Details 2"]],
       ourCompany: row[indexMap["Our Company"]],
       comment: row[indexMap["Comment"]],
       items: items,
@@ -365,7 +361,7 @@ function getCreditNoteDataByIdFromData(id) {
     // Validate input
     if (!id || id.toString().trim() === "") {
       console.log("Invalid ID provided to getCreditNoteDataByIdFromData");
-      return {};
+      return null; // Return null to match what client expects
     }
 
     console.log("getCreditNoteDataByIdFromData: Looking for ID:", id);
@@ -374,6 +370,14 @@ function getCreditNoteDataByIdFromData(id) {
     const data = sheet.getDataRange().getValues();
     const headers = data[0];
     console.log("getCreditNoteDataByIdFromData: Headers:", headers);
+    console.log(
+      "getCreditNoteDataByIdFromData: Total rows in sheet:",
+      data.length
+    );
+    console.log(
+      "getCreditNoteDataByIdFromData: First few IDs in sheet:",
+      data.slice(1, 4).map((row) => row[0])
+    );
 
     const indexMap = headers.reduce((acc, h, i) => {
       acc[h] = i;
@@ -397,7 +401,11 @@ function getCreditNoteDataByIdFromData(id) {
     }
     if (!row) {
       console.log(`Credit note with ID ${id} not found.`);
-      return {};
+      console.log(
+        "Available IDs in sheet:",
+        data.slice(1).map((row, index) => ({ row: index + 1, id: row[0] }))
+      );
+      return null; // Return null to match what client expects
     }
 
     const items = [];
@@ -433,8 +441,6 @@ function getCreditNoteDataByIdFromData(id) {
       exchangeRate: row[indexMap["Exchange Rate"]],
       currency: row[indexMap["Currency"]],
       amountInEUR: row[indexMap["Amount in EUR"]],
-      bankDetails1: row[indexMap["Bank Details 1"]],
-      bankDetails2: row[indexMap["Bank Details 2"]],
       ourCompany: row[indexMap["Our Company"]],
       comment: row[indexMap["Comment"]],
       items: items,
@@ -444,7 +450,8 @@ function getCreditNoteDataByIdFromData(id) {
     return result;
   } catch (error) {
     console.error("Error getting credit note data by ID:", error);
-    return {};
+    console.error("Error stack:", error.stack);
+    return null; // Return null to match what client expects
   }
 }
 
@@ -482,8 +489,6 @@ function saveInvoiceData(data) {
       data.currency === "$" ? data.exchangeRate : "",
       data.currency,
       data.currency === "$" ? data.amountInEUR : "",
-      data.bankDetails1,
-      data.bankDetails2,
       data.ourCompany || "",
       data.comment || "",
       "", // Placeholder for Doc URL
@@ -603,8 +608,6 @@ function processFormFromData(data) {
       data.currency === "$" ? parseFloat(data.exchangeRate).toFixed(4) : "",
       data.currency,
       data.currency === "$" ? parseFloat(data.amountInEUR).toFixed(2) : "",
-      data.bankDetails1,
-      data.bankDetails2,
       data.ourCompany || "",
       data.comment || "",
       "",
@@ -915,8 +918,6 @@ function updateInvoiceByIdFromData(id, data) {
     fullRow[indexMap["Currency"]] = data.currency;
     fullRow[indexMap["Amount in EUR"]] =
       data.currency === "$" ? parseFloat(data.amountInEUR || 0).toFixed(2) : "";
-    fullRow[indexMap["Bank Details 1"]] = data.bankDetails1;
-    fullRow[indexMap["Bank Details 2"]] = data.bankDetails2;
     fullRow[indexMap["Our Company"]] = data.ourCompany || "";
     fullRow[indexMap["Comment"]] = data.comment || "";
     fullRow[indexMap["Google Doc Link"]] = doc.getUrl();
@@ -1225,6 +1226,163 @@ function deleteCreditNoteByIdFromData(id) {
     };
   } catch (error) {
     console.error("Error deleting credit note:", error);
+    return { success: false, message: error.message };
+  }
+}
+
+/**
+ * Update existing credit note by ID with new data
+ * @param {Object} data - Credit note data with id
+ * @returns {Object} { success: true } or { success: false, message }
+ */
+function updateCreditNoteByIdFromData(data) {
+  try {
+    if (!data.id) {
+      return { success: false, message: "Credit note ID is required" };
+    }
+
+    const spreadsheet = getSpreadsheet(CONFIG.SPREADSHEET_ID);
+    const sheet = getSheet(spreadsheet, CONFIG.SHEETS.CREDITNOTES);
+    const sheetData = sheet.getDataRange().getValues();
+    const headers = sheetData[0];
+
+    const idCol = headers.indexOf("ID");
+    if (idCol === -1) throw new Error("ID column not found");
+
+    let rowToUpdate = -1;
+    for (let i = 1; i < sheetData.length; i++) {
+      if (sheetData[i][idCol] === data.id) {
+        rowToUpdate = i + 1; // 1-based index
+        break;
+      }
+    }
+
+    if (rowToUpdate === -1) {
+      return { success: false, message: "Credit note not found" };
+    }
+
+    // Prepare row data
+    const row = new Array(headers.length);
+
+    // Map data to columns
+    const colMap = {
+      "Project Name": data.projectName || "",
+      "CN Number": data.creditNoteNumber || "",
+      "Client Name": data.clientName || "",
+      "Client Address": data.clientAddress || "",
+      "Client Number": data.clientNumber || "",
+      "CN Date": data.creditNoteDate ? new Date(data.creditNoteDate) : "",
+      "Tax Rate (%)": data.tax || "0",
+      Subtotal: data.subtotal || "0",
+      Total: data.total || "0",
+      "Exchange Rate": data.exchangeRate || "1.0000",
+      Currency: data.currency || "$",
+      "Amount in EUR": data.amountInEUR || "",
+      "Our Company": data.ourCompany || "",
+      Comment: data.comment || "",
+    };
+
+    // Fill row with mapped data
+    headers.forEach((header, index) => {
+      if (colMap.hasOwnProperty(header)) {
+        row[index] = colMap[header];
+      } else if (header === "ID") {
+        row[index] = data.id;
+      } else {
+        row[index] = sheetData[rowToUpdate - 1][index]; // Keep existing value
+      }
+    });
+
+    // Add items data
+    if (data.items && data.items.length > 0) {
+      const baseCol = 18; // Start from column 19 (index 18)
+      data.items.forEach((item, i) => {
+        const startCol = baseCol + i * 4;
+        if (startCol + 3 < headers.length) {
+          row[startCol] = item[0] || ""; // #
+          row[startCol + 1] = item[1] || ""; // Description
+          row[startCol + 2] = item[2] || ""; // Period
+          row[startCol + 3] = item[3] || ""; // Amount
+        }
+      });
+    }
+
+    // Delete old Doc/PDF (best effort)
+    const oldDocUrl =
+      sheetData[rowToUpdate - 1][headers.indexOf("Google Doc Link")] || "";
+    const oldPdfUrl =
+      sheetData[rowToUpdate - 1][headers.indexOf("PDF Link")] || "";
+    try {
+      if (oldDocUrl) {
+        const oldDocId = extractFileIdFromUrl(oldDocUrl);
+        if (oldDocId) DriveApp.getFileById(oldDocId).setTrashed(true);
+      }
+    } catch (e) {}
+    try {
+      if (oldPdfUrl) {
+        const oldPdfId = extractFileIdFromUrl(oldPdfUrl);
+        if (oldPdfId) DriveApp.getFileById(oldPdfId).setTrashed(true);
+      }
+    } catch (e) {}
+
+    // Generate new documents
+    const formattedDate = formatDate(data.creditNoteDate);
+    const subtotalNum = parseFloat(data.subtotal || 0);
+    const taxRate = parseFloat(data.tax || 0);
+    const taxAmount = calculateTaxAmountFromUtils(subtotalNum, taxRate);
+    const totalAmount = calculateTotalAmountFromUtils(subtotalNum, taxAmount);
+
+    // Resolve template and folder like in creation flow
+    const detailsForTemplate = getProjectDetailsFromData(data.projectName);
+    // Hardcoded template ID for credit notes as in creation flow
+    const templateId = "1yCKAx3nyIz-L_u3FPSK1zMof5Mo0m2-gsNzl1cCQsuQ";
+    const folderId = getProjectFolderId(data.projectName);
+
+    // Create updated data object with project details for template filling
+    const updatedData = {
+      ...data,
+      clientName: detailsForTemplate.clientName || data.clientName,
+      clientAddress: detailsForTemplate.clientAddress || data.clientAddress,
+      clientNumber: detailsForTemplate.clientNumber || data.clientNumber,
+      ourCompany: detailsForTemplate.ourCompany || data.ourCompany,
+      tax: detailsForTemplate.tax || data.tax,
+      currency: detailsForTemplate.currency || data.currency,
+    };
+
+    const doc = createCreditNoteDoc(
+      updatedData,
+      formattedDate,
+      subtotalNum,
+      taxRate,
+      taxAmount,
+      totalAmount,
+      templateId,
+      folderId
+    );
+    const pdf = doc.getAs("application/pdf");
+    const folder = DriveApp.getFolderById(CONFIG.FOLDER_ID);
+    const cleanCompany = (updatedData.ourCompany || "")
+      .replace(/[\\/:*?"<>|]/g, "")
+      .trim();
+    const cleanClient = (updatedData.clientName || "")
+      .replace(/[\\/:*?"<>|]/g, "")
+      .trim();
+    const filename = `${data.creditNoteDate}_CreditNote${data.creditNoteNumber}_${cleanCompany}-${cleanClient}`;
+    const pdfFile = folder.createFile(pdf).setName(`${filename}.pdf`);
+
+    // Update the row with new document URLs
+    row[headers.indexOf("Google Doc Link")] = doc.getUrl();
+    row[headers.indexOf("PDF Link")] = pdfFile.getUrl();
+
+    // Update the row
+    sheet.getRange(rowToUpdate, 1, 1, headers.length).setValues([row]);
+
+    // Clear cache
+    CacheService.getScriptCache().remove("creditNoteList");
+
+    return { success: true, docUrl: doc.getUrl(), pdfUrl: pdfFile.getUrl() };
+  } catch (error) {
+    console.error("Error updating credit note:", error);
     return { success: false, message: error.message };
   }
 }

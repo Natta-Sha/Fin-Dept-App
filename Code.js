@@ -112,7 +112,10 @@ function getInvoiceDataById(id) {
  * @returns {Object} Credit note data
  */
 function getCreditNoteDataById(id) {
-  return getCreditNoteDataByIdFromData(id);
+  console.log("getCreditNoteDataById called with ID:", id);
+  const result = getCreditNoteDataByIdFromData(id);
+  console.log("getCreditNoteDataById returning:", result);
+  return result;
 }
 
 /**
@@ -168,6 +171,15 @@ function deleteInvoiceById(id) {
  */
 function deleteCreditNoteById(id) {
   return deleteCreditNoteByIdFromData(id);
+}
+
+/**
+ * Update credit note by ID (global endpoint for frontend)
+ * @param {Object} data - Credit note data with id
+ * @returns {Object} { success: true } or { success: false, message }
+ */
+function updateCreditNoteById(data) {
+  return updateCreditNoteByIdFromData(data);
 }
 
 function testLogger(message) {
