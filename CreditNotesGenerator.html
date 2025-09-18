@@ -822,6 +822,10 @@
             if (commentInputEl) commentInputEl.style.display = "none";
           }
         }
+        // Also populate the input field for edit mode
+        if (commentInputEl) {
+          commentInputEl.value = data.comment || "";
+        }
 
         // Add rows to the table (same logic as InvoiceGenerator)
         const tbody = document.getElementById("credit-note-body");
