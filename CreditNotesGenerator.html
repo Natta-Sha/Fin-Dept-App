@@ -322,6 +322,39 @@
         </div>
       </div>
 
+      <!-- Update success modal -->
+      <div
+        class="modal fade"
+        id="updateSuccessModal"
+        tabindex="-1"
+        aria-labelledby="updateSuccessLabel"
+        aria-hidden="true"
+      >
+        <div class="modal-dialog">
+          <div class="modal-content">
+            <div class="modal-header">
+              <h5 class="modal-title" id="updateSuccessLabel">Updated</h5>
+              <button
+                type="button"
+                class="btn-close"
+                data-bs-dismiss="modal"
+                aria-label="Close"
+              ></button>
+            </div>
+            <div class="modal-body">Credit note changes have been saved.</div>
+            <div class="modal-footer">
+              <button
+                type="button"
+                class="btn btn-primary"
+                data-bs-dismiss="modal"
+              >
+                OK
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <h2 id="page-title" class="mb-4">Create Credit Note</h2>
 
       <!-- Credit Note Form -->
@@ -637,19 +670,34 @@
       // Robust navigation back to credit notes list for both web-app and sidebar contexts
       function safeNavigateToCreditNotesList() {
         const target = BASE_URL + "?page=CreditNotesList";
+        console.log("safeNavigateToCreditNotesList: BASE_URL =", BASE_URL);
+        console.log("safeNavigateToCreditNotesList: target =", target);
         try {
           window.top.location.href = target;
           return;
-        } catch (e) {}
+        } catch (e) {
+          console.log(
+            "safeNavigateToCreditNotesList: window.top.location.href failed:",
+            e
+          );
+        }
         try {
           window.location.href = target;
           return;
-        } catch (e2) {}
+        } catch (e2) {
+          console.log(
+            "safeNavigateToCreditNotesList: window.location.href failed:",
+            e2
+          );
+        }
         if (
           typeof google !== "undefined" &&
           google.script &&
           google.script.host
         ) {
+          console.log(
+            "safeNavigateToCreditNotesList: using google.script.host.close()"
+          );
           google.script.host.close();
         }
       }
@@ -698,10 +746,26 @@
           currencyMap[currencySymbol] || currencySymbol;
 
         // Fill bank details from client database
+        console.log(
+          "fillProjectDetails: details.bankDetails1 =",
+          details.bankDetails1
+        );
+        console.log(
+          "fillProjectDetails: details.bankDetails2 =",
+          details.bankDetails2
+        );
         document.getElementById("bank_details_1").textContent =
           details.bankDetails1 || "";
         document.getElementById("bank_details_2").textContent =
           details.bankDetails2 || "";
+        console.log(
+          "fillProjectDetails: bank_details_1 element textContent =",
+          document.getElementById("bank_details_1").textContent
+        );
+        console.log(
+          "fillProjectDetails: bank_details_2 element textContent =",
+          document.getElementById("bank_details_2").textContent
+        );
 
         // Handle Exchange Rate field based on currency
         const exchangeInput = document.getElementById("exchange_rate");
@@ -974,6 +1038,10 @@
       const creditNoteId = "<?= creditNoteId ?>" || "";
       const mode = "<?= mode ?>" || "";
       const BASE_URL = "<?= baseUrl ?>";
+
+      console.log("BASE_URL:", BASE_URL);
+      console.log("creditNoteId:", creditNoteId);
+      console.log("mode:", mode);
 
       console.log("Template parameters:", {
         creditNoteId: creditNoteId,
@@ -1482,8 +1550,62 @@
                     google.script.run
                       .withSuccessHandler(function (result) {
                         if (result.success) {
-                          alert("Credit note updated successfully!");
-                          safeNavigateToCreditNotesList();
+                          // Update modal body with document links if available
+                          const modalBody = document.querySelector(
+                            "#updateSuccessModal .modal-body"
+                          );
+                          let modalContent =
+                            "Credit note changes have been saved.";
+
+                          if (result.docUrl || result.pdfUrl) {
+                            modalContent += `
+                              <div class="mt-3">
+                                <h6 class="text-success mb-2">
+                                  <i class="bi bi-check-circle"></i> Documents Updated
+                                </h6>
+                                <div class="d-flex flex-wrap gap-2">
+                            `;
+
+                            if (result.docUrl) {
+                              modalContent += `
+                                <a href="${result.docUrl}" target="_blank" class="btn btn-outline-primary btn-sm">
+                                  <i class="bi bi-file-earmark-text"></i> Google Doc
+                                </a>
+                              `;
+                            }
+
+                            if (result.pdfUrl) {
+                              modalContent += `
+                                <a href="${result.pdfUrl}" target="_blank" class="btn btn-outline-danger btn-sm">
+                                  <i class="bi bi-file-earmark-pdf"></i> PDF
+                                </a>
+                              `;
+                            }
+
+                            modalContent += `
+                                </div>
+                              </div>
+                            `;
+                          }
+
+                          modalBody.innerHTML = modalContent;
+
+                          // Show success modal
+                          const modal = new bootstrap.Modal(
+                            document.getElementById("updateSuccessModal")
+                          );
+                          modal.show();
+
+                          // Redirect when modal is closed
+                          document
+                            .getElementById("updateSuccessModal")
+                            .addEventListener(
+                              "hidden.bs.modal",
+                              function () {
+                                safeNavigateToCreditNotesList();
+                              },
+                              { once: true }
+                            );
                         } else {
                           alert(
                             "Error updating credit note: " +

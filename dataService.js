@@ -1321,13 +1321,71 @@ function updateCreditNoteByIdFromData(data) {
       });
     }
 
+    // Delete old Doc/PDF (best effort)
+    const oldDocUrl =
+      sheetData[rowToUpdate - 1][headers.indexOf("Google Doc Link")] || "";
+    const oldPdfUrl =
+      sheetData[rowToUpdate - 1][headers.indexOf("PDF Link")] || "";
+    try {
+      if (oldDocUrl) {
+        const oldDocId = extractFileIdFromUrl(oldDocUrl);
+        if (oldDocId) DriveApp.getFileById(oldDocId).setTrashed(true);
+      }
+    } catch (e) {}
+    try {
+      if (oldPdfUrl) {
+        const oldPdfId = extractFileIdFromUrl(oldPdfUrl);
+        if (oldPdfId) DriveApp.getFileById(oldPdfId).setTrashed(true);
+      }
+    } catch (e) {}
+
+    // Generate new documents
+    const formattedDate = formatDate(data.creditNoteDate);
+    const subtotalNum = parseFloat(data.subtotal || 0);
+    const taxRate = parseFloat(data.tax || 0);
+    const taxAmount = calculateTaxAmountFromUtils(subtotalNum, taxRate);
+    const totalAmount = calculateTotalAmountFromUtils(subtotalNum, taxAmount);
+
+    // Resolve template and folder like in creation flow
+    const detailsForTemplate = getProjectDetailsFromData(data.projectName);
+    const templateId = detailsForTemplate && detailsForTemplate.templateId;
+    if (!templateId) {
+      throw new Error(ERROR_MESSAGES.NO_TEMPLATE_ID);
+    }
+    const folderId = getProjectFolderId(data.projectName);
+
+    const doc = createCreditNoteDoc(
+      data,
+      formattedDate,
+      subtotalNum,
+      taxRate,
+      taxAmount,
+      totalAmount,
+      templateId,
+      folderId
+    );
+    const pdf = doc.getAs("application/pdf");
+    const folder = DriveApp.getFolderById(CONFIG.FOLDER_ID);
+    const cleanCompany = (data.ourCompany || "")
+      .replace(/[\\/:*?"<>|]/g, "")
+      .trim();
+    const cleanClient = (data.clientName || "")
+      .replace(/[\\/:*?"<>|]/g, "")
+      .trim();
+    const filename = `${data.creditNoteDate}_CreditNote${data.creditNoteNumber}_${cleanCompany}-${cleanClient}`;
+    const pdfFile = folder.createFile(pdf).setName(`${filename}.pdf`);
+
+    // Update the row with new document URLs
+    row[headers.indexOf("Google Doc Link")] = doc.getUrl();
+    row[headers.indexOf("PDF Link")] = pdfFile.getUrl();
+
     // Update the row
     sheet.getRange(rowToUpdate, 1, 1, headers.length).setValues([row]);
 
     // Clear cache
     CacheService.getScriptCache().remove("creditNoteList");
 
-    return { success: true };
+    return { success: true, docUrl: doc.getUrl(), pdfUrl: pdfFile.getUrl() };
   } catch (error) {
     console.error("Error updating credit note:", error);
     return { success: false, message: error.message };
