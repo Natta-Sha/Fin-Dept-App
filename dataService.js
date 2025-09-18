@@ -1228,3 +1228,95 @@ function deleteCreditNoteByIdFromData(id) {
     return { success: false, message: error.message };
   }
 }
+
+/**
+ * Update existing credit note by ID with new data
+ * @param {Object} data - Credit note data with id
+ * @returns {Object} { success: true } or { success: false, message }
+ */
+function updateCreditNoteByIdFromData(data) {
+  try {
+    if (!data.id) {
+      return { success: false, message: "Credit note ID is required" };
+    }
+
+    const spreadsheet = getSpreadsheet(CONFIG.SPREADSHEET_ID);
+    const sheet = getSheet(spreadsheet, CONFIG.SHEETS.CREDITNOTES);
+    const sheetData = sheet.getDataRange().getValues();
+    const headers = sheetData[0];
+
+    const idCol = headers.indexOf("ID");
+    if (idCol === -1) throw new Error("ID column not found");
+
+    let rowToUpdate = -1;
+    for (let i = 1; i < sheetData.length; i++) {
+      if (sheetData[i][idCol] === data.id) {
+        rowToUpdate = i + 1; // 1-based index
+        break;
+      }
+    }
+
+    if (rowToUpdate === -1) {
+      return { success: false, message: "Credit note not found" };
+    }
+
+    // Prepare row data
+    const row = new Array(headers.length);
+
+    // Map data to columns
+    const colMap = {
+      "Project Name": data.projectName || "",
+      "CN Number": data.creditNoteNumber || "",
+      "Client Name": data.clientName || "",
+      "Client Address": data.clientAddress || "",
+      "Client Number": data.clientNumber || "",
+      "CN Date": data.creditNoteDate || "",
+      "Tax Rate (%)": data.tax || "0",
+      Subtotal: data.subtotal || "0",
+      Total: data.total || "0",
+      "Exchange Rate": data.exchangeRate || "1.0000",
+      Currency: data.currency || "$",
+      "Amount in EUR": data.amountInEUR || "",
+      "Our Company": data.ourCompany || "",
+      Comment: data.comment || "",
+      "Bank Details 1": data.bankDetails1 || "",
+      "Bank Details 2": data.bankDetails2 || "",
+    };
+
+    // Fill row with mapped data
+    headers.forEach((header, index) => {
+      if (colMap.hasOwnProperty(header)) {
+        row[index] = colMap[header];
+      } else if (header === "ID") {
+        row[index] = data.id;
+      } else {
+        row[index] = sheetData[rowToUpdate - 1][index]; // Keep existing value
+      }
+    });
+
+    // Add items data
+    if (data.items && data.items.length > 0) {
+      const baseCol = 18; // Start from column 19 (index 18)
+      data.items.forEach((item, i) => {
+        const startCol = baseCol + i * 4;
+        if (startCol + 3 < headers.length) {
+          row[startCol] = item[0] || ""; // #
+          row[startCol + 1] = item[1] || ""; // Description
+          row[startCol + 2] = item[2] || ""; // Period
+          row[startCol + 3] = item[3] || ""; // Amount
+        }
+      });
+    }
+
+    // Update the row
+    sheet.getRange(rowToUpdate, 1, 1, headers.length).setValues([row]);
+
+    // Clear cache
+    CacheService.getScriptCache().remove("creditNoteList");
+
+    return { success: true };
+  } catch (error) {
+    console.error("Error updating credit note:", error);
+    return { success: false, message: error.message };
+  }
+}

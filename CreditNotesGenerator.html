@@ -349,10 +349,22 @@
           <div class="col-md-3">
             <label class="form-label">Client Name</label>
             <p class="form-control-plaintext" id="client_name"></p>
+            <input
+              id="client_name_input"
+              type="text"
+              class="form-control"
+              style="display: none"
+            />
           </div>
           <div class="col-md-3">
             <label class="form-label">Client Address</label>
             <p class="form-control-plaintext" id="client_address"></p>
+            <input
+              id="client_address_input"
+              type="text"
+              class="form-control"
+              style="display: none"
+            />
           </div>
         </div>
 
@@ -360,10 +372,22 @@
           <div class="col-md-3">
             <label class="form-label">Client Number</label>
             <p class="form-control-plaintext" id="client_number"></p>
+            <input
+              id="client_number_input"
+              type="text"
+              class="form-control"
+              style="display: none"
+            />
           </div>
           <div class="col-md-3">
             <label class="form-label">Our Company</label>
             <p class="form-control-plaintext" id="our_company"></p>
+            <input
+              id="our_company_input"
+              type="text"
+              class="form-control"
+              style="display: none"
+            />
           </div>
           <div class="col-md-3">
             <label class="form-label"
@@ -395,6 +419,29 @@
           <div class="col-md-3">
             <label class="form-label">Currency</label>
             <p class="form-control-plaintext" id="currency">$ (USD)</p>
+          </div>
+        </div>
+
+        <div class="row mb-3">
+          <div class="col-md-6">
+            <label class="form-label">Bank Details 1</label>
+            <p class="form-control-plaintext" id="bank_details_1"></p>
+            <textarea
+              id="bank_details_1_input"
+              class="form-control"
+              rows="4"
+              style="display: none"
+            ></textarea>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">Bank Details 2</label>
+            <p class="form-control-plaintext" id="bank_details_2"></p>
+            <textarea
+              id="bank_details_2_input"
+              class="form-control"
+              rows="4"
+              style="display: none"
+            ></textarea>
           </div>
         </div>
 
@@ -519,6 +566,36 @@
             >
               Back
             </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Edit mode bottom actions -->
+      <div id="edit-bottom-btn-container" style="display: none">
+        <div class="row mt-4">
+          <div
+            class="col-md-12 d-flex justify-content-end gap-2 align-items-center"
+          >
+            <button
+              id="save-with-changes-btn"
+              class="btn btn-primary px-5 fw-bold"
+            >
+              Save changes
+            </button>
+            <button
+              id="save-without-changes-btn"
+              class="btn btn-outline-secondary px-5 fw-bold"
+            >
+              Cancel
+            </button>
+            <div
+              id="edit-spinner"
+              class="spinner-border text-primary ms-2"
+              style="display: none"
+              role="status"
+            >
+              <span class="visually-hidden">Saving...</span>
+            </div>
           </div>
         </div>
       </div>
@@ -1199,6 +1276,191 @@
                 if (commentInputEl && commentDisplayEl) {
                   commentDisplayEl.style.display = "block";
                   commentInputEl.style.display = "none";
+                }
+              } else if (mode === "edit") {
+                console.log("Setting up edit mode...");
+                document.getElementById("page-title").textContent =
+                  "Credit Note - Edit";
+                document.getElementById(
+                  "edit-bottom-btn-container"
+                ).style.display = "block";
+                document.getElementById("generate-btn").style.display = "none";
+                document.getElementById("cancel-create-btn").style.display =
+                  "none";
+
+                // Hide add row button in edit mode
+                const addRowBtn = document.getElementById("add-row-btn");
+                if (addRowBtn) addRowBtn.style.display = "none";
+
+                // Enable all form inputs in edit mode
+                document
+                  .querySelectorAll("input, textarea, select")
+                  .forEach(function (element) {
+                    element.disabled = false;
+                  });
+
+                // Show comment input, hide display
+                const commentInputEl = document.getElementById("comment");
+                const commentDisplayEl =
+                  document.getElementById("comment-display");
+                if (commentInputEl && commentDisplayEl) {
+                  commentInputEl.style.display = "block";
+                  commentDisplayEl.style.display = "none";
+                }
+
+                // Toggle edit fields - show inputs, hide plaintext
+                const toggleEditField = (plainId, inputId) => {
+                  const plain = document.getElementById(plainId);
+                  const input = document.getElementById(inputId);
+                  if (!plain || !input) return;
+                  plain.style.display = "none";
+                  input.style.display = "block";
+                };
+
+                toggleEditField("client_name", "client_name_input");
+                toggleEditField("client_address", "client_address_input");
+                toggleEditField("client_number", "client_number_input");
+                toggleEditField("our_company", "our_company_input");
+                toggleEditField("bank_details_1", "bank_details_1_input");
+                toggleEditField("bank_details_2", "bank_details_2_input");
+
+                // Populate hidden edit inputs with existing values
+                document.getElementById("client_name_input").value =
+                  data.clientName || "";
+                document.getElementById("client_address_input").value =
+                  data.clientAddress || "";
+                document.getElementById("client_number_input").value =
+                  data.clientNumber || "";
+                document.getElementById("our_company_input").value =
+                  data.ourCompany || "";
+                document.getElementById("bank_details_1_input").value =
+                  data.bankDetails1 || "";
+                document.getElementById("bank_details_2_input").value =
+                  data.bankDetails2 || "";
+
+                // Add Save button handler
+                const saveBtn = document.getElementById(
+                  "save-with-changes-btn"
+                );
+                if (saveBtn) {
+                  saveBtn.addEventListener("click", function () {
+                    // Show spinner
+                    const editSpin = document.getElementById("edit-spinner");
+                    if (editSpin) editSpin.style.display = "inline-block";
+
+                    // Disable button
+                    this.disabled = true;
+
+                    // Collect form data and submit
+                    const formData = {
+                      id: creditNoteId,
+                      projectName: document
+                        .getElementById("project_name")
+                        .value.trim(),
+                      creditNoteNumber: document
+                        .getElementById("credit_note_number")
+                        .value.trim(),
+                      clientName: document
+                        .getElementById("client_name_input")
+                        .value.trim(),
+                      clientAddress: document
+                        .getElementById("client_address_input")
+                        .value.trim(),
+                      clientNumber: document
+                        .getElementById("client_number_input")
+                        .value.trim(),
+                      ourCompany: document
+                        .getElementById("our_company_input")
+                        .value.trim(),
+                      creditNoteDate: document
+                        .getElementById("credit_note_date")
+                        .value.trim(),
+                      tax: document.getElementById("tax").textContent.trim(),
+                      subtotal: document
+                        .getElementById("subtotal")
+                        .textContent.trim(),
+                      total: document
+                        .getElementById("total")
+                        .textContent.trim(),
+                      exchangeRate: document
+                        .getElementById("exchange_rate")
+                        .value.trim(),
+                      currency: document
+                        .getElementById("currency")
+                        .textContent.trim()
+                        .split(" ")[0],
+                      amountInEUR: document
+                        .getElementById("amount_in_eur")
+                        .textContent.trim(),
+                      bankDetails1: document
+                        .getElementById("bank_details_1_input")
+                        .value.trim(),
+                      bankDetails2: document
+                        .getElementById("bank_details_2_input")
+                        .value.trim(),
+                      comment: document.getElementById("comment").value.trim(),
+                      items: [],
+                    };
+
+                    // Collect table items
+                    const tbody = document.getElementById("credit-note-body");
+                    if (tbody) {
+                      const rows = tbody.querySelectorAll("tr");
+                      rows.forEach((row, index) => {
+                        const cells = row.querySelectorAll("input");
+                        if (cells.length >= 4) {
+                          formData.items.push([
+                            (index + 1).toString(),
+                            cells[1].value.trim(),
+                            cells[2].value.trim(),
+                            cells[3].value.trim(),
+                          ]);
+                        }
+                      });
+                    }
+
+                    // Submit to server
+                    google.script.run
+                      .withSuccessHandler(function (result) {
+                        if (result.success) {
+                          alert("Credit note updated successfully!");
+                          safeNavigateToCreditNotesList();
+                        } else {
+                          alert(
+                            "Error updating credit note: " +
+                              (result.message || "Unknown error")
+                          );
+                          // Re-enable button
+                          document.getElementById(
+                            "save-with-changes-btn"
+                          ).disabled = false;
+                          const editSpin2 =
+                            document.getElementById("edit-spinner");
+                          if (editSpin2) editSpin2.style.display = "none";
+                        }
+                      })
+                      .withFailureHandler(function (error) {
+                        alert("Error updating credit note: " + error.message);
+                        // Re-enable button
+                        document.getElementById(
+                          "save-with-changes-btn"
+                        ).disabled = false;
+                        const editSpin3 =
+                          document.getElementById("edit-spinner");
+                        if (editSpin3) editSpin3.style.display = "none";
+                      })
+                      .updateCreditNoteById(formData);
+                  });
+                }
+
+                // Add Cancel button handler for edit mode
+                const editCancelBtn = document.getElementById(
+                  "save-without-changes-btn"
+                );
+                if (editCancelBtn) {
+                  editCancelBtn.addEventListener("click", function () {
+                    safeNavigateToCreditNotesList();
+                  });
                 }
               }
             })

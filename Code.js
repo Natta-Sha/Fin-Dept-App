@@ -170,6 +170,15 @@ function deleteCreditNoteById(id) {
   return deleteCreditNoteByIdFromData(id);
 }
 
+/**
+ * Update credit note by ID (global endpoint for frontend)
+ * @param {Object} data - Credit note data with id
+ * @returns {Object} { success: true } or { success: false, message }
+ */
+function updateCreditNoteById(data) {
+  return updateCreditNoteByIdFromData(data);
+}
+
 function testLogger(message) {
   Logger.log(`[CLIENT TEST]: ${message}`);
 }
