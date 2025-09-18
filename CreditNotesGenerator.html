@@ -498,6 +498,33 @@
         </div>
       </div>
 
+      <!-- Delete mode bottom actions -->
+      <div id="delete-bottom-btn-container" style="display: none">
+        <div class="row mt-4">
+          <div
+            class="col-md-12 d-flex justify-content-end gap-2 align-items-center"
+          >
+            <button id="delete-bottom-btn" class="btn btn-danger px-5 fw-bold">
+              Delete
+            </button>
+            <button
+              id="delete-cancel-btn"
+              class="btn btn-outline-secondary px-5 fw-bold"
+            >
+              Cancel
+            </button>
+            <div
+              id="delete-bottom-spinner"
+              class="spinner-border text-danger ms-2"
+              style="display: none"
+              role="status"
+            >
+              <span class="visually-hidden">Deleting...</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <!-- Result area -->
       <div id="result"></div>
     </div>
@@ -835,7 +862,7 @@
         search: window.location.search,
       });
 
-      // Debug: Check if we're in view mode
+      // Debug: Check if we're in view or delete mode
       if (mode === "view") {
         console.log("VIEW MODE DETECTED - Setting up view mode immediately");
         // Set up view mode immediately
@@ -1041,6 +1068,53 @@
                 if (commentInputEl && commentDisplayEl) {
                   commentDisplayEl.style.display = "block";
                   commentInputEl.style.display = "none";
+                }
+              } else if (mode === "delete") {
+                console.log("Setting up delete mode...");
+                document.getElementById("page-title").textContent =
+                  "Credit Note - Delete";
+                document.getElementById(
+                  "delete-bottom-btn-container"
+                ).style.display = "block";
+                document.getElementById("generate-btn").style.display = "none";
+                document.getElementById("cancel-create-btn").style.display =
+                  "none";
+
+                // Hide add row button in delete mode
+                const addRowBtn = document.getElementById("add-row-btn");
+                if (addRowBtn) addRowBtn.style.display = "none";
+
+                // Disable all form inputs in delete mode
+                document
+                  .querySelectorAll("input, textarea, select")
+                  .forEach(function (element) {
+                    element.disabled = true;
+                  });
+
+                // Show comment as plaintext, hide input to avoid placeholder
+                const commentInputEl = document.getElementById("comment");
+                const commentDisplayEl =
+                  document.getElementById("comment-display");
+                if (commentInputEl && commentDisplayEl) {
+                  commentDisplayEl.style.display = "block";
+                  commentInputEl.style.display = "none";
+                }
+
+                // Add Delete button handler (stub for now)
+                const deleteBtn = document.getElementById("delete-bottom-btn");
+                if (deleteBtn) {
+                  deleteBtn.addEventListener("click", function () {
+                    alert("Delete functionality will be implemented later");
+                  });
+                }
+
+                // Add Cancel button handler for delete mode
+                const deleteCancelBtn =
+                  document.getElementById("delete-cancel-btn");
+                if (deleteCancelBtn) {
+                  deleteCancelBtn.addEventListener("click", function () {
+                    safeNavigateToCreditNotesList();
+                  });
                 }
               }
             })

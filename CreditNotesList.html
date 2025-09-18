@@ -428,7 +428,7 @@
                   `
                   <a href="<?= baseUrl ?>?page=CreditNotesGenerator&id=${row.id}&mode=view" class="btn btn-sm btn-outline-primary me-1">View</a>
                   <button class="btn btn-sm btn-outline-secondary me-1" onclick="showComingSoon('Edit Credit Note')">Edit</button>
-                  <button class="btn btn-sm btn-outline-danger me-1" onclick="showComingSoon('Delete Credit Note')">Delete</button>
+                  <a href="<?= baseUrl ?>?page=CreditNotesGenerator&id=${row.id}&mode=delete" class="btn btn-sm btn-outline-danger me-1">Delete</a>
                   <button class="btn btn-sm btn-outline-success" onclick="showComingSoon('Copy Credit Note')">Copy</button>
                 `,
                 ]);
