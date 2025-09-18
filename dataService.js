@@ -116,8 +116,6 @@ function getProjectDetailsFromData(projectName) {
         .toString()
         .trim()
         .toUpperCase(),
-      bankDetails1: bankMap.get(shortBank1) || "",
-      bankDetails2: bankMap.get(shortBank2) || "",
       ourCompany: projectRow[CONFIG.COLUMNS.OUR_COMPANY] || "",
       templateId: selectedTemplateId,
     };
@@ -343,8 +341,6 @@ function getInvoiceDataByIdFromData(id) {
       exchangeRate: row[indexMap["Exchange Rate"]],
       currency: row[indexMap["Currency"]],
       amountInEUR: row[indexMap["Amount in EUR"]],
-      bankDetails1: row[indexMap["Bank Details 1"]],
-      bankDetails2: row[indexMap["Bank Details 2"]],
       ourCompany: row[indexMap["Our Company"]],
       comment: row[indexMap["Comment"]],
       items: items,
@@ -445,8 +441,6 @@ function getCreditNoteDataByIdFromData(id) {
       exchangeRate: row[indexMap["Exchange Rate"]],
       currency: row[indexMap["Currency"]],
       amountInEUR: row[indexMap["Amount in EUR"]],
-      bankDetails1: row[indexMap["Bank Details 1"]],
-      bankDetails2: row[indexMap["Bank Details 2"]],
       ourCompany: row[indexMap["Our Company"]],
       comment: row[indexMap["Comment"]],
       items: items,
@@ -495,8 +489,6 @@ function saveInvoiceData(data) {
       data.currency === "$" ? data.exchangeRate : "",
       data.currency,
       data.currency === "$" ? data.amountInEUR : "",
-      data.bankDetails1,
-      data.bankDetails2,
       data.ourCompany || "",
       data.comment || "",
       "", // Placeholder for Doc URL
@@ -616,8 +608,6 @@ function processFormFromData(data) {
       data.currency === "$" ? parseFloat(data.exchangeRate).toFixed(4) : "",
       data.currency,
       data.currency === "$" ? parseFloat(data.amountInEUR).toFixed(2) : "",
-      data.bankDetails1,
-      data.bankDetails2,
       data.ourCompany || "",
       data.comment || "",
       "",
@@ -928,8 +918,6 @@ function updateInvoiceByIdFromData(id, data) {
     fullRow[indexMap["Currency"]] = data.currency;
     fullRow[indexMap["Amount in EUR"]] =
       data.currency === "$" ? parseFloat(data.amountInEUR || 0).toFixed(2) : "";
-    fullRow[indexMap["Bank Details 1"]] = data.bankDetails1;
-    fullRow[indexMap["Bank Details 2"]] = data.bankDetails2;
     fullRow[indexMap["Our Company"]] = data.ourCompany || "";
     fullRow[indexMap["Comment"]] = data.comment || "";
     fullRow[indexMap["Google Doc Link"]] = doc.getUrl();
@@ -1292,8 +1280,6 @@ function updateCreditNoteByIdFromData(data) {
       "Amount in EUR": data.amountInEUR || "",
       "Our Company": data.ourCompany || "",
       Comment: data.comment || "",
-      "Bank Details 1": data.bankDetails1 || "",
-      "Bank Details 2": data.bankDetails2 || "",
     };
 
     // Fill row with mapped data
@@ -1354,8 +1340,19 @@ function updateCreditNoteByIdFromData(data) {
     }
     const folderId = getProjectFolderId(data.projectName);
 
+    // Create updated data object with project details for template filling
+    const updatedData = {
+      ...data,
+      clientName: detailsForTemplate.clientName || data.clientName,
+      clientAddress: detailsForTemplate.clientAddress || data.clientAddress,
+      clientNumber: detailsForTemplate.clientNumber || data.clientNumber,
+      ourCompany: detailsForTemplate.ourCompany || data.ourCompany,
+      tax: detailsForTemplate.tax || data.tax,
+      currency: detailsForTemplate.currency || data.currency,
+    };
+
     const doc = createCreditNoteDoc(
-      data,
+      updatedData,
       formattedDate,
       subtotalNum,
       taxRate,
@@ -1366,10 +1363,10 @@ function updateCreditNoteByIdFromData(data) {
     );
     const pdf = doc.getAs("application/pdf");
     const folder = DriveApp.getFolderById(CONFIG.FOLDER_ID);
-    const cleanCompany = (data.ourCompany || "")
+    const cleanCompany = (updatedData.ourCompany || "")
       .replace(/[\\/:*?"<>|]/g, "")
       .trim();
-    const cleanClient = (data.clientName || "")
+    const cleanClient = (updatedData.clientName || "")
       .replace(/[\\/:*?"<>|]/g, "")
       .trim();
     const filename = `${data.creditNoteDate}_CreditNote${data.creditNoteNumber}_${cleanCompany}-${cleanClient}`;
