@@ -376,6 +376,11 @@
         <!-- Comment -->
         <div class="mb-3">
           <label class="form-label">Comment</label>
+          <p
+            class="form-control-plaintext"
+            id="comment-display"
+            style="display: none"
+          ></p>
           <input
             type="text"
             id="comment"
@@ -693,9 +698,9 @@
           }
         }
 
-        const commentEl = document.getElementById("comment");
-        if (commentEl) {
-          commentEl.value = data.comment || "";
+        const commentDisplayEl = document.getElementById("comment-display");
+        if (commentDisplayEl) {
+          commentDisplayEl.textContent = data.comment || "";
         }
 
         // Add rows to the table (same logic as InvoiceGenerator)
@@ -1028,6 +1033,15 @@
                   .forEach(function (element) {
                     element.disabled = true;
                   });
+
+                // Show comment as plaintext, hide input to avoid placeholder
+                const commentInputEl = document.getElementById("comment");
+                const commentDisplayEl =
+                  document.getElementById("comment-display");
+                if (commentInputEl && commentDisplayEl) {
+                  commentDisplayEl.style.display = "block";
+                  commentInputEl.style.display = "none";
+                }
               }
             })
             .withFailureHandler(function (error) {
