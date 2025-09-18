@@ -875,7 +875,10 @@
             document.getElementById("amount_in_eur").textContent = "";
           } else {
             exchangeInput.style.display = "block";
-            exchangeInput.value = "1.0000";
+            // Don't reset exchange rate in copy mode - preserve user's input
+            if (mode !== "copy") {
+              exchangeInput.value = "1.0000";
+            }
             exchangeDisplay.innerHTML = `
     Exchange Rate (EUR 1 = USD ...)
     <a href="https://www.bundesbank.de/dynamic/action/en/statistics/time-series-databases/time-series-databases/745582/745582?dateSelect=2025&tsTab=0&listId=www_sdks_b01012_3&tsId=BBEX3.D.USD.EUR.BB.AC.000&id=0" target="_blank" class="ms-1 btn btn-link btn-sm p-0">Link</a>
