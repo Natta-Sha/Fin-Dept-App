@@ -1283,7 +1283,7 @@ function updateCreditNoteByIdFromData(data) {
       "Client Name": data.clientName || "",
       "Client Address": data.clientAddress || "",
       "Client Number": data.clientNumber || "",
-      "CN Date": data.creditNoteDate || "",
+      "CN Date": data.creditNoteDate ? new Date(data.creditNoteDate) : "",
       "Tax Rate (%)": data.tax || "0",
       Subtotal: data.subtotal || "0",
       Total: data.total || "0",

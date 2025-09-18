@@ -697,6 +697,12 @@
         document.getElementById("currency").textContent =
           currencyMap[currencySymbol] || currencySymbol;
 
+        // Fill bank details from client database
+        document.getElementById("bank_details_1").textContent =
+          details.bankDetails1 || "";
+        document.getElementById("bank_details_2").textContent =
+          details.bankDetails2 || "";
+
         // Handle Exchange Rate field based on currency
         const exchangeInput = document.getElementById("exchange_rate");
         const exchangeDisplay = document.getElementById(
