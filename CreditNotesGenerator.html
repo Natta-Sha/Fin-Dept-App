@@ -296,7 +296,7 @@
     <?!= getNavigation(activePage) ?>
 
     <!-- Main Content -->
-    <div class="main-content container">
+    <div class="main-content container py-4">
       <h2 id="page-title" class="mb-4">Create Credit Note</h2>
 
       <!-- Credit Note Form -->
@@ -894,6 +894,47 @@
             });
           }
         });
+      } else if (mode === "delete") {
+        console.log(
+          "DELETE MODE DETECTED - Setting up delete mode immediately"
+        );
+        // Set up delete mode immediately
+        document.addEventListener("DOMContentLoaded", function () {
+          console.log("DOMContentLoaded - Setting up delete mode");
+          document.getElementById("page-title").textContent =
+            "Credit Note - Delete";
+          document.getElementById("delete-bottom-btn-container").style.display =
+            "block";
+          document.getElementById("generate-btn").style.display = "none";
+          document.getElementById("cancel-create-btn").style.display = "none";
+
+          // Hide add row button
+          const addRowBtn = document.getElementById("add-row-btn");
+          if (addRowBtn) addRowBtn.style.display = "none";
+
+          // Disable all form inputs
+          document
+            .querySelectorAll("input, textarea, select")
+            .forEach(function (element) {
+              element.disabled = true;
+            });
+
+          // Add Delete button handler (stub for now)
+          const deleteBtn = document.getElementById("delete-bottom-btn");
+          if (deleteBtn) {
+            deleteBtn.addEventListener("click", function () {
+              alert("Delete functionality will be implemented later");
+            });
+          }
+
+          // Add Cancel button handler for delete mode
+          const deleteCancelBtn = document.getElementById("delete-cancel-btn");
+          if (deleteCancelBtn) {
+            deleteCancelBtn.addEventListener("click", function () {
+              safeNavigateToCreditNotesList();
+            });
+          }
+        });
       }
 
       // Setup project selection handlers (called after projects are loaded)
@@ -1068,53 +1109,6 @@
                 if (commentInputEl && commentDisplayEl) {
                   commentDisplayEl.style.display = "block";
                   commentInputEl.style.display = "none";
-                }
-              } else if (mode === "delete") {
-                console.log("Setting up delete mode...");
-                document.getElementById("page-title").textContent =
-                  "Credit Note - Delete";
-                document.getElementById(
-                  "delete-bottom-btn-container"
-                ).style.display = "block";
-                document.getElementById("generate-btn").style.display = "none";
-                document.getElementById("cancel-create-btn").style.display =
-                  "none";
-
-                // Hide add row button in delete mode
-                const addRowBtn = document.getElementById("add-row-btn");
-                if (addRowBtn) addRowBtn.style.display = "none";
-
-                // Disable all form inputs in delete mode
-                document
-                  .querySelectorAll("input, textarea, select")
-                  .forEach(function (element) {
-                    element.disabled = true;
-                  });
-
-                // Show comment as plaintext, hide input to avoid placeholder
-                const commentInputEl = document.getElementById("comment");
-                const commentDisplayEl =
-                  document.getElementById("comment-display");
-                if (commentInputEl && commentDisplayEl) {
-                  commentDisplayEl.style.display = "block";
-                  commentInputEl.style.display = "none";
-                }
-
-                // Add Delete button handler (stub for now)
-                const deleteBtn = document.getElementById("delete-bottom-btn");
-                if (deleteBtn) {
-                  deleteBtn.addEventListener("click", function () {
-                    alert("Delete functionality will be implemented later");
-                  });
-                }
-
-                // Add Cancel button handler for delete mode
-                const deleteCancelBtn =
-                  document.getElementById("delete-cancel-btn");
-                if (deleteCancelBtn) {
-                  deleteCancelBtn.addEventListener("click", function () {
-                    safeNavigateToCreditNotesList();
-                  });
                 }
               }
             })
