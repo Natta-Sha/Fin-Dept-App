@@ -228,6 +228,43 @@ function deleteInvoiceWithCleanup(id) {
 }
 
 /**
+ * Delete credit note with enhanced validation and cleanup
+ * @param {string} id - Credit Note ID
+ * @returns {Object} Delete result
+ */
+function deleteCreditNoteWithCleanup(id) {
+  try {
+    if (!id || id.trim() === "") {
+      return { success: false, message: "Credit note ID is required" };
+    }
+
+    // Get credit note data first to validate it exists
+    const creditNoteData = getCreditNoteDataByIdFromData(id);
+    if (!creditNoteData || !creditNoteData.projectName) {
+      return { success: false, message: "Credit note not found" };
+    }
+
+    // Perform deletion
+    const deleteResult = deleteCreditNoteByIdFromData(id);
+
+    if (deleteResult.success) {
+      Logger.log(
+        `deleteCreditNoteWithCleanup: Successfully deleted credit note ${id}`
+      );
+    } else {
+      Logger.log(
+        `deleteCreditNoteWithCleanup: Failed to delete credit note ${id}: ${deleteResult.message}`
+      );
+    }
+
+    return deleteResult;
+  } catch (error) {
+    Logger.log(`deleteCreditNoteWithCleanup: ERROR - ${error.message}`);
+    return { success: false, message: error.message };
+  }
+}
+
+/**
  * Get invoice list with caching and error handling
  * @returns {Array} Array of invoice objects
  */

@@ -919,11 +919,57 @@
               element.disabled = true;
             });
 
-          // Add Delete button handler (stub for now)
+          // Add Delete button handler
           const deleteBtn = document.getElementById("delete-bottom-btn");
           if (deleteBtn) {
             deleteBtn.addEventListener("click", function () {
-              alert("Delete functionality will be implemented later");
+              // Show spinner
+              const bottomSpin = document.getElementById(
+                "delete-bottom-spinner"
+              );
+              if (bottomSpin) bottomSpin.style.display = "inline-block";
+
+              // Disable button
+              this.disabled = true;
+
+              // Call delete function
+              google.script.run
+                .withSuccessHandler(function (result) {
+                  if (result.success) {
+                    // Show success message
+                    let message = "Credit note deleted successfully!";
+                    if (result.note) {
+                      message += " " + result.note;
+                    }
+                    alert(message);
+
+                    // Navigate back to list
+                    safeNavigateToCreditNotesList();
+                  } else {
+                    alert(
+                      "Error deleting credit note: " +
+                        (result.message || "Unknown error")
+                    );
+                    // Re-enable button
+                    document.getElementById(
+                      "delete-bottom-btn"
+                    ).disabled = false;
+                    const bottomSpin2 = document.getElementById(
+                      "delete-bottom-spinner"
+                    );
+                    if (bottomSpin2) bottomSpin2.style.display = "none";
+                  }
+                })
+                .withFailureHandler(function (error) {
+                  alert("Error deleting credit note: " + error.message);
+                  // Re-enable button
+                  document.getElementById("delete-bottom-btn").disabled = false;
+                  const bottomSpin3 = document.getElementById(
+                    "delete-bottom-spinner"
+                  );
+                  if (bottomSpin3) bottomSpin3.style.display = "none";
+                })
+                .deleteCreditNoteById(creditNoteId);
             });
           }
 

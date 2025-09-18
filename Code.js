@@ -161,6 +161,15 @@ function deleteInvoiceById(id) {
   return deleteInvoiceByIdFromData(id);
 }
 
+/**
+ * Delete credit note by ID (global endpoint for frontend)
+ * @param {string} id - Credit Note ID
+ * @returns {Object} { success: true } or { success: false, message }
+ */
+function deleteCreditNoteById(id) {
+  return deleteCreditNoteByIdFromData(id);
+}
+
 function testLogger(message) {
   Logger.log(`[CLIENT TEST]: ${message}`);
 }
