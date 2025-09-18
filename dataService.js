@@ -405,16 +405,11 @@ function getCreditNoteDataByIdFromData(id) {
       "getCreditNoteDataByIdFromData: CONFIG.CREDIT_NOTE_TABLE.COLUMNS_PER_ROW =",
       CONFIG.CREDIT_NOTE_TABLE.COLUMNS_PER_ROW
     );
-    // Base fields: 19 columns (ID through PDF Link)
-    // First table row starts at column 20 (Row 1 #, Row 1 Description, Row 1 Period, Row 1 Amount)
-    const BASE_FIELDS_COUNT = 19;
+    // Base fields: 18 columns (ID through PDF Link)
+    // First table row starts at column 19 (Row 1 #, Row 1 Description, Row 1 Period, Row 1 Amount)
     for (let i = 0; i < CONFIG.CREDIT_NOTE_TABLE.MAX_ROWS; i++) {
-      const base =
-        BASE_FIELDS_COUNT + 1 + i * CONFIG.CREDIT_NOTE_TABLE.COLUMNS_PER_ROW; // Start from column 20
-      const item = row.slice(
-        base,
-        base + CONFIG.CREDIT_NOTE_TABLE.COLUMNS_PER_ROW
-      );
+      const base = 18 + i * 4; // Start from column 19, 4 columns per row
+      const item = row.slice(base, base + 4);
       console.log(
         `getCreditNoteDataByIdFromData: Row ${i}, base=${base}, item=`,
         item
