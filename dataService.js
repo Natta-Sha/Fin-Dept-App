@@ -100,6 +100,20 @@ function getProjectDetailsFromData(projectName) {
       .trim();
 
     Logger.log("Selected templateId: " + selectedTemplateId);
+    Logger.log(
+      "Bank details lookup - shortBank1: '" +
+        shortBank1 +
+        "', shortBank2: '" +
+        shortBank2 +
+        "'"
+    );
+    Logger.log("Bank map size: " + bankMap.size);
+    Logger.log(
+      "Bank map entries: " +
+        Array.from(bankMap.entries())
+          .map(([k, v]) => k + "->" + v.substring(0, 50) + "...")
+          .join(", ")
+    );
 
     return {
       clientName: projectRow[CONFIG.COLUMNS.CLIENT_NAME] || "",
@@ -117,6 +131,8 @@ function getProjectDetailsFromData(projectName) {
         .trim()
         .toUpperCase(),
       ourCompany: projectRow[CONFIG.COLUMNS.OUR_COMPANY] || "",
+      bankDetails1: bankMap.get(shortBank1) || "",
+      bankDetails2: bankMap.get(shortBank2) || "",
       templateId: selectedTemplateId,
     };
   } catch (error) {
