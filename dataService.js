@@ -131,8 +131,6 @@ function getProjectDetailsFromData(projectName) {
         .trim()
         .toUpperCase(),
       ourCompany: projectRow[CONFIG.COLUMNS.OUR_COMPANY] || "",
-      bankDetails1: bankMap.get(shortBank1) || "",
-      bankDetails2: bankMap.get(shortBank2) || "",
       templateId: selectedTemplateId,
     };
   } catch (error) {
@@ -357,6 +355,8 @@ function getInvoiceDataByIdFromData(id) {
       exchangeRate: row[indexMap["Exchange Rate"]],
       currency: row[indexMap["Currency"]],
       amountInEUR: row[indexMap["Amount in EUR"]],
+      bankDetails1: row[indexMap["Bank Details 1"]] || "",
+      bankDetails2: row[indexMap["Bank Details 2"]] || "",
       ourCompany: row[indexMap["Our Company"]],
       comment: row[indexMap["Comment"]],
       items: items,
@@ -624,6 +624,8 @@ function processFormFromData(data) {
       data.currency === "$" ? parseFloat(data.exchangeRate).toFixed(4) : "",
       data.currency,
       data.currency === "$" ? parseFloat(data.amountInEUR).toFixed(2) : "",
+      data.bankDetails1 || "",
+      data.bankDetails2 || "",
       data.ourCompany || "",
       data.comment || "",
       "",
@@ -934,6 +936,8 @@ function updateInvoiceByIdFromData(id, data) {
     fullRow[indexMap["Currency"]] = data.currency;
     fullRow[indexMap["Amount in EUR"]] =
       data.currency === "$" ? parseFloat(data.amountInEUR || 0).toFixed(2) : "";
+    fullRow[indexMap["Bank Details 1"]] = data.bankDetails1 || "";
+    fullRow[indexMap["Bank Details 2"]] = data.bankDetails2 || "";
     fullRow[indexMap["Our Company"]] = data.ourCompany || "";
     fullRow[indexMap["Comment"]] = data.comment || "";
     fullRow[indexMap["Google Doc Link"]] = doc.getUrl();
