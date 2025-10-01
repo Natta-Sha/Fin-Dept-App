@@ -131,6 +131,8 @@ function getProjectDetailsFromData(projectName) {
         .trim()
         .toUpperCase(),
       ourCompany: projectRow[CONFIG.COLUMNS.OUR_COMPANY] || "",
+      bankDetails1: bankMap.get(shortBank1) || "",
+      bankDetails2: bankMap.get(shortBank2) || "",
       templateId: selectedTemplateId,
     };
   } catch (error) {
