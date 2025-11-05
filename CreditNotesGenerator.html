@@ -604,6 +604,26 @@
         </div>
       </div>
 
+      <!-- Copy mode bottom actions -->
+      <div id="copy-bottom-btn-container" style="display: none">
+        <div class="row mt-4">
+          <div class="col-md-12 d-flex justify-content-end gap-2">
+            <button
+              id="copy-create-new-btn"
+              class="btn btn-success px-5 fw-bold"
+            >
+              Create new
+            </button>
+            <button
+              id="copy-cancel-btn"
+              class="btn btn-outline-secondary px-5 fw-bold"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      </div>
+
       <!-- Result area -->
       <div id="result"></div>
     </div>
@@ -718,6 +738,168 @@
           return `${yyyy}-${mm.padStart(2, "0")}-${dd.padStart(2, "0")}`;
         }
         return dateVal;
+      }
+
+      // Fill credit note form from saved data for copy/edit mode
+      function fillCreditNoteFormFromSavedData(data) {
+        console.log("fillCreditNoteFormFromSavedData called with data:", data);
+
+        // Fill editable fields from saved data
+        const projectNameEl = document.getElementById("project_name");
+        if (projectNameEl) projectNameEl.value = data.projectName || "";
+
+        const creditNoteNumberEl =
+          document.getElementById("credit_note_number");
+        if (creditNoteNumberEl)
+          creditNoteNumberEl.value = data.creditNoteNumber || "";
+
+        // Format and set date
+        if (data.creditNoteDate) {
+          const creditNoteDateEl = document.getElementById("credit_note_date");
+          if (creditNoteDateEl) {
+            creditNoteDateEl.value = formatInputDate(data.creditNoteDate);
+          }
+        }
+
+        // Fill non-editable fields from saved data (for edit mode - will be cleared in copy mode)
+        const clientNameEl = document.getElementById("client_name");
+        if (clientNameEl) clientNameEl.textContent = data.clientName || "";
+
+        const clientAddressEl = document.getElementById("client_address");
+        if (clientAddressEl)
+          clientAddressEl.textContent = data.clientAddress || "";
+
+        const clientNumberEl = document.getElementById("client_number");
+        if (clientNumberEl)
+          clientNumberEl.textContent = data.clientNumber || "";
+
+        const ourCompanyEl = document.getElementById("our_company");
+        if (ourCompanyEl) ourCompanyEl.textContent = data.ourCompany || "";
+
+        const taxEl = document.getElementById("tax");
+        if (taxEl) taxEl.textContent = data.tax || "0";
+
+        const currencyMap = { $: "$ (USD)", "€": "€ (EUR)", "₴": "₴ (UAH)" };
+        const currencyEl = document.getElementById("currency");
+        if (currencyEl)
+          currencyEl.textContent =
+            currencyMap[data.currency] || data.currency || "";
+
+        // Handle exchange rate (same logic as InvoiceGenerator)
+        if (data.currency === "$") {
+          const exchangeRateEl = document.getElementById("exchange_rate");
+          if (exchangeRateEl) {
+            exchangeRateEl.style.display = "block";
+            exchangeRateEl.value = data.exchangeRate || "1.0000";
+            exchangeRateEl.disabled = false;
+          }
+          const exchangeDisplayEl = document.getElementById(
+            "exchange_rate_display"
+          );
+          if (exchangeDisplayEl) {
+            exchangeDisplayEl.innerHTML = `
+    Exchange Rate (EUR 1 = USD ...)
+    <a href="https://www.bundesbank.de/dynamic/action/en/statistics/time-series-databases/time-series-databases/745582/745582?dateSelect=2025&tsTab=0&listId=www_sdks_b01012_3&tsId=BBEX3.D.USD.EUR.BB.AC.000&id=0" target="_blank" class="ms-1 btn btn-link btn-sm p-0">Link</a>
+  `;
+          }
+          const amountInEUREl = document.getElementById("amount_in_eur");
+          if (amountInEUREl) {
+            amountInEUREl.textContent = data.amountInEUR || "";
+          }
+        } else {
+          const exchangeRateEl = document.getElementById("exchange_rate");
+          if (exchangeRateEl) {
+            exchangeRateEl.style.display = "none";
+          }
+          const exchangeRateDisplayEl = document.getElementById(
+            "exchange_rate_display"
+          );
+          if (exchangeRateDisplayEl) {
+            exchangeRateDisplayEl.textContent = "";
+          }
+          const amountInEUREl = document.getElementById("amount_in_eur");
+          if (amountInEUREl) {
+            amountInEUREl.textContent = "";
+          }
+        }
+
+        // Comment - editable
+        const commentInputEl = document.getElementById("comment");
+        if (commentInputEl) {
+          commentInputEl.value = data.comment || "";
+          commentInputEl.style.display = "block";
+          commentInputEl.disabled = false;
+        }
+        const commentDisplayEl = document.getElementById("comment-display");
+        if (commentDisplayEl) {
+          commentDisplayEl.style.display = "none";
+        }
+
+        // Add rows to the table (editable)
+        const tbody = document.getElementById("credit-note-body");
+        if (tbody) {
+          tbody.innerHTML = ""; // Clear
+
+          data.items.forEach((item, index) => {
+            const row = document.createElement("tr");
+
+            // First column: Row number (index + 1)
+            const cell1 = document.createElement("td");
+            const input1 = document.createElement("input");
+            input1.type = "text";
+            input1.className = "form-control";
+            input1.value = (index + 1).toString();
+            input1.readOnly = true;
+            cell1.appendChild(input1);
+            row.appendChild(cell1);
+
+            // Second column: Description (item[1])
+            const cell2 = document.createElement("td");
+            const input2 = document.createElement("input");
+            input2.type = "text";
+            input2.className = "form-control";
+            input2.value = item[1] || "";
+            input2.oninput = updateTotals;
+            cell2.appendChild(input2);
+            row.appendChild(cell2);
+
+            // Third column: Period (item[2])
+            const cell3 = document.createElement("td");
+            const input3 = document.createElement("input");
+            input3.type = "text";
+            input3.className = "form-control";
+            input3.value = item[2] || "";
+            input3.oninput = updateTotals;
+            cell3.appendChild(input3);
+            row.appendChild(cell3);
+
+            // Fourth column: Amount (item[3])
+            const cell4 = document.createElement("td");
+            const input4 = document.createElement("input");
+            input4.type = "number";
+            input4.className = "form-control amount-input";
+            input4.step = "0.01";
+            input4.value = item[3] || "";
+            input4.oninput = updateTotals;
+            cell4.appendChild(input4);
+            row.appendChild(cell4);
+
+            // Delete button cell (except for first row)
+            const deleteCell = document.createElement("td");
+            if (index > 0) {
+              deleteCell.innerHTML = `
+          <button type="button" class="icon-button" onclick="removeRow(this)" title="Delete row">
+    <i class="bi bi-trash"></i>
+  </button>
+`;
+            }
+            row.appendChild(deleteCell);
+            tbody.appendChild(row);
+          });
+        }
+
+        // Update totals
+        updateTotals();
       }
 
       // Render saved credit note data for view mode
@@ -964,7 +1146,7 @@
         search: window.location.search,
       });
 
-      // Debug: Check if we're in view or delete mode
+      // Debug: Check if we're in view, delete, or copy mode
       if (mode === "view") {
         console.log("VIEW MODE DETECTED - Setting up view mode immediately");
         // Set up view mode immediately
@@ -1151,7 +1333,14 @@
           if (validProjectNames.includes(value)) {
             console.log("Valid project selected, loading details...");
             google.script.run
-              .withSuccessHandler(fillProjectDetails)
+              .withSuccessHandler(function (details) {
+                fillProjectDetails(details);
+                // In copy mode, update cached project details
+                if (mode === "copy") {
+                  window.currentProjectDetails = details || {};
+                  window.currentProjectNameCached = value;
+                }
+              })
               .withFailureHandler(function (error) {
                 console.error("Failed to load project details:", error);
               })
@@ -1271,9 +1460,39 @@
               }
               if (["view", "delete"].includes(mode)) {
                 renderSavedDataRaw(data);
-              } else {
-                // For edit/copy modes, we'll handle differently
+              } else if (mode === "edit") {
+                // For edit mode, use renderSavedDataRaw (don't touch edit mode!)
                 renderSavedDataRaw(data);
+              } else if (mode === "copy") {
+                // For copy mode, fill editable fields and reload client data from Lists
+                fillCreditNoteFormFromSavedData(data);
+
+                // Clear non-editable fields (they will be loaded from Lists)
+                const clearText = (id) => {
+                  const el = document.getElementById(id);
+                  if (el) el.textContent = "";
+                };
+                [
+                  "client_name",
+                  "client_address",
+                  "client_number",
+                  "our_company",
+                  "tax",
+                  "currency",
+                ].forEach(clearText);
+
+                // Load fresh client data from Lists
+                const projectVal = document
+                  .getElementById("project_name")
+                  .value.trim();
+                if (projectVal) {
+                  google.script.run
+                    .withSuccessHandler(function (details) {
+                      window.currentProjectDetails = details || {};
+                      fillProjectDetails(details || {});
+                    })
+                    .getProjectDetails(projectVal);
+                }
               }
 
               // Set up the page based on mode AFTER data is loaded
@@ -1572,6 +1791,82 @@
                     safeNavigateToCreditNotesList();
                   });
                 }
+              } else if (mode === "copy") {
+                console.log("Setting up copy mode...");
+                document.getElementById("page-title").textContent =
+                  "Credit Note - Copy";
+                document.getElementById(
+                  "copy-bottom-btn-container"
+                ).style.display = "block";
+                document.getElementById("generate-btn").style.display = "none";
+                document.getElementById("cancel-create-btn").style.display =
+                  "none";
+
+                // Show add row button in copy mode
+                const addRowBtn = document.getElementById("add-row-btn");
+                if (addRowBtn) addRowBtn.style.display = "inline-block";
+
+                // Enable editable fields
+                const editableFields = [
+                  "project_name",
+                  "credit_note_number",
+                  "credit_note_date",
+                  "comment",
+                ];
+                editableFields.forEach((fieldId) => {
+                  const field = document.getElementById(fieldId);
+                  if (field) field.disabled = false;
+                });
+
+                // Enable table inputs
+                document
+                  .querySelectorAll("#credit-note-body input")
+                  .forEach(function (input) {
+                    if (!input.readOnly) {
+                      input.disabled = false;
+                    }
+                  });
+
+                // Allow exchange rate editing only for USD
+                const exchangeRateEl = document.getElementById("exchange_rate");
+                if (exchangeRateEl && data.currency === "$") {
+                  exchangeRateEl.disabled = false;
+                }
+
+                // Show comment input, hide display
+                const commentInputEl = document.getElementById("comment");
+                const commentDisplayEl =
+                  document.getElementById("comment-display");
+                if (commentInputEl && commentDisplayEl) {
+                  commentInputEl.style.display = "block";
+                  commentDisplayEl.style.display = "none";
+                  commentInputEl.disabled = false;
+                }
+
+                // Wire up Copy buttons
+                const copyCancel = document.getElementById("copy-cancel-btn");
+                if (copyCancel) {
+                  copyCancel.addEventListener("click", function () {
+                    safeNavigateToCreditNotesList();
+                  });
+                }
+
+                const copyCreate = document.getElementById(
+                  "copy-create-new-btn"
+                );
+                if (copyCreate) {
+                  copyCreate.addEventListener("click", function () {
+                    try {
+                      // Use submitForm (which handles validation and project details loading)
+                      submitForm();
+                    } catch (e) {
+                      alert("Failed to create from copy: " + e.message);
+                    }
+                  });
+                }
+
+                // Cache project name for copy mode
+                window.currentProjectNameCached = data.projectName;
               }
             })
             .withFailureHandler(function (error) {
@@ -1872,6 +2167,12 @@
             // Hide generate button after success
             document.getElementById("generate-btn").style.display = "none";
             document.getElementById("cancel-create-btn").style.display = "none";
+
+            // Hide copy mode buttons after success
+            const copyBtnContainer = document.getElementById(
+              "copy-bottom-btn-container"
+            );
+            if (copyBtnContainer) copyBtnContainer.style.display = "none";
           })
           .processCreditNoteForm(data);
       }

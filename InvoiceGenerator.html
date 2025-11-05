@@ -2123,7 +2123,7 @@
               }
             };
 
-            if (mode === "edit") {
+            if (mode === "edit" || mode === "copy") {
               if (commentInput) commentInput.style.display = "block";
               if (commentDisplay) commentDisplay.style.display = "none";
               toggleEditField("client_name", "client_name_input");
