@@ -761,6 +761,30 @@
           }
         }
 
+        // Fill non-editable fields from saved data (for edit mode - will be cleared in copy mode)
+        const clientNameEl = document.getElementById("client_name");
+        if (clientNameEl) clientNameEl.textContent = data.clientName || "";
+
+        const clientAddressEl = document.getElementById("client_address");
+        if (clientAddressEl)
+          clientAddressEl.textContent = data.clientAddress || "";
+
+        const clientNumberEl = document.getElementById("client_number");
+        if (clientNumberEl)
+          clientNumberEl.textContent = data.clientNumber || "";
+
+        const ourCompanyEl = document.getElementById("our_company");
+        if (ourCompanyEl) ourCompanyEl.textContent = data.ourCompany || "";
+
+        const taxEl = document.getElementById("tax");
+        if (taxEl) taxEl.textContent = data.tax || "0";
+
+        const currencyMap = { $: "$ (USD)", "€": "€ (EUR)", "₴": "₴ (UAH)" };
+        const currencyEl = document.getElementById("currency");
+        if (currencyEl)
+          currencyEl.textContent =
+            currencyMap[data.currency] || data.currency || "";
+
         // Handle exchange rate (same logic as InvoiceGenerator)
         if (data.currency === "$") {
           const exchangeRateEl = document.getElementById("exchange_rate");
@@ -1436,8 +1460,11 @@
               }
               if (["view", "delete"].includes(mode)) {
                 renderSavedDataRaw(data);
+              } else if (mode === "edit") {
+                // For edit mode, use renderSavedDataRaw (don't touch edit mode!)
+                renderSavedDataRaw(data);
               } else if (mode === "copy") {
-                // For copy mode, fill editable fields and then load client data from Lists
+                // For copy mode, fill editable fields and reload client data from Lists
                 fillCreditNoteFormFromSavedData(data);
 
                 // Clear non-editable fields (they will be loaded from Lists)
@@ -1466,9 +1493,6 @@
                     })
                     .getProjectDetails(projectVal);
                 }
-              } else {
-                // For edit mode, use renderSavedDataRaw
-                renderSavedDataRaw(data);
               }
 
               // Set up the page based on mode AFTER data is loaded
@@ -1833,43 +1857,10 @@
                 if (copyCreate) {
                   copyCreate.addEventListener("click", function () {
                     try {
-                      // Disable to prevent double submit
-                      copyCreate.disabled = true;
-                      const projectVal = document
-                        .getElementById("project_name")
-                        .value.trim();
-
-                      // If we already cached details for this project with templateId, reuse; else fetch
-                      if (
-                        window.currentProjectDetails &&
-                        window.currentProjectDetails.templateId &&
-                        window.currentProjectNameCached === projectVal
-                      ) {
-                        submitFormWithData();
-                      } else {
-                        google.script.run
-                          .withSuccessHandler(function (details) {
-                            try {
-                              window.currentProjectDetails = details || {};
-                              window.currentProjectNameCached = projectVal;
-                              fillProjectDetails(details || {});
-                              submitFormWithData();
-                            } catch (e) {
-                              alert("Failed to start creation: " + e.message);
-                              copyCreate.disabled = false;
-                            }
-                          })
-                          .withFailureHandler(function (err) {
-                            alert(
-                              "Failed to load project details: " + err.message
-                            );
-                            copyCreate.disabled = false;
-                          })
-                          .getProjectDetails(projectVal);
-                      }
+                      // Use submitForm (which handles validation and project details loading)
+                      submitForm();
                     } catch (e) {
                       alert("Failed to create from copy: " + e.message);
-                      copyCreate.disabled = false;
                     }
                   });
                 }
