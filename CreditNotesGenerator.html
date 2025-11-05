@@ -2167,6 +2167,12 @@
             // Hide generate button after success
             document.getElementById("generate-btn").style.display = "none";
             document.getElementById("cancel-create-btn").style.display = "none";
+
+            // Hide copy mode buttons after success
+            const copyBtnContainer = document.getElementById(
+              "copy-bottom-btn-container"
+            );
+            if (copyBtnContainer) copyBtnContainer.style.display = "none";
           })
           .processCreditNoteForm(data);
       }
