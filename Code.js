@@ -228,6 +228,11 @@ function getActivePageForNavigation(page, params = {}) {
     case "CreditNotesGenerator":
       // CreditNotesGenerator is part of credit notes section
       return "creditnotes";
+    case "ContractsList":
+      return "contracts";
+    case "ContractGenerator":
+      // ContractGenerator is part of contracts section
+      return "contracts";
     default:
       return "";
   }
