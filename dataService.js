@@ -1414,6 +1414,131 @@ function updateCreditNoteByIdFromData(data) {
 // ============================================
 
 /**
+ * Get dropdown options for contract form from Lists sheet
+ * @returns {Object} Object with arrays for each dropdown
+ */
+function getContractDropdownOptionsFromData() {
+  try {
+    const spreadsheet = SpreadsheetApp.openById(CONFIG.CONTRACTORS_SPREADSHEET_ID);
+    const listsSheet = spreadsheet.getSheetByName("Lists");
+    
+    if (!listsSheet) {
+      console.log("Lists sheet not found in contractors spreadsheet");
+      return {
+        cooperationTypes: [],
+        ourCompanies: [],
+        serviceTypes: [],
+        peOptions: [],
+        accountTypes: [],
+      };
+    }
+    
+    const data = listsSheet.getDataRange().getValues();
+    
+    // Extract unique values from each column (skip header row)
+    const cooperationTypes = []; // Column A
+    const ourCompanies = [];     // Column B
+    const serviceTypes = [];     // Column C
+    const peOptions = [];        // Column D
+    const accountTypes = [];     // Column E
+    
+    for (let i = 1; i < data.length; i++) {
+      const row = data[i];
+      
+      if (row[0] && row[0].toString().trim() !== "") {
+        const val = row[0].toString().trim();
+        if (!cooperationTypes.includes(val)) cooperationTypes.push(val);
+      }
+      if (row[1] && row[1].toString().trim() !== "") {
+        const val = row[1].toString().trim();
+        if (!ourCompanies.includes(val)) ourCompanies.push(val);
+      }
+      if (row[2] && row[2].toString().trim() !== "") {
+        const val = row[2].toString().trim();
+        if (!serviceTypes.includes(val)) serviceTypes.push(val);
+      }
+      if (row[3] && row[3].toString().trim() !== "") {
+        const val = row[3].toString().trim();
+        if (!peOptions.includes(val)) peOptions.push(val);
+      }
+      if (row[4] && row[4].toString().trim() !== "") {
+        const val = row[4].toString().trim();
+        if (!accountTypes.includes(val)) accountTypes.push(val);
+      }
+    }
+    
+    return {
+      cooperationTypes: cooperationTypes.sort(),
+      ourCompanies: ourCompanies.sort(),
+      serviceTypes: serviceTypes.sort(),
+      peOptions: peOptions.sort(),
+      accountTypes: accountTypes.sort(),
+    };
+  } catch (error) {
+    console.error("Error getting contract dropdown options:", error);
+    return {
+      cooperationTypes: [],
+      ourCompanies: [],
+      serviceTypes: [],
+      peOptions: [],
+      accountTypes: [],
+    };
+  }
+}
+
+/**
+ * Get contract templates from Templates sheet
+ * Filters by cooperation type, our company, and service type
+ * @param {string} cooperationType
+ * @param {string} ourCompany
+ * @param {string} serviceType
+ * @returns {Array} Array of template objects {name, link}
+ */
+function getContractTemplatesFromData(cooperationType, ourCompany, serviceType) {
+  try {
+    const spreadsheet = SpreadsheetApp.openById(CONFIG.CONTRACTORS_SPREADSHEET_ID);
+    const templatesSheet = spreadsheet.getSheetByName("Templates");
+    
+    if (!templatesSheet) {
+      console.log("Templates sheet not found");
+      return [];
+    }
+    
+    const data = templatesSheet.getDataRange().getValues();
+    const templates = [];
+    
+    // Columns: A = Type of cooperation, B = Our company, C = Type of services, D = Template link
+    for (let i = 1; i < data.length; i++) {
+      const row = data[i];
+      const rowCoopType = (row[0] || "").toString().trim();
+      const rowCompany = (row[1] || "").toString().trim();
+      const rowServiceType = (row[2] || "").toString().trim();
+      const templateLink = (row[3] || "").toString().trim();
+      
+      // Filter by matching criteria (if provided)
+      const matchCoop = !cooperationType || rowCoopType === cooperationType;
+      const matchCompany = !ourCompany || rowCompany === ourCompany;
+      const matchService = !serviceType || rowServiceType === serviceType;
+      
+      if (matchCoop && matchCompany && matchService && templateLink) {
+        templates.push({
+          cooperationType: rowCoopType,
+          ourCompany: rowCompany,
+          serviceType: rowServiceType,
+          link: templateLink,
+          name: `${rowCoopType} - ${rowCompany} - ${rowServiceType}`,
+        });
+      }
+    }
+    
+    return templates;
+  } catch (error) {
+    console.error("Error getting contract templates:", error);
+    return [];
+  }
+}
+
+/**
  * Get contract list from the Contracts sheet
  * @returns {Array} Array of contract objects
  */

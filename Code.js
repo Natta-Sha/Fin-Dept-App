@@ -148,6 +148,25 @@ function getContractDataById(id) {
   return getContractDataByIdFromData(id);
 }
 
+/**
+ * Get dropdown options for contract form
+ * @returns {Object} Dropdown options
+ */
+function getContractDropdownOptions() {
+  return getContractDropdownOptionsFromData();
+}
+
+/**
+ * Get contract templates filtered by criteria
+ * @param {string} cooperationType
+ * @param {string} ourCompany
+ * @param {string} serviceType
+ * @returns {Array} Array of templates
+ */
+function getContractTemplates(cooperationType, ourCompany, serviceType) {
+  return getContractTemplatesFromData(cooperationType, ourCompany, serviceType);
+}
+
 // Error handling and performance monitoring removed for cleaner code
 
 // Performance monitoring removed for cleaner code
