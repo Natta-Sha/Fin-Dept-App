@@ -15,6 +15,10 @@
       rel="stylesheet"
     />
     <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css"
+      rel="stylesheet"
+    />
+    <link
       rel="stylesheet"
       href="https://cdn.datatables.net/fixedheader/3.4.0/css/fixedHeader.dataTables.min.css"
     />
@@ -281,7 +285,7 @@
     <?!= getNavigation(activePage) ?>
 
     <!-- Main Content -->
-    <div class="main-content container">
+    <div class="main-content container-fluid px-4">
       <div class="mb-3 d-flex justify-content-start">
         <a
           href="<?= baseUrl ?>?page=ContractGenerator&mode=create"
@@ -296,10 +300,11 @@
       <table
         id="contractsTable"
         class="display table table-bordered"
-        style="width: 100%; display: none"
+        style="width: 100%; min-width: 1200px; display: none"
       >
         <thead class="table-light">
           <tr>
+            <th>Folder</th>
             <th>Contractor Name</th>
             <th>Our Company</th>
             <th>Service Type</th>
@@ -309,6 +314,7 @@
             <th>Actions</th>
           </tr>
           <tr>
+            <th></th>
             <th><input type="text" placeholder="Search Contractor" /></th>
             <th><input type="text" placeholder="Search Company" /></th>
             <th><input type="text" placeholder="Search Service" /></th>
@@ -329,8 +335,19 @@
             orderCellsTop: true,
             columnDefs: [
               {
-                targets: [0, 1, 2, 3, 4, 5, 6],
+                targets: 0, // Folder column
+                className: "dt-body-center dt-head-center",
+                orderable: false,
+                width: "50px",
+              },
+              {
+                targets: [1, 2, 3, 4, 5, 6],
                 className: "dt-body-left dt-head-center",
+              },
+              {
+                targets: 7, // Actions column
+                className: "dt-body-center dt-head-center",
+                orderable: false,
               },
             ],
           });
@@ -356,7 +373,13 @@
               }
 
               data.forEach((row) => {
+                // Create folder link if available
+                const folderCell = row.folderLink
+                  ? `<a href="${row.folderLink}" target="_blank" class="table-link" title="Open folder"><i class="bi bi-folder2-open"></i></a>`
+                  : "";
+
                 table.row.add([
+                  folderCell,
                   row.contractorName || "",
                   row.ourCompany || "",
                   row.serviceType || "",
