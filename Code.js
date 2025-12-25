@@ -13,6 +13,7 @@ function doGet(e) {
     template.baseUrl = ScriptApp.getService().getUrl();
     template.invoiceId = e.parameter.invoiceId || e.parameter.id || "";
     template.creditNoteId = e.parameter.invoiceId || e.parameter.id || "";
+    template.contractId = e.parameter.contractId || e.parameter.id || "";
     template.mode = e.parameter.mode || "";
 
     // Set active page for navigation
@@ -25,6 +26,10 @@ function doGet(e) {
     // Pass credit note ID if provided (same as invoice ID for now)
     if (e.parameter.invoiceId || e.parameter.id) {
       template.creditNoteId = e.parameter.invoiceId || e.parameter.id;
+    }
+    // Pass contract ID if provided
+    if (e.parameter.contractId || e.parameter.id) {
+      template.contractId = e.parameter.contractId || e.parameter.id;
     }
     if (e.parameter.mode) {
       template.mode = e.parameter.mode;

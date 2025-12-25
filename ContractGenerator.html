@@ -2,27 +2,19 @@
 <html>
   <head>
     <base target="_top" />
-    <meta charset="UTF-8" />
-    <title>List of Contracts</title>
-
-    <!-- Styles -->
+    <meta charset="utf-8" />
+    <title>Create Contract</title>
     <link
       href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
       rel="stylesheet"
     />
-
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css"
+      rel="stylesheet"
+    />
     <style>
-      body {
-        font-size: 0.875rem;
-        margin: 0;
-        min-height: 100vh;
-        display: flex;
-        flex-direction: column;
-      }
-
       .main-content {
-        flex-grow: 1;
-        padding: 20px;
+        padding-top: 1rem;
       }
 
       /* Universal button styles */
@@ -117,36 +109,6 @@
         box-shadow: 0 0 0 0.25rem rgba(40, 167, 69, 0.25) !important;
       }
 
-      /* Danger buttons (удаление) */
-      .btn-danger {
-        background: linear-gradient(
-          135deg,
-          #dc3545 0%,
-          #b02a37 100%
-        ) !important;
-        color: white !important;
-      }
-
-      .btn-danger:hover {
-        background: linear-gradient(
-          135deg,
-          #c82333 0%,
-          #9e2530 100%
-        ) !important;
-        color: white !important;
-      }
-
-      .btn-danger:focus,
-      .btn-danger:active {
-        background: linear-gradient(
-          135deg,
-          #c82333 0%,
-          #9e2530 100%
-        ) !important;
-        color: white !important;
-        box-shadow: 0 0 0 0.25rem rgba(220, 53, 69, 0.25) !important;
-      }
-
       /* Outline buttons (secondary actions) */
       .btn-outline-primary {
         background: linear-gradient(
@@ -187,46 +149,6 @@
         color: white !important;
         border-color: #6c757d !important;
       }
-
-      .btn-outline-danger {
-        background: linear-gradient(
-          135deg,
-          rgba(220, 53, 69, 0.1) 0%,
-          rgba(176, 42, 55, 0.1) 100%
-        ) !important;
-        color: #dc3545 !important;
-        border: 2px solid #dc3545 !important;
-      }
-
-      .btn-outline-danger:hover {
-        background: linear-gradient(
-          135deg,
-          #dc3545 0%,
-          #b02a37 100%
-        ) !important;
-        color: white !important;
-        border-color: #dc3545 !important;
-      }
-
-      .btn-outline-success {
-        background: linear-gradient(
-          135deg,
-          rgba(40, 167, 69, 0.1) 0%,
-          rgba(32, 105, 43, 0.1) 100%
-        ) !important;
-        color: #28a745 !important;
-        border: 2px solid #28a745 !important;
-      }
-
-      .btn-outline-success:hover {
-        background: linear-gradient(
-          135deg,
-          #28a745 0%,
-          #20692b 100%
-        ) !important;
-        color: white !important;
-        border-color: #28a745 !important;
-      }
     </style>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
   </head>
@@ -235,32 +157,56 @@
     <!-- Top Navigation -->
     <?!= getNavigation(activePage) ?>
 
-    <!-- Main Content -->
-    <div class="main-content container">
-      <div class="mb-3 d-flex justify-content-start">
-        <a
-          href="<?= baseUrl ?>?page=ContractGenerator&mode=create"
-          class="btn btn-nav"
-        >
-          Create Contract
-        </a>
+    <div class="main-content container py-4">
+      <h2 class="mb-4" id="page-title">Create Contract</h2>
+
+      <!-- Contract form will be added here -->
+
+      <div class="row mt-4">
+        <div class="col-md-12 d-flex justify-content-end gap-2">
+          <button
+            id="cancel-btn"
+            class="btn btn-outline-secondary"
+            onclick="goToContractsList()"
+          >
+            Cancel
+          </button>
+        </div>
       </div>
-
-      <h2 class="mb-4">List of Contracts</h2>
-
-      <!-- Content will be added here -->
     </div>
     <!-- Close main-content -->
 
     <script>
-      // Initialize Bootstrap tooltips
-      document.addEventListener("DOMContentLoaded", function () {
-        var tooltipTriggerList = [].slice.call(
-          document.querySelectorAll('[data-bs-toggle="tooltip"]')
-        );
-        var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
-          return new bootstrap.Tooltip(tooltipTriggerEl);
-        });
+      const BASE_URL = "<?= baseUrl ?>";
+      let mode = "<?= mode ?>";
+      let contractId = "<?= contractId ?>";
+
+      function goToContractsList() {
+        window.location.href = BASE_URL + "?page=ContractsList";
+      }
+
+      window.addEventListener("DOMContentLoaded", function () {
+        // Set page title based on mode
+        const titleEl = document.getElementById("page-title");
+        switch (mode) {
+          case "create":
+            titleEl.textContent = "Create Contract";
+            break;
+          case "edit":
+            titleEl.textContent = "Contract - Edit";
+            break;
+          case "view":
+            titleEl.textContent = "Contract - View";
+            break;
+          case "delete":
+            titleEl.textContent = "Contract - Delete";
+            break;
+          case "copy":
+            titleEl.textContent = "Contract - Copy";
+            break;
+          default:
+            titleEl.textContent = "Create Contract";
+        }
       });
     </script>
   </body>
