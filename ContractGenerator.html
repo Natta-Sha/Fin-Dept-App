@@ -165,6 +165,13 @@
       <div class="row mt-4">
         <div class="col-md-12 d-flex justify-content-end gap-2">
           <button
+            id="confirm-btn"
+            class="btn btn-success"
+            onclick="confirmContract()"
+          >
+            Confirm
+          </button>
+          <button
             id="cancel-btn"
             class="btn btn-outline-secondary"
             onclick="goToContractsList()"
@@ -182,7 +189,28 @@
       let contractId = "<?= contractId ?>";
 
       function goToContractsList() {
-        window.location.href = BASE_URL + "?page=ContractsList";
+        const target = BASE_URL + "?page=ContractsList";
+        try {
+          window.top.location.href = target;
+          return;
+        } catch (e) {}
+        try {
+          window.location.href = target;
+          return;
+        } catch (e2) {}
+        if (
+          google &&
+          google.script &&
+          google.script.host &&
+          google.script.host.close
+        ) {
+          google.script.host.close();
+        }
+      }
+
+      function confirmContract() {
+        // TODO: Implement contract confirmation logic
+        alert("Contract confirmation - coming soon!");
       }
 
       window.addEventListener("DOMContentLoaded", function () {
