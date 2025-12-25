@@ -131,6 +131,23 @@ function getCreditNoteList() {
   return getCreditNoteListFromData();
 }
 
+/**
+ * Get list of all contracts
+ * @returns {Array} Array of contract objects
+ */
+function getContractList() {
+  return getContractListFromData();
+}
+
+/**
+ * Get contract data by ID
+ * @param {string} id - Contract ID
+ * @returns {Object} Contract data
+ */
+function getContractDataById(id) {
+  return getContractDataByIdFromData(id);
+}
+
 // Error handling and performance monitoring removed for cleaner code
 
 // Performance monitoring removed for cleaner code

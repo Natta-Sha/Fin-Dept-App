@@ -1408,3 +1408,120 @@ function updateCreditNoteByIdFromData(data) {
     return { success: false, message: error.message };
   }
 }
+
+// ============================================
+// CONTRACTS FUNCTIONS
+// ============================================
+
+/**
+ * Get contract list from the Contracts sheet
+ * @returns {Array} Array of contract objects
+ */
+function getContractListFromData() {
+  try {
+    var cache = CacheService.getScriptCache();
+    var cached = cache.get("contractList");
+    if (cached) {
+      return JSON.parse(cached);
+    }
+
+    const spreadsheet = getSpreadsheet(CONFIG.SPREADSHEET_ID);
+    const sheet = getSheet(spreadsheet, CONFIG.SHEETS.CONTRACTS);
+    const data = sheet.getDataRange().getValues();
+
+    if (data.length < 2) return [];
+
+    const headers = data[0].map((h) => (h || "").toString().trim());
+
+    const colIndex = {
+      id: headers.indexOf("ID"),
+      folderLink: headers.indexOf("Folder Link"),
+      contractorName: headers.indexOf("Contractor Name"),
+      ourCompany: headers.indexOf("Our Company"),
+      serviceType: headers.indexOf("Service Type"),
+      cooperationType: headers.indexOf("Cooperation Type"),
+      contractNumber: headers.indexOf("Contract Number"),
+      contractDate: headers.indexOf("Contract Date"),
+      templateLink: headers.indexOf("Template Link"),
+    };
+
+    // Validate required columns - only check essential ones
+    const requiredCols = ["id", "contractorName", "contractNumber"];
+    for (let key of requiredCols) {
+      if (colIndex[key] === -1) {
+        console.log("Missing column in Contracts sheet: " + key);
+        return [];
+      }
+    }
+
+    const result = data.slice(1).map((row) => ({
+      id: row[colIndex.id] || "",
+      folderLink: colIndex.folderLink !== -1 ? row[colIndex.folderLink] || "" : "",
+      contractorName: row[colIndex.contractorName] || "",
+      ourCompany: colIndex.ourCompany !== -1 ? row[colIndex.ourCompany] || "" : "",
+      serviceType: colIndex.serviceType !== -1 ? row[colIndex.serviceType] || "" : "",
+      cooperationType: colIndex.cooperationType !== -1 ? row[colIndex.cooperationType] || "" : "",
+      contractNumber: row[colIndex.contractNumber] || "",
+      contractDate: colIndex.contractDate !== -1 ? formatDate(row[colIndex.contractDate]) : "",
+      templateLink: colIndex.templateLink !== -1 ? row[colIndex.templateLink] || "" : "",
+    }));
+
+    cache.put("contractList", JSON.stringify(result), 300);
+    return result;
+  } catch (error) {
+    console.error("Error getting contract list:", error);
+    return [];
+  }
+}
+
+/**
+ * Get contract data by ID from spreadsheet
+ * @param {string} id - Contract ID
+ * @returns {Object} Contract data
+ */
+function getContractDataByIdFromData(id) {
+  try {
+    if (!id || id.toString().trim() === "") {
+      console.log("Invalid ID provided to getContractDataByIdFromData");
+      return null;
+    }
+
+    const spreadsheet = getSpreadsheet(CONFIG.SPREADSHEET_ID);
+    const sheet = getSheet(spreadsheet, CONFIG.SHEETS.CONTRACTS);
+    const data = sheet.getDataRange().getValues();
+    const headers = data[0];
+    const indexMap = headers.reduce((acc, h, i) => {
+      acc[h] = i;
+      return acc;
+    }, {});
+
+    let row = null;
+    for (let i = 1; i < data.length; i++) {
+      const rowId = data[i][indexMap["ID"]];
+      if (rowId == id || rowId === id || rowId.toString() === id.toString()) {
+        row = data[i];
+        break;
+      }
+    }
+
+    if (!row) {
+      console.log(`Contract with ID ${id} not found.`);
+      return null;
+    }
+
+    return {
+      id: row[indexMap["ID"]] || "",
+      folderLink: row[indexMap["Folder Link"]] || "",
+      contractorName: row[indexMap["Contractor Name"]] || "",
+      ourCompany: row[indexMap["Our Company"]] || "",
+      serviceType: row[indexMap["Service Type"]] || "",
+      cooperationType: row[indexMap["Cooperation Type"]] || "",
+      contractNumber: row[indexMap["Contract Number"]] || "",
+      contractDate: formatDateForInputFromUtils(row[indexMap["Contract Date"]]),
+      templateLink: row[indexMap["Template Link"]] || "",
+    };
+  } catch (error) {
+    console.error("Error getting contract data by ID:", error);
+    return null;
+  }
+}

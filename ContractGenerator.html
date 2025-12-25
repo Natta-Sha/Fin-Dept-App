@@ -3,7 +3,7 @@
   <head>
     <base target="_top" />
     <meta charset="utf-8" />
-    <title>Create Contract</title>
+    <title>Contract</title>
     <link
       href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
       rel="stylesheet"
@@ -15,6 +15,10 @@
     <style>
       .main-content {
         padding-top: 1rem;
+      }
+
+      .form-label {
+        font-weight: bold;
       }
 
       /* Universal button styles */
@@ -109,6 +113,36 @@
         box-shadow: 0 0 0 0.25rem rgba(40, 167, 69, 0.25) !important;
       }
 
+      /* Danger buttons (удаление) */
+      .btn-danger {
+        background: linear-gradient(
+          135deg,
+          #dc3545 0%,
+          #b02a37 100%
+        ) !important;
+        color: white !important;
+      }
+
+      .btn-danger:hover {
+        background: linear-gradient(
+          135deg,
+          #c82333 0%,
+          #9e2530 100%
+        ) !important;
+        color: white !important;
+      }
+
+      .btn-danger:focus,
+      .btn-danger:active {
+        background: linear-gradient(
+          135deg,
+          #c82333 0%,
+          #9e2530 100%
+        ) !important;
+        color: white !important;
+        box-shadow: 0 0 0 0.25rem rgba(220, 53, 69, 0.25) !important;
+      }
+
       /* Outline buttons (secondary actions) */
       .btn-outline-primary {
         background: linear-gradient(
@@ -149,6 +183,46 @@
         color: white !important;
         border-color: #6c757d !important;
       }
+
+      .btn-outline-danger {
+        background: linear-gradient(
+          135deg,
+          rgba(220, 53, 69, 0.1) 0%,
+          rgba(176, 42, 55, 0.1) 100%
+        ) !important;
+        color: #dc3545 !important;
+        border: 2px solid #dc3545 !important;
+      }
+
+      .btn-outline-danger:hover {
+        background: linear-gradient(
+          135deg,
+          #dc3545 0%,
+          #b02a37 100%
+        ) !important;
+        color: white !important;
+        border-color: #dc3545 !important;
+      }
+
+      .btn-outline-success {
+        background: linear-gradient(
+          135deg,
+          rgba(40, 167, 69, 0.1) 0%,
+          rgba(32, 105, 43, 0.1) 100%
+        ) !important;
+        color: #28a745 !important;
+        border: 2px solid #28a745 !important;
+      }
+
+      .btn-outline-success:hover {
+        background: linear-gradient(
+          135deg,
+          #28a745 0%,
+          #20692b 100%
+        ) !important;
+        color: white !important;
+        border-color: #28a745 !important;
+      }
     </style>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
   </head>
@@ -158,11 +232,15 @@
     <?!= getNavigation(activePage) ?>
 
     <div class="main-content container py-4">
-      <h2 class="mb-4" id="page-title">Create Contract</h2>
+      <h2 class="mb-4" id="page-title">Contract</h2>
 
-      <!-- Contract form will be added here -->
+      <!-- Contract form fields will be added here -->
+      <div id="contract-form">
+        <!-- Placeholder for future form fields -->
+      </div>
 
-      <div class="row mt-4">
+      <!-- Create mode buttons -->
+      <div id="create-buttons" class="row mt-4" style="display: none">
         <div class="col-md-12 d-flex justify-content-end gap-2">
           <button
             id="confirm-btn"
@@ -180,14 +258,90 @@
           </button>
         </div>
       </div>
+
+      <!-- View mode buttons -->
+      <div id="view-buttons" class="row mt-4" style="display: none">
+        <div class="col-md-12 d-flex justify-content-end gap-2">
+          <button
+            class="btn btn-outline-secondary"
+            onclick="switchToMode('edit')"
+          >
+            Edit
+          </button>
+          <button
+            class="btn btn-outline-danger"
+            onclick="switchToMode('delete')"
+          >
+            Delete
+          </button>
+          <button
+            class="btn btn-outline-success"
+            onclick="switchToMode('copy')"
+          >
+            Copy
+          </button>
+          <button
+            class="btn btn-outline-primary"
+            onclick="goToContractsList()"
+          >
+            Cancel
+          </button>
+        </div>
+      </div>
+
+      <!-- Edit mode buttons -->
+      <div id="edit-buttons" class="row mt-4" style="display: none">
+        <div class="col-md-12 d-flex justify-content-end gap-2">
+          <button class="btn btn-success" onclick="saveContract()">
+            Save changes
+          </button>
+          <button
+            class="btn btn-outline-secondary"
+            onclick="switchToMode('view')"
+          >
+            Cancel
+          </button>
+        </div>
+      </div>
+
+      <!-- Delete mode buttons -->
+      <div id="delete-buttons" class="row mt-4" style="display: none">
+        <div class="col-md-12 d-flex justify-content-end gap-2">
+          <button class="btn btn-danger" onclick="deleteContract()">
+            Confirm Delete
+          </button>
+          <button
+            class="btn btn-outline-secondary"
+            onclick="switchToMode('view')"
+          >
+            Cancel
+          </button>
+        </div>
+      </div>
+
+      <!-- Copy mode buttons -->
+      <div id="copy-buttons" class="row mt-4" style="display: none">
+        <div class="col-md-12 d-flex justify-content-end gap-2">
+          <button class="btn btn-success" onclick="copyContract()">
+            Create Copy
+          </button>
+          <button
+            class="btn btn-outline-secondary"
+            onclick="switchToMode('view')"
+          >
+            Cancel
+          </button>
+        </div>
+      </div>
     </div>
     <!-- Close main-content -->
 
     <script>
       const BASE_URL = "<?= baseUrl ?>";
-      let mode = "<?= mode ?>";
+      let mode = "<?= mode ?>" || "create";
       let contractId = "<?= contractId ?>";
 
+      // Navigation
       function goToContractsList() {
         const target = BASE_URL + "?page=ContractsList";
         try {
@@ -208,35 +362,88 @@
         }
       }
 
-      function confirmContract() {
-        // TODO: Implement contract confirmation logic
-        alert("Contract confirmation - coming soon!");
+      // Switch between modes
+      function switchToMode(newMode) {
+        if (contractId) {
+          const target =
+            BASE_URL +
+            "?page=ContractGenerator&id=" +
+            contractId +
+            "&mode=" +
+            newMode;
+          window.location.href = target;
+        } else {
+          // For new contracts without ID, just update UI
+          mode = newMode;
+          updateUIForMode();
+        }
       }
 
-      window.addEventListener("DOMContentLoaded", function () {
-        // Set page title based on mode
+      // Update UI based on current mode
+      function updateUIForMode() {
         const titleEl = document.getElementById("page-title");
+
+        // Hide all button containers
+        document.getElementById("create-buttons").style.display = "none";
+        document.getElementById("view-buttons").style.display = "none";
+        document.getElementById("edit-buttons").style.display = "none";
+        document.getElementById("delete-buttons").style.display = "none";
+        document.getElementById("copy-buttons").style.display = "none";
+
         switch (mode) {
           case "create":
             titleEl.textContent = "Create Contract";
-            break;
-          case "edit":
-            titleEl.textContent = "Contract - Edit";
+            document.getElementById("create-buttons").style.display = "flex";
             break;
           case "view":
             titleEl.textContent = "Contract - View";
+            document.getElementById("view-buttons").style.display = "flex";
+            break;
+          case "edit":
+            titleEl.textContent = "Contract - Edit";
+            document.getElementById("edit-buttons").style.display = "flex";
             break;
           case "delete":
             titleEl.textContent = "Contract - Delete";
+            document.getElementById("delete-buttons").style.display = "flex";
             break;
           case "copy":
             titleEl.textContent = "Contract - Copy";
+            document.getElementById("copy-buttons").style.display = "flex";
             break;
           default:
             titleEl.textContent = "Create Contract";
+            document.getElementById("create-buttons").style.display = "flex";
+        }
+      }
+
+      // Action handlers (stubs for now)
+      function confirmContract() {
+        alert("Contract creation - coming soon!");
+      }
+
+      function saveContract() {
+        alert("Save changes - coming soon!");
+      }
+
+      function deleteContract() {
+        alert("Delete contract - coming soon!");
+      }
+
+      function copyContract() {
+        alert("Copy contract - coming soon!");
+      }
+
+      // Initialize on page load
+      window.addEventListener("DOMContentLoaded", function () {
+        updateUIForMode();
+
+        // If viewing/editing existing contract, load its data
+        if (contractId && mode !== "create") {
+          // TODO: Load contract data
+          // google.script.run.withSuccessHandler(fillContractData).getContractDataById(contractId);
         }
       });
     </script>
   </body>
 </html>
-
