@@ -806,12 +806,16 @@
 
         // Hide empty rows (where all columns are hidden)
         document
-          .querySelectorAll("#form-sections-after-template .row")
+          .querySelectorAll("#form-sections-after-template .row.mb-3")
           .forEach(function (row) {
-            const visibleCols = row.querySelectorAll(
-              '[class*="col-md"]:not([style*="display: none"])'
-            );
-            if (visibleCols.length === 0) {
+            const cols = row.querySelectorAll('[class*="col-md"]');
+            let hasVisibleCol = false;
+            cols.forEach(function (col) {
+              if (col.style.display !== "none") {
+                hasVisibleCol = true;
+              }
+            });
+            if (!hasVisibleCol) {
               row.style.display = "none";
             } else {
               row.style.display = "";
@@ -822,10 +826,14 @@
         document
           .querySelectorAll("#form-sections-after-template .form-section")
           .forEach(function (section) {
-            const visibleRows = section.querySelectorAll(
-              '.row:not([style*="display: none"])'
-            );
-            if (visibleRows.length === 0) {
+            const rows = section.querySelectorAll(".row.mb-3");
+            let hasVisibleRow = false;
+            rows.forEach(function (row) {
+              if (row.style.display !== "none") {
+                hasVisibleRow = true;
+              }
+            });
+            if (!hasVisibleRow) {
               section.style.display = "none";
               // Also hide the section title before it
               const title = section.previousElementSibling;
