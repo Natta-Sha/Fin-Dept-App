@@ -1510,7 +1510,7 @@ function getContractDropdownOptionsFromData() {
  * @param {string} serviceType
  * @returns {Array} Array of template objects {name, link}
  */
-function getContractTemplatesFromData(cooperationType, ourCompany, serviceType) {
+function getContractTemplatesFromData(cooperationType, ourCompany, serviceType, documentType) {
   try {
     const spreadsheet = SpreadsheetApp.openById(CONFIG.CONTRACTORS_SPREADSHEET_ID);
     const templatesSheet = spreadsheet.getSheetByName("Templates");
@@ -1523,26 +1523,29 @@ function getContractTemplatesFromData(cooperationType, ourCompany, serviceType) 
     const data = templatesSheet.getDataRange().getValues();
     const templates = [];
     
-    // Columns: A = Type of cooperation, B = Our company, C = Type of services, D = Template link
+    // Columns: A = Type of cooperation, B = Our company, C = Type of services, D = Document type, E = Template link
     for (let i = 1; i < data.length; i++) {
       const row = data[i];
       const rowCoopType = (row[0] || "").toString().trim();
       const rowCompany = (row[1] || "").toString().trim();
       const rowServiceType = (row[2] || "").toString().trim();
-      const templateLink = (row[3] || "").toString().trim();
+      const rowDocType = (row[3] || "").toString().trim();
+      const templateLink = (row[4] || "").toString().trim();
       
       // Filter by matching criteria (if provided)
       const matchCoop = !cooperationType || rowCoopType === cooperationType;
       const matchCompany = !ourCompany || rowCompany === ourCompany;
       const matchService = !serviceType || rowServiceType === serviceType;
+      const matchDocType = !documentType || rowDocType === documentType;
       
-      if (matchCoop && matchCompany && matchService && templateLink) {
+      if (matchCoop && matchCompany && matchService && matchDocType && templateLink) {
         templates.push({
           cooperationType: rowCoopType,
           ourCompany: rowCompany,
           serviceType: rowServiceType,
+          documentType: rowDocType,
           link: templateLink,
-          name: `${rowCoopType} - ${rowCompany} - ${rowServiceType}`,
+          name: `${rowCoopType} - ${rowCompany} - ${rowServiceType} - ${rowDocType}`,
         });
       }
     }

@@ -1242,12 +1242,13 @@
           document.getElementById("cooperationType").value;
         const ourCompany = document.getElementById("ourCompany").value;
         const serviceType = document.getElementById("serviceType").value;
+        const documentType = document.getElementById("documentType").value;
 
         const statusText = document.getElementById("contractTemplateStatus");
         const linkBtn = document.getElementById("contractTemplateLinkBtn");
 
         // Clear if not all fields are selected
-        if (!cooperationType || !ourCompany || !serviceType) {
+        if (!cooperationType || !ourCompany || !serviceType || !documentType) {
           statusText.textContent = "Select all fields above...";
           statusText.className = "text-muted";
           linkBtn.style.display = "none";
@@ -1300,7 +1301,12 @@
               "form-sections-after-template"
             ).style.display = "none";
           })
-          .getContractTemplates(cooperationType, ourCompany, serviceType);
+          .getContractTemplates(
+            cooperationType,
+            ourCompany,
+            serviceType,
+            documentType
+          );
       }
 
       // Action handlers (stubs for now)
@@ -1355,7 +1361,12 @@
         folderLinkInput.addEventListener("blur", validateFolderLink);
 
         // Add listeners for template auto-loading
-        ["cooperationType", "ourCompany", "serviceType"].forEach((id) => {
+        [
+          "cooperationType",
+          "ourCompany",
+          "serviceType",
+          "documentType",
+        ].forEach((id) => {
           const el = document.getElementById(id);
           if (el) {
             el.addEventListener("change", loadContractTemplates);

@@ -163,8 +163,18 @@ function getContractDropdownOptions() {
  * @param {string} serviceType
  * @returns {Array} Array of templates
  */
-function getContractTemplates(cooperationType, ourCompany, serviceType) {
-  return getContractTemplatesFromData(cooperationType, ourCompany, serviceType);
+function getContractTemplates(
+  cooperationType,
+  ourCompany,
+  serviceType,
+  documentType
+) {
+  return getContractTemplatesFromData(
+    cooperationType,
+    ourCompany,
+    serviceType,
+    documentType
+  );
 }
 
 // Error handling and performance monitoring removed for cleaner code
