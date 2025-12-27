@@ -1641,18 +1641,26 @@ function getContractDataByIdFromData(id) {
       return null;
     }
 
-    const spreadsheet = getSpreadsheet(CONFIG.SPREADSHEET_ID);
-    const sheet = getSheet(spreadsheet, CONFIG.SHEETS.CONTRACTS);
+    const spreadsheet = SpreadsheetApp.openById(CONFIG.CONTRACTORS_SPREADSHEET_ID);
+    const sheet = spreadsheet.getSheetByName("Contracts");
+    
+    if (!sheet) {
+      console.log("Contracts sheet not found");
+      return null;
+    }
+    
     const data = sheet.getDataRange().getValues();
     const headers = data[0];
-    const indexMap = headers.reduce((acc, h, i) => {
-      acc[h] = i;
-      return acc;
-    }, {});
+    const indexMap = {};
+    headers.forEach((header, index) => {
+      if (header) {
+        indexMap[header.toString().trim()] = index;
+      }
+    });
 
     let row = null;
     for (let i = 1; i < data.length; i++) {
-      const rowId = data[i][indexMap["ID"]];
+      const rowId = data[i][0]; // Column A = ID
       if (rowId == id || rowId === id || rowId.toString() === id.toString()) {
         row = data[i];
         break;
@@ -1660,20 +1668,58 @@ function getContractDataByIdFromData(id) {
     }
 
     if (!row) {
-      console.log(`Contract with ID ${id} not found.`);
+      console.log("Contract with ID " + id + " not found.");
       return null;
     }
 
+    // Format date for input field (YYYY-MM-DD)
+    function formatDateForInput(dateVal) {
+      if (!dateVal) return "";
+      if (dateVal instanceof Date) {
+        return Utilities.formatDate(dateVal, Session.getScriptTimeZone(), "yyyy-MM-dd");
+      }
+      // Try to parse DD-MM-YYYY format
+      const match = String(dateVal).match(/^(\d{2})-(\d{2})-(\d{4})$/);
+      if (match) {
+        return match[3] + "-" + match[2] + "-" + match[1];
+      }
+      return String(dateVal);
+    }
+
     return {
-      id: row[indexMap["ID"]] || "",
-      folderLink: row[indexMap["Folder Link"]] || "",
-      contractorName: row[indexMap["Contractor Name"]] || "",
-      ourCompany: row[indexMap["Our Company"]] || "",
-      serviceType: row[indexMap["Service Type"]] || "",
-      cooperationType: row[indexMap["Cooperation Type"]] || "",
-      contractNumber: row[indexMap["Contract Number"]] || "",
-      contractDate: formatDateForInputFromUtils(row[indexMap["Contract Date"]]),
-      templateLink: row[indexMap["Template Link"]] || "",
+      id: row[0] || "",
+      documentLink: row[1] || "",
+      folderLink: row[indexMap["Ссылка на папку с договором"]] || "",
+      contractorName: row[indexMap["Название контрактора"]] || "",
+      pe: row[indexMap["ФОП"]] || "",
+      ourCompany: row[indexMap["Наша компания"]] || "",
+      serviceType: row[indexMap["Вид услуг"]] || "",
+      cooperationType: row[indexMap["Вид сотрудничества"]] || "",
+      documentType: row[indexMap["Вид документа"]] || "",
+      contractNumber: row[indexMap["№ договора"]] || "",
+      contractDate: formatDateForInput(row[indexMap["Дата договора"]]),
+      probationPeriod: row[indexMap["Срок ИС"]] || "",
+      terminationDate: formatDateForInput(row[indexMap["Дата окончания договора"]]),
+      registrationNumber: row[indexMap["№ гос.регистрации"]] || "",
+      registrationDate: formatDateForInput(row[indexMap["Дата гос.регистрации"]]),
+      contractorId: row[indexMap["Номер контрактора"]] || "",
+      contractorVatId: row[indexMap["Номер НДС контрактора"]] || "",
+      contractorJurisdiction: row[indexMap["Юрисдикция контрактора"]] || "",
+      contractorAddress: row[indexMap["Адрес контрактора"]] || "",
+      bankAccountUAH: row[indexMap["Счет (грн)"]] || "",
+      bankAccountUSD: row[indexMap["Счет (долл)"]] || "",
+      bankAccountEUR: row[indexMap["Счет (евро)"]] || "",
+      bankName: row[indexMap["Банк"]] || "",
+      accountType: row[indexMap["Тип счета"]] || "",
+      bankCode: row[indexMap["Код банка"]] || "",
+      contractorEmail: row[indexMap["Эл.почта"]] || "",
+      contractorRole: row[indexMap["Роль контрактора"]] || "",
+      contractorRate: row[indexMap["Рейт контрактора"]] || "",
+      currencyOfRate: row[indexMap["Валюта рейта"]] || "",
+      attachmentNumber: row[indexMap["Номер приложения"]] || "",
+      sowStartDateRequired: row[indexMap["Дата старта термин"]] || "",
+      sowStartDate: formatDateForInput(row[indexMap["Дата старта"]]),
+      templateLink: row[indexMap["Шаблон договора"]] || "",
     };
   } catch (error) {
     console.error("Error getting contract data by ID:", error);

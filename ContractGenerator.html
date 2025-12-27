@@ -1747,6 +1747,10 @@
           data.terminationDate || "";
         document.getElementById("sowStartDate").value = data.sowStartDate || "";
 
+        // Set additional text fields
+        document.getElementById("attachmentNumber").value =
+          data.attachmentNumber || "";
+
         // Set select fields (after dropdowns are populated)
         setTimeout(function () {
           document.getElementById("pe").value = data.pe || "";
@@ -1754,17 +1758,36 @@
           document.getElementById("serviceType").value = data.serviceType || "";
           document.getElementById("cooperationType").value =
             data.cooperationType || "";
+          document.getElementById("documentType").value =
+            data.documentType || "";
           document.getElementById("accountType").value = data.accountType || "";
+          document.getElementById("currencyOfRate").value =
+            data.currencyOfRate || "";
           document.getElementById("sowStartDateRequired").value =
             data.sowStartDateRequired || "";
 
-          // Load templates after setting dropdowns
-          loadContractTemplates();
+          // Show form sections
+          document.getElementById(
+            "form-sections-after-template"
+          ).style.display = "block";
 
-          // Template will be auto-loaded based on selected values
-          setTimeout(function () {
-            loadContractTemplates();
-          }, 500);
+          // Apply field visibility based on selection
+          applyFieldVisibility();
+
+          // Update UI for current mode
+          updateUIForMode();
+
+          // Set template link if available
+          if (data.templateLink) {
+            const statusText = document.getElementById(
+              "contractTemplateStatus"
+            );
+            const linkBtn = document.getElementById("contractTemplateLinkBtn");
+            statusText.textContent = "Template loaded ✓";
+            statusText.className = "text-success";
+            linkBtn.href = data.templateLink.replace(/\/edit.*$/, "/preview");
+            linkBtn.style.display = "inline-block";
+          }
         }, 300);
       }
     </script>
