@@ -1206,6 +1206,9 @@
 
             // Currency dropdown (column F)
             fillDropdown("currencyOfRate", options.currencies);
+
+            // Document type dropdown (column G)
+            fillDropdown("documentType", options.documentTypes);
           })
           .withFailureHandler(function (error) {
             console.error("Error loading dropdown options:", error);
