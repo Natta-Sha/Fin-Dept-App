@@ -177,6 +177,15 @@ function getContractTemplates(
   );
 }
 
+/**
+ * Save a new contract
+ * @param {Object} formData - Form data from the contract generator
+ * @returns {Object} Result with success status and contract ID
+ */
+function saveContract(formData) {
+  return saveContractToData(formData);
+}
+
 // Error handling and performance monitoring removed for cleaner code
 
 // Performance monitoring removed for cleaner code

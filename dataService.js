@@ -1669,3 +1669,107 @@ function getContractDataByIdFromData(id) {
     return null;
   }
 }
+
+/**
+ * Field mapping: form field ID -> sheet column name
+ */
+const CONTRACT_FIELD_MAPPING = {
+  folderLink: "Ссылка на папку с дого",
+  contractorName: "Название контрактора",
+  pe: "ФОП",
+  ourCompany: "Наша компания",
+  serviceType: "Вид услуг",
+  cooperationType: "Вид сотрудничества",
+  documentType: "Вид документа",
+  contractNumber: "№ договора",
+  contractDate: "Дата договора",
+  probationPeriod: "Срок ИС",
+  terminationDate: "Дата окончания договора",
+  registrationNumber: "№ гос.регистрации",
+  registrationDate: "Дата гос.регистрации",
+  contractorId: "Номер контрактора",
+  contractorVatId: "Номер НДС контрактора",
+  contractorJurisdiction: "Юрисдикция контрактора",
+  contractorAddress: "Адрес контрактора",
+  bankAccountUAH: "Счет (грн)",
+  bankAccountUSD: "Счет (долл)",
+  bankAccountEUR: "Счет (евро)",
+  bankName: "Банк",
+  accountType: "Тип счета",
+  bankCode: "Код банка",
+  contractorEmail: "Эл.почта",
+  contractorRole: "Роль контрактора",
+  contractorRate: "Рейт контрактора",
+  currencyOfRate: "Валюта рейта",
+  attachmentNumber: "Номер приложения",
+  sowStartDateRequired: "Дата старта термин",
+  sowStartDate: "Дата старта",
+  templateLink: "Шаблон договора",
+};
+
+/**
+ * Save a new contract to the Contracts sheet
+ * @param {Object} formData - Object with form field values
+ * @returns {Object} Result with success status and contract ID
+ */
+function saveContractToData(formData) {
+  try {
+    const spreadsheet = SpreadsheetApp.openById(CONFIG.CONTRACTORS_SPREADSHEET_ID);
+    const sheet = spreadsheet.getSheetByName("Contracts");
+    
+    if (!sheet) {
+      throw new Error("Contracts sheet not found");
+    }
+    
+    // Get headers from first row
+    const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
+    
+    // Build column index map: column name -> column index (0-based)
+    const columnMap = {};
+    headers.forEach((header, index) => {
+      if (header) {
+        columnMap[header.toString().trim()] = index;
+      }
+    });
+    
+    // Generate unique ID
+    const contractId = Utilities.getUuid();
+    
+    // Prepare row data array (fill with empty strings)
+    const rowData = new Array(headers.length).fill("");
+    
+    // Column A (index 0) = ID
+    rowData[0] = contractId;
+    
+    // Column B (index 1) = empty (for document link later)
+    rowData[1] = "";
+    
+    // Map form data to columns using the mapping
+    Object.keys(formData).forEach(function(fieldId) {
+      const columnName = CONTRACT_FIELD_MAPPING[fieldId];
+      if (columnName && columnMap.hasOwnProperty(columnName)) {
+        const colIndex = columnMap[columnName];
+        rowData[colIndex] = formData[fieldId] || "";
+      }
+    });
+    
+    // Append the row to the sheet
+    sheet.appendRow(rowData);
+    
+    console.log("Contract saved successfully with ID:", contractId);
+    
+    return {
+      success: true,
+      id: contractId,
+      message: "Contract saved successfully"
+    };
+    
+  } catch (error) {
+    console.error("Error saving contract:", error);
+    return {
+      success: false,
+      id: null,
+      message: "Error saving contract: " + error.toString()
+    };
+  }
+}

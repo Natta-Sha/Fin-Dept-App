@@ -1401,12 +1401,93 @@
           );
       }
 
-      // Action handlers (stubs for now)
+      // Action handlers
       function confirmContract() {
-        alert("Contract creation - coming soon!");
+        // Validate form
+        const form = document.getElementById("contractForm");
+        if (!form.checkValidity()) {
+          form.reportValidity();
+          return;
+        }
+
+        // Collect form data
+        const formData = {
+          folderLink: document.getElementById("folderLink").value,
+          contractorName: document.getElementById("contractorName").value,
+          pe: document.getElementById("pe").value,
+          ourCompany: document.getElementById("ourCompany").value,
+          serviceType: document.getElementById("serviceType").value,
+          cooperationType: document.getElementById("cooperationType").value,
+          documentType: document.getElementById("documentType").value,
+          contractNumber: document.getElementById("contractNumber").value,
+          contractDate: document.getElementById("contractDate").value,
+          probationPeriod: document.getElementById("probationPeriod").value,
+          terminationDate: document.getElementById("terminationDate").value,
+          registrationNumber:
+            document.getElementById("registrationNumber").value,
+          registrationDate: document.getElementById("registrationDate").value,
+          contractorId: document.getElementById("contractorId").value,
+          contractorVatId: document.getElementById("contractorVatId").value,
+          contractorJurisdiction: document.getElementById(
+            "contractorJurisdiction"
+          ).value,
+          contractorAddress: document.getElementById("contractorAddress").value,
+          bankAccountUAH: document.getElementById("bankAccountUAH").value,
+          bankAccountUSD: document.getElementById("bankAccountUSD").value,
+          bankAccountEUR: document.getElementById("bankAccountEUR").value,
+          bankName: document.getElementById("bankName").value,
+          accountType: document.getElementById("accountType").value,
+          bankCode: document.getElementById("bankCode").value,
+          contractorEmail: document.getElementById("contractorEmail").value,
+          contractorRole: document.getElementById("contractorRole").value,
+          contractorRate: document.getElementById("contractorRate").value,
+          currencyOfRate: document.getElementById("currencyOfRate").value,
+          attachmentNumber: document.getElementById("attachmentNumber").value,
+          sowStartDateRequired: document.getElementById("sowStartDateRequired")
+            .value,
+          sowStartDate: document.getElementById("sowStartDate").value,
+          templateLink:
+            document.getElementById("contractTemplateLinkBtn").href || "",
+        };
+
+        // Disable button and show loading
+        const confirmBtn = document.querySelector(
+          '#create-buttons button[onclick="confirmContract()"]'
+        );
+        if (confirmBtn) {
+          confirmBtn.disabled = true;
+          confirmBtn.innerHTML =
+            '<i class="bi bi-hourglass-split"></i> Saving...';
+        }
+
+        // Save to backend
+        google.script.run
+          .withSuccessHandler(function (result) {
+            if (result.success) {
+              alert("Contract saved successfully!");
+              // Redirect to contracts list
+              window.location.href = "<?= baseUrl ?>?page=ContractsList";
+            } else {
+              alert("Error: " + result.message);
+              if (confirmBtn) {
+                confirmBtn.disabled = false;
+                confirmBtn.innerHTML =
+                  '<i class="bi bi-check-circle"></i> Confirm';
+              }
+            }
+          })
+          .withFailureHandler(function (error) {
+            alert("Error saving contract: " + error);
+            if (confirmBtn) {
+              confirmBtn.disabled = false;
+              confirmBtn.innerHTML =
+                '<i class="bi bi-check-circle"></i> Confirm';
+            }
+          })
+          .saveContract(formData);
       }
 
-      function saveContract() {
+      function saveContractChanges() {
         alert("Save changes - coming soon!");
       }
 

@@ -311,6 +311,8 @@
             <th>Cooperation Type</th>
             <th>Contract #</th>
             <th>Contract Date</th>
+            <th>Document Type</th>
+            <th>Attachment #</th>
             <th>Actions</th>
           </tr>
           <tr>
@@ -321,6 +323,8 @@
             <th><input type="text" placeholder="Search Cooperation" /></th>
             <th><input type="text" placeholder="Search #" /></th>
             <th><input type="text" placeholder="Search Date" /></th>
+            <th><input type="text" placeholder="Search Doc Type" /></th>
+            <th><input type="text" placeholder="Search Attach #" /></th>
             <th></th>
           </tr>
         </thead>
@@ -341,11 +345,11 @@
                 width: "50px",
               },
               {
-                targets: [1, 2, 3, 4, 5, 6],
+                targets: [1, 2, 3, 4, 5, 6, 7, 8],
                 className: "dt-body-left dt-head-center",
               },
               {
-                targets: 7, // Actions column
+                targets: 9, // Actions column
                 className: "dt-body-center dt-head-center",
                 orderable: false,
               },
@@ -386,6 +390,8 @@
                   row.cooperationType || "",
                   row.contractNumber || "",
                   row.contractDate || "",
+                  row.documentType || "",
+                  row.attachmentNumber || "",
                   `<a href="<?= baseUrl ?>?page=ContractGenerator&id=${row.id}&mode=view" class="btn btn-sm btn-outline-primary">Open details</a>`,
                 ]);
               });
