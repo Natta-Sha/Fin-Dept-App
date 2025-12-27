@@ -376,8 +376,17 @@
                 <span class="field-hint"></span>
                 <input type="date" id="terminationDate" class="form-control" />
               </div>
+            </div>
+            <div class="row mb-3">
               <div class="col-md-4">
-                <label class="form-label">Does SOW have Start date?</label>
+                <label class="form-label">Attachment number</label>
+                <span class="field-hint"></span>
+                <input type="text" id="attachmentNumber" class="form-control" />
+              </div>
+              <div class="col-md-4">
+                <label class="form-label"
+                  >Does Attachment have Start date?</label
+                >
                 <span class="field-hint"></span>
                 <select id="sowStartDateRequired" class="form-select">
                   <option value="">Select...</option>
@@ -386,7 +395,7 @@
                 </select>
               </div>
               <div class="col-md-4">
-                <label class="form-label">SOW Start date</label>
+                <label class="form-label">Attachment Start date</label>
                 <span class="field-hint"></span>
                 <input type="date" id="sowStartDate" class="form-control" />
               </div>
@@ -709,7 +718,8 @@
 
       // ============================================
       // FIELD VISIBILITY CONFIGURATION
-      // Key format: "cooperationType|ourCompany"
+      // Key format: "cooperationType|ourCompany" or "cooperationType|ourCompany|documentType"
+      // Search order: 3 params -> 2 params -> _default
       // Each field can be: { visible: true/false, required: true/false }
       // Fields not listed default to: { visible: true, required: false }
       // ============================================
@@ -718,6 +728,7 @@
         "In-house|Accountant": {
           // Contractor Information
           folderLink: { visible: true, required: true },
+          attachmentNumber: { visible: false, required: false },
           contractorName: { visible: true, required: true },
           pe: { visible: true, required: true },
           contractorId: { visible: true, required: true },
@@ -751,6 +762,7 @@
         "In-house|Sloboda Software Gmbh": {
           // Contractor Information
           folderLink: { visible: true, required: true },
+          attachmentNumber: { visible: false, required: false },
           contractorName: { visible: true, required: true },
           pe: { visible: true, required: true },
           contractorId: { visible: true, required: true },
@@ -780,10 +792,79 @@
           bankCode: { visible: true, required: true },
         },
 
+        // Freelance | Sloboda Software Gmbh | Attachment - new role/rate (all fields visible)
+        "Freelance|Sloboda Software Gmbh|Attachment - new role/rate": {
+          // Contractor Information
+          folderLink: { visible: true, required: true },
+          attachmentNumber: { visible: true, required: true },
+          contractorName: { visible: true, required: true },
+          pe: { visible: true, required: false },
+          contractorId: { visible: true, required: true },
+          contractorVatId: { visible: true, required: true },
+          contractorJurisdiction: { visible: true, required: true },
+          contractorAddress: { visible: true, required: true },
+          registrationNumber: { visible: true, required: false },
+          registrationDate: { visible: true, required: false },
+          contractorEmail: { visible: true, required: false },
+          // Contract Details
+          contractNumber: { visible: true, required: true },
+          contractDate: { visible: true, required: true },
+          probationPeriod: { visible: true, required: false },
+          terminationDate: { visible: true, required: false },
+          sowStartDateRequired: { visible: true, required: false },
+          sowStartDate: { visible: true, required: false },
+          // Work Conditions
+          contractorRole: { visible: true, required: true },
+          contractorRate: { visible: true, required: true },
+          currencyOfRate: { visible: true, required: true },
+          // Bank Details
+          bankAccountUAH: { visible: true, required: false },
+          bankAccountUSD: { visible: true, required: true },
+          bankAccountEUR: { visible: true, required: true },
+          bankName: { visible: true, required: true },
+          accountType: { visible: true, required: false },
+          bankCode: { visible: true, required: false },
+        },
+
+        // Partner | Sloboda Software Gmbh | Attachment - new role/rate (all fields visible)
+        "Partner|Sloboda Software Gmbh|Attachment - new role/rate": {
+          // Contractor Information
+          folderLink: { visible: true, required: true },
+          attachmentNumber: { visible: true, required: true },
+          contractorName: { visible: true, required: true },
+          pe: { visible: true, required: false },
+          contractorId: { visible: true, required: true },
+          contractorVatId: { visible: true, required: true },
+          contractorJurisdiction: { visible: true, required: true },
+          contractorAddress: { visible: true, required: true },
+          registrationNumber: { visible: true, required: false },
+          registrationDate: { visible: true, required: false },
+          contractorEmail: { visible: true, required: false },
+          // Contract Details
+          contractNumber: { visible: true, required: true },
+          contractDate: { visible: true, required: true },
+          probationPeriod: { visible: true, required: false },
+          terminationDate: { visible: true, required: false },
+          sowStartDateRequired: { visible: true, required: false },
+          sowStartDate: { visible: true, required: false },
+          // Work Conditions
+          contractorRole: { visible: true, required: true },
+          contractorRate: { visible: true, required: true },
+          currencyOfRate: { visible: true, required: true },
+          // Bank Details
+          bankAccountUAH: { visible: true, required: false },
+          bankAccountUSD: { visible: true, required: true },
+          bankAccountEUR: { visible: true, required: true },
+          bankName: { visible: true, required: true },
+          accountType: { visible: true, required: false },
+          bankCode: { visible: true, required: false },
+        },
+
         // Freelance | Sloboda Software Gmbh
         "Freelance|Sloboda Software Gmbh": {
           // Contractor Information
           folderLink: { visible: true, required: true },
+          attachmentNumber: { visible: false, required: false },
           contractorName: { visible: true, required: true },
           pe: { visible: true, required: false },
           contractorId: { visible: true, required: true },
@@ -817,6 +898,7 @@
         "Partner|Sloboda Software Gmbh": {
           // Contractor Information
           folderLink: { visible: true, required: true },
+          attachmentNumber: { visible: false, required: false },
           contractorName: { visible: true, required: true },
           pe: { visible: true, required: false },
           contractorId: { visible: true, required: true },
@@ -850,6 +932,7 @@
         "Freelance|Sloboda Soft LLC": {
           // Contractor Information
           folderLink: { visible: true, required: true },
+          attachmentNumber: { visible: false, required: false },
           contractorName: { visible: true, required: true },
           pe: { visible: true, required: false },
           contractorId: { visible: true, required: true },
@@ -883,6 +966,7 @@
         "Partner|Sloboda Soft LLC": {
           // Contractor Information
           folderLink: { visible: true, required: true },
+          attachmentNumber: { visible: false, required: false },
           contractorName: { visible: true, required: true },
           pe: { visible: true, required: false },
           contractorId: { visible: true, required: true },
@@ -916,6 +1000,7 @@
         "In-house|Слобода Софт ТОВ": {
           // Contractor Information
           folderLink: { visible: true, required: true },
+          attachmentNumber: { visible: false, required: false },
           contractorName: { visible: true, required: true },
           pe: { visible: true, required: true },
           contractorId: { visible: true, required: true },
@@ -948,6 +1033,7 @@
         // Default configuration (all fields visible, original required settings)
         _default: {
           folderLink: { visible: true, required: false },
+          attachmentNumber: { visible: true, required: false },
           contractorName: { visible: true, required: true },
           pe: { visible: true, required: false },
           contractorId: { visible: true, required: true },
@@ -981,10 +1067,16 @@
           document.getElementById("cooperationType").value;
         const ourCompany = document.getElementById("ourCompany").value;
         const serviceType = document.getElementById("serviceType").value;
+        const documentType = document.getElementById("documentType").value;
 
-        // Get config by cooperationType + ourCompany
-        const configKey = cooperationType + "|" + ourCompany;
-        const config = FIELD_CONFIG[configKey] || FIELD_CONFIG["_default"];
+        // Get config: first try 3 params (with docType), then 2 params, then default
+        const configKey3 =
+          cooperationType + "|" + ourCompany + "|" + documentType;
+        const configKey2 = cooperationType + "|" + ourCompany;
+        const config =
+          FIELD_CONFIG[configKey3] ||
+          FIELD_CONFIG[configKey2] ||
+          FIELD_CONFIG["_default"];
 
         // Apply visibility and required for each field
         Object.keys(config).forEach(function (fieldId) {
