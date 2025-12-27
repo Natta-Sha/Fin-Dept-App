@@ -359,22 +359,18 @@
                 >Auto-selected based on company, services, and cooperation
                 type</span
               >
-              <div class="input-group">
-                <input
-                  type="text"
-                  id="contractTemplateLink"
-                  class="form-control"
-                  readonly
-                  placeholder="Select all fields above..."
-                />
+              <div>
+                <span id="contractTemplateStatus" class="text-muted"
+                  >Select all fields above...</span
+                >
                 <a
                   id="contractTemplateLinkBtn"
-                  class="btn btn-outline-primary"
+                  class="btn btn-outline-primary btn-sm ms-2"
                   href="#"
                   target="_blank"
                   style="display: none"
                 >
-                  <i class="bi bi-box-arrow-up-right"></i> Open
+                  <i class="bi bi-box-arrow-up-right"></i> Open template
                 </a>
               </div>
             </div>
@@ -832,33 +828,45 @@
         const ourCompany = document.getElementById("ourCompany").value;
         const serviceType = document.getElementById("serviceType").value;
 
-        const linkField = document.getElementById("contractTemplateLink");
+        const statusText = document.getElementById("contractTemplateStatus");
         const linkBtn = document.getElementById("contractTemplateLinkBtn");
 
         // Clear if not all fields are selected
         if (!cooperationType || !ourCompany || !serviceType) {
-          linkField.value = "";
+          statusText.textContent = "Select all fields above...";
+          statusText.className = "text-muted";
           linkBtn.style.display = "none";
           linkBtn.href = "#";
           return;
         }
 
+        statusText.textContent = "Loading...";
+        statusText.className = "text-muted";
+
         google.script.run
           .withSuccessHandler(function (templates) {
             if (templates && templates.length > 0) {
-              // Use first matching template - show link
-              linkField.value = templates[0].link;
-              linkBtn.href = templates[0].link;
-              linkBtn.style.display = "flex";
+              // Use first matching template - show button
+              statusText.textContent = "Template found ✓";
+              statusText.className = "text-success";
+              // Open in preview mode to prevent editing
+              var previewLink = templates[0].link.replace(
+                /\/edit.*$/,
+                "/preview"
+              );
+              linkBtn.href = previewLink;
+              linkBtn.style.display = "inline-block";
             } else {
-              linkField.value = "No template found";
+              statusText.textContent = "No template found";
+              statusText.className = "text-danger";
               linkBtn.style.display = "none";
               linkBtn.href = "#";
             }
           })
           .withFailureHandler(function (error) {
             console.error("Error loading templates:", error);
-            linkField.value = "Error loading template";
+            statusText.textContent = "Error loading template";
+            statusText.className = "text-danger";
             linkBtn.style.display = "none";
             linkBtn.href = "#";
           })
