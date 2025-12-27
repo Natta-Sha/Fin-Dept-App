@@ -93,7 +93,6 @@
       /* Table fits on one screen */
       #contractsTable_wrapper {
         padding: 0;
-        margin: 0 -5px;
       }
 
       /* Primary buttons (главные действия) */
@@ -354,18 +353,23 @@
     <?!= getNavigation(activePage) ?>
 
     <!-- Main Content -->
-    <div class="main-content container-fluid px-2">
-      <div class="mb-3 d-flex justify-content-start">
-        <a
-          href="<?= baseUrl ?>?page=ContractGenerator&mode=create"
-          class="btn btn-nav"
-        >
-          Create new
-        </a>
+    <div class="main-content">
+      <!-- Header section with normal padding -->
+      <div class="container-xl">
+        <div class="mb-3 d-flex justify-content-start">
+          <a
+            href="<?= baseUrl ?>?page=ContractGenerator&mode=create"
+            class="btn btn-nav"
+          >
+            Create new
+          </a>
+        </div>
+
+        <h2 class="mb-4">List of Contracts</h2>
       </div>
-
-      <h2 class="mb-4">List of Contracts</h2>
-
+      
+      <!-- Table section with minimal padding -->
+      <div class="px-2">
       <table
         id="contractsTable"
         class="display table table-bordered"
@@ -476,6 +480,8 @@
             .getContractList();
         });
       </script>
+      </div>
+      <!-- Close table section -->
     </div>
     <!-- Close main-content -->
 
