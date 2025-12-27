@@ -1575,19 +1575,6 @@
                   <div class="alert alert-success" role="alert">
                     <i class="bi bi-check-circle-fill me-2"></i>
                     Contract saved successfully!
-              `;
-
-              // Add document link if available
-              if (result.documentUrl) {
-                successHtml += `
-                    <br><br>
-                    <a href="${result.documentUrl}" target="_blank" class="alert-link">
-                      <i class="bi bi-file-earmark-text me-1"></i>Open created document
-                    </a>
-                `;
-              }
-
-              successHtml += `
                   </div>
                   <div class="d-flex gap-2">
               `;
