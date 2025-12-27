@@ -1378,6 +1378,11 @@
 
       // Load contract templates based on selected criteria
       function loadContractTemplates() {
+        // Skip template loading in view/edit/delete modes - template is loaded from DB
+        if (mode === "view" || mode === "edit" || mode === "delete") {
+          return;
+        }
+
         const cooperationType =
           document.getElementById("cooperationType").value;
         const ourCompany = document.getElementById("ourCompany").value;
@@ -1640,12 +1645,21 @@
         }
 
         // Hide the form and show loading message
-        document.getElementById("form-sections-after-template").style.display =
-          "none";
-        document.getElementById("initial-data-section").style.display = "none";
-        document.getElementById("view-buttons").style.display = "none";
-        document.getElementById("delete-buttons").style.display = "flex";
-        document.getElementById("delete-buttons").innerHTML = `
+        const formSections = document.getElementById(
+          "form-sections-after-template"
+        );
+        const initialData = document.getElementById("initial-data-section");
+        const viewBtns = document.getElementById("view-buttons");
+        const deleteBtns = document.getElementById("delete-buttons");
+
+        if (formSections) formSections.style.display = "none";
+        if (initialData) initialData.style.display = "none";
+        if (viewBtns) viewBtns.style.display = "none";
+        if (deleteBtns) deleteBtns.style.display = "flex";
+
+        // Show loading in the main content area
+        const mainContent = document.querySelector(".main-content");
+        mainContent.innerHTML = `
           <div class="col-12 text-center py-5">
             <div class="spinner-border text-primary" role="status">
               <span class="visually-hidden">Deleting...</span>
@@ -1659,8 +1673,8 @@
           .withSuccessHandler(function (result) {
             if (result.success) {
               // Show success message and back button
-              document.getElementById("delete-buttons").innerHTML = `
-                <div class="col-12 text-center py-5">
+              mainContent.innerHTML = `
+                <div class="text-center py-5">
                   <div class="alert alert-success d-inline-block" role="alert">
                     <i class="bi bi-check-circle-fill me-2"></i>
                     Contract deleted successfully!
@@ -1673,8 +1687,8 @@
                 </div>
               `;
             } else {
-              document.getElementById("delete-buttons").innerHTML = `
-                <div class="col-12 text-center py-5">
+              mainContent.innerHTML = `
+                <div class="text-center py-5">
                   <div class="alert alert-danger d-inline-block" role="alert">
                     <i class="bi bi-exclamation-circle-fill me-2"></i>
                     Error: ${result.message}
@@ -1689,8 +1703,8 @@
             }
           })
           .withFailureHandler(function (error) {
-            document.getElementById("delete-buttons").innerHTML = `
-              <div class="col-12 text-center py-5">
+            mainContent.innerHTML = `
+              <div class="text-center py-5">
                 <div class="alert alert-danger d-inline-block" role="alert">
                   <i class="bi bi-exclamation-circle-fill me-2"></i>
                   Error: ${error}
