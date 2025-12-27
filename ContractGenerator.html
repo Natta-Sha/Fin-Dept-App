@@ -151,6 +151,15 @@
         border: 1px solid #ced4da;
       }
 
+      /* Field hint styles */
+      .field-hint {
+        font-size: 0.8rem;
+        color: #6c757d;
+        font-style: italic;
+        font-weight: normal;
+        margin-left: 0.5rem;
+      }
+
       /* Validation styles */
       .form-control.is-invalid {
         border-color: #dc3545;
@@ -191,8 +200,7 @@
         <div class="form-section">
           <div class="row mb-3">
             <div class="col-md-6">
-              <label class="form-label">Link to the contractor's folder</label>
-              <small class="text-muted fst-italic d-block mb-1">The generated contract will be saved to this folder</small>
+              <label class="form-label">Link to the contractor's folder <span class="field-hint">— the generated contract will be saved here</span></label>
               <input type="text" id="folderLink" class="form-control" placeholder="https://drive.google.com/drive/folders/..." />
               <div class="invalid-feedback" id="folderLink-error">
                 Invalid format. Use Google Drive folder link: https://drive.google.com/drive/folders/...
