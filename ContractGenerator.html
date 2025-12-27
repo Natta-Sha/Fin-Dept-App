@@ -67,80 +67,136 @@
       /* Primary buttons */
       .btn-primary,
       .btn-nav {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+        background: linear-gradient(
+          135deg,
+          #667eea 0%,
+          #764ba2 100%
+        ) !important;
         color: white !important;
       }
 
       .btn-primary:hover,
       .btn-nav:hover {
-        background: linear-gradient(135deg, #5a6fd8 0%, #6b4190 100%) !important;
+        background: linear-gradient(
+          135deg,
+          #5a6fd8 0%,
+          #6b4190 100%
+        ) !important;
         color: white !important;
       }
 
       /* Success buttons */
       .btn-success {
-        background: linear-gradient(135deg, #28a745 0%, #20692b 100%) !important;
+        background: linear-gradient(
+          135deg,
+          #28a745 0%,
+          #20692b 100%
+        ) !important;
         color: white !important;
       }
 
       .btn-success:hover {
-        background: linear-gradient(135deg, #218838 0%, #1e5e26 100%) !important;
+        background: linear-gradient(
+          135deg,
+          #218838 0%,
+          #1e5e26 100%
+        ) !important;
         color: white !important;
       }
 
       /* Danger buttons */
       .btn-danger {
-        background: linear-gradient(135deg, #dc3545 0%, #b02a37 100%) !important;
+        background: linear-gradient(
+          135deg,
+          #dc3545 0%,
+          #b02a37 100%
+        ) !important;
         color: white !important;
       }
 
       .btn-danger:hover {
-        background: linear-gradient(135deg, #c82333 0%, #9e2530 100%) !important;
+        background: linear-gradient(
+          135deg,
+          #c82333 0%,
+          #9e2530 100%
+        ) !important;
         color: white !important;
       }
 
       /* Outline buttons */
       .btn-outline-primary {
-        background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%) !important;
+        background: linear-gradient(
+          135deg,
+          rgba(102, 126, 234, 0.1) 0%,
+          rgba(118, 75, 162, 0.1) 100%
+        ) !important;
         color: #667eea !important;
         border: 2px solid #667eea !important;
       }
 
       .btn-outline-primary:hover {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+        background: linear-gradient(
+          135deg,
+          #667eea 0%,
+          #764ba2 100%
+        ) !important;
         color: white !important;
       }
 
       .btn-outline-secondary {
-        background: linear-gradient(135deg, rgba(108, 117, 125, 0.1) 0%, rgba(73, 80, 87, 0.1) 100%) !important;
+        background: linear-gradient(
+          135deg,
+          rgba(108, 117, 125, 0.1) 0%,
+          rgba(73, 80, 87, 0.1) 100%
+        ) !important;
         color: #6c757d !important;
         border: 2px solid #6c757d !important;
       }
 
       .btn-outline-secondary:hover {
-        background: linear-gradient(135deg, #6c757d 0%, #495057 100%) !important;
+        background: linear-gradient(
+          135deg,
+          #6c757d 0%,
+          #495057 100%
+        ) !important;
         color: white !important;
       }
 
       .btn-outline-danger {
-        background: linear-gradient(135deg, rgba(220, 53, 69, 0.1) 0%, rgba(176, 42, 55, 0.1) 100%) !important;
+        background: linear-gradient(
+          135deg,
+          rgba(220, 53, 69, 0.1) 0%,
+          rgba(176, 42, 55, 0.1) 100%
+        ) !important;
         color: #dc3545 !important;
         border: 2px solid #dc3545 !important;
       }
 
       .btn-outline-danger:hover {
-        background: linear-gradient(135deg, #dc3545 0%, #b02a37 100%) !important;
+        background: linear-gradient(
+          135deg,
+          #dc3545 0%,
+          #b02a37 100%
+        ) !important;
         color: white !important;
       }
 
       .btn-outline-success {
-        background: linear-gradient(135deg, rgba(40, 167, 69, 0.1) 0%, rgba(32, 105, 43, 0.1) 100%) !important;
+        background: linear-gradient(
+          135deg,
+          rgba(40, 167, 69, 0.1) 0%,
+          rgba(32, 105, 43, 0.1) 100%
+        ) !important;
         color: #28a745 !important;
         border: 2px solid #28a745 !important;
       }
 
       .btn-outline-success:hover {
-        background: linear-gradient(135deg, #28a745 0%, #20692b 100%) !important;
+        background: linear-gradient(
+          135deg,
+          #28a745 0%,
+          #20692b 100%
+        ) !important;
         color: white !important;
       }
 
@@ -205,37 +261,70 @@
 
       <!-- Contract Form -->
       <div id="contract-form">
-        
         <!-- Section 1: Contractor Information -->
-        <h5 class="section-title"><i class="bi bi-person-badge"></i> Contractor Information</h5>
+        <h5 class="section-title">
+          <i class="bi bi-person-badge"></i> Contractor Information
+        </h5>
         <div class="form-section">
           <div class="row mb-3">
             <div class="col-md-6">
               <label class="form-label">Link to the contractor's folder</label>
-              <span class="field-hint">The generated contract will be saved to this folder</span>
-              <input type="text" id="folderLink" class="form-control" placeholder="https://drive.google.com/drive/folders/..." />
+              <span class="field-hint"
+                >The generated contract will be saved to this folder</span
+              >
+              <input
+                type="text"
+                id="folderLink"
+                class="form-control"
+                placeholder="https://drive.google.com/drive/folders/..."
+              />
               <div class="invalid-feedback" id="folderLink-error">
-                Invalid format. Use Google Drive folder link: https://drive.google.com/drive/folders/...
+                Invalid format. Use Google Drive folder link:
+                https://drive.google.com/drive/folders/...
               </div>
             </div>
             <div class="col-md-6">
-              <label class="form-label">Contractor's name <span class="text-danger">*</span> <span class="field-required">Required</span></label>
-              <span class="field-hint">For PE — the full name. For the company — the company's name</span>
-              <input type="text" id="contractorName" class="form-control" required />
+              <label class="form-label"
+                >Contractor's name <span class="text-danger">*</span>
+                <span class="field-required">Required</span></label
+              >
+              <span class="field-hint"
+                >For PE — the full name. For the company — the company's
+                name</span
+              >
+              <input
+                type="text"
+                id="contractorName"
+                class="form-control"
+                required
+              />
             </div>
           </div>
           <div class="row mb-3">
             <div class="col-md-4">
               <label class="form-label">PE</label>
-              <span class="field-hint">For PE choose the correct language (PE or ФОП). For the company don't choose anything</span>
+              <span class="field-hint"
+                >PE: choose language (PE/ФОП). Company: leave empty</span
+              >
               <select id="pe" class="form-select">
                 <option value="">Select...</option>
               </select>
             </div>
             <div class="col-md-4">
-              <label class="form-label">Contractor's ID</label>
-              <span class="field-hint"></span>
-              <input type="text" id="contractorId" class="form-control" />
+              <label class="form-label"
+                >Contractor's ID <span class="text-danger">*</span>
+                <span class="field-required">Required</span></label
+              >
+              <span class="field-hint"
+                >PE: identification number. Company: company number. No number:
+                "-"</span
+              >
+              <input
+                type="text"
+                id="contractorId"
+                class="form-control"
+                required
+              />
             </div>
             <div class="col-md-4">
               <label class="form-label">Contractor's VAT ID</label>
@@ -247,7 +336,11 @@
             <div class="col-md-4">
               <label class="form-label">Contractor's jurisdiction</label>
               <span class="field-hint"></span>
-              <input type="text" id="contractorJurisdiction" class="form-control" />
+              <input
+                type="text"
+                id="contractorJurisdiction"
+                class="form-control"
+              />
             </div>
             <div class="col-md-8">
               <label class="form-label">Contractor's address</label>
@@ -275,25 +368,36 @@
         </div>
 
         <!-- Section 2: Contract Details -->
-        <h5 class="section-title"><i class="bi bi-file-earmark-text"></i> Contract Details</h5>
+        <h5 class="section-title">
+          <i class="bi bi-file-earmark-text"></i> Contract Details
+        </h5>
         <div class="form-section">
           <div class="row mb-3">
             <div class="col-md-4">
-              <label class="form-label">Our company <span class="text-danger">*</span> <span class="field-required">Required</span></label>
+              <label class="form-label"
+                >Our company <span class="text-danger">*</span>
+                <span class="field-required">Required</span></label
+              >
               <span class="field-hint"></span>
               <select id="ourCompany" class="form-select" required>
                 <option value="">Select...</option>
               </select>
             </div>
             <div class="col-md-4">
-              <label class="form-label">Type of services <span class="text-danger">*</span> <span class="field-required">Required</span></label>
+              <label class="form-label"
+                >Type of services <span class="text-danger">*</span>
+                <span class="field-required">Required</span></label
+              >
               <span class="field-hint"></span>
               <select id="serviceType" class="form-select" required>
                 <option value="">Select...</option>
               </select>
             </div>
             <div class="col-md-4">
-              <label class="form-label">Type of cooperation <span class="text-danger">*</span> <span class="field-required">Required</span></label>
+              <label class="form-label"
+                >Type of cooperation <span class="text-danger">*</span>
+                <span class="field-required">Required</span></label
+              >
               <span class="field-hint"></span>
               <select id="cooperationType" class="form-select" required>
                 <option value="">Select...</option>
@@ -302,14 +406,30 @@
           </div>
           <div class="row mb-3">
             <div class="col-md-4">
-              <label class="form-label">Contract's number <span class="text-danger">*</span> <span class="field-required">Required</span></label>
+              <label class="form-label"
+                >Contract's number <span class="text-danger">*</span>
+                <span class="field-required">Required</span></label
+              >
               <span class="field-hint"></span>
-              <input type="text" id="contractNumber" class="form-control" required />
+              <input
+                type="text"
+                id="contractNumber"
+                class="form-control"
+                required
+              />
             </div>
             <div class="col-md-4">
-              <label class="form-label">Contract's date <span class="text-danger">*</span> <span class="field-required">Required</span></label>
+              <label class="form-label"
+                >Contract's date <span class="text-danger">*</span>
+                <span class="field-required">Required</span></label
+              >
               <span class="field-hint"></span>
-              <input type="date" id="contractDate" class="form-control" required />
+              <input
+                type="date"
+                id="contractDate"
+                class="form-control"
+                required
+              />
             </div>
             <div class="col-md-4">
               <label class="form-label">Probation period</label>
@@ -350,7 +470,9 @@
         </div>
 
         <!-- Section 3: Work Conditions -->
-        <h5 class="section-title"><i class="bi bi-briefcase"></i> Work Conditions</h5>
+        <h5 class="section-title">
+          <i class="bi bi-briefcase"></i> Work Conditions
+        </h5>
         <div class="form-section">
           <div class="row mb-3">
             <div class="col-md-4">
@@ -361,12 +483,23 @@
             <div class="col-md-4">
               <label class="form-label">Contractor's rate</label>
               <span class="field-hint"></span>
-              <input type="number" id="contractorRate" class="form-control" step="0.01" min="0" />
+              <input
+                type="number"
+                id="contractorRate"
+                class="form-control"
+                step="0.01"
+                min="0"
+              />
             </div>
             <div class="col-md-4">
               <label class="form-label">Currency of rate</label>
               <span class="field-hint"></span>
-              <input type="text" id="currencyOfRate" class="form-control" placeholder="USD, EUR, UAH..." />
+              <input
+                type="text"
+                id="currencyOfRate"
+                class="form-control"
+                placeholder="USD, EUR, UAH..."
+              />
             </div>
           </div>
         </div>
@@ -416,10 +549,18 @@
       <!-- Create mode buttons -->
       <div id="create-buttons" class="row mt-4" style="display: none">
         <div class="col-md-12 d-flex justify-content-end gap-2">
-          <button id="confirm-btn" class="btn btn-success" onclick="confirmContract()">
+          <button
+            id="confirm-btn"
+            class="btn btn-success"
+            onclick="confirmContract()"
+          >
             Confirm
           </button>
-          <button id="cancel-btn" class="btn btn-outline-secondary" onclick="goToContractsList()">
+          <button
+            id="cancel-btn"
+            class="btn btn-outline-secondary"
+            onclick="goToContractsList()"
+          >
             Cancel
           </button>
         </div>
@@ -428,13 +569,22 @@
       <!-- View mode buttons -->
       <div id="view-buttons" class="row mt-4" style="display: none">
         <div class="col-md-12 d-flex justify-content-end gap-2">
-          <button class="btn btn-outline-secondary" onclick="switchToMode('edit')">
+          <button
+            class="btn btn-outline-secondary"
+            onclick="switchToMode('edit')"
+          >
             Edit
           </button>
-          <button class="btn btn-outline-danger" onclick="switchToMode('delete')">
+          <button
+            class="btn btn-outline-danger"
+            onclick="switchToMode('delete')"
+          >
             Delete
           </button>
-          <button class="btn btn-outline-success" onclick="switchToMode('copy')">
+          <button
+            class="btn btn-outline-success"
+            onclick="switchToMode('copy')"
+          >
             Copy
           </button>
           <button class="btn btn-outline-primary" onclick="goToContractsList()">
@@ -449,7 +599,10 @@
           <button class="btn btn-success" onclick="saveContract()">
             Save changes
           </button>
-          <button class="btn btn-outline-secondary" onclick="switchToMode('view')">
+          <button
+            class="btn btn-outline-secondary"
+            onclick="switchToMode('view')"
+          >
             Cancel
           </button>
         </div>
@@ -461,7 +614,10 @@
           <button class="btn btn-danger" onclick="deleteContract()">
             Confirm Delete
           </button>
-          <button class="btn btn-outline-secondary" onclick="switchToMode('view')">
+          <button
+            class="btn btn-outline-secondary"
+            onclick="switchToMode('view')"
+          >
             Cancel
           </button>
         </div>
@@ -473,7 +629,10 @@
           <button class="btn btn-success" onclick="copyContract()">
             Create Copy
           </button>
-          <button class="btn btn-outline-secondary" onclick="switchToMode('view')">
+          <button
+            class="btn btn-outline-secondary"
+            onclick="switchToMode('view')"
+          >
             Cancel
           </button>
         </div>
@@ -497,7 +656,12 @@
           window.location.href = target;
           return;
         } catch (e2) {}
-        if (google && google.script && google.script.host && google.script.host.close) {
+        if (
+          google &&
+          google.script &&
+          google.script.host &&
+          google.script.host.close
+        ) {
           google.script.host.close();
         }
       }
@@ -505,7 +669,12 @@
       // Switch between modes
       function switchToMode(newMode) {
         if (contractId) {
-          const target = BASE_URL + "?page=ContractGenerator&id=" + contractId + "&mode=" + newMode;
+          const target =
+            BASE_URL +
+            "?page=ContractGenerator&id=" +
+            contractId +
+            "&mode=" +
+            newMode;
           window.location.href = target;
         } else {
           mode = newMode;
@@ -521,10 +690,12 @@
         } else {
           formEl.classList.remove("view-mode");
         }
-        
-        document.querySelectorAll("#contract-form input, #contract-form select").forEach((el) => {
-          el.disabled = isReadonly;
-        });
+
+        document
+          .querySelectorAll("#contract-form input, #contract-form select")
+          .forEach((el) => {
+            el.disabled = isReadonly;
+          });
       }
 
       // Update UI based on current mode
@@ -577,16 +748,16 @@
           .withSuccessHandler(function (options) {
             // PE dropdown (column D)
             fillDropdown("pe", options.peOptions);
-            
+
             // Our company dropdown (column B)
             fillDropdown("ourCompany", options.ourCompanies);
-            
+
             // Type of services dropdown (column C)
             fillDropdown("serviceType", options.serviceTypes);
-            
+
             // Type of cooperation dropdown (column A)
             fillDropdown("cooperationType", options.cooperationTypes);
-            
+
             // Account type dropdown (column E)
             fillDropdown("accountType", options.accountTypes);
           })
@@ -595,16 +766,16 @@
           })
           .getContractDropdownOptions();
       }
-      
+
       function fillDropdown(elementId, options) {
         const select = document.getElementById(elementId);
         if (!select) return;
-        
+
         // Clear existing options except first
         while (select.options.length > 1) {
           select.remove(1);
         }
-        
+
         // Add new options
         if (options && options.length > 0) {
           options.forEach((opt) => {
@@ -615,20 +786,21 @@
           });
         }
       }
-      
+
       // Load contract templates based on selected criteria
       function loadContractTemplates() {
-        const cooperationType = document.getElementById("cooperationType").value;
+        const cooperationType =
+          document.getElementById("cooperationType").value;
         const ourCompany = document.getElementById("ourCompany").value;
         const serviceType = document.getElementById("serviceType").value;
-        
+
         google.script.run
           .withSuccessHandler(function (templates) {
             const select = document.getElementById("contractTemplate");
-            
+
             // Clear existing options
             select.innerHTML = '<option value="">Select template...</option>';
-            
+
             if (templates && templates.length > 0) {
               templates.forEach((tmpl) => {
                 const option = document.createElement("option");
@@ -665,16 +837,17 @@
       function validateFolderLink() {
         const input = document.getElementById("folderLink");
         const value = input.value.trim();
-        
+
         // Empty is allowed (field is optional)
         if (!value) {
           input.classList.remove("is-invalid");
           return true;
         }
-        
+
         // Check for Google Drive folder link pattern
-        const drivePattern = /^https:\/\/drive\.google\.com\/(drive\/folders\/|open\?id=|file\/d\/|folders\/)/i;
-        
+        const drivePattern =
+          /^https:\/\/drive\.google\.com\/(drive\/folders\/|open\?id=|file\/d\/|folders\/)/i;
+
         if (drivePattern.test(value)) {
           input.classList.remove("is-invalid");
           return true;
@@ -688,12 +861,12 @@
       window.addEventListener("DOMContentLoaded", function () {
         populateDropdowns();
         updateUIForMode();
-        
+
         // Add folder link validation on input
         const folderLinkInput = document.getElementById("folderLink");
         folderLinkInput.addEventListener("input", validateFolderLink);
         folderLinkInput.addEventListener("blur", validateFolderLink);
-        
+
         // Add listeners for template auto-loading
         ["cooperationType", "ourCompany", "serviceType"].forEach((id) => {
           const el = document.getElementById(id);
@@ -713,55 +886,74 @@
             .getContractDataById(contractId);
         }
       });
-      
+
       // Fill form with contract data
       function fillContractForm(data) {
         if (!data) {
           console.log("No contract data received");
           return;
         }
-        
+
         // Set text/url/email fields
         document.getElementById("folderLink").value = data.folderLink || "";
-        document.getElementById("contractorName").value = data.contractorName || "";
+        document.getElementById("contractorName").value =
+          data.contractorName || "";
         document.getElementById("contractorId").value = data.contractorId || "";
-        document.getElementById("contractorVatId").value = data.contractorVatId || "";
-        document.getElementById("contractorJurisdiction").value = data.contractorJurisdiction || "";
-        document.getElementById("contractorAddress").value = data.contractorAddress || "";
-        document.getElementById("registrationNumber").value = data.registrationNumber || "";
-        document.getElementById("contractorEmail").value = data.contractorEmail || "";
-        document.getElementById("contractNumber").value = data.contractNumber || "";
-        document.getElementById("contractorRole").value = data.contractorRole || "";
-        document.getElementById("contractorRate").value = data.contractorRate || "";
-        document.getElementById("currencyOfRate").value = data.currencyOfRate || "";
-        document.getElementById("bankAccountUAH").value = data.bankAccountUAH || "";
-        document.getElementById("bankAccountUSD").value = data.bankAccountUSD || "";
-        document.getElementById("bankAccountEUR").value = data.bankAccountEUR || "";
+        document.getElementById("contractorVatId").value =
+          data.contractorVatId || "";
+        document.getElementById("contractorJurisdiction").value =
+          data.contractorJurisdiction || "";
+        document.getElementById("contractorAddress").value =
+          data.contractorAddress || "";
+        document.getElementById("registrationNumber").value =
+          data.registrationNumber || "";
+        document.getElementById("contractorEmail").value =
+          data.contractorEmail || "";
+        document.getElementById("contractNumber").value =
+          data.contractNumber || "";
+        document.getElementById("contractorRole").value =
+          data.contractorRole || "";
+        document.getElementById("contractorRate").value =
+          data.contractorRate || "";
+        document.getElementById("currencyOfRate").value =
+          data.currencyOfRate || "";
+        document.getElementById("bankAccountUAH").value =
+          data.bankAccountUAH || "";
+        document.getElementById("bankAccountUSD").value =
+          data.bankAccountUSD || "";
+        document.getElementById("bankAccountEUR").value =
+          data.bankAccountEUR || "";
         document.getElementById("bankName").value = data.bankName || "";
         document.getElementById("bankCode").value = data.bankCode || "";
-        
+
         // Set date fields
-        document.getElementById("registrationDate").value = data.registrationDate || "";
+        document.getElementById("registrationDate").value =
+          data.registrationDate || "";
         document.getElementById("contractDate").value = data.contractDate || "";
-        document.getElementById("probationPeriod").value = data.probationPeriod || "";
-        document.getElementById("terminationDate").value = data.terminationDate || "";
+        document.getElementById("probationPeriod").value =
+          data.probationPeriod || "";
+        document.getElementById("terminationDate").value =
+          data.terminationDate || "";
         document.getElementById("sowStartDate").value = data.sowStartDate || "";
-        
+
         // Set select fields (after dropdowns are populated)
-        setTimeout(function() {
+        setTimeout(function () {
           document.getElementById("pe").value = data.pe || "";
           document.getElementById("ourCompany").value = data.ourCompany || "";
           document.getElementById("serviceType").value = data.serviceType || "";
-          document.getElementById("cooperationType").value = data.cooperationType || "";
+          document.getElementById("cooperationType").value =
+            data.cooperationType || "";
           document.getElementById("accountType").value = data.accountType || "";
-          document.getElementById("sowStartDateRequired").value = data.sowStartDateRequired || "";
-          
+          document.getElementById("sowStartDateRequired").value =
+            data.sowStartDateRequired || "";
+
           // Load templates after setting dropdowns
           loadContractTemplates();
-          
+
           // Set template value after templates are loaded
-          setTimeout(function() {
-            document.getElementById("contractTemplate").value = data.contractTemplate || "";
+          setTimeout(function () {
+            document.getElementById("contractTemplate").value =
+              data.contractTemplate || "";
           }, 500);
         }, 300);
       }
