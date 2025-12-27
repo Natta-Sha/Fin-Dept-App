@@ -2039,3 +2039,78 @@ function saveContractToData(formData) {
   }
 }
 
+/**
+ * Delete a contract by ID
+ * - Finds the row in the Contracts sheet
+ * - Deletes the generated document file if exists
+ * - Deletes the row from the sheet
+ * @param {string} id - Contract ID
+ * @returns {Object} Result with success status
+ */
+function deleteContractFromData(id) {
+  try {
+    if (!id || id.toString().trim() === "") {
+      return { success: false, message: "Invalid contract ID" };
+    }
+    
+    const spreadsheet = SpreadsheetApp.openById(CONFIG.CONTRACTORS_SPREADSHEET_ID);
+    const sheet = spreadsheet.getSheetByName("Contracts");
+    
+    if (!sheet) {
+      return { success: false, message: "Contracts sheet not found" };
+    }
+    
+    const data = sheet.getDataRange().getValues();
+    
+    // Find the row with matching ID (Column A)
+    let rowIndex = -1;
+    let documentLink = null;
+    
+    for (let i = 1; i < data.length; i++) {
+      const rowId = data[i][0];
+      if (rowId == id || rowId === id || rowId.toString() === id.toString()) {
+        rowIndex = i + 1; // Sheet rows are 1-indexed
+        documentLink = data[i][1]; // Column B = document link
+        break;
+      }
+    }
+    
+    if (rowIndex === -1) {
+      return { success: false, message: "Contract not found" };
+    }
+    
+    // Delete the generated document if it exists
+    if (documentLink) {
+      try {
+        const docIdMatch = documentLink.match(/\/d\/([a-zA-Z0-9_-]+)/);
+        if (docIdMatch && docIdMatch[1]) {
+          const docId = docIdMatch[1];
+          const file = DriveApp.getFileById(docId);
+          file.setTrashed(true); // Move to trash
+          console.log("Document moved to trash:", docId);
+        }
+      } catch (docError) {
+        console.warn("Could not delete document:", docError);
+        // Continue with row deletion even if document deletion fails
+      }
+    }
+    
+    // Delete the row from the sheet
+    sheet.deleteRow(rowIndex);
+    
+    console.log("Contract deleted successfully, ID:", id);
+    
+    return {
+      success: true,
+      message: "Contract deleted successfully"
+    };
+    
+  } catch (error) {
+    console.error("Error deleting contract:", error);
+    return {
+      success: false,
+      message: "Error deleting contract: " + error.toString()
+    };
+  }
+}
+

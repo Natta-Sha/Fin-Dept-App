@@ -72,6 +72,29 @@
         border-radius: 15px !important;
       }
 
+      /* Fix DataTables header - prevent arrow overlap */
+      #contractsTable th {
+        padding-right: 20px !important;
+        white-space: nowrap;
+      }
+      
+      #contractsTable th.sorting,
+      #contractsTable th.sorting_asc,
+      #contractsTable th.sorting_desc {
+        padding-right: 26px !important;
+      }
+      
+      /* Reduce left padding in table cells */
+      #contractsTable td,
+      #contractsTable th {
+        padding-left: 8px !important;
+      }
+      
+      /* Keep table wrapper with less margin */
+      #contractsTable_wrapper {
+        margin-left: -10px;
+      }
+
       /* Primary buttons (главные действия) */
       .btn-primary,
       .btn-nav {

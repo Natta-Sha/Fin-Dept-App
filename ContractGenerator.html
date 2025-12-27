@@ -1632,7 +1632,66 @@
       }
 
       function deleteContract() {
-        alert("Delete contract - coming soon!");
+        // Confirm deletion
+        if (
+          !confirm(
+            "Are you sure you want to delete this contract? This action cannot be undone."
+          )
+        ) {
+          return;
+        }
+
+        // Get contract ID from URL
+        const urlParams = new URLSearchParams(window.location.search);
+        const contractId = urlParams.get("id");
+
+        if (!contractId) {
+          alert("Contract ID not found");
+          return;
+        }
+
+        // Disable delete button and show loading
+        const deleteBtn = document.querySelector(
+          '#delete-buttons button[onclick="deleteContract()"]'
+        );
+        if (deleteBtn) {
+          deleteBtn.disabled = true;
+          deleteBtn.innerHTML =
+            '<i class="bi bi-hourglass-split"></i> Deleting...';
+        }
+
+        // Call backend to delete
+        google.script.run
+          .withSuccessHandler(function (result) {
+            if (result.success) {
+              // Show success and redirect to list
+              document.getElementById("delete-buttons").innerHTML = `
+                <div class="col-12">
+                  <div class="alert alert-success" role="alert">
+                    <i class="bi bi-check-circle-fill me-2"></i>
+                    Contract deleted successfully!
+                  </div>
+                  <button class="btn btn-primary px-4 fw-bold" onclick="safeNavigateToContractsList()">
+                    <i class="bi bi-arrow-left me-2"></i>Back to the list
+                  </button>
+                </div>
+              `;
+            } else {
+              alert("Error: " + result.message);
+              if (deleteBtn) {
+                deleteBtn.disabled = false;
+                deleteBtn.innerHTML = '<i class="bi bi-trash"></i> Delete';
+              }
+            }
+          })
+          .withFailureHandler(function (error) {
+            alert("Error deleting contract: " + error);
+            if (deleteBtn) {
+              deleteBtn.disabled = false;
+              deleteBtn.innerHTML = '<i class="bi bi-trash"></i> Delete';
+            }
+          })
+          .deleteContract(contractId);
       }
 
       function copyContract() {

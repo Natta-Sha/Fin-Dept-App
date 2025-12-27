@@ -186,6 +186,15 @@ function saveContract(formData) {
   return saveContractToData(formData);
 }
 
+/**
+ * Delete a contract by ID
+ * @param {string} id - Contract ID
+ * @returns {Object} Result with success status
+ */
+function deleteContract(id) {
+  return deleteContractFromData(id);
+}
+
 // Error handling and performance monitoring removed for cleaner code
 
 // Performance monitoring removed for cleaner code
