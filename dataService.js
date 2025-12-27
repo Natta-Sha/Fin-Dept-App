@@ -1708,6 +1708,160 @@ const CONTRACT_FIELD_MAPPING = {
 };
 
 /**
+ * Placeholder mapping: form field ID -> placeholder in template
+ */
+const CONTRACT_PLACEHOLDER_MAPPING = {
+  contractorName: "{Название контрактора}",
+  pe: "{ФОП}",
+  ourCompany: "{Наша компания}",
+  serviceType: "{Вид услуг}",
+  cooperationType: "{Вид сотрудничества}",
+  contractNumber: "{№ договора}",
+  contractDate: "{Дата договора}",
+  probationPeriod: "{Срок ИС}",
+  terminationDate: "{Дата окончания договора}",
+  registrationNumber: "{№ гос.регистрации}",
+  registrationDate: "{Дата гос.регистрации}",
+  contractorId: "{Номер контрактора}",
+  contractorVatId: "{Номер НДС контрактора}",
+  contractorJurisdiction: "{Юрисдикция контрактора}",
+  contractorAddress: "{Адрес контрактора}",
+  bankAccountUAH: "{Счет грн}",
+  bankAccountUSD: "{Счет долл}",
+  bankAccountEUR: "{Счет евро}",
+  bankName: "{Банк}",
+  accountType: "{Тип счета}",
+  bankCode: "{Код банка}",
+  contractorEmail: "{Эл.почта}",
+  contractorRole: "{Роль контрактора}",
+  contractorRate: "{Рейт контрактора}",
+  currencyOfRate: "{Валюта рейта}",
+  attachmentNumber: "{Номер приложения}",
+  sowStartDateRequired: "{Дата старта термин}",
+  sowStartDate: "{Дата старта}",
+};
+
+/**
+ * Extract folder ID from Google Drive folder URL
+ * @param {string} folderUrl - Google Drive folder URL
+ * @returns {string|null} Folder ID or null
+ */
+function extractFolderIdFromUrl(folderUrl) {
+  if (!folderUrl) return null;
+  
+  // Match patterns like:
+  // https://drive.google.com/drive/folders/FOLDER_ID
+  // https://drive.google.com/drive/u/0/folders/FOLDER_ID
+  const match = folderUrl.match(/folders\/([a-zA-Z0-9_-]+)/);
+  return match ? match[1] : null;
+}
+
+/**
+ * Extract document ID from Google Docs URL
+ * @param {string} docUrl - Google Docs URL
+ * @returns {string|null} Document ID or null
+ */
+function extractDocIdFromUrl(docUrl) {
+  if (!docUrl) return null;
+  
+  // Match patterns like:
+  // https://docs.google.com/document/d/DOC_ID/edit
+  // https://docs.google.com/document/d/DOC_ID/preview
+  const match = docUrl.match(/\/d\/([a-zA-Z0-9_-]+)/);
+  return match ? match[1] : null;
+}
+
+/**
+ * Generate document name based on document type
+ * @param {Object} formData - Form data
+ * @returns {string} Document name
+ */
+function generateContractDocumentName(formData) {
+  const documentType = (formData.documentType || "").toLowerCase();
+  const ourCompany = formData.ourCompany || "Company";
+  const contractorName = formData.contractorName || "Contractor";
+  
+  if (documentType.includes("attachment") || documentType.includes("addendum")) {
+    // Addendum_[attachmentNumber]_[sowStartDate]_[ourCompany]-[contractorName]
+    const attachmentNumber = formData.attachmentNumber || "1";
+    const startDate = formData.sowStartDate || "";
+    return "Addendum_" + attachmentNumber + "_" + startDate + "_" + ourCompany + "-" + contractorName;
+  } else {
+    // Contract_[contractNumber]_[contractDate]_[ourCompany]-[contractorName]
+    const contractNumber = formData.contractNumber || "";
+    const contractDate = formData.contractDate || "";
+    return "Contract_" + contractNumber + "_" + contractDate + "_" + ourCompany + "-" + contractorName;
+  }
+}
+
+/**
+ * Copy template to folder and replace placeholders
+ * @param {string} templateUrl - URL of the template document
+ * @param {string} folderUrl - URL of the destination folder
+ * @param {Object} formData - Form data for replacements
+ * @returns {Object} Result with document URL or error
+ */
+function createContractDocument(templateUrl, folderUrl, formData) {
+  try {
+    // Extract IDs from URLs
+    const templateId = extractDocIdFromUrl(templateUrl);
+    const folderId = extractFolderIdFromUrl(folderUrl);
+    
+    if (!templateId) {
+      throw new Error("Invalid template URL");
+    }
+    
+    if (!folderId) {
+      throw new Error("Invalid folder URL");
+    }
+    
+    // Get template and destination folder
+    const templateFile = DriveApp.getFileById(templateId);
+    const destFolder = DriveApp.getFolderById(folderId);
+    
+    // Generate document name
+    const docName = generateContractDocumentName(formData);
+    
+    // Copy template to destination folder
+    const copiedFile = templateFile.makeCopy(docName, destFolder);
+    const copiedDocId = copiedFile.getId();
+    
+    // Open the copied document and replace placeholders
+    const doc = DocumentApp.openById(copiedDocId);
+    const body = doc.getBody();
+    
+    // Replace all placeholders
+    Object.keys(CONTRACT_PLACEHOLDER_MAPPING).forEach(function(fieldId) {
+      const placeholder = CONTRACT_PLACEHOLDER_MAPPING[fieldId];
+      const value = formData[fieldId] || "";
+      body.replaceText(placeholder.replace(/[{}]/g, "\\$&"), value);
+    });
+    
+    // Save and close
+    doc.saveAndClose();
+    
+    // Get the URL of the created document
+    const docUrl = "https://docs.google.com/document/d/" + copiedDocId + "/edit";
+    
+    console.log("Contract document created:", docUrl);
+    
+    return {
+      success: true,
+      documentUrl: docUrl,
+      documentId: copiedDocId
+    };
+    
+  } catch (error) {
+    console.error("Error creating contract document:", error);
+    return {
+      success: false,
+      documentUrl: null,
+      error: error.toString()
+    };
+  }
+}
+
+/**
  * Save a new contract to the Contracts sheet
  * @param {Object} formData - Object with form field values
  * @returns {Object} Result with success status and contract ID
@@ -1735,14 +1889,31 @@ function saveContractToData(formData) {
     // Generate unique ID
     const contractId = Utilities.getUuid();
     
-    // Prepare row data array (fill with empty strings)
+    // Step 1: Create the contract document from template
+    let documentUrl = "";
+    if (formData.templateLink && formData.folderLink) {
+      const docResult = createContractDocument(
+        formData.templateLink,
+        formData.folderLink,
+        formData
+      );
+      
+      if (docResult.success) {
+        documentUrl = docResult.documentUrl;
+      } else {
+        console.warn("Could not create document:", docResult.error);
+        // Continue saving data even if document creation fails
+      }
+    }
+    
+    // Step 2: Prepare row data array (fill with empty strings)
     const rowData = new Array(headers.length).fill("");
     
     // Column A (index 0) = ID
     rowData[0] = contractId;
     
-    // Column B (index 1) = empty (for document link later)
-    rowData[1] = "";
+    // Column B (index 1) = Document link
+    rowData[1] = documentUrl;
     
     // Map form data to columns using the mapping
     Object.keys(formData).forEach(function(fieldId) {
@@ -1761,7 +1932,10 @@ function saveContractToData(formData) {
     return {
       success: true,
       id: contractId,
-      message: "Contract saved successfully"
+      documentUrl: documentUrl,
+      message: documentUrl 
+        ? "Contract saved and document created successfully" 
+        : "Contract saved (document creation skipped)"
     };
     
   } catch (error) {
