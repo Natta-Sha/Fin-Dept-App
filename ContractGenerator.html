@@ -1178,50 +1178,8 @@
           }
         });
 
-        // Hide empty rows (where all columns are hidden)
-        document
-          .querySelectorAll("#form-sections-after-template .row.mb-3")
-          .forEach(function (row) {
-            const cols = row.querySelectorAll('[class*="col-md"]');
-            let hasVisibleCol = false;
-            cols.forEach(function (col) {
-              if (col.style.display !== "none") {
-                hasVisibleCol = true;
-              }
-            });
-            if (!hasVisibleCol) {
-              row.style.display = "none";
-            } else {
-              row.style.display = "";
-            }
-          });
-
-        // Hide empty sections (where all rows are hidden)
-        document
-          .querySelectorAll("#form-sections-after-template .form-section")
-          .forEach(function (section) {
-            const rows = section.querySelectorAll(".row.mb-3");
-            let hasVisibleRow = false;
-            rows.forEach(function (row) {
-              if (row.style.display !== "none") {
-                hasVisibleRow = true;
-              }
-            });
-            if (!hasVisibleRow) {
-              section.style.display = "none";
-              // Also hide the section title before it
-              const title = section.previousElementSibling;
-              if (title && title.classList.contains("section-title")) {
-                title.style.display = "none";
-              }
-            } else {
-              section.style.display = "";
-              const title = section.previousElementSibling;
-              if (title && title.classList.contains("section-title")) {
-                title.style.display = "";
-              }
-            }
-          });
+        // Hide empty rows and sections
+        hideEmptyRowsAndSections();
       }
 
       // Navigation
@@ -1754,19 +1712,29 @@
 
       // Initialize on page load
       window.addEventListener("DOMContentLoaded", function () {
-        // First populate dropdowns, then load contract data if needed
-        populateDropdowns(function () {
-          // After dropdowns are ready, load contract data if in view/edit/delete mode
-          if (contractId && mode !== "create") {
-            google.script.run
-              .withSuccessHandler(fillContractForm)
-              .withFailureHandler(function (error) {
-                console.error("Error loading contract:", error);
-                alert("Failed to load contract data");
-              })
-              .getContractDataById(contractId);
-          }
-        });
+        // For view mode - load contract data directly (faster, no dropdown options needed)
+        if (mode === "view" && contractId) {
+          google.script.run
+            .withSuccessHandler(fillContractFormViewMode)
+            .withFailureHandler(function (error) {
+              console.error("Error loading contract:", error);
+              alert("Failed to load contract data");
+            })
+            .getContractDataById(contractId);
+        } else {
+          // For create/edit/copy - load dropdown options first
+          populateDropdowns(function () {
+            if (contractId && mode !== "create") {
+              google.script.run
+                .withSuccessHandler(fillContractForm)
+                .withFailureHandler(function (error) {
+                  console.error("Error loading contract:", error);
+                  alert("Failed to load contract data");
+                })
+                .getContractDataById(contractId);
+            }
+          });
+        }
 
         updateUIForMode();
 
@@ -1788,6 +1756,165 @@
           }
         });
       });
+
+      // Fill form in VIEW mode - fast, no dropdown loading
+      function fillContractFormViewMode(data) {
+        if (!data) {
+          console.log("No contract data received");
+          return;
+        }
+
+        // Apply field visibility based on data from DB (not from dropdowns)
+        applyFieldVisibilityFromData(
+          data.cooperationType,
+          data.ourCompany,
+          data.documentType
+        );
+
+        // Set all text/input fields
+        document.getElementById("folderLink").value = data.folderLink || "";
+        document.getElementById("contractorName").value =
+          data.contractorName || "";
+        document.getElementById("contractorId").value = data.contractorId || "";
+        document.getElementById("contractorVatId").value =
+          data.contractorVatId || "";
+        document.getElementById("contractorJurisdiction").value =
+          data.contractorJurisdiction || "";
+        document.getElementById("contractorAddress").value =
+          data.contractorAddress || "";
+        document.getElementById("registrationNumber").value =
+          data.registrationNumber || "";
+        document.getElementById("contractorEmail").value =
+          data.contractorEmail || "";
+        document.getElementById("contractNumber").value =
+          data.contractNumber || "";
+        document.getElementById("contractorRole").value =
+          data.contractorRole || "";
+        document.getElementById("contractorRate").value =
+          data.contractorRate || "";
+        document.getElementById("bankAccountUAH").value =
+          data.bankAccountUAH || "";
+        document.getElementById("bankAccountUSD").value =
+          data.bankAccountUSD || "";
+        document.getElementById("bankAccountEUR").value =
+          data.bankAccountEUR || "";
+        document.getElementById("bankName").value = data.bankName || "";
+        document.getElementById("bankCode").value = data.bankCode || "";
+        document.getElementById("attachmentNumber").value =
+          data.attachmentNumber || "";
+
+        // Set date fields
+        document.getElementById("registrationDate").value =
+          data.registrationDate || "";
+        document.getElementById("contractDate").value = data.contractDate || "";
+        document.getElementById("probationPeriod").value =
+          data.probationPeriod || "";
+        document.getElementById("terminationDate").value =
+          data.terminationDate || "";
+        document.getElementById("sowStartDate").value = data.sowStartDate || "";
+
+        // For select fields in view mode - add option and set value
+        setSelectValueViewMode("pe", data.pe);
+        setSelectValueViewMode("ourCompany", data.ourCompany);
+        setSelectValueViewMode("serviceType", data.serviceType);
+        setSelectValueViewMode("cooperationType", data.cooperationType);
+        setSelectValueViewMode("documentType", data.documentType);
+        setSelectValueViewMode("accountType", data.accountType);
+        setSelectValueViewMode("currencyOfRate", data.currencyOfRate);
+        setSelectValueViewMode(
+          "sowStartDateRequired",
+          data.sowStartDateRequired
+        );
+
+        // Show form sections
+        document.getElementById("form-sections-after-template").style.display =
+          "block";
+
+        // Update UI for view mode
+        updateUIForMode();
+      }
+
+      // Helper: set select value in view mode (add single option)
+      function setSelectValueViewMode(elementId, value) {
+        const select = document.getElementById(elementId);
+        if (!select || !value) return;
+        // Add the value as single option
+        const option = document.createElement("option");
+        option.value = value;
+        option.textContent = value;
+        option.selected = true;
+        select.appendChild(option);
+      }
+
+      // Apply field visibility from data (not from dropdown values)
+      function applyFieldVisibilityFromData(
+        cooperationType,
+        ourCompany,
+        documentType
+      ) {
+        // Get config: first try 3 params (with docType), then 2 params, then default
+        const configKey3 =
+          cooperationType + "|" + ourCompany + "|" + documentType;
+        const configKey2 = cooperationType + "|" + ourCompany;
+        const config =
+          FIELD_CONFIG[configKey3] ||
+          FIELD_CONFIG[configKey2] ||
+          FIELD_CONFIG["_default"];
+
+        // Apply visibility for each field
+        Object.keys(config).forEach(function (fieldId) {
+          const fieldConfig = config[fieldId];
+          const field = document.getElementById(fieldId);
+          if (!field) return;
+
+          const parentCol = field.closest('[class*="col-md"]');
+          if (parentCol) {
+            if (fieldConfig.visible) {
+              parentCol.style.display = "";
+            } else {
+              parentCol.style.display = "none";
+            }
+          }
+        });
+
+        // Hide empty rows and sections
+        hideEmptyRowsAndSections();
+      }
+
+      // Hide rows where all columns are hidden, and sections where all rows are hidden
+      function hideEmptyRowsAndSections() {
+        // Hide empty rows
+        document
+          .querySelectorAll("#form-sections-after-template .row.mb-3")
+          .forEach(function (row) {
+            const cols = row.querySelectorAll('[class*="col-md"]');
+            let hasVisibleCol = false;
+            cols.forEach(function (col) {
+              if (col.style.display !== "none") {
+                hasVisibleCol = true;
+              }
+            });
+            row.style.display = hasVisibleCol ? "" : "none";
+          });
+
+        // Hide empty sections
+        document
+          .querySelectorAll("#form-sections-after-template .form-section")
+          .forEach(function (section) {
+            const rows = section.querySelectorAll(".row.mb-3");
+            let hasVisibleRow = false;
+            rows.forEach(function (row) {
+              if (row.style.display !== "none") {
+                hasVisibleRow = true;
+              }
+            });
+            section.style.display = hasVisibleRow ? "" : "none";
+            const title = section.previousElementSibling;
+            if (title && title.classList.contains("section-title")) {
+              title.style.display = hasVisibleRow ? "" : "none";
+            }
+          });
+      }
 
       // Fill form with contract data
       function fillContractForm(data) {
