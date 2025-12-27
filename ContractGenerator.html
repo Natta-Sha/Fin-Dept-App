@@ -1257,7 +1257,11 @@
             contractId +
             "&mode=" +
             newMode;
-          window.location.href = target;
+          try {
+            window.top.location.href = target;
+          } catch (e) {
+            window.location.href = target;
+          }
         } else {
           mode = newMode;
           updateUIForMode();
@@ -1641,11 +1645,8 @@
           return;
         }
 
-        // Get contract ID from URL
-        const urlParams = new URLSearchParams(window.location.search);
-        const contractId = urlParams.get("id");
-
-        if (!contractId) {
+        // Use the global contractId variable (set from GAS template)
+        if (!contractId || contractId === "") {
           alert("Contract ID not found");
           return;
         }

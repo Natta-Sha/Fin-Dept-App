@@ -90,9 +90,13 @@
         padding-left: 8px !important;
       }
       
-      /* Keep table wrapper with less margin */
+      /* Table fits on one screen */
       #contractsTable_wrapper {
-        margin-left: -10px;
+        padding-right: 15px;
+      }
+      
+      #contractsTable {
+        width: 100% !important;
       }
 
       /* Primary buttons (главные действия) */
@@ -323,7 +327,7 @@
       <table
         id="contractsTable"
         class="display table table-bordered"
-        style="width: 100%; min-width: 1200px; display: none"
+        style="width: 100%; display: none"
       >
         <thead class="table-light">
           <tr>
