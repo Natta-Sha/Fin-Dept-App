@@ -1061,6 +1061,32 @@
         },
       };
 
+      // Robust navigation back to contracts list
+      function safeNavigateToContractsList() {
+        const target = "<?= baseUrl ?>?page=ContractsList";
+        try {
+          window.top.location.href = target;
+          return;
+        } catch (e) {}
+        try {
+          window.location.href = target;
+          return;
+        } catch (e2) {}
+        if (
+          google &&
+          google.script &&
+          google.script.host &&
+          google.script.host.close
+        ) {
+          google.script.host.close();
+        }
+      }
+
+      // Alias for Cancel button
+      function goToContractsList() {
+        safeNavigateToContractsList();
+      }
+
       // Apply field visibility based on selected cooperation type and service type
       function applyFieldVisibility() {
         const cooperationType =
@@ -1469,25 +1495,43 @@
         const confirmBtn = document.querySelector(
           '#create-buttons button[onclick="confirmContract()"]'
         );
+        const cancelBtn = document.querySelector(
+          '#create-buttons button[onclick="goToContractsList()"]'
+        );
         if (confirmBtn) {
           confirmBtn.disabled = true;
           confirmBtn.innerHTML =
             '<i class="bi bi-hourglass-split"></i> Saving...';
+        }
+        if (cancelBtn) {
+          cancelBtn.disabled = true;
         }
 
         // Save to backend
         google.script.run
           .withSuccessHandler(function (result) {
             if (result.success) {
-              alert("Contract saved successfully!");
-              // Redirect to contracts list
-              window.location.href = "<?= baseUrl ?>?page=ContractsList";
+              // Hide buttons and show success message with back button
+              document.getElementById("create-buttons").innerHTML = `
+                <div class="col-12">
+                  <div class="alert alert-success" role="alert">
+                    <i class="bi bi-check-circle-fill me-2"></i>
+                    Contract saved successfully!
+                  </div>
+                  <button class="btn btn-primary px-5 fw-bold" onclick="safeNavigateToContractsList()">
+                    <i class="bi bi-arrow-left me-2"></i>Back to the list
+                  </button>
+                </div>
+              `;
             } else {
               alert("Error: " + result.message);
               if (confirmBtn) {
                 confirmBtn.disabled = false;
                 confirmBtn.innerHTML =
                   '<i class="bi bi-check-circle"></i> Confirm';
+              }
+              if (cancelBtn) {
+                cancelBtn.disabled = false;
               }
             }
           })
@@ -1497,6 +1541,9 @@
               confirmBtn.disabled = false;
               confirmBtn.innerHTML =
                 '<i class="bi bi-check-circle"></i> Confirm';
+            }
+            if (cancelBtn) {
+              cancelBtn.disabled = false;
             }
           })
           .saveContract(formData);
