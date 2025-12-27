@@ -1029,6 +1029,8 @@
               sectionsDiv.style.display = "block";
               // Apply field visibility rules
               applyFieldVisibility();
+              // Update buttons for current mode
+              updateUIForMode();
             } else {
               statusText.textContent = "No template found";
               // Hide form sections
