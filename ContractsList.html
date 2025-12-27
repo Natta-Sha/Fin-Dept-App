@@ -92,11 +92,7 @@
       
       /* Table fits on one screen */
       #contractsTable_wrapper {
-        padding-right: 15px;
-      }
-      
-      #contractsTable {
-        width: 100% !important;
+        padding: 0 10px;
       }
 
       /* Primary buttons (главные действия) */
@@ -292,6 +288,51 @@
       /* Center table headers */
       #contractsTable thead th {
         text-align: center !important;
+        white-space: normal !important;
+        word-wrap: break-word;
+        font-size: 0.85rem;
+        padding: 8px 4px !important;
+      }
+      
+      /* Make table fit screen */
+      #contractsTable {
+        table-layout: fixed;
+        width: 100% !important;
+      }
+      
+      #contractsTable td {
+        white-space: normal;
+        word-wrap: break-word;
+        font-size: 0.85rem;
+        padding: 6px 4px !important;
+      }
+      
+      /* Column widths */
+      #contractsTable th:nth-child(1),
+      #contractsTable td:nth-child(1) { width: 40px; } /* Folder */
+      #contractsTable th:nth-child(2),
+      #contractsTable td:nth-child(2) { width: 10%; } /* Contractor Name */
+      #contractsTable th:nth-child(3),
+      #contractsTable td:nth-child(3) { width: 10%; } /* Our Company */
+      #contractsTable th:nth-child(4),
+      #contractsTable td:nth-child(4) { width: 9%; } /* Service Type */
+      #contractsTable th:nth-child(5),
+      #contractsTable td:nth-child(5) { width: 9%; } /* Cooperation Type */
+      #contractsTable th:nth-child(6),
+      #contractsTable td:nth-child(6) { width: 8%; } /* Contract # */
+      #contractsTable th:nth-child(7),
+      #contractsTable td:nth-child(7) { width: 9%; } /* Contract Date */
+      #contractsTable th:nth-child(8),
+      #contractsTable td:nth-child(8) { width: 10%; } /* Document Type */
+      #contractsTable th:nth-child(9),
+      #contractsTable td:nth-child(9) { width: 8%; } /* Attachment # */
+      #contractsTable th:nth-child(10),
+      #contractsTable td:nth-child(10) { width: 80px; } /* Actions */
+      
+      /* Smaller search inputs */
+      #contractsTable thead input {
+        font-size: 0.75rem;
+        padding: 2px 4px;
       }
 
       /* Link styling in table */
