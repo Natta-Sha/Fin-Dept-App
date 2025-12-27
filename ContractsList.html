@@ -92,7 +92,8 @@
       
       /* Table fits on one screen */
       #contractsTable_wrapper {
-        padding: 0 10px;
+        padding: 0;
+        margin: 0 -5px;
       }
 
       /* Primary buttons (главные действия) */
@@ -309,7 +310,7 @@
       
       /* Column widths */
       #contractsTable th:nth-child(1),
-      #contractsTable td:nth-child(1) { width: 40px; } /* Folder */
+      #contractsTable td:nth-child(1) { width: 30px; } /* Folder */
       #contractsTable th:nth-child(2),
       #contractsTable td:nth-child(2) { width: 10%; } /* Contractor Name */
       #contractsTable th:nth-child(3),
@@ -327,7 +328,7 @@
       #contractsTable th:nth-child(9),
       #contractsTable td:nth-child(9) { width: 8%; } /* Attachment # */
       #contractsTable th:nth-child(10),
-      #contractsTable td:nth-child(10) { width: 80px; } /* Actions */
+      #contractsTable td:nth-child(10) { width: 75px; } /* Actions */
       
       /* Smaller search inputs */
       #contractsTable thead input {
@@ -353,7 +354,7 @@
     <?!= getNavigation(activePage) ?>
 
     <!-- Main Content -->
-    <div class="main-content container-xl">
+    <div class="main-content container-fluid px-2">
       <div class="mb-3 d-flex justify-content-start">
         <a
           href="<?= baseUrl ?>?page=ContractGenerator&mode=create"
