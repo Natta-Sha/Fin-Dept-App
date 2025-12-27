@@ -1784,15 +1784,43 @@ function generateContractDocumentName(formData) {
   if (documentType.includes("attachment") || documentType.includes("addendum")) {
     // Addendum_[attachmentNumber]_[sowStartDate]_[ourCompany]-[contractorName]
     const attachmentNumber = formData.attachmentNumber || "1";
-    const startDate = formData.sowStartDate || "";
+    const startDate = formatDateForContract(formData.sowStartDate || "");
     return "Addendum_" + attachmentNumber + "_" + startDate + "_" + ourCompany + "-" + contractorName;
   } else {
     // Contract_[contractNumber]_[contractDate]_[ourCompany]-[contractorName]
     const contractNumber = formData.contractNumber || "";
-    const contractDate = formData.contractDate || "";
+    const contractDate = formatDateForContract(formData.contractDate || "");
     return "Contract_" + contractNumber + "_" + contractDate + "_" + ourCompany + "-" + contractorName;
   }
 }
+
+/**
+ * Format date from YYYY-MM-DD to DD-MM-YYYY
+ * @param {string} dateStr - Date string in YYYY-MM-DD format
+ * @returns {string} Date string in DD-MM-YYYY format
+ */
+function formatDateForContract(dateStr) {
+  if (!dateStr) return "";
+  
+  // Handle YYYY-MM-DD format
+  const match = dateStr.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (match) {
+    return match[3] + "-" + match[2] + "-" + match[1]; // DD-MM-YYYY
+  }
+  
+  // Return as-is if not in expected format
+  return dateStr;
+}
+
+/**
+ * Date fields that need formatting
+ */
+const DATE_FIELDS = [
+  "contractDate",
+  "terminationDate",
+  "registrationDate",
+  "sowStartDate"
+];
 
 /**
  * Copy template to folder and replace placeholders
@@ -1833,7 +1861,13 @@ function createContractDocument(templateUrl, folderUrl, formData) {
     // Replace all placeholders
     Object.keys(CONTRACT_PLACEHOLDER_MAPPING).forEach(function(fieldId) {
       const placeholder = CONTRACT_PLACEHOLDER_MAPPING[fieldId];
-      const value = formData[fieldId] || "";
+      let value = formData[fieldId] || "";
+      
+      // Format date fields to DD-MM-YYYY
+      if (DATE_FIELDS.includes(fieldId)) {
+        value = formatDateForContract(value);
+      }
+      
       body.replaceText(placeholder.replace(/[{}]/g, "\\$&"), value);
     });
     
