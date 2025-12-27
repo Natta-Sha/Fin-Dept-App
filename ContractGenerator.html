@@ -699,13 +699,13 @@
 
       // ============================================
       // FIELD VISIBILITY CONFIGURATION
-      // Key format: "cooperationType|serviceType"
+      // Key format: "cooperationType|ourCompany|serviceType"
       // Each field can be: { visible: true/false, required: true/false }
       // Fields not listed default to: { visible: true, required: false }
       // ============================================
       const FIELD_CONFIG = {
-        // In-house | Accountant
-        "In-house|Accountant": {
+        // In-house | Accountant | Accounting
+        "In-house|Accountant|Accounting": {
           // Contractor Information
           folderLink: { visible: true, required: false },
           contractorName: { visible: true, required: true },
@@ -771,10 +771,12 @@
       function applyFieldVisibility() {
         const cooperationType =
           document.getElementById("cooperationType").value;
+        const ourCompany = document.getElementById("ourCompany").value;
         const serviceType = document.getElementById("serviceType").value;
 
-        // Get config for this combination or use default
-        const configKey = cooperationType + "|" + serviceType;
+        // Get config for this combination (cooperationType|ourCompany|serviceType) or use default
+        const configKey =
+          cooperationType + "|" + ourCompany + "|" + serviceType;
         const config = FIELD_CONFIG[configKey] || FIELD_CONFIG["_default"];
 
         // Apply visibility and required for each field
