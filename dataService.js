@@ -1563,57 +1563,68 @@ function getContractTemplatesFromData(cooperationType, ourCompany, serviceType, 
  */
 function getContractListFromData() {
   try {
-    var cache = CacheService.getScriptCache();
-    var cached = cache.get("contractList");
-    if (cached) {
-      return JSON.parse(cached);
+    const spreadsheet = SpreadsheetApp.openById(CONFIG.CONTRACTORS_SPREADSHEET_ID);
+    const sheet = spreadsheet.getSheetByName("Contracts");
+    
+    if (!sheet) {
+      console.log("Contracts sheet not found");
+      return [];
     }
-
-    const spreadsheet = getSpreadsheet(CONFIG.SPREADSHEET_ID);
-    const sheet = getSheet(spreadsheet, CONFIG.SHEETS.CONTRACTS);
+    
     const data = sheet.getDataRange().getValues();
-
-    if (data.length < 2) return [];
-
-    const headers = data[0].map((h) => (h || "").toString().trim());
-
-    const colIndex = {
-      id: headers.indexOf("ID"),
-      folderLink: headers.indexOf("Folder Link"),
-      contractorName: headers.indexOf("Contractor Name"),
-      ourCompany: headers.indexOf("Our Company"),
-      serviceType: headers.indexOf("Service Type"),
-      cooperationType: headers.indexOf("Cooperation Type"),
-      contractNumber: headers.indexOf("Contract Number"),
-      contractDate: headers.indexOf("Contract Date"),
-      templateLink: headers.indexOf("Template Link"),
-    };
-
-    // Validate required columns - only check essential ones
-    const requiredCols = ["id", "contractorName", "contractNumber"];
-    for (let key of requiredCols) {
-      if (colIndex[key] === -1) {
-        console.log("Missing column in Contracts sheet: " + key);
-        return [];
-      }
+    
+    if (data.length < 2) {
+      return []; // Only header row or empty
     }
-
-    const result = data.slice(1).map((row) => ({
-      id: row[colIndex.id] || "",
-      folderLink: colIndex.folderLink !== -1 ? row[colIndex.folderLink] || "" : "",
-      contractorName: row[colIndex.contractorName] || "",
-      ourCompany: colIndex.ourCompany !== -1 ? row[colIndex.ourCompany] || "" : "",
-      serviceType: colIndex.serviceType !== -1 ? row[colIndex.serviceType] || "" : "",
-      cooperationType: colIndex.cooperationType !== -1 ? row[colIndex.cooperationType] || "" : "",
-      contractNumber: row[colIndex.contractNumber] || "",
-      contractDate: colIndex.contractDate !== -1 ? formatDate(row[colIndex.contractDate]) : "",
-      templateLink: colIndex.templateLink !== -1 ? row[colIndex.templateLink] || "" : "",
-    }));
-
-    cache.put("contractList", JSON.stringify(result), 300);
-    return result;
+    
+    // Build header index map
+    const headers = data[0];
+    const indexMap = {};
+    headers.forEach((header, index) => {
+      if (header) {
+        indexMap[header.toString().trim()] = index;
+      }
+    });
+    
+    const contracts = [];
+    
+    // Process data rows (skip header)
+    for (let i = 1; i < data.length; i++) {
+      const row = data[i];
+      
+      // Skip empty rows
+      if (!row[0]) continue;
+      
+      const contractDate = row[indexMap["Дата договора"]];
+      let formattedDate = "";
+      if (contractDate) {
+        if (contractDate instanceof Date) {
+          formattedDate = Utilities.formatDate(contractDate, Session.getScriptTimeZone(), "dd-MM-yyyy");
+        } else {
+          formattedDate = contractDate.toString();
+        }
+      }
+      
+      contracts.push({
+        id: row[0] || "", // Column A = ID
+        documentLink: row[1] || "", // Column B = Document link
+        folderLink: row[indexMap["Ссылка на папку с договором"]] || "",
+        contractorName: row[indexMap["Название контрактора"]] || "",
+        ourCompany: row[indexMap["Наша компания"]] || "",
+        serviceType: row[indexMap["Вид услуг"]] || "",
+        cooperationType: row[indexMap["Вид сотрудничества"]] || "",
+        contractNumber: row[indexMap["№ договора"]] || "",
+        contractDate: formattedDate,
+        documentType: row[indexMap["Вид документа"]] || "",
+        attachmentNumber: row[indexMap["Номер приложения"]] || "",
+      });
+    }
+    
+    console.log("Loaded " + contracts.length + " contracts");
+    return contracts;
+    
   } catch (error) {
-    console.error("Error getting contract list:", error);
+    console.error("Error getting contracts list:", error);
     return [];
   }
 }
@@ -1981,3 +1992,4 @@ function saveContractToData(formData) {
     };
   }
 }
+
