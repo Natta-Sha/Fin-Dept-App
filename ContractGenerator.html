@@ -153,11 +153,14 @@
 
       /* Field hint styles */
       .field-hint {
-        font-size: 0.8rem;
+        display: block;
+        font-size: 0.75rem;
         color: #6c757d;
         font-style: italic;
         font-weight: normal;
-        margin-left: 0.5rem;
+        min-height: 2.4em;
+        line-height: 1.2em;
+        margin-bottom: 0.25rem;
       }
 
       /* Validation styles */
@@ -200,7 +203,8 @@
         <div class="form-section">
           <div class="row mb-3">
             <div class="col-md-6">
-              <label class="form-label">Link to the contractor's folder <span class="field-hint">— the generated contract will be saved here</span></label>
+              <label class="form-label">Link to the contractor's folder</label>
+              <span class="field-hint">The generated contract will be saved to this folder</span>
               <input type="text" id="folderLink" class="form-control" placeholder="https://drive.google.com/drive/folders/..." />
               <div class="invalid-feedback" id="folderLink-error">
                 Invalid format. Use Google Drive folder link: https://drive.google.com/drive/folders/...
@@ -208,46 +212,55 @@
             </div>
             <div class="col-md-6">
               <label class="form-label">Contractor's name <span class="text-danger">*</span></label>
+              <span class="field-hint"></span>
               <input type="text" id="contractorName" class="form-control" required />
             </div>
           </div>
           <div class="row mb-3">
             <div class="col-md-4">
               <label class="form-label">PE</label>
+              <span class="field-hint"></span>
               <select id="pe" class="form-select">
                 <option value="">Select...</option>
               </select>
             </div>
             <div class="col-md-4">
               <label class="form-label">Contractor's ID</label>
+              <span class="field-hint"></span>
               <input type="text" id="contractorId" class="form-control" />
             </div>
             <div class="col-md-4">
               <label class="form-label">Contractor's VAT ID</label>
+              <span class="field-hint"></span>
               <input type="text" id="contractorVatId" class="form-control" />
             </div>
           </div>
           <div class="row mb-3">
             <div class="col-md-4">
               <label class="form-label">Contractor's jurisdiction</label>
+              <span class="field-hint"></span>
               <input type="text" id="contractorJurisdiction" class="form-control" />
             </div>
             <div class="col-md-8">
               <label class="form-label">Contractor's address</label>
+              <span class="field-hint"></span>
               <input type="text" id="contractorAddress" class="form-control" />
             </div>
           </div>
           <div class="row mb-3">
             <div class="col-md-4">
               <label class="form-label">Registration number</label>
+              <span class="field-hint"></span>
               <input type="text" id="registrationNumber" class="form-control" />
             </div>
             <div class="col-md-4">
               <label class="form-label">Date of registration</label>
+              <span class="field-hint"></span>
               <input type="date" id="registrationDate" class="form-control" />
             </div>
             <div class="col-md-4">
               <label class="form-label">Contractor's email</label>
+              <span class="field-hint"></span>
               <input type="email" id="contractorEmail" class="form-control" />
             </div>
           </div>
@@ -259,18 +272,21 @@
           <div class="row mb-3">
             <div class="col-md-4">
               <label class="form-label">Our company <span class="text-danger">*</span></label>
+              <span class="field-hint"></span>
               <select id="ourCompany" class="form-select" required>
                 <option value="">Select...</option>
               </select>
             </div>
             <div class="col-md-4">
               <label class="form-label">Type of services <span class="text-danger">*</span></label>
+              <span class="field-hint"></span>
               <select id="serviceType" class="form-select" required>
                 <option value="">Select...</option>
               </select>
             </div>
             <div class="col-md-4">
               <label class="form-label">Type of cooperation <span class="text-danger">*</span></label>
+              <span class="field-hint"></span>
               <select id="cooperationType" class="form-select" required>
                 <option value="">Select...</option>
               </select>
@@ -279,24 +295,29 @@
           <div class="row mb-3">
             <div class="col-md-4">
               <label class="form-label">Contract's number <span class="text-danger">*</span></label>
+              <span class="field-hint"></span>
               <input type="text" id="contractNumber" class="form-control" required />
             </div>
             <div class="col-md-4">
               <label class="form-label">Contract's date <span class="text-danger">*</span></label>
+              <span class="field-hint"></span>
               <input type="date" id="contractDate" class="form-control" required />
             </div>
             <div class="col-md-4">
               <label class="form-label">Probation period</label>
+              <span class="field-hint"></span>
               <input type="date" id="probationPeriod" class="form-control" />
             </div>
           </div>
           <div class="row mb-3">
             <div class="col-md-4">
               <label class="form-label">Termination date</label>
+              <span class="field-hint"></span>
               <input type="date" id="terminationDate" class="form-control" />
             </div>
             <div class="col-md-4">
               <label class="form-label">SOW Start date - if necessary</label>
+              <span class="field-hint"></span>
               <select id="sowStartDateRequired" class="form-select">
                 <option value="">Select...</option>
                 <option value="yes">Yes</option>
@@ -305,12 +326,14 @@
             </div>
             <div class="col-md-4">
               <label class="form-label">SOW Start date</label>
+              <span class="field-hint"></span>
               <input type="date" id="sowStartDate" class="form-control" />
             </div>
           </div>
           <div class="row mb-3">
             <div class="col-md-12">
               <label class="form-label">Contract template</label>
+              <span class="field-hint"></span>
               <select id="contractTemplate" class="form-select">
                 <option value="">Select template...</option>
               </select>
@@ -324,14 +347,17 @@
           <div class="row mb-3">
             <div class="col-md-4">
               <label class="form-label">Contractor's role</label>
+              <span class="field-hint"></span>
               <input type="text" id="contractorRole" class="form-control" />
             </div>
             <div class="col-md-4">
               <label class="form-label">Contractor's rate</label>
+              <span class="field-hint"></span>
               <input type="number" id="contractorRate" class="form-control" step="0.01" min="0" />
             </div>
             <div class="col-md-4">
               <label class="form-label">Currency of rate</label>
+              <span class="field-hint"></span>
               <input type="text" id="currencyOfRate" class="form-control" placeholder="USD, EUR, UAH..." />
             </div>
           </div>
@@ -343,30 +369,36 @@
           <div class="row mb-3">
             <div class="col-md-4">
               <label class="form-label">Bank account UAH</label>
+              <span class="field-hint"></span>
               <input type="text" id="bankAccountUAH" class="form-control" />
             </div>
             <div class="col-md-4">
               <label class="form-label">Bank account USD</label>
+              <span class="field-hint"></span>
               <input type="text" id="bankAccountUSD" class="form-control" />
             </div>
             <div class="col-md-4">
               <label class="form-label">Bank account EUR</label>
+              <span class="field-hint"></span>
               <input type="text" id="bankAccountEUR" class="form-control" />
             </div>
           </div>
           <div class="row mb-3">
             <div class="col-md-4">
               <label class="form-label">Bank name</label>
+              <span class="field-hint"></span>
               <input type="text" id="bankName" class="form-control" />
             </div>
             <div class="col-md-4">
               <label class="form-label">Account type</label>
+              <span class="field-hint"></span>
               <select id="accountType" class="form-select">
                 <option value="">Select...</option>
               </select>
             </div>
             <div class="col-md-4">
               <label class="form-label">Bank code</label>
+              <span class="field-hint"></span>
               <input type="text" id="bankCode" class="form-control" />
             </div>
           </div>
