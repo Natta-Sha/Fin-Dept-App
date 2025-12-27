@@ -355,10 +355,17 @@
           <div class="row mb-3">
             <div class="col-md-12">
               <label class="form-label">Contract template</label>
-              <span class="field-hint"></span>
-              <select id="contractTemplate" class="form-select">
-                <option value="">Select template...</option>
-              </select>
+              <span class="field-hint"
+                >Auto-selected based on company, services, and cooperation
+                type</span
+              >
+              <input
+                type="text"
+                id="contractTemplateName"
+                class="form-control"
+                readonly
+              />
+              <input type="hidden" id="contractTemplateLink" />
             </div>
           </div>
         </div>
@@ -814,24 +821,31 @@
         const ourCompany = document.getElementById("ourCompany").value;
         const serviceType = document.getElementById("serviceType").value;
 
+        const nameField = document.getElementById("contractTemplateName");
+        const linkField = document.getElementById("contractTemplateLink");
+
+        // Clear if not all fields are selected
+        if (!cooperationType || !ourCompany || !serviceType) {
+          nameField.value = "";
+          linkField.value = "";
+          return;
+        }
+
         google.script.run
           .withSuccessHandler(function (templates) {
-            const select = document.getElementById("contractTemplate");
-
-            // Clear existing options
-            select.innerHTML = '<option value="">Select template...</option>';
-
             if (templates && templates.length > 0) {
-              templates.forEach((tmpl) => {
-                const option = document.createElement("option");
-                option.value = tmpl.link;
-                option.textContent = tmpl.name;
-                select.appendChild(option);
-              });
+              // Use first matching template
+              nameField.value = templates[0].name;
+              linkField.value = templates[0].link;
+            } else {
+              nameField.value = "No template found";
+              linkField.value = "";
             }
           })
           .withFailureHandler(function (error) {
             console.error("Error loading templates:", error);
+            nameField.value = "Error loading template";
+            linkField.value = "";
           })
           .getContractTemplates(cooperationType, ourCompany, serviceType);
       }
@@ -970,10 +984,15 @@
           // Load templates after setting dropdowns
           loadContractTemplates();
 
-          // Set template value after templates are loaded
+          // Template will be auto-loaded based on selected values
+          // If contract has saved template info, show it
           setTimeout(function () {
-            document.getElementById("contractTemplate").value =
-              data.contractTemplate || "";
+            if (data.contractTemplateName) {
+              document.getElementById("contractTemplateName").value =
+                data.contractTemplateName || "";
+              document.getElementById("contractTemplateLink").value =
+                data.contractTemplateLink || "";
+            }
           }, 500);
         }, 300);
       }
