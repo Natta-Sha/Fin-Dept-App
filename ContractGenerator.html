@@ -791,6 +791,9 @@
 
             // Account type dropdown (column E)
             fillDropdown("accountType", options.accountTypes);
+
+            // Currency dropdown (column F)
+            fillDropdown("currencyOfRate", options.currencies);
           })
           .withFailureHandler(function (error) {
             console.error("Error loading dropdown options:", error);

@@ -1430,6 +1430,7 @@ function getContractDropdownOptionsFromData() {
         serviceTypes: [],
         peOptions: [],
         accountTypes: [],
+        currencies: [],
       };
     }
     
@@ -1441,6 +1442,7 @@ function getContractDropdownOptionsFromData() {
     const serviceTypes = [];     // Column C
     const peOptions = [];        // Column D
     const accountTypes = [];     // Column E
+    const currencies = [];       // Column F
     
     for (let i = 1; i < data.length; i++) {
       const row = data[i];
@@ -1465,6 +1467,10 @@ function getContractDropdownOptionsFromData() {
         const val = row[4].toString().trim();
         if (!accountTypes.includes(val)) accountTypes.push(val);
       }
+      if (row[5] && row[5].toString().trim() !== "") {
+        const val = row[5].toString().trim();
+        if (!currencies.includes(val)) currencies.push(val);
+      }
     }
     
     return {
@@ -1473,6 +1479,7 @@ function getContractDropdownOptionsFromData() {
       serviceTypes: serviceTypes.sort(),
       peOptions: peOptions.sort(),
       accountTypes: accountTypes.sort(),
+      currencies: currencies.sort(),
     };
   } catch (error) {
     console.error("Error getting contract dropdown options:", error);
@@ -1482,6 +1489,7 @@ function getContractDropdownOptionsFromData() {
       serviceTypes: [],
       peOptions: [],
       accountTypes: [],
+      currencies: [],
     };
   }
 }
