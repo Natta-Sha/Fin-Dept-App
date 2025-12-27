@@ -1326,7 +1326,7 @@
       }
 
       // Populate dropdown lists from Lists sheet
-      function populateDropdowns() {
+      function populateDropdowns(callback) {
         google.script.run
           .withSuccessHandler(function (options) {
             // PE dropdown (column D)
@@ -1349,9 +1349,13 @@
 
             // Document type dropdown (column G)
             fillDropdown("documentType", options.documentTypes);
+
+            // Call callback after dropdowns are populated
+            if (callback) callback();
           })
           .withFailureHandler(function (error) {
             console.error("Error loading dropdown options:", error);
+            if (callback) callback();
           })
           .getContractDropdownOptions();
       }
@@ -1750,7 +1754,20 @@
 
       // Initialize on page load
       window.addEventListener("DOMContentLoaded", function () {
-        populateDropdowns();
+        // First populate dropdowns, then load contract data if needed
+        populateDropdowns(function () {
+          // After dropdowns are ready, load contract data if in view/edit/delete mode
+          if (contractId && mode !== "create") {
+            google.script.run
+              .withSuccessHandler(fillContractForm)
+              .withFailureHandler(function (error) {
+                console.error("Error loading contract:", error);
+                alert("Failed to load contract data");
+              })
+              .getContractDataById(contractId);
+          }
+        });
+
         updateUIForMode();
 
         // Add folder link validation on input
@@ -1770,17 +1787,6 @@
             el.addEventListener("change", loadContractTemplates);
           }
         });
-
-        // If viewing/editing existing contract, load its data
-        if (contractId && mode !== "create") {
-          google.script.run
-            .withSuccessHandler(fillContractForm)
-            .withFailureHandler(function (error) {
-              console.error("Error loading contract:", error);
-              alert("Failed to load contract data");
-            })
-            .getContractDataById(contractId);
-        }
       });
 
       // Fill form with contract data
@@ -1836,44 +1842,38 @@
         document.getElementById("attachmentNumber").value =
           data.attachmentNumber || "";
 
-        // Set select fields (after dropdowns are populated)
-        setTimeout(function () {
-          document.getElementById("pe").value = data.pe || "";
-          document.getElementById("ourCompany").value = data.ourCompany || "";
-          document.getElementById("serviceType").value = data.serviceType || "";
-          document.getElementById("cooperationType").value =
-            data.cooperationType || "";
-          document.getElementById("documentType").value =
-            data.documentType || "";
-          document.getElementById("accountType").value = data.accountType || "";
-          document.getElementById("currencyOfRate").value =
-            data.currencyOfRate || "";
-          document.getElementById("sowStartDateRequired").value =
-            data.sowStartDateRequired || "";
+        // Set select fields (dropdowns are already populated via callback)
+        document.getElementById("pe").value = data.pe || "";
+        document.getElementById("ourCompany").value = data.ourCompany || "";
+        document.getElementById("serviceType").value = data.serviceType || "";
+        document.getElementById("cooperationType").value =
+          data.cooperationType || "";
+        document.getElementById("documentType").value = data.documentType || "";
+        document.getElementById("accountType").value = data.accountType || "";
+        document.getElementById("currencyOfRate").value =
+          data.currencyOfRate || "";
+        document.getElementById("sowStartDateRequired").value =
+          data.sowStartDateRequired || "";
 
-          // Show form sections
-          document.getElementById(
-            "form-sections-after-template"
-          ).style.display = "block";
+        // Show form sections
+        document.getElementById("form-sections-after-template").style.display =
+          "block";
 
-          // Apply field visibility based on selection
-          applyFieldVisibility();
+        // Apply field visibility based on selection
+        applyFieldVisibility();
 
-          // Update UI for current mode
-          updateUIForMode();
+        // Update UI for current mode
+        updateUIForMode();
 
-          // Set template link if available
-          if (data.templateLink) {
-            const statusText = document.getElementById(
-              "contractTemplateStatus"
-            );
-            const linkBtn = document.getElementById("contractTemplateLinkBtn");
-            statusText.textContent = "Template loaded ✓";
-            statusText.className = "text-success";
-            linkBtn.href = data.templateLink.replace(/\/edit.*$/, "/preview");
-            linkBtn.style.display = "inline-block";
-          }
-        }, 300);
+        // Set template link if available
+        if (data.templateLink) {
+          const statusText = document.getElementById("contractTemplateStatus");
+          const linkBtn = document.getElementById("contractTemplateLinkBtn");
+          statusText.textContent = "Template loaded ✓";
+          statusText.className = "text-success";
+          linkBtn.href = data.templateLink.replace(/\/edit.*$/, "/preview");
+          linkBtn.style.display = "inline-block";
+        }
       }
     </script>
   </body>
