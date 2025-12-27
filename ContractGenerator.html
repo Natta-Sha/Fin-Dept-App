@@ -822,18 +822,47 @@
           const parentCol = field.closest('[class*="col-md"]');
 
           if (parentCol) {
+            // Find visual required indicators (star and "Required" text)
+            const label = parentCol.querySelector("label");
+            const starSpan = label ? label.querySelector(".text-danger") : null;
+            const requiredSpan = label
+              ? label.querySelector(".field-required")
+              : null;
+
             if (fieldConfig.visible) {
               parentCol.style.display = "";
-              // Set required attribute
+              // Set required attribute and visual indicators
               if (fieldConfig.required) {
                 field.setAttribute("required", "required");
+                // Show visual indicators
+                if (starSpan) starSpan.style.display = "";
+                if (requiredSpan) requiredSpan.style.display = "";
+                // Add indicators if they don't exist
+                if (label && !starSpan) {
+                  const star = document.createElement("span");
+                  star.className = "text-danger";
+                  star.textContent = " *";
+                  label.appendChild(star);
+                }
+                if (label && !requiredSpan) {
+                  const req = document.createElement("span");
+                  req.className = "field-required";
+                  req.textContent = " Required";
+                  label.appendChild(req);
+                }
               } else {
                 field.removeAttribute("required");
+                // Hide visual indicators
+                if (starSpan) starSpan.style.display = "none";
+                if (requiredSpan) requiredSpan.style.display = "none";
               }
             } else {
               parentCol.style.display = "none";
               // Remove required from hidden fields
               field.removeAttribute("required");
+              // Hide visual indicators
+              if (starSpan) starSpan.style.display = "none";
+              if (requiredSpan) requiredSpan.style.display = "none";
             }
           }
         });
