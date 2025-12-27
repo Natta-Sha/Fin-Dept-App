@@ -359,13 +359,24 @@
                 >Auto-selected based on company, services, and cooperation
                 type</span
               >
-              <input
-                type="text"
-                id="contractTemplateName"
-                class="form-control"
-                readonly
-              />
-              <input type="hidden" id="contractTemplateLink" />
+              <div class="input-group">
+                <input
+                  type="text"
+                  id="contractTemplateLink"
+                  class="form-control"
+                  readonly
+                  placeholder="Select all fields above..."
+                />
+                <a
+                  id="contractTemplateLinkBtn"
+                  class="btn btn-outline-primary"
+                  href="#"
+                  target="_blank"
+                  style="display: none"
+                >
+                  <i class="bi bi-box-arrow-up-right"></i> Open
+                </a>
+              </div>
             </div>
           </div>
         </div>
@@ -821,31 +832,35 @@
         const ourCompany = document.getElementById("ourCompany").value;
         const serviceType = document.getElementById("serviceType").value;
 
-        const nameField = document.getElementById("contractTemplateName");
         const linkField = document.getElementById("contractTemplateLink");
+        const linkBtn = document.getElementById("contractTemplateLinkBtn");
 
         // Clear if not all fields are selected
         if (!cooperationType || !ourCompany || !serviceType) {
-          nameField.value = "";
           linkField.value = "";
+          linkBtn.style.display = "none";
+          linkBtn.href = "#";
           return;
         }
 
         google.script.run
           .withSuccessHandler(function (templates) {
             if (templates && templates.length > 0) {
-              // Use first matching template
-              nameField.value = templates[0].name;
+              // Use first matching template - show link
               linkField.value = templates[0].link;
+              linkBtn.href = templates[0].link;
+              linkBtn.style.display = "flex";
             } else {
-              nameField.value = "No template found";
-              linkField.value = "";
+              linkField.value = "No template found";
+              linkBtn.style.display = "none";
+              linkBtn.href = "#";
             }
           })
           .withFailureHandler(function (error) {
             console.error("Error loading templates:", error);
-            nameField.value = "Error loading template";
-            linkField.value = "";
+            linkField.value = "Error loading template";
+            linkBtn.style.display = "none";
+            linkBtn.href = "#";
           })
           .getContractTemplates(cooperationType, ourCompany, serviceType);
       }
@@ -985,14 +1000,8 @@
           loadContractTemplates();
 
           // Template will be auto-loaded based on selected values
-          // If contract has saved template info, show it
           setTimeout(function () {
-            if (data.contractTemplateName) {
-              document.getElementById("contractTemplateName").value =
-                data.contractTemplateName || "";
-              document.getElementById("contractTemplateLink").value =
-                data.contractTemplateLink || "";
-            }
+            loadContractTemplates();
           }, 500);
         }, 300);
       }
