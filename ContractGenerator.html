@@ -611,6 +611,9 @@
             </div>
           </div>
 
+          <!-- Result messages area -->
+          <div id="result" class="mt-4"></div>
+
           <!-- Create mode buttons -->
           <div id="create-buttons" class="row mt-4" style="display: none">
             <div class="col-md-12 d-flex justify-content-end gap-2">
@@ -1087,6 +1090,24 @@
         safeNavigateToContractsList();
       }
 
+      // Show validation error messages
+      function showValidationError(messages) {
+        const result = document.getElementById("result");
+        result.innerHTML = `
+          <div class="alert alert-danger">
+            <strong>Please fill out the following fields:</strong>
+            <ul>${messages.map((msg) => "<li>" + msg + "</li>").join("")}</ul>
+          </div>
+        `;
+        result.scrollIntoView({ behavior: "smooth" });
+      }
+
+      // Clear validation error
+      function clearValidationError() {
+        const result = document.getElementById("result");
+        if (result) result.innerHTML = "";
+      }
+
       // Apply field visibility based on selected cooperation type and service type
       function applyFieldVisibility() {
         const cooperationType =
@@ -1429,25 +1450,59 @@
 
       // Action handlers
       function confirmContract() {
+        // Clear previous errors
+        clearValidationError();
+
+        // Field labels for error messages
+        const fieldLabels = {
+          folderLink: "Link to the contractor's folder",
+          contractorName: "Contractor's name",
+          pe: "PE",
+          contractorId: "Contractor's ID",
+          contractorVatId: "Contractor's VAT ID",
+          contractorJurisdiction: "Contractor's jurisdiction",
+          contractorAddress: "Contractor's address",
+          contractNumber: "Contract's number",
+          contractDate: "Contract's date",
+          probationPeriod: "Probation period",
+          terminationDate: "Termination date",
+          registrationNumber: "Registration number",
+          registrationDate: "Date of registration",
+          contractorEmail: "Contractor's email",
+          contractorRole: "Contractor's role",
+          contractorRate: "Contractor's rate",
+          currencyOfRate: "Currency of rate",
+          attachmentNumber: "Attachment number",
+          sowStartDateRequired: "Does Attachment have Start date?",
+          sowStartDate: "Attachment Start date",
+          bankAccountUAH: "Bank account UAH",
+          bankAccountUSD: "Bank account USD",
+          bankAccountEUR: "Bank account EUR",
+          bankName: "Bank name",
+          accountType: "Account type",
+          bankCode: "Bank code",
+        };
+
         // Basic validation - check required fields
         const requiredFields = document.querySelectorAll(
           "#form-sections-after-template [required]"
         );
-        let isValid = true;
+        const errors = [];
 
         requiredFields.forEach(function (field) {
           // Only validate visible fields
           const parentCol = field.closest('[class*="col-md"]');
           if (parentCol && parentCol.style.display !== "none" && !field.value) {
             field.classList.add("is-invalid");
-            isValid = false;
+            const label = fieldLabels[field.id] || field.id;
+            errors.push(label + " is required.");
           } else {
             field.classList.remove("is-invalid");
           }
         });
 
-        if (!isValid) {
-          alert("Please fill in all required fields");
+        if (errors.length > 0) {
+          showValidationError(errors);
           return;
         }
 
