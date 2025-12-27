@@ -90,10 +90,6 @@
         padding-left: 8px !important;
       }
       
-      /* Table fits on one screen */
-      #contractsTable_wrapper {
-        padding: 0;
-      }
 
       /* Primary buttons (главные действия) */
       .btn-primary,
@@ -296,7 +292,6 @@
       
       /* Make table fit screen */
       #contractsTable {
-        table-layout: fixed;
         width: 100% !important;
       }
       
@@ -309,25 +304,9 @@
       
       /* Column widths */
       #contractsTable th:nth-child(1),
-      #contractsTable td:nth-child(1) { width: 30px; } /* Folder */
-      #contractsTable th:nth-child(2),
-      #contractsTable td:nth-child(2) { width: 10%; } /* Contractor Name */
-      #contractsTable th:nth-child(3),
-      #contractsTable td:nth-child(3) { width: 10%; } /* Our Company */
-      #contractsTable th:nth-child(4),
-      #contractsTable td:nth-child(4) { width: 9%; } /* Service Type */
-      #contractsTable th:nth-child(5),
-      #contractsTable td:nth-child(5) { width: 9%; } /* Cooperation Type */
-      #contractsTable th:nth-child(6),
-      #contractsTable td:nth-child(6) { width: 8%; } /* Contract # */
-      #contractsTable th:nth-child(7),
-      #contractsTable td:nth-child(7) { width: 9%; } /* Contract Date */
-      #contractsTable th:nth-child(8),
-      #contractsTable td:nth-child(8) { width: 10%; } /* Document Type */
-      #contractsTable th:nth-child(9),
-      #contractsTable td:nth-child(9) { width: 8%; } /* Attachment # */
+      #contractsTable td:nth-child(1) { width: 35px; min-width: 35px; } /* Folder */
       #contractsTable th:nth-child(10),
-      #contractsTable td:nth-child(10) { width: 75px; } /* Actions */
+      #contractsTable td:nth-child(10) { width: 90px; min-width: 90px; } /* Actions */
       
       /* Smaller search inputs */
       #contractsTable thead input {
@@ -353,23 +332,18 @@
     <?!= getNavigation(activePage) ?>
 
     <!-- Main Content -->
-    <div class="main-content">
-      <!-- Header section with normal padding -->
-      <div class="container-xl">
-        <div class="mb-3 d-flex justify-content-start">
-          <a
-            href="<?= baseUrl ?>?page=ContractGenerator&mode=create"
-            class="btn btn-nav"
-          >
-            Create new
-          </a>
-        </div>
-
-        <h2 class="mb-4">List of Contracts</h2>
+    <div class="main-content container-xl">
+      <div class="mb-3 d-flex justify-content-start">
+        <a
+          href="<?= baseUrl ?>?page=ContractGenerator&mode=create"
+          class="btn btn-nav"
+        >
+          Create new
+        </a>
       </div>
-      
-      <!-- Table section with minimal padding -->
-      <div class="px-2">
+
+      <h2 class="mb-4">List of Contracts</h2>
+
       <table
         id="contractsTable"
         class="display table table-bordered"
@@ -480,8 +454,6 @@
             .getContractList();
         });
       </script>
-      </div>
-      <!-- Close table section -->
     </div>
     <!-- Close main-content -->
 
