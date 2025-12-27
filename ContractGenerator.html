@@ -1403,10 +1403,25 @@
 
       // Action handlers
       function confirmContract() {
-        // Validate form
-        const form = document.getElementById("contractForm");
-        if (!form.checkValidity()) {
-          form.reportValidity();
+        // Basic validation - check required fields
+        const requiredFields = document.querySelectorAll(
+          "#form-sections-after-template [required]"
+        );
+        let isValid = true;
+
+        requiredFields.forEach(function (field) {
+          // Only validate visible fields
+          const parentCol = field.closest('[class*="col-md"]');
+          if (parentCol && parentCol.style.display !== "none" && !field.value) {
+            field.classList.add("is-invalid");
+            isValid = false;
+          } else {
+            field.classList.remove("is-invalid");
+          }
+        });
+
+        if (!isValid) {
+          alert("Please fill in all required fields");
           return;
         }
 
