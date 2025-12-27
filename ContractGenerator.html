@@ -261,7 +261,109 @@
 
       <!-- Contract Form -->
       <div id="contract-form">
-        <!-- Section 1: Contractor Information -->
+        <!-- Section 1: Contract Details -->
+        <h5 class="section-title">
+          <i class="bi bi-file-earmark-text"></i> Contract Details
+        </h5>
+        <div class="form-section">
+          <div class="row mb-3">
+            <div class="col-md-4">
+              <label class="form-label"
+                >Our company <span class="text-danger">*</span>
+                <span class="field-required">Required</span></label
+              >
+              <span class="field-hint"></span>
+              <select id="ourCompany" class="form-select" required>
+                <option value="">Select...</option>
+              </select>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label"
+                >Type of services <span class="text-danger">*</span>
+                <span class="field-required">Required</span></label
+              >
+              <span class="field-hint"></span>
+              <select id="serviceType" class="form-select" required>
+                <option value="">Select...</option>
+              </select>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label"
+                >Type of cooperation <span class="text-danger">*</span>
+                <span class="field-required">Required</span></label
+              >
+              <span class="field-hint"></span>
+              <select id="cooperationType" class="form-select" required>
+                <option value="">Select...</option>
+              </select>
+            </div>
+          </div>
+          <div class="row mb-3">
+            <div class="col-md-4">
+              <label class="form-label"
+                >Contract's number <span class="text-danger">*</span>
+                <span class="field-required">Required</span></label
+              >
+              <span class="field-hint"></span>
+              <input
+                type="text"
+                id="contractNumber"
+                class="form-control"
+                required
+              />
+            </div>
+            <div class="col-md-4">
+              <label class="form-label"
+                >Contract's date <span class="text-danger">*</span>
+                <span class="field-required">Required</span></label
+              >
+              <span class="field-hint"></span>
+              <input
+                type="date"
+                id="contractDate"
+                class="form-control"
+                required
+              />
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">Probation period</label>
+              <span class="field-hint"></span>
+              <input type="date" id="probationPeriod" class="form-control" />
+            </div>
+          </div>
+          <div class="row mb-3">
+            <div class="col-md-4">
+              <label class="form-label">Termination date</label>
+              <span class="field-hint"></span>
+              <input type="date" id="terminationDate" class="form-control" />
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">SOW Start date - if necessary</label>
+              <span class="field-hint"></span>
+              <select id="sowStartDateRequired" class="form-select">
+                <option value="">Select...</option>
+                <option value="yes">Yes</option>
+                <option value="no">No</option>
+              </select>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">SOW Start date</label>
+              <span class="field-hint"></span>
+              <input type="date" id="sowStartDate" class="form-control" />
+            </div>
+          </div>
+          <div class="row mb-3">
+            <div class="col-md-12">
+              <label class="form-label">Contract template</label>
+              <span class="field-hint"></span>
+              <select id="contractTemplate" class="form-select">
+                <option value="">Select template...</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <!-- Section 2: Contractor Information -->
         <h5 class="section-title">
           <i class="bi bi-person-badge"></i> Contractor Information
         </h5>
@@ -383,108 +485,6 @@
               <label class="form-label">Contractor's email</label>
               <span class="field-hint"></span>
               <input type="email" id="contractorEmail" class="form-control" />
-            </div>
-          </div>
-        </div>
-
-        <!-- Section 2: Contract Details -->
-        <h5 class="section-title">
-          <i class="bi bi-file-earmark-text"></i> Contract Details
-        </h5>
-        <div class="form-section">
-          <div class="row mb-3">
-            <div class="col-md-4">
-              <label class="form-label"
-                >Our company <span class="text-danger">*</span>
-                <span class="field-required">Required</span></label
-              >
-              <span class="field-hint"></span>
-              <select id="ourCompany" class="form-select" required>
-                <option value="">Select...</option>
-              </select>
-            </div>
-            <div class="col-md-4">
-              <label class="form-label"
-                >Type of services <span class="text-danger">*</span>
-                <span class="field-required">Required</span></label
-              >
-              <span class="field-hint"></span>
-              <select id="serviceType" class="form-select" required>
-                <option value="">Select...</option>
-              </select>
-            </div>
-            <div class="col-md-4">
-              <label class="form-label"
-                >Type of cooperation <span class="text-danger">*</span>
-                <span class="field-required">Required</span></label
-              >
-              <span class="field-hint"></span>
-              <select id="cooperationType" class="form-select" required>
-                <option value="">Select...</option>
-              </select>
-            </div>
-          </div>
-          <div class="row mb-3">
-            <div class="col-md-4">
-              <label class="form-label"
-                >Contract's number <span class="text-danger">*</span>
-                <span class="field-required">Required</span></label
-              >
-              <span class="field-hint"></span>
-              <input
-                type="text"
-                id="contractNumber"
-                class="form-control"
-                required
-              />
-            </div>
-            <div class="col-md-4">
-              <label class="form-label"
-                >Contract's date <span class="text-danger">*</span>
-                <span class="field-required">Required</span></label
-              >
-              <span class="field-hint"></span>
-              <input
-                type="date"
-                id="contractDate"
-                class="form-control"
-                required
-              />
-            </div>
-            <div class="col-md-4">
-              <label class="form-label">Probation period</label>
-              <span class="field-hint"></span>
-              <input type="date" id="probationPeriod" class="form-control" />
-            </div>
-          </div>
-          <div class="row mb-3">
-            <div class="col-md-4">
-              <label class="form-label">Termination date</label>
-              <span class="field-hint"></span>
-              <input type="date" id="terminationDate" class="form-control" />
-            </div>
-            <div class="col-md-4">
-              <label class="form-label">SOW Start date - if necessary</label>
-              <span class="field-hint"></span>
-              <select id="sowStartDateRequired" class="form-select">
-                <option value="">Select...</option>
-                <option value="yes">Yes</option>
-                <option value="no">No</option>
-              </select>
-            </div>
-            <div class="col-md-4">
-              <label class="form-label">SOW Start date</label>
-              <span class="field-hint"></span>
-              <input type="date" id="sowStartDate" class="form-control" />
-            </div>
-          </div>
-          <div class="row mb-3">
-            <div class="col-md-12">
-              <label class="form-label">Contract template</label>
-              <span class="field-hint"></span>
-              <select id="contractTemplate" class="form-select">
-                <option value="">Select template...</option>
-              </select>
             </div>
           </div>
         </div>
