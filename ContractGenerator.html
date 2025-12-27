@@ -562,12 +562,12 @@
               </div>
               <div class="col-md-4">
                 <label class="form-label">Bank account USD</label>
-                <span class="field-hint"></span>
+                <span class="field-hint">If no account, enter "-"</span>
                 <input type="text" id="bankAccountUSD" class="form-control" />
               </div>
               <div class="col-md-4">
                 <label class="form-label">Bank account EUR</label>
-                <span class="field-hint"></span>
+                <span class="field-hint">If no account, enter "-"</span>
                 <input type="text" id="bankAccountEUR" class="form-control" />
               </div>
             </div>
@@ -735,6 +735,39 @@
           bankName: { visible: false, required: false },
           accountType: { visible: false, required: false },
           bankCode: { visible: false, required: false },
+        },
+
+        // In-house | Sloboda Software Gmbh
+        "In-house|Sloboda Software Gmbh": {
+          // Contractor Information
+          folderLink: { visible: true, required: true },
+          contractorName: { visible: true, required: true },
+          pe: { visible: true, required: true },
+          contractorId: { visible: true, required: true },
+          contractorVatId: { visible: true, required: true },
+          contractorJurisdiction: { visible: false, required: false },
+          contractorAddress: { visible: true, required: true },
+          registrationNumber: { visible: false, required: false },
+          registrationDate: { visible: false, required: false },
+          contractorEmail: { visible: true, required: true },
+          // Contract Details
+          contractNumber: { visible: true, required: true },
+          contractDate: { visible: true, required: true },
+          probationPeriod: { visible: true, required: true },
+          terminationDate: { visible: true, required: true },
+          sowStartDateRequired: { visible: false, required: false },
+          sowStartDate: { visible: false, required: false },
+          // Work Conditions
+          contractorRole: { visible: false, required: false },
+          contractorRate: { visible: false, required: false },
+          currencyOfRate: { visible: false, required: false },
+          // Bank Details
+          bankAccountUAH: { visible: false, required: false },
+          bankAccountUSD: { visible: true, required: true },
+          bankAccountEUR: { visible: true, required: true },
+          bankName: { visible: false, required: false },
+          accountType: { visible: true, required: true },
+          bankCode: { visible: true, required: true },
         },
 
         // In-house | Слобода Софт ТОВ
