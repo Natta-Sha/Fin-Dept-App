@@ -1674,7 +1674,7 @@ function getContractDataByIdFromData(id) {
  * Field mapping: form field ID -> sheet column name
  */
 const CONTRACT_FIELD_MAPPING = {
-  folderLink: "Ссылка на папку с дого",
+  folderLink: "Ссылка на папку с договором",
   contractorName: "Название контрактора",
   pe: "ФОП",
   ourCompany: "Наша компания",

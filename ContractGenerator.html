@@ -1562,22 +1562,54 @@
           cancelBtn.disabled = true;
         }
 
+        // Disable all form fields
+        setFormReadonly(true);
+
         // Save to backend
         google.script.run
           .withSuccessHandler(function (result) {
             if (result.success) {
-              // Hide buttons and show success message with back button
-              document.getElementById("create-buttons").innerHTML = `
+              // Hide buttons and show success message with back button and document link
+              let successHtml = `
                 <div class="col-12">
                   <div class="alert alert-success" role="alert">
                     <i class="bi bi-check-circle-fill me-2"></i>
                     Contract saved successfully!
+              `;
+
+              // Add document link if available
+              if (result.documentUrl) {
+                successHtml += `
+                    <br><br>
+                    <a href="${result.documentUrl}" target="_blank" class="alert-link">
+                      <i class="bi bi-file-earmark-text me-1"></i>Open created document
+                    </a>
+                `;
+              }
+
+              successHtml += `
                   </div>
-                  <button class="btn btn-primary px-5 fw-bold" onclick="safeNavigateToContractsList()">
-                    <i class="bi bi-arrow-left me-2"></i>Back to the list
-                  </button>
+                  <div class="d-flex gap-2">
+              `;
+
+              // Add button to open document
+              if (result.documentUrl) {
+                successHtml += `
+                    <a href="${result.documentUrl}" target="_blank" class="btn btn-success px-4 fw-bold">
+                      <i class="bi bi-file-earmark-text me-2"></i>Open document
+                    </a>
+                `;
+              }
+
+              successHtml += `
+                    <button class="btn btn-primary px-4 fw-bold" onclick="safeNavigateToContractsList()">
+                      <i class="bi bi-arrow-left me-2"></i>Back to the list
+                    </button>
+                  </div>
                 </div>
               `;
+
+              document.getElementById("create-buttons").innerHTML = successHtml;
             } else {
               alert("Error: " + result.message);
               if (confirmBtn) {
@@ -1588,6 +1620,8 @@
               if (cancelBtn) {
                 cancelBtn.disabled = false;
               }
+              // Re-enable form fields on error
+              setFormReadonly(false);
             }
           })
           .withFailureHandler(function (error) {
@@ -1600,6 +1634,8 @@
             if (cancelBtn) {
               cancelBtn.disabled = false;
             }
+            // Re-enable form fields on error
+            setFormReadonly(false);
           })
           .saveContract(formData);
       }
