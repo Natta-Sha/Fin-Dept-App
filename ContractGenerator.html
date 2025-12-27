@@ -699,13 +699,13 @@
 
       // ============================================
       // FIELD VISIBILITY CONFIGURATION
-      // Key format: "cooperationType|ourCompany|serviceType"
+      // Key format: "cooperationType|ourCompany"
       // Each field can be: { visible: true/false, required: true/false }
       // Fields not listed default to: { visible: true, required: false }
       // ============================================
       const FIELD_CONFIG = {
-        // In-house | Accountant | Accounting
-        "In-house|Accountant|Accounting": {
+        // In-house | Accountant
+        "In-house|Accountant": {
           // Contractor Information
           folderLink: { visible: true, required: true },
           contractorName: { visible: true, required: true },
@@ -733,6 +733,39 @@
           bankAccountUSD: { visible: false, required: false },
           bankAccountEUR: { visible: false, required: false },
           bankName: { visible: false, required: false },
+          accountType: { visible: false, required: false },
+          bankCode: { visible: false, required: false },
+        },
+
+        // In-house | Слобода Софт ТОВ
+        "In-house|Слобода Софт ТОВ": {
+          // Contractor Information
+          folderLink: { visible: true, required: true },
+          contractorName: { visible: true, required: true },
+          pe: { visible: true, required: true },
+          contractorId: { visible: true, required: true },
+          contractorVatId: { visible: false, required: false },
+          contractorJurisdiction: { visible: false, required: false },
+          contractorAddress: { visible: true, required: true },
+          registrationNumber: { visible: true, required: true },
+          registrationDate: { visible: true, required: true },
+          contractorEmail: { visible: true, required: true },
+          // Contract Details
+          contractNumber: { visible: true, required: true },
+          contractDate: { visible: true, required: true },
+          probationPeriod: { visible: false, required: false },
+          terminationDate: { visible: true, required: true },
+          sowStartDateRequired: { visible: false, required: false },
+          sowStartDate: { visible: false, required: false },
+          // Work Conditions
+          contractorRole: { visible: false, required: false },
+          contractorRate: { visible: false, required: false },
+          currencyOfRate: { visible: false, required: false },
+          // Bank Details
+          bankAccountUAH: { visible: true, required: true },
+          bankAccountUSD: { visible: false, required: false },
+          bankAccountEUR: { visible: false, required: false },
+          bankName: { visible: true, required: true },
           accountType: { visible: false, required: false },
           bankCode: { visible: false, required: false },
         },
@@ -774,9 +807,8 @@
         const ourCompany = document.getElementById("ourCompany").value;
         const serviceType = document.getElementById("serviceType").value;
 
-        // Get config for this combination (cooperationType|ourCompany|serviceType) or use default
-        const configKey =
-          cooperationType + "|" + ourCompany + "|" + serviceType;
+        // Get config by cooperationType + ourCompany
+        const configKey = cooperationType + "|" + ourCompany;
         const config = FIELD_CONFIG[configKey] || FIELD_CONFIG["_default"];
 
         // Apply visibility and required for each field
