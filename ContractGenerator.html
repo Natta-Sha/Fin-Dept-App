@@ -1760,9 +1760,13 @@
       // Fill form in VIEW mode - fast, no dropdown loading
       function fillContractFormViewMode(data) {
         if (!data) {
-          console.log("No contract data received");
           return;
         }
+
+        // Show form sections first
+        document.getElementById("initial-data-section").style.display = "block";
+        document.getElementById("form-sections-after-template").style.display =
+          "block";
 
         // Apply field visibility based on data from DB (not from dropdowns)
         applyFieldVisibilityFromData(
@@ -1826,9 +1830,16 @@
           data.sowStartDateRequired
         );
 
-        // Show form sections
-        document.getElementById("form-sections-after-template").style.display =
-          "block";
+        // Hide template section in view mode
+        const templateStatus = document.getElementById(
+          "contractTemplateStatus"
+        );
+        if (templateStatus) {
+          const templateCol = templateStatus.closest(".col-md-6");
+          if (templateCol) {
+            templateCol.style.display = "none";
+          }
+        }
 
         // Update UI for view mode
         updateUIForMode();
@@ -1837,13 +1848,17 @@
       // Helper: set select value in view mode (add single option)
       function setSelectValueViewMode(elementId, value) {
         const select = document.getElementById(elementId);
-        if (!select || !value) return;
-        // Add the value as single option
-        const option = document.createElement("option");
-        option.value = value;
-        option.textContent = value;
-        option.selected = true;
-        select.appendChild(option);
+        if (!select) return;
+        // Clear existing options
+        select.innerHTML = "";
+        if (value) {
+          // Add the value as single option
+          const option = document.createElement("option");
+          option.value = value;
+          option.textContent = value;
+          option.selected = true;
+          select.appendChild(option);
+        }
       }
 
       // Apply field visibility from data (not from dropdown values)

@@ -1686,40 +1686,51 @@ function getContractDataByIdFromData(id) {
       return String(dateVal);
     }
 
+    // Helper to safely get column value
+    function getColValue(columnName) {
+      const colIndex = indexMap[columnName];
+      return colIndex !== undefined ? (row[colIndex] || "") : "";
+    }
+    
+    function getColDateValue(columnName) {
+      const colIndex = indexMap[columnName];
+      return colIndex !== undefined ? formatDateForInput(row[colIndex]) : "";
+    }
+
     return {
       id: row[0] || "",
       documentLink: row[1] || "",
-      folderLink: row[indexMap["Ссылка на папку с договором"]] || "",
-      contractorName: row[indexMap["Название контрактора"]] || "",
-      pe: row[indexMap["ФОП"]] || "",
-      ourCompany: row[indexMap["Наша компания"]] || "",
-      serviceType: row[indexMap["Вид услуг"]] || "",
-      cooperationType: row[indexMap["Вид сотрудничества"]] || "",
-      documentType: row[indexMap["Вид документа"]] || "",
-      contractNumber: row[indexMap["№ договора"]] || "",
-      contractDate: formatDateForInput(row[indexMap["Дата договора"]]),
-      probationPeriod: row[indexMap["Срок ИС"]] || "",
-      terminationDate: formatDateForInput(row[indexMap["Дата окончания договора"]]),
-      registrationNumber: row[indexMap["№ гос.регистрации"]] || "",
-      registrationDate: formatDateForInput(row[indexMap["Дата гос.регистрации"]]),
-      contractorId: row[indexMap["Номер контрактора"]] || "",
-      contractorVatId: row[indexMap["Номер НДС контрактора"]] || "",
-      contractorJurisdiction: row[indexMap["Юрисдикция контрактора"]] || "",
-      contractorAddress: row[indexMap["Адрес контрактора"]] || "",
-      bankAccountUAH: row[indexMap["Счет (грн)"]] || "",
-      bankAccountUSD: row[indexMap["Счет (долл)"]] || "",
-      bankAccountEUR: row[indexMap["Счет (евро)"]] || "",
-      bankName: row[indexMap["Банк"]] || "",
-      accountType: row[indexMap["Тип счета"]] || "",
-      bankCode: row[indexMap["Код банка"]] || "",
-      contractorEmail: row[indexMap["Эл.почта"]] || "",
-      contractorRole: row[indexMap["Роль контрактора"]] || "",
-      contractorRate: row[indexMap["Рейт контрактора"]] || "",
-      currencyOfRate: row[indexMap["Валюта рейта"]] || "",
-      attachmentNumber: row[indexMap["Номер приложения"]] || "",
-      sowStartDateRequired: row[indexMap["Дата старта термин"]] || "",
-      sowStartDate: formatDateForInput(row[indexMap["Дата старта"]]),
-      templateLink: row[indexMap["Шаблон договора"]] || "",
+      folderLink: getColValue("Ссылка на папку с договором"),
+      contractorName: getColValue("Название контрактора"),
+      pe: getColValue("ФОП"),
+      ourCompany: getColValue("Наша компания"),
+      serviceType: getColValue("Вид услуг"),
+      cooperationType: getColValue("Вид сотрудничества"),
+      documentType: getColValue("Вид документа"),
+      contractNumber: getColValue("№ договора"),
+      contractDate: getColDateValue("Дата договора"),
+      probationPeriod: getColValue("Срок ИС"),
+      terminationDate: getColDateValue("Дата окончания договора"),
+      registrationNumber: getColValue("№ гос.регистрации"),
+      registrationDate: getColDateValue("Дата гос.регистрации"),
+      contractorId: getColValue("Номер контрактора"),
+      contractorVatId: getColValue("Номер НДС контрактора"),
+      contractorJurisdiction: getColValue("Юрисдикция контрактора"),
+      contractorAddress: getColValue("Адрес контрактора"),
+      bankAccountUAH: getColValue("Счет (грн)"),
+      bankAccountUSD: getColValue("Счет (долл)"),
+      bankAccountEUR: getColValue("Счет (евро)"),
+      bankName: getColValue("Банк"),
+      accountType: getColValue("Тип счета"),
+      bankCode: getColValue("Код банка"),
+      contractorEmail: getColValue("Эл.почта"),
+      contractorRole: getColValue("Роль контрактора"),
+      contractorRate: getColValue("Рейт контрактора"),
+      currencyOfRate: getColValue("Валюта рейта"),
+      attachmentNumber: getColValue("Номер приложения"),
+      sowStartDateRequired: getColValue("Дата старта термин"),
+      sowStartDate: getColDateValue("Дата старта"),
+      templateLink: getColValue("Шаблон договора"),
     };
   } catch (error) {
     console.error("Error getting contract data by ID:", error);
