@@ -415,12 +415,23 @@
                 <span class="field-hint"
                   >The generated contract will be saved to this folder</span
                 >
-                <input
-                  type="text"
-                  id="folderLink"
-                  class="form-control"
-                  placeholder="https://drive.google.com/drive/folders/..."
-                />
+                <div class="input-group">
+                  <input
+                    type="text"
+                    id="folderLink"
+                    class="form-control"
+                    placeholder="https://drive.google.com/drive/folders/..."
+                  />
+                  <button
+                    class="btn btn-outline-secondary"
+                    type="button"
+                    id="openFolderBtn"
+                    title="Open folder in new tab"
+                    onclick="openContractorFolder()"
+                  >
+                    <i class="bi bi-box-arrow-up-right"></i>
+                  </button>
+                </div>
                 <div class="invalid-feedback" id="folderLink-error">
                   Invalid format. Use Google Drive folder link:
                   https://drive.google.com/drive/folders/...
@@ -647,12 +658,6 @@
                 Delete
               </button>
               <button
-                class="btn btn-outline-success"
-                onclick="switchToMode('copy')"
-              >
-                Copy
-              </button>
-              <button
                 class="btn btn-outline-primary"
                 onclick="goToContractsList()"
               >
@@ -691,20 +696,6 @@
             </div>
           </div>
 
-          <!-- Copy mode buttons -->
-          <div id="copy-buttons" class="row mt-4" style="display: none">
-            <div class="col-md-12 d-flex justify-content-end gap-2">
-              <button class="btn btn-success" onclick="copyContract()">
-                Create Copy
-              </button>
-              <button
-                class="btn btn-outline-secondary"
-                onclick="switchToMode('view')"
-              >
-                Cancel
-              </button>
-            </div>
-          </div>
         </div>
         <!-- End of form-sections-after-template -->
       </div>
@@ -1248,7 +1239,6 @@
         document.getElementById("view-buttons").style.display = "none";
         document.getElementById("edit-buttons").style.display = "none";
         document.getElementById("delete-buttons").style.display = "none";
-        document.getElementById("copy-buttons").style.display = "none";
 
         switch (mode) {
           case "create":
@@ -1270,11 +1260,6 @@
             titleEl.textContent = "Contract - Delete";
             document.getElementById("delete-buttons").style.display = "flex";
             setFormReadonly(true);
-            break;
-          case "copy":
-            titleEl.textContent = "Contract - Copy";
-            document.getElementById("copy-buttons").style.display = "flex";
-            setFormReadonly(false);
             break;
           default:
             titleEl.textContent = "Create Contract";
@@ -1680,8 +1665,14 @@
           .deleteContract(contractId);
       }
 
-      function copyContract() {
-        alert("Copy contract - coming soon!");
+      // Open contractor folder in new tab
+      function openContractorFolder() {
+        const folderLink = document.getElementById("folderLink").value.trim();
+        if (folderLink) {
+          window.open(folderLink, "_blank");
+        } else {
+          alert("Please enter a folder link first");
+        }
       }
 
       // Validate Google Drive folder link
