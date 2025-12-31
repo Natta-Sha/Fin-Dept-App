@@ -1610,12 +1610,10 @@
         const formSections = document.getElementById(
           "form-sections-after-template"
         );
-        const initialData = document.getElementById("initial-data-section");
         const viewBtns = document.getElementById("view-buttons");
         const deleteBtns = document.getElementById("delete-buttons");
 
         if (formSections) formSections.style.display = "none";
-        if (initialData) initialData.style.display = "none";
         if (viewBtns) viewBtns.style.display = "none";
         if (deleteBtns) deleteBtns.style.display = "flex";
 
@@ -1767,12 +1765,13 @@
           return;
         }
 
-        console.log("View mode - cooperationType:", data.cooperationType, "ourCompany:", data.ourCompany, "documentType:", data.documentType);
+        console.log("View mode - cooperationType:", data.cooperationType, "ourCompany:", data.ourCompany, "serviceType:", data.serviceType, "documentType:", data.documentType);
 
-        // Show form sections first
-        document.getElementById("initial-data-section").style.display = "block";
-        document.getElementById("form-sections-after-template").style.display =
-          "block";
+        // Show form sections
+        const formSectionsAfterTemplate = document.getElementById("form-sections-after-template");
+        if (formSectionsAfterTemplate) {
+          formSectionsAfterTemplate.style.display = "block";
+        }
 
         // Apply field visibility based on data from DB (not from dropdowns)
         applyFieldVisibilityFromData(
