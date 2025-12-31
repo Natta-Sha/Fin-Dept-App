@@ -1908,7 +1908,7 @@ function generateContractDocumentName(formData) {
   ) {
     // Addendum_[attachmentNumber]_[sowStartDate]_[ourCompany]-[contractorName]
     const attachmentNumber = formData.attachmentNumber || "1";
-    const startDate = formatDateForContract(formData.sowStartDate || "");
+    const startDate = formatDateForFilename(formData.sowStartDate || "");
     return (
       "Addendum_" +
       attachmentNumber +
@@ -1922,7 +1922,7 @@ function generateContractDocumentName(formData) {
   } else {
     // Contract_[contractNumber]_[contractDate]_[ourCompany]-[contractorName]
     const contractNumber = formData.contractNumber || "";
-    const contractDate = formatDateForContract(formData.contractDate || "");
+    const contractDate = formatDateForFilename(formData.contractDate || "");
     return (
       "Contract_" +
       contractNumber +
@@ -1944,7 +1944,20 @@ function generateContractDocumentName(formData) {
 function formatDateForContract(dateStr) {
   if (!dateStr) return "";
 
-  // Handle YYYY-MM-DD format
+  // Handle YYYY-MM-DD format - returns DD/MM/YYYY for document content
+  const match = dateStr.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (match) {
+    return match[3] + "/" + match[2] + "/" + match[1]; // DD/MM/YYYY
+  }
+
+  // Return as-is if not in expected format
+  return dateStr;
+}
+
+function formatDateForFilename(dateStr) {
+  if (!dateStr) return "";
+
+  // Handle YYYY-MM-DD format - returns DD-MM-YYYY for filenames (no slashes!)
   const match = dateStr.match(/^(\d{4})-(\d{2})-(\d{2})$/);
   if (match) {
     return match[3] + "-" + match[2] + "-" + match[1]; // DD-MM-YYYY
