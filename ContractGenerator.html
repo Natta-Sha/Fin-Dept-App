@@ -674,9 +674,9 @@
               </button>
               <button
                 class="btn btn-outline-secondary"
-                onclick="switchToMode('view')"
+                onclick="goToContractsList()"
               >
-                Cancel
+                Discard changes
               </button>
             </div>
           </div>
@@ -1215,7 +1215,7 @@
       }
 
       // Set form fields readonly or editable
-      function setFormReadonly(isReadonly) {
+      function setFormReadonly(isReadonly, keepInitialDataLocked = false) {
         const formEl = document.getElementById("contract-form");
         if (isReadonly) {
           formEl.classList.add("view-mode");
@@ -1223,10 +1223,17 @@
           formEl.classList.remove("view-mode");
         }
 
+        // Initial data fields that should stay locked in edit mode
+        const initialDataFields = ["ourCompany", "serviceType", "cooperationType", "documentType"];
+
         document
           .querySelectorAll("#contract-form input, #contract-form select")
           .forEach((el) => {
-            el.disabled = isReadonly;
+            if (keepInitialDataLocked && initialDataFields.includes(el.id)) {
+              el.disabled = true;
+            } else {
+              el.disabled = isReadonly;
+            }
           });
       }
 
@@ -1254,7 +1261,8 @@
           case "edit":
             titleEl.textContent = "Contract - Edit";
             document.getElementById("edit-buttons").style.display = "flex";
-            setFormReadonly(false);
+            setFormReadonly(false, true); // Keep initial data fields locked
+            loadDropdownOptionsForEdit();
             break;
           case "delete":
             titleEl.textContent = "Contract - Delete";
@@ -1582,6 +1590,177 @@
 
       function saveContractChanges() {
         alert("Save changes - coming soon!");
+      }
+
+      // Load dropdown options for edit mode (for select fields that need options)
+      function loadDropdownOptionsForEdit() {
+        google.script.run
+          .withSuccessHandler(function (options) {
+            // Load options for editable select fields (not the initial 4)
+            fillDropdownKeepValue("pe", options.peOptions);
+            fillDropdownKeepValue("accountType", options.accountTypes);
+            fillDropdownKeepValue("currencyOfRate", options.currencies);
+            fillDropdownKeepValue("sowStartDateRequired", ["Yes", "No"]);
+          })
+          .withFailureHandler(function (error) {
+            console.error("Error loading dropdown options for edit:", error);
+          })
+          .getContractDropdownOptions();
+      }
+
+      // Fill dropdown but keep current value selected
+      function fillDropdownKeepValue(elementId, options) {
+        const select = document.getElementById(elementId);
+        if (!select) return;
+        
+        const currentValue = select.value;
+        
+        // Clear all options
+        select.innerHTML = '<option value="">Select...</option>';
+        
+        // Add new options
+        if (options && options.length) {
+          options.forEach(function (opt) {
+            const option = document.createElement("option");
+            option.value = opt;
+            option.textContent = opt;
+            if (opt === currentValue) {
+              option.selected = true;
+            }
+            select.appendChild(option);
+          });
+        }
+        
+        // If current value not in options, add it
+        if (currentValue && !Array.from(select.options).some(o => o.value === currentValue)) {
+          const option = document.createElement("option");
+          option.value = currentValue;
+          option.textContent = currentValue;
+          option.selected = true;
+          select.appendChild(option);
+        }
+      }
+
+      // Save contract changes (edit mode)
+      function saveContract() {
+        if (!contractId || contractId === "") {
+          alert("Contract ID not found");
+          return;
+        }
+
+        // Validate visible required fields
+        const requiredFields = document.querySelectorAll(
+          '#contract-form [required]:not([disabled])'
+        );
+        let isValid = true;
+        let firstInvalid = null;
+
+        requiredFields.forEach(function (field) {
+          const parentCol = field.closest('[class*="col-md"]');
+          if (parentCol && parentCol.style.display !== "none") {
+            if (!field.value || field.value.trim() === "") {
+              field.classList.add("is-invalid");
+              isValid = false;
+              if (!firstInvalid) firstInvalid = field;
+            } else {
+              field.classList.remove("is-invalid");
+            }
+          }
+        });
+
+        if (!isValid) {
+          if (firstInvalid) firstInvalid.focus();
+          const alertDiv = document.getElementById("validation-alert");
+          if (alertDiv) {
+            alertDiv.style.display = "block";
+            alertDiv.textContent = "Please fill in all required fields";
+          }
+          return;
+        }
+
+        // Collect form data
+        const formData = {
+          id: contractId,
+          folderLink: document.getElementById("folderLink").value,
+          contractorName: document.getElementById("contractorName").value,
+          pe: document.getElementById("pe").value,
+          ourCompany: document.getElementById("ourCompany").value,
+          serviceType: document.getElementById("serviceType").value,
+          cooperationType: document.getElementById("cooperationType").value,
+          documentType: document.getElementById("documentType").value,
+          contractNumber: document.getElementById("contractNumber").value,
+          contractDate: document.getElementById("contractDate").value,
+          probationPeriod: document.getElementById("probationPeriod").value,
+          terminationDate: document.getElementById("terminationDate").value,
+          registrationNumber: document.getElementById("registrationNumber").value,
+          registrationDate: document.getElementById("registrationDate").value,
+          contractorId: document.getElementById("contractorId").value,
+          contractorVatId: document.getElementById("contractorVatId").value,
+          contractorJurisdiction: document.getElementById("contractorJurisdiction").value,
+          contractorAddress: document.getElementById("contractorAddress").value,
+          bankAccountUAH: document.getElementById("bankAccountUAH").value,
+          bankAccountUSD: document.getElementById("bankAccountUSD").value,
+          bankAccountEUR: document.getElementById("bankAccountEUR").value,
+          bankName: document.getElementById("bankName").value,
+          accountType: document.getElementById("accountType").value,
+          bankCode: document.getElementById("bankCode").value,
+          contractorEmail: document.getElementById("contractorEmail").value,
+          contractorRole: document.getElementById("contractorRole").value,
+          contractorRate: document.getElementById("contractorRate").value,
+          currencyOfRate: document.getElementById("currencyOfRate").value,
+          attachmentNumber: document.getElementById("attachmentNumber").value,
+          sowStartDateRequired: document.getElementById("sowStartDateRequired").value,
+          sowStartDate: document.getElementById("sowStartDate").value,
+          templateLink: document.getElementById("contractTemplateLinkBtn").href.replace('/preview', '/edit'),
+        };
+
+        // Disable buttons and show loading
+        const saveBtn = document.querySelector('#edit-buttons .btn-success');
+        const cancelBtn = document.querySelector('#edit-buttons .btn-outline-secondary');
+        if (saveBtn) {
+          saveBtn.disabled = true;
+          saveBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Saving...';
+        }
+        if (cancelBtn) cancelBtn.disabled = true;
+
+        // Call backend to update
+        google.script.run
+          .withSuccessHandler(function (result) {
+            if (result.success) {
+              // Show success and redirect to list
+              const mainContent = document.querySelector(".main-content");
+              mainContent.innerHTML = `
+                <div class="col-12 text-center py-5">
+                  <div class="alert alert-success" role="alert">
+                    <i class="bi bi-check-circle me-2"></i>
+                    Contract updated successfully!
+                  </div>
+                  ${result.documentUrl ? `<a href="${result.documentUrl}" target="_blank" class="btn btn-primary mb-3">
+                    <i class="bi bi-file-earmark-text me-2"></i>Open Document
+                  </a><br>` : ''}
+                  <button class="btn btn-outline-primary" onclick="safeNavigateToContractsList()">
+                    <i class="bi bi-arrow-left me-2"></i>Back to the list
+                  </button>
+                </div>
+              `;
+            } else {
+              alert("Error: " + result.message);
+              if (saveBtn) {
+                saveBtn.disabled = false;
+                saveBtn.innerHTML = 'Save changes';
+              }
+              if (cancelBtn) cancelBtn.disabled = false;
+            }
+          })
+          .withFailureHandler(function (error) {
+            alert("Error updating contract: " + error);
+            if (saveBtn) {
+              saveBtn.disabled = false;
+              saveBtn.innerHTML = 'Save changes';
+            }
+            if (cancelBtn) cancelBtn.disabled = false;
+          })
+          .updateContract(formData);
       }
 
       function deleteContract() {

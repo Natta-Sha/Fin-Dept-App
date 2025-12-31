@@ -195,6 +195,15 @@ function deleteContract(id) {
   return deleteContractFromData(id);
 }
 
+/**
+ * Update an existing contract
+ * @param {Object} formData - Contract form data including id
+ * @returns {Object} Result with success status
+ */
+function updateContract(formData) {
+  return updateContractToData(formData);
+}
+
 // Error handling and performance monitoring removed for cleaner code
 
 // Performance monitoring removed for cleaner code

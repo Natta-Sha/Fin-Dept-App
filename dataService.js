@@ -2177,3 +2177,123 @@ function deleteContractFromData(id) {
     };
   }
 }
+
+/**
+ * Update an existing contract
+ * @param {Object} formData - Contract form data including id
+ * @returns {Object} Result with success status and document URL
+ */
+function updateContractToData(formData) {
+  try {
+    const contractId = formData.id;
+    if (!contractId || contractId.toString().trim() === "") {
+      return { success: false, message: "Invalid contract ID" };
+    }
+
+    const spreadsheet = SpreadsheetApp.openById(
+      CONFIG.CONTRACTORS_SPREADSHEET_ID
+    );
+    const sheet = spreadsheet.getSheetByName("Contracts");
+
+    if (!sheet) {
+      return { success: false, message: "Contracts sheet not found" };
+    }
+
+    const data = sheet.getDataRange().getValues();
+    const headers = data[0];
+
+    // Build column index map
+    const columnMap = {};
+    headers.forEach((header, index) => {
+      if (header) {
+        columnMap[header.toString().trim()] = index;
+      }
+    });
+
+    // Find the row with matching ID
+    let rowIndex = -1;
+    let oldDocumentLink = null;
+
+    for (let i = 1; i < data.length; i++) {
+      const rowId = data[i][0];
+      if (
+        rowId == contractId ||
+        rowId === contractId ||
+        rowId.toString() === contractId.toString()
+      ) {
+        rowIndex = i + 1; // Sheet rows are 1-indexed
+        oldDocumentLink = data[i][1]; // Column B = document link
+        break;
+      }
+    }
+
+    if (rowIndex === -1) {
+      return { success: false, message: "Contract not found" };
+    }
+
+    // Step 1: Delete old document if exists
+    if (oldDocumentLink) {
+      try {
+        const docIdMatch = oldDocumentLink.match(/\/d\/([a-zA-Z0-9_-]+)/);
+        if (docIdMatch && docIdMatch[1]) {
+          const docId = docIdMatch[1];
+          const file = DriveApp.getFileById(docId);
+          file.setTrashed(true);
+          console.log("Old document moved to trash:", docId);
+        }
+      } catch (docError) {
+        console.warn("Could not delete old document:", docError);
+        // Continue anyway
+      }
+    }
+
+    // Step 2: Create new document
+    let newDocumentUrl = "";
+    if (formData.templateLink && formData.folderLink) {
+      const docResult = createContractDocument(
+        formData.templateLink,
+        formData.folderLink,
+        formData
+      );
+
+      if (docResult.success) {
+        newDocumentUrl = docResult.documentUrl;
+      } else {
+        console.warn("Could not create new document:", docResult.error);
+      }
+    }
+
+    // Step 3: Update row data
+    // Column A (index 0) = ID - don't change
+    // Column B (index 1) = Document link
+    sheet.getRange(rowIndex, 2).setValue(newDocumentUrl);
+
+    // Update other columns using mapping
+    Object.keys(formData).forEach(function (fieldId) {
+      if (fieldId === "id") return; // Skip ID field
+
+      const columnName = CONTRACT_FIELD_MAPPING[fieldId];
+      if (columnName && columnMap.hasOwnProperty(columnName)) {
+        const colIndex = columnMap[columnName] + 1; // Sheet columns are 1-indexed
+        sheet.getRange(rowIndex, colIndex).setValue(formData[fieldId] || "");
+      }
+    });
+
+    console.log("Contract updated successfully, ID:", contractId);
+
+    return {
+      success: true,
+      id: contractId,
+      documentUrl: newDocumentUrl,
+      message: newDocumentUrl
+        ? "Contract updated and document recreated successfully"
+        : "Contract updated (document creation skipped)",
+    };
+  } catch (error) {
+    console.error("Error updating contract:", error);
+    return {
+      success: false,
+      message: "Error updating contract: " + error.toString(),
+    };
+  }
+}
