@@ -1712,8 +1712,10 @@
 
       // Initialize on page load
       window.addEventListener("DOMContentLoaded", function () {
+        console.log("DOMContentLoaded - mode:", mode, "contractId:", contractId);
         // For view mode - load contract data directly (faster, no dropdown options needed)
         if (mode === "view" && contractId) {
+          console.log("Calling getContractDataById for view mode...");
           google.script.run
             .withSuccessHandler(fillContractFormViewMode)
             .withFailureHandler(function (error) {
@@ -1759,9 +1761,13 @@
 
       // Fill form in VIEW mode - fast, no dropdown loading
       function fillContractFormViewMode(data) {
+        console.log("fillContractFormViewMode called with:", data);
         if (!data) {
+          console.log("No data received in fillContractFormViewMode");
           return;
         }
+
+        console.log("View mode - cooperationType:", data.cooperationType, "ourCompany:", data.ourCompany, "documentType:", data.documentType);
 
         // Show form sections first
         document.getElementById("initial-data-section").style.display = "block";
@@ -1871,10 +1877,13 @@
         const configKey3 =
           cooperationType + "|" + ourCompany + "|" + documentType;
         const configKey2 = cooperationType + "|" + ourCompany;
+        console.log("Looking for config key3:", configKey3, "key2:", configKey2);
+        console.log("Available FIELD_CONFIG keys:", Object.keys(FIELD_CONFIG));
         const config =
           FIELD_CONFIG[configKey3] ||
           FIELD_CONFIG[configKey2] ||
           FIELD_CONFIG["_default"];
+        console.log("Using config:", config ? "found" : "default");
 
         // Apply visibility for each field
         Object.keys(config).forEach(function (fieldId) {
