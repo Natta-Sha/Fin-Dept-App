@@ -415,7 +415,7 @@
                 <span class="field-hint"
                   >The generated contract will be saved to this folder</span
                 >
-                <div class="input-group">
+                <div class="input-group has-validation">
                   <input
                     type="text"
                     id="folderLink"
@@ -431,10 +431,10 @@
                   >
                     <i class="bi bi-box-arrow-up-right"></i>
                   </button>
-                </div>
-                <div class="invalid-feedback" id="folderLink-error">
-                  Invalid format. Use Google Drive folder link:
-                  https://drive.google.com/drive/folders/...
+                  <div class="invalid-feedback" id="folderLink-error">
+                    Invalid format. Use Google Drive folder link:
+                    https://drive.google.com/drive/folders/...
+                  </div>
                 </div>
               </div>
               <div class="col-md-6">
@@ -553,24 +553,8 @@
           <h5 class="section-title">
             <i class="bi bi-briefcase"></i> Work Conditions
           </h5>
-          <div class="form-section">
+          <div class="form-section" id="work-conditions-section">
             <div class="row mb-3">
-              <div class="col-md-4">
-                <label class="form-label">Contractor's role</label>
-                <span class="field-hint"></span>
-                <input type="text" id="contractorRole" class="form-control" />
-              </div>
-              <div class="col-md-4">
-                <label class="form-label">Contractor's rate</label>
-                <span class="field-hint"></span>
-                <input
-                  type="number"
-                  id="contractorRate"
-                  class="form-control"
-                  step="0.01"
-                  min="0"
-                />
-              </div>
               <div class="col-md-4">
                 <label class="form-label">Currency of rate</label>
                 <span class="field-hint"></span>
@@ -578,6 +562,40 @@
                   <option value="">Select...</option>
                 </select>
               </div>
+            </div>
+            
+            <!-- Dynamic Roles/Rates Table -->
+            <div id="rolesRatesContainer">
+              <label class="form-label mb-2">Contractor's roles and rates</label>
+              <table class="table table-bordered" id="rolesRatesTable">
+                <thead class="table-light">
+                  <tr>
+                    <th style="width: 50px">#</th>
+                    <th>Role</th>
+                    <th style="width: 150px">Rate</th>
+                    <th style="width: 50px"></th>
+                  </tr>
+                </thead>
+                <tbody id="rolesRatesBody">
+                  <tr data-row="1">
+                    <td class="text-center align-middle">1</td>
+                    <td>
+                      <input type="text" class="form-control role-input" name="role_1" placeholder="Enter role..." />
+                    </td>
+                    <td>
+                      <input type="number" class="form-control rate-input" name="rate_1" step="0.01" min="0" placeholder="0.00" />
+                    </td>
+                    <td class="text-center align-middle">
+                      <button type="button" class="btn btn-outline-danger btn-sm remove-rate-row" title="Remove row" disabled>
+                        <i class="bi bi-trash"></i>
+                      </button>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+              <button type="button" class="btn btn-outline-primary btn-sm" id="addRateRowBtn">
+                <i class="bi bi-plus-circle me-1"></i>Add role/rate
+              </button>
             </div>
           </div>
 
@@ -737,8 +755,7 @@
           sowStartDateRequired: { visible: false, required: false },
           sowStartDate: { visible: false, required: false },
           // Work Conditions
-          contractorRole: { visible: false, required: false },
-          contractorRate: { visible: false, required: false },
+          rolesRatesContainer: { visible: false, required: false },
           currencyOfRate: { visible: false, required: false },
           // Bank Details
           bankAccountUAH: { visible: false, required: false },
@@ -771,8 +788,7 @@
           sowStartDateRequired: { visible: false, required: false },
           sowStartDate: { visible: false, required: false },
           // Work Conditions
-          contractorRole: { visible: false, required: false },
-          contractorRate: { visible: false, required: false },
+          rolesRatesContainer: { visible: false, required: false },
           currencyOfRate: { visible: false, required: false },
           // Bank Details
           bankAccountUAH: { visible: false, required: false },
@@ -805,8 +821,7 @@
           sowStartDateRequired: { visible: true, required: false },
           sowStartDate: { visible: true, required: false },
           // Work Conditions
-          contractorRole: { visible: true, required: true },
-          contractorRate: { visible: true, required: true },
+          rolesRatesContainer: { visible: true, required: true },
           currencyOfRate: { visible: true, required: true },
           // Bank Details
           bankAccountUAH: { visible: true, required: false },
@@ -839,8 +854,7 @@
           sowStartDateRequired: { visible: true, required: false },
           sowStartDate: { visible: true, required: false },
           // Work Conditions
-          contractorRole: { visible: true, required: true },
-          contractorRate: { visible: true, required: true },
+          rolesRatesContainer: { visible: true, required: true },
           currencyOfRate: { visible: true, required: true },
           // Bank Details
           bankAccountUAH: { visible: true, required: false },
@@ -873,8 +887,7 @@
           sowStartDateRequired: { visible: true, required: false },
           sowStartDate: { visible: true, required: false },
           // Work Conditions
-          contractorRole: { visible: true, required: true },
-          contractorRate: { visible: true, required: true },
+          rolesRatesContainer: { visible: true, required: true },
           currencyOfRate: { visible: true, required: true },
           // Bank Details
           bankAccountUAH: { visible: false, required: false },
@@ -907,8 +920,7 @@
           sowStartDateRequired: { visible: true, required: false },
           sowStartDate: { visible: true, required: false },
           // Work Conditions
-          contractorRole: { visible: true, required: true },
-          contractorRate: { visible: true, required: true },
+          rolesRatesContainer: { visible: true, required: true },
           currencyOfRate: { visible: true, required: true },
           // Bank Details
           bankAccountUAH: { visible: false, required: false },
@@ -941,8 +953,7 @@
           sowStartDateRequired: { visible: true, required: false },
           sowStartDate: { visible: true, required: false },
           // Work Conditions
-          contractorRole: { visible: true, required: true },
-          contractorRate: { visible: true, required: true },
+          rolesRatesContainer: { visible: true, required: true },
           currencyOfRate: { visible: true, required: true },
           // Bank Details
           bankAccountUAH: { visible: true, required: true },
@@ -975,8 +986,7 @@
           sowStartDateRequired: { visible: true, required: false },
           sowStartDate: { visible: true, required: false },
           // Work Conditions
-          contractorRole: { visible: true, required: true },
-          contractorRate: { visible: true, required: true },
+          rolesRatesContainer: { visible: true, required: true },
           currencyOfRate: { visible: true, required: true },
           // Bank Details
           bankAccountUAH: { visible: true, required: true },
@@ -1009,8 +1019,7 @@
           sowStartDateRequired: { visible: false, required: false },
           sowStartDate: { visible: false, required: false },
           // Work Conditions
-          contractorRole: { visible: false, required: false },
-          contractorRate: { visible: false, required: false },
+          rolesRatesContainer: { visible: false, required: false },
           currencyOfRate: { visible: false, required: false },
           // Bank Details
           bankAccountUAH: { visible: true, required: true },
@@ -1040,8 +1049,7 @@
           terminationDate: { visible: true, required: false },
           sowStartDateRequired: { visible: true, required: false },
           sowStartDate: { visible: true, required: false },
-          contractorRole: { visible: true, required: false },
-          contractorRate: { visible: true, required: false },
+          rolesRatesContainer: { visible: true, required: false },
           currencyOfRate: { visible: true, required: false },
           bankAccountUAH: { visible: true, required: false },
           bankAccountUSD: { visible: true, required: false },
@@ -1121,7 +1129,11 @@
           if (!field) return;
 
           // Find the parent column (col-md-*) to hide/show
-          const parentCol = field.closest('[class*="col-md"]');
+          // For rolesRatesContainer, use the element itself
+          let parentCol = field.closest('[class*="col-md"]');
+          if (!parentCol && fieldId === "rolesRatesContainer") {
+            parentCol = field; // The container itself
+          }
 
           if (parentCol) {
             // Find visual required indicators (star and "Required" text)
@@ -1430,8 +1442,7 @@
           registrationNumber: "Registration number",
           registrationDate: "Date of registration",
           contractorEmail: "Contractor's email",
-          contractorRole: "Contractor's role",
-          contractorRate: "Contractor's rate",
+          rolesRates: "Contractor's roles and rates",
           currencyOfRate: "Currency of rate",
           attachmentNumber: "Attachment number",
           sowStartDateRequired: "Does Attachment have Start date?",
@@ -1496,8 +1507,7 @@
           accountType: document.getElementById("accountType").value,
           bankCode: document.getElementById("bankCode").value,
           contractorEmail: document.getElementById("contractorEmail").value,
-          contractorRole: document.getElementById("contractorRole").value,
-          contractorRate: document.getElementById("contractorRate").value,
+          rolesRates: getRolesRatesData(),
           currencyOfRate: document.getElementById("currencyOfRate").value,
           attachmentNumber: document.getElementById("attachmentNumber").value,
           sowStartDateRequired: document.getElementById("sowStartDateRequired")
@@ -1705,8 +1715,7 @@
           accountType: document.getElementById("accountType").value,
           bankCode: document.getElementById("bankCode").value,
           contractorEmail: document.getElementById("contractorEmail").value,
-          contractorRole: document.getElementById("contractorRole").value,
-          contractorRate: document.getElementById("contractorRate").value,
+          rolesRates: getRolesRatesData(),
           currencyOfRate: document.getElementById("currencyOfRate").value,
           attachmentNumber: document.getElementById("attachmentNumber").value,
           sowStartDateRequired: document.getElementById("sowStartDateRequired").value,
@@ -1854,6 +1863,118 @@
         }
       }
 
+      // ============================================
+      // DYNAMIC ROLES/RATES TABLE
+      // ============================================
+      const MAX_RATE_ROWS = 20;
+      let currentRateRows = 1;
+
+      function addRateRow() {
+        if (currentRateRows >= MAX_RATE_ROWS) {
+          alert("Maximum " + MAX_RATE_ROWS + " rows allowed");
+          return;
+        }
+        
+        currentRateRows++;
+        const tbody = document.getElementById("rolesRatesBody");
+        const newRow = document.createElement("tr");
+        newRow.setAttribute("data-row", currentRateRows);
+        newRow.innerHTML = `
+          <td class="text-center align-middle">${currentRateRows}</td>
+          <td>
+            <input type="text" class="form-control role-input" name="role_${currentRateRows}" placeholder="Enter role..." />
+          </td>
+          <td>
+            <input type="number" class="form-control rate-input" name="rate_${currentRateRows}" step="0.01" min="0" placeholder="0.00" />
+          </td>
+          <td class="text-center align-middle">
+            <button type="button" class="btn btn-outline-danger btn-sm remove-rate-row" title="Remove row">
+              <i class="bi bi-trash"></i>
+            </button>
+          </td>
+        `;
+        tbody.appendChild(newRow);
+        updateRemoveButtons();
+      }
+
+      function removeRateRow(btn) {
+        const row = btn.closest("tr");
+        if (row) {
+          row.remove();
+          currentRateRows--;
+          renumberRateRows();
+          updateRemoveButtons();
+        }
+      }
+
+      function renumberRateRows() {
+        const rows = document.querySelectorAll("#rolesRatesBody tr");
+        rows.forEach((row, index) => {
+          const num = index + 1;
+          row.setAttribute("data-row", num);
+          row.querySelector("td:first-child").textContent = num;
+          row.querySelector(".role-input").name = "role_" + num;
+          row.querySelector(".rate-input").name = "rate_" + num;
+        });
+      }
+
+      function updateRemoveButtons() {
+        const rows = document.querySelectorAll("#rolesRatesBody tr");
+        rows.forEach((row, index) => {
+          const btn = row.querySelector(".remove-rate-row");
+          if (btn) {
+            // Disable remove button if only one row left
+            btn.disabled = rows.length <= 1;
+          }
+        });
+      }
+
+      function getRolesRatesData() {
+        const rows = document.querySelectorAll("#rolesRatesBody tr");
+        const data = [];
+        rows.forEach((row) => {
+          const role = row.querySelector(".role-input").value.trim();
+          const rate = row.querySelector(".rate-input").value.trim();
+          data.push({ role: role, rate: rate });
+        });
+        return data;
+      }
+
+      function setRolesRatesData(dataArray) {
+        const tbody = document.getElementById("rolesRatesBody");
+        tbody.innerHTML = "";
+        currentRateRows = 0;
+        
+        if (!dataArray || dataArray.length === 0) {
+          // Add one empty row
+          addRateRow();
+          return;
+        }
+        
+        dataArray.forEach((item, index) => {
+          currentRateRows = index + 1;
+          const row = document.createElement("tr");
+          row.setAttribute("data-row", currentRateRows);
+          row.innerHTML = `
+            <td class="text-center align-middle">${currentRateRows}</td>
+            <td>
+              <input type="text" class="form-control role-input" name="role_${currentRateRows}" value="${item.role || ''}" placeholder="Enter role..." />
+            </td>
+            <td>
+              <input type="number" class="form-control rate-input" name="rate_${currentRateRows}" step="0.01" min="0" value="${item.rate || ''}" placeholder="0.00" />
+            </td>
+            <td class="text-center align-middle">
+              <button type="button" class="btn btn-outline-danger btn-sm remove-rate-row" title="Remove row">
+                <i class="bi bi-trash"></i>
+              </button>
+            </td>
+          `;
+          tbody.appendChild(row);
+        });
+        
+        updateRemoveButtons();
+      }
+
       // Validate Google Drive folder link
       function validateFolderLink() {
         const input = document.getElementById("folderLink");
@@ -1866,8 +1987,9 @@
         }
 
         // Check for Google Drive folder link pattern
+        // Supports: /drive/folders/, /drive/u/0/folders/, /folders/, /open?id=, /file/d/
         const drivePattern =
-          /^https:\/\/drive\.google\.com\/(drive\/folders\/|open\?id=|file\/d\/|folders\/)/i;
+          /^https:\/\/drive\.google\.com\/(drive\/(u\/\d+\/)?folders\/|open\?id=|file\/d\/|folders\/)/i;
 
         if (drivePattern.test(value)) {
           input.classList.remove("is-invalid");
@@ -1910,6 +2032,14 @@
         const folderLinkInput = document.getElementById("folderLink");
         folderLinkInput.addEventListener("input", validateFolderLink);
         folderLinkInput.addEventListener("blur", validateFolderLink);
+
+        // Roles/Rates table event listeners
+        document.getElementById("addRateRowBtn").addEventListener("click", addRateRow);
+        document.getElementById("rolesRatesBody").addEventListener("click", function(e) {
+          if (e.target.closest(".remove-rate-row")) {
+            removeRateRow(e.target.closest(".remove-rate-row"));
+          }
+        });
 
         // Add listeners for template auto-loading
         [
@@ -1961,10 +2091,12 @@
           data.contractorEmail || "";
         document.getElementById("contractNumber").value =
           data.contractNumber || "";
-        document.getElementById("contractorRole").value =
-          data.contractorRole || "";
-        document.getElementById("contractorRate").value =
-          data.contractorRate || "";
+        
+        // Set roles/rates table data
+        if (data.rolesRates && Array.isArray(data.rolesRates)) {
+          setRolesRatesData(data.rolesRates);
+        }
+        
         document.getElementById("bankAccountUAH").value =
           data.bankAccountUAH || "";
         document.getElementById("bankAccountUSD").value =
@@ -2051,7 +2183,12 @@
           const field = document.getElementById(fieldId);
           if (!field) return;
 
-          const parentCol = field.closest('[class*="col-md"]');
+          // For rolesRatesContainer, use the element itself
+          let parentCol = field.closest('[class*="col-md"]');
+          if (!parentCol && fieldId === "rolesRatesContainer") {
+            parentCol = field;
+          }
+          
           if (parentCol) {
             if (fieldConfig.visible) {
               parentCol.style.display = "";
@@ -2123,10 +2260,12 @@
           data.contractorEmail || "";
         document.getElementById("contractNumber").value =
           data.contractNumber || "";
-        document.getElementById("contractorRole").value =
-          data.contractorRole || "";
-        document.getElementById("contractorRate").value =
-          data.contractorRate || "";
+        
+        // Set roles/rates table data
+        if (data.rolesRates && Array.isArray(data.rolesRates)) {
+          setRolesRatesData(data.rolesRates);
+        }
+        
         document.getElementById("currencyOfRate").value =
           data.currencyOfRate || "";
         document.getElementById("bankAccountUAH").value =

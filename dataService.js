@@ -1650,6 +1650,34 @@ function getContractListFromData() {
 }
 
 /**
+ * Extract roles/rates array from a contract row
+ * @param {Array} row - Sheet row data
+ * @param {Object} indexMap - Column name to index mapping
+ * @returns {Array} Array of {role, rate} objects
+ */
+function getRolesRatesFromRow(row, indexMap) {
+  const rolesRates = [];
+
+  for (let i = 1; i <= CONFIG.CONTRACT_RATES_TABLE.MAX_ROWS; i++) {
+    const roleColName = "Роль контрактора " + i;
+    const rateColName = "Рейт контрактора " + i;
+
+    const roleIndex = indexMap[roleColName];
+    const rateIndex = indexMap[rateColName];
+
+    const role = roleIndex !== undefined ? row[roleIndex] || "" : "";
+    const rate = rateIndex !== undefined ? row[rateIndex] || "" : "";
+
+    // Only include non-empty rows
+    if (role || rate) {
+      rolesRates.push({ role: role.toString(), rate: rate.toString() });
+    }
+  }
+
+  return rolesRates.length > 0 ? rolesRates : [{ role: "", rate: "" }];
+}
+
+/**
  * Get contract data by ID from spreadsheet
  * @param {string} id - Contract ID
  * @returns {Object} Contract data
@@ -1750,8 +1778,7 @@ function getContractDataByIdFromData(id) {
       accountType: getColValue("Тип счета"),
       bankCode: getColValue("Код банка"),
       contractorEmail: getColValue("Эл.почта"),
-      contractorRole: getColValue("Роль контрактора"),
-      contractorRate: getColValue("Рейт контрактора"),
+      rolesRates: getRolesRatesFromRow(row, indexMap),
       currencyOfRate: getColValue("Валюта рейта"),
       attachmentNumber: getColValue("Номер приложения"),
       sowStartDateRequired: getColValue("Дата старта термин"),
@@ -1794,8 +1821,7 @@ const CONTRACT_FIELD_MAPPING = {
   accountType: "Тип счета",
   bankCode: "Код банка",
   contractorEmail: "Эл.почта",
-  contractorRole: "Роль контрактора",
-  contractorRate: "Рейт контрактора",
+  // rolesRates is handled separately (multiple columns)
   currencyOfRate: "Валюта рейта",
   attachmentNumber: "Номер приложения",
   sowStartDateRequired: "Дата старта термин",
@@ -1829,8 +1855,7 @@ const CONTRACT_PLACEHOLDER_MAPPING = {
   accountType: "{Тип счета}",
   bankCode: "{Код банка}",
   contractorEmail: "{Эл.почта}",
-  contractorRole: "{Роль контрактора}",
-  contractorRate: "{Рейт контрактора}",
+  // rolesRates is handled separately (table in document)
   currencyOfRate: "{Валюта рейта}",
   attachmentNumber: "{Номер приложения}",
   sowStartDateRequired: "{Дата старта термин}",
@@ -1946,6 +1971,68 @@ const DATE_FIELDS = [
  * @param {Object} formData - Form data for replacements
  * @returns {Object} Result with document URL or error
  */
+/**
+ * Fill roles/rates table in the document
+ * Finds the table with {Роль контрактора} placeholder and fills it with data
+ * @param {Body} body - Google Doc body
+ * @param {Array} rolesRates - Array of {role, rate} objects
+ */
+function fillRolesRatesTable(body, rolesRates) {
+  try {
+    // Find all tables in the document
+    const tables = body.getTables();
+
+    for (let t = 0; t < tables.length; t++) {
+      const table = tables[t];
+      const numRows = table.getNumRows();
+
+      // Look for the table with role/rate placeholders
+      for (let r = 0; r < numRows; r++) {
+        const row = table.getRow(r);
+        const rowText = row.getText();
+
+        if (
+          rowText.includes("{Роль контрактора}") ||
+          rowText.includes("{Рейт контрактора}")
+        ) {
+          // Found the template row - this is the data row we need to fill
+          const templateRowIndex = r;
+
+          // Fill the first role/rate in the template row
+          if (rolesRates.length > 0) {
+            const cell0 = row.getCell(0);
+            const cell1 = row.getCell(1);
+            cell0.setText(rolesRates[0].role || "");
+            cell1.setText(rolesRates[0].rate || "");
+          }
+
+          // Add additional rows for remaining roles/rates
+          for (let i = 1; i < rolesRates.length; i++) {
+            const newRow = table.insertTableRow(templateRowIndex + i);
+            newRow.appendTableCell(rolesRates[i].role || "");
+            newRow.appendTableCell(rolesRates[i].rate || "");
+          }
+
+          return; // Done
+        }
+      }
+    }
+
+    // If no table found, just replace text placeholders with first role/rate
+    if (rolesRates.length > 0) {
+      body.replaceText("\\{Роль контрактора\\}", rolesRates[0].role || "");
+      body.replaceText("\\{Рейт контрактора\\}", rolesRates[0].rate || "");
+    }
+  } catch (error) {
+    console.warn("Error filling roles/rates table:", error);
+    // Fallback: just replace placeholders with first values
+    if (rolesRates.length > 0) {
+      body.replaceText("\\{Роль контрактора\\}", rolesRates[0].role || "");
+      body.replaceText("\\{Рейт контрактора\\}", rolesRates[0].rate || "");
+    }
+  }
+}
+
 function createContractDocument(templateUrl, folderUrl, formData) {
   try {
     // Extract IDs from URLs
@@ -1987,6 +2074,15 @@ function createContractDocument(templateUrl, folderUrl, formData) {
 
       body.replaceText(placeholder.replace(/[{}]/g, "\\$&"), value);
     });
+
+    // Fill roles/rates table
+    if (
+      formData.rolesRates &&
+      Array.isArray(formData.rolesRates) &&
+      formData.rolesRates.length > 0
+    ) {
+      fillRolesRatesTable(body, formData.rolesRates);
+    }
 
     // Save and close
     doc.saveAndClose();
@@ -2072,12 +2168,29 @@ function saveContractToData(formData) {
 
     // Map form data to columns using the mapping
     Object.keys(formData).forEach(function (fieldId) {
+      if (fieldId === "rolesRates") return; // Handle separately
       const columnName = CONTRACT_FIELD_MAPPING[fieldId];
       if (columnName && columnMap.hasOwnProperty(columnName)) {
         const colIndex = columnMap[columnName];
         rowData[colIndex] = formData[fieldId] || "";
       }
     });
+
+    // Save roles/rates to separate columns
+    if (formData.rolesRates && Array.isArray(formData.rolesRates)) {
+      formData.rolesRates.forEach(function (item, index) {
+        const rowNum = index + 1;
+        const roleColName = "Роль контрактора " + rowNum;
+        const rateColName = "Рейт контрактора " + rowNum;
+
+        if (columnMap.hasOwnProperty(roleColName)) {
+          rowData[columnMap[roleColName]] = item.role || "";
+        }
+        if (columnMap.hasOwnProperty(rateColName)) {
+          rowData[columnMap[rateColName]] = item.rate || "";
+        }
+      });
+    }
 
     // Append the row to the sheet
     sheet.appendRow(rowData);
@@ -2270,7 +2383,7 @@ function updateContractToData(formData) {
 
     // Update other columns using mapping
     Object.keys(formData).forEach(function (fieldId) {
-      if (fieldId === "id") return; // Skip ID field
+      if (fieldId === "id" || fieldId === "rolesRates") return; // Skip ID and rolesRates
 
       const columnName = CONTRACT_FIELD_MAPPING[fieldId];
       if (columnName && columnMap.hasOwnProperty(columnName)) {
@@ -2278,6 +2391,40 @@ function updateContractToData(formData) {
         sheet.getRange(rowIndex, colIndex).setValue(formData[fieldId] || "");
       }
     });
+
+    // Update roles/rates in separate columns
+    if (formData.rolesRates && Array.isArray(formData.rolesRates)) {
+      // First, clear all existing roles/rates columns
+      for (let i = 1; i <= CONFIG.CONTRACT_RATES_TABLE.MAX_ROWS; i++) {
+        const roleColName = "Роль контрактора " + i;
+        const rateColName = "Рейт контрактора " + i;
+
+        if (columnMap.hasOwnProperty(roleColName)) {
+          sheet.getRange(rowIndex, columnMap[roleColName] + 1).setValue("");
+        }
+        if (columnMap.hasOwnProperty(rateColName)) {
+          sheet.getRange(rowIndex, columnMap[rateColName] + 1).setValue("");
+        }
+      }
+
+      // Then set new values
+      formData.rolesRates.forEach(function (item, index) {
+        const rowNum = index + 1;
+        const roleColName = "Роль контрактора " + rowNum;
+        const rateColName = "Рейт контрактора " + rowNum;
+
+        if (columnMap.hasOwnProperty(roleColName)) {
+          sheet
+            .getRange(rowIndex, columnMap[roleColName] + 1)
+            .setValue(item.role || "");
+        }
+        if (columnMap.hasOwnProperty(rateColName)) {
+          sheet
+            .getRange(rowIndex, columnMap[rateColName] + 1)
+            .setValue(item.rate || "");
+        }
+      });
+    }
 
     console.log("Contract updated successfully, ID:", contractId);
 
