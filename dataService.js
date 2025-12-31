@@ -1694,10 +1694,6 @@ function getContractDataByIdFromData(id) {
       return null;
     }
 
-    console.log("Found contract row for ID " + id);
-    console.log("Headers:", JSON.stringify(headers));
-    console.log("IndexMap keys:", Object.keys(indexMap).join(", "));
-
     // Format date for input field (YYYY-MM-DD)
     function formatDateForInput(dateVal) {
       if (!dateVal) return "";
@@ -1763,14 +1759,6 @@ function getContractDataByIdFromData(id) {
       templateLink: getColValue("Шаблон договора"),
     };
 
-    console.log(
-      "Returning contract data - ourCompany:",
-      result.ourCompany,
-      "cooperationType:",
-      result.cooperationType,
-      "documentType:",
-      result.documentType
-    );
     return result;
   } catch (error) {
     console.error("Error getting contract data by ID:", error);
