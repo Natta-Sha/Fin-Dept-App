@@ -1782,7 +1782,7 @@ function getContractDataByIdFromData(id) {
       documentType: getColValue("Вид документа"),
       contractNumber: getColValue("№ договора"),
       contractDate: getColDateValue("Дата договора"),
-      probationPeriod: getColValue("Срок ИС"),
+      probationPeriod: getColDateValue("Срок ИС"),
       terminationDate: getColDateValue("Дата окончания договора"),
       registrationNumber: getColValue("№ гос.регистрации"),
       registrationDate: getColDateValue("Дата гос.регистрации"),
@@ -1814,6 +1814,7 @@ function getContractDataByIdFromData(id) {
     }
 
     console.log("Returning contract data for ID:", id);
+    console.log("Result object:", JSON.stringify(result));
     return result;
   } catch (error) {
     console.error("Error getting contract data by ID:", error);
