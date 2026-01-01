@@ -1732,10 +1732,15 @@ function getContractDataByIdFromData(id) {
           "yyyy-MM-dd"
         );
       }
-      // Try to parse DD-MM-YYYY format
-      const match = String(dateVal).match(/^(\d{2})-(\d{2})-(\d{4})$/);
-      if (match) {
-        return match[3] + "-" + match[2] + "-" + match[1];
+      // Try to parse DD/MM/YYYY format (new format)
+      const matchSlash = String(dateVal).match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+      if (matchSlash) {
+        return matchSlash[3] + "-" + matchSlash[2] + "-" + matchSlash[1];
+      }
+      // Try to parse DD-MM-YYYY format (old format)
+      const matchDash = String(dateVal).match(/^(\d{2})-(\d{2})-(\d{4})$/);
+      if (matchDash) {
+        return matchDash[3] + "-" + matchDash[2] + "-" + matchDash[1];
       }
       return String(dateVal);
     }
@@ -2185,7 +2190,12 @@ function saveContractToData(formData) {
       const columnName = CONTRACT_FIELD_MAPPING[fieldId];
       if (columnName && columnMap.hasOwnProperty(columnName)) {
         const colIndex = columnMap[columnName];
-        rowData[colIndex] = formData[fieldId] || "";
+        let value = formData[fieldId] || "";
+        // Format dates to DD/MM/YYYY for storage
+        if (DATE_FIELDS.includes(fieldId) && value) {
+          value = formatDateForContract(value);
+        }
+        rowData[colIndex] = value;
       }
     });
 
@@ -2401,7 +2411,12 @@ function updateContractToData(formData) {
       const columnName = CONTRACT_FIELD_MAPPING[fieldId];
       if (columnName && columnMap.hasOwnProperty(columnName)) {
         const colIndex = columnMap[columnName] + 1; // Sheet columns are 1-indexed
-        sheet.getRange(rowIndex, colIndex).setValue(formData[fieldId] || "");
+        let value = formData[fieldId] || "";
+        // Format dates to DD/MM/YYYY for storage
+        if (DATE_FIELDS.includes(fieldId) && value) {
+          value = formatDateForContract(value);
+        }
+        sheet.getRange(rowIndex, colIndex).setValue(value);
       }
     });
 
