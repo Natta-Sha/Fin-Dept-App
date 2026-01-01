@@ -1709,16 +1709,30 @@ function getContractDataByIdFromData(id) {
     });
 
     let row = null;
+    console.log("Searching for contract ID:", id);
+    console.log("Total rows in sheet:", data.length);
     for (let i = 1; i < data.length; i++) {
       const rowId = data[i][0]; // Column A = ID
-      if (rowId == id || rowId === id || rowId.toString() === id.toString()) {
+      console.log("Row " + i + " ID:", rowId);
+      if (
+        rowId == id ||
+        rowId === id ||
+        (rowId && rowId.toString() === id.toString())
+      ) {
         row = data[i];
+        console.log("Found contract at row", i);
         break;
       }
     }
 
     if (!row) {
-      console.log("Contract with ID " + id + " not found.");
+      console.log(
+        "Contract with ID " +
+          id +
+          " not found in " +
+          (data.length - 1) +
+          " rows."
+      );
       return null;
     }
 
