@@ -13,6 +13,7 @@ function doGet(e) {
     template.baseUrl = ScriptApp.getService().getUrl();
     template.invoiceId = e.parameter.invoiceId || e.parameter.id || "";
     template.creditNoteId = e.parameter.invoiceId || e.parameter.id || "";
+    template.contractId = e.parameter.contractId || e.parameter.id || "";
     template.mode = e.parameter.mode || "";
 
     // Set active page for navigation
@@ -25,6 +26,10 @@ function doGet(e) {
     // Pass credit note ID if provided (same as invoice ID for now)
     if (e.parameter.invoiceId || e.parameter.id) {
       template.creditNoteId = e.parameter.invoiceId || e.parameter.id;
+    }
+    // Pass contract ID if provided
+    if (e.parameter.contractId || e.parameter.id) {
+      template.contractId = e.parameter.contractId || e.parameter.id;
     }
     if (e.parameter.mode) {
       template.mode = e.parameter.mode;
@@ -124,6 +129,79 @@ function getCreditNoteDataById(id) {
  */
 function getCreditNoteList() {
   return getCreditNoteListFromData();
+}
+
+/**
+ * Get list of all contracts
+ * @returns {Array} Array of contract objects
+ */
+function getContractList() {
+  return getContractListFromData();
+}
+
+/**
+ * Get contract data by ID
+ * @param {string} id - Contract ID
+ * @returns {Object} Contract data
+ */
+function getContractDataById(id) {
+  return getContractDataByIdFromData(id);
+}
+
+/**
+ * Get dropdown options for contract form
+ * @returns {Object} Dropdown options
+ */
+function getContractDropdownOptions() {
+  return getContractDropdownOptionsFromData();
+}
+
+/**
+ * Get contract templates filtered by criteria
+ * @param {string} cooperationType
+ * @param {string} ourCompany
+ * @param {string} serviceType
+ * @returns {Array} Array of templates
+ */
+function getContractTemplates(
+  cooperationType,
+  ourCompany,
+  serviceType,
+  documentType
+) {
+  return getContractTemplatesFromData(
+    cooperationType,
+    ourCompany,
+    serviceType,
+    documentType
+  );
+}
+
+/**
+ * Save a new contract
+ * @param {Object} formData - Form data from the contract generator
+ * @returns {Object} Result with success status and contract ID
+ */
+function saveContract(formData) {
+  return saveContractToData(formData);
+}
+
+/**
+ * Delete a contract by ID
+ * @param {string} id - Contract ID
+ * @returns {Object} Result with success status
+ */
+function deleteContract(id) {
+  return deleteContractFromData(id);
+}
+
+/**
+ * Update an existing contract
+ * @param {Object} formData - Contract form data including id
+ * @returns {Object} Result with success status
+ */
+function updateContract(formData) {
+  return updateContractToData(formData);
 }
 
 // Error handling and performance monitoring removed for cleaner code
@@ -228,6 +306,11 @@ function getActivePageForNavigation(page, params = {}) {
     case "CreditNotesGenerator":
       // CreditNotesGenerator is part of credit notes section
       return "creditnotes";
+    case "ContractsList":
+      return "contracts";
+    case "ContractGenerator":
+      // ContractGenerator is part of contracts section
+      return "contracts";
     default:
       return "";
   }

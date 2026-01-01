@@ -1,0 +1,2351 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <base target="_top" />
+    <meta charset="utf-8" />
+    <title>Contract</title>
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css"
+      rel="stylesheet"
+    />
+    <style>
+      .main-content {
+        padding-top: 1rem;
+      }
+
+      .form-label {
+        font-weight: bold;
+      }
+
+      .section-title {
+        color: #667eea;
+        border-bottom: 2px solid #667eea;
+        padding-bottom: 0.5rem;
+        margin-bottom: 1rem;
+        margin-top: 1.5rem;
+      }
+
+      .form-section {
+        background: #f8f9fa;
+        padding: 1rem;
+        border-radius: 8px;
+        margin-bottom: 1rem;
+      }
+
+      /* Universal button styles */
+      .btn {
+        font-weight: 600 !important;
+        border-radius: 25px !important;
+        padding: 0.75rem 2rem !important;
+        font-size: 1.1rem !important;
+        transition: all 0.3s ease !important;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1) !important;
+        border: none !important;
+      }
+
+      .btn:hover {
+        transform: translateY(-1px) !important;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2) !important;
+      }
+
+      .btn:focus,
+      .btn:active {
+        transform: translateY(-1px) !important;
+      }
+
+      /* Small buttons */
+      .btn-sm {
+        padding: 0.25rem 0.75rem !important;
+        font-size: 0.8rem !important;
+        border-radius: 15px !important;
+      }
+
+      /* Primary buttons */
+      .btn-primary,
+      .btn-nav {
+        background: linear-gradient(
+          135deg,
+          #667eea 0%,
+          #764ba2 100%
+        ) !important;
+        color: white !important;
+      }
+
+      .btn-primary:hover,
+      .btn-nav:hover {
+        background: linear-gradient(
+          135deg,
+          #5a6fd8 0%,
+          #6b4190 100%
+        ) !important;
+        color: white !important;
+      }
+
+      /* Success buttons */
+      .btn-success {
+        background: linear-gradient(
+          135deg,
+          #28a745 0%,
+          #20692b 100%
+        ) !important;
+        color: white !important;
+      }
+
+      .btn-success:hover {
+        background: linear-gradient(
+          135deg,
+          #218838 0%,
+          #1e5e26 100%
+        ) !important;
+        color: white !important;
+      }
+
+      /* Danger buttons */
+      .btn-danger {
+        background: linear-gradient(
+          135deg,
+          #dc3545 0%,
+          #b02a37 100%
+        ) !important;
+        color: white !important;
+      }
+
+      .btn-danger:hover {
+        background: linear-gradient(
+          135deg,
+          #c82333 0%,
+          #9e2530 100%
+        ) !important;
+        color: white !important;
+      }
+
+      /* Outline buttons */
+      .btn-outline-primary {
+        background: linear-gradient(
+          135deg,
+          rgba(102, 126, 234, 0.1) 0%,
+          rgba(118, 75, 162, 0.1) 100%
+        ) !important;
+        color: #667eea !important;
+        border: 2px solid #667eea !important;
+      }
+
+      .btn-outline-primary:hover {
+        background: linear-gradient(
+          135deg,
+          #667eea 0%,
+          #764ba2 100%
+        ) !important;
+        color: white !important;
+      }
+
+      .btn-outline-secondary {
+        background: linear-gradient(
+          135deg,
+          rgba(108, 117, 125, 0.1) 0%,
+          rgba(73, 80, 87, 0.1) 100%
+        ) !important;
+        color: #6c757d !important;
+        border: 2px solid #6c757d !important;
+      }
+
+      .btn-outline-secondary:hover {
+        background: linear-gradient(
+          135deg,
+          #6c757d 0%,
+          #495057 100%
+        ) !important;
+        color: white !important;
+      }
+
+      .btn-outline-danger {
+        background: linear-gradient(
+          135deg,
+          rgba(220, 53, 69, 0.1) 0%,
+          rgba(176, 42, 55, 0.1) 100%
+        ) !important;
+        color: #dc3545 !important;
+        border: 2px solid #dc3545 !important;
+      }
+
+      .btn-outline-danger:hover {
+        background: linear-gradient(
+          135deg,
+          #dc3545 0%,
+          #b02a37 100%
+        ) !important;
+        color: white !important;
+      }
+
+      .btn-outline-success {
+        background: linear-gradient(
+          135deg,
+          rgba(40, 167, 69, 0.1) 0%,
+          rgba(32, 105, 43, 0.1) 100%
+        ) !important;
+        color: #28a745 !important;
+        border: 2px solid #28a745 !important;
+      }
+
+      .btn-outline-success:hover {
+        background: linear-gradient(
+          135deg,
+          #28a745 0%,
+          #20692b 100%
+        ) !important;
+        color: white !important;
+      }
+
+      /* View mode - readonly appearance */
+      .view-mode .form-control,
+      .view-mode .form-select {
+        background-color: #e9ecef;
+        border: 1px solid #ced4da;
+      }
+
+      /* Field hint styles */
+      .field-hint {
+        display: block;
+        font-size: 0.75rem;
+        color: #6c757d;
+        font-style: italic;
+        font-weight: normal;
+        min-height: 2.4em;
+        line-height: 1.2em;
+        margin-bottom: 0.25rem;
+      }
+
+      /* Required field indicator */
+      .field-required {
+        color: #dc3545;
+        font-size: 0.75rem;
+        font-style: italic;
+        font-weight: normal;
+      }
+
+      /* Validation styles */
+      .form-control.is-invalid {
+        border-color: #dc3545;
+        background-color: #fff5f5;
+      }
+
+      .form-control.is-invalid:focus {
+        border-color: #dc3545;
+        box-shadow: 0 0 0 0.2rem rgba(220, 53, 69, 0.25);
+      }
+
+      .invalid-feedback {
+        display: none;
+        color: #dc3545;
+        font-size: 0.875rem;
+        margin-top: 0.25rem;
+      }
+
+      .form-control.is-invalid ~ .invalid-feedback {
+        display: block;
+      }
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  </head>
+
+  <body>
+    <!-- Top Navigation -->
+    <?!= getNavigation(activePage) ?>
+
+    <div class="main-content container py-4">
+      <h2 class="mb-4" id="page-title">Contract</h2>
+
+      <!-- Contract Form -->
+      <div id="contract-form">
+        <!-- Section 1: Initial Data -->
+        <h5 class="section-title"><i class="bi bi-gear"></i> Initial Data</h5>
+        <div class="form-section">
+          <div class="row mb-3">
+            <div class="col-md-4">
+              <label class="form-label"
+                >Our company <span class="text-danger">*</span>
+                <span class="field-required">Required</span></label
+              >
+              <span class="field-hint"></span>
+              <select id="ourCompany" class="form-select" required>
+                <option value="">Select...</option>
+              </select>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label"
+                >Type of services <span class="text-danger">*</span>
+                <span class="field-required">Required</span></label
+              >
+              <span class="field-hint"></span>
+              <select id="serviceType" class="form-select" required>
+                <option value="">Select...</option>
+              </select>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label"
+                >Type of cooperation <span class="text-danger">*</span>
+                <span class="field-required">Required</span></label
+              >
+              <span class="field-hint"></span>
+              <select id="cooperationType" class="form-select" required>
+                <option value="">Select...</option>
+              </select>
+            </div>
+          </div>
+          <div class="row mb-3">
+            <div class="col-md-6">
+              <label class="form-label"
+                >Document type <span class="text-danger">*</span>
+                <span class="field-required">Required</span></label
+              >
+              <span class="field-hint">Contract or addendum</span>
+              <select id="documentType" class="form-select" required>
+                <option value="">Select...</option>
+              </select>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Contract template</label>
+              <span class="field-hint"
+                >Auto-selected based on the fields above</span
+              >
+              <div>
+                <span id="contractTemplateStatus" class="text-muted"
+                  >Select all fields above...</span
+                >
+                <a
+                  id="contractTemplateLinkBtn"
+                  class="btn btn-outline-primary btn-sm ms-2"
+                  href="#"
+                  target="_blank"
+                  style="display: none"
+                >
+                  <i class="bi bi-box-arrow-up-right"></i> Open template
+                </a>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Sections visible after template is found -->
+        <div id="form-sections-after-template" style="display: none">
+          <!-- Section 2: Contract Details -->
+          <h5 class="section-title">
+            <i class="bi bi-file-earmark-text"></i> Contract Details
+          </h5>
+          <div class="form-section">
+            <div class="row mb-3">
+              <div class="col-md-4">
+                <label class="form-label"
+                  >Contract's number <span class="text-danger">*</span>
+                  <span class="field-required">Required</span></label
+                >
+                <span class="field-hint"></span>
+                <input
+                  type="text"
+                  id="contractNumber"
+                  class="form-control"
+                  required
+                />
+              </div>
+              <div class="col-md-4">
+                <label class="form-label"
+                  >Contract's date <span class="text-danger">*</span>
+                  <span class="field-required">Required</span></label
+                >
+                <span class="field-hint"></span>
+                <input
+                  type="date"
+                  id="contractDate"
+                  class="form-control"
+                  required
+                />
+              </div>
+              <div class="col-md-4">
+                <label class="form-label">Probation period</label>
+                <span class="field-hint"></span>
+                <input type="date" id="probationPeriod" class="form-control" />
+              </div>
+            </div>
+            <div class="row mb-3">
+              <div class="col-md-4">
+                <label class="form-label">Termination date</label>
+                <span class="field-hint"></span>
+                <input type="date" id="terminationDate" class="form-control" />
+              </div>
+            </div>
+            <div class="row mb-3">
+              <div class="col-md-4">
+                <label class="form-label">Attachment number</label>
+                <span class="field-hint"></span>
+                <input type="text" id="attachmentNumber" class="form-control" />
+              </div>
+              <div class="col-md-4">
+                <label class="form-label"
+                  >Does Attachment have Start date?</label
+                >
+                <span class="field-hint"></span>
+                <select id="sowStartDateRequired" class="form-select">
+                  <option value="">Select...</option>
+                  <option value="yes">Yes</option>
+                  <option value="no">No</option>
+                </select>
+              </div>
+              <div class="col-md-4">
+                <label class="form-label">Attachment Start date</label>
+                <span class="field-hint"></span>
+                <input type="date" id="sowStartDate" class="form-control" />
+              </div>
+            </div>
+          </div>
+
+          <!-- Section 3: Contractor Information -->
+          <h5 class="section-title">
+            <i class="bi bi-person-badge"></i> Contractor Information
+          </h5>
+          <div class="form-section">
+            <div class="row mb-3">
+              <div class="col-md-6">
+                <label class="form-label"
+                  >Link to the contractor's folder</label
+                >
+                <span class="field-hint"
+                  >The generated contract will be saved to this folder</span
+                >
+                <div class="input-group has-validation">
+                  <input
+                    type="text"
+                    id="folderLink"
+                    class="form-control"
+                    placeholder="https://drive.google.com/drive/folders/..."
+                  />
+                  <button
+                    class="btn btn-outline-secondary"
+                    type="button"
+                    id="openFolderBtn"
+                    title="Open folder in new tab"
+                    onclick="openContractorFolder()"
+                  >
+                    <i class="bi bi-box-arrow-up-right"></i>
+                  </button>
+                  <div class="invalid-feedback" id="folderLink-error">
+                    Invalid format. Use Google Drive folder link:
+                    https://drive.google.com/drive/folders/...
+                  </div>
+                </div>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label"
+                  >Contractor's name <span class="text-danger">*</span>
+                  <span class="field-required">Required</span></label
+                >
+                <span class="field-hint"
+                  >For PE — the full name. For the company — the company's
+                  name</span
+                >
+                <input
+                  type="text"
+                  id="contractorName"
+                  class="form-control"
+                  required
+                />
+              </div>
+            </div>
+            <div class="row mb-3">
+              <div class="col-md-4">
+                <label class="form-label">PE</label>
+                <span class="field-hint"
+                  >PE: choose language (PE/ФОП). Company: leave empty</span
+                >
+                <select id="pe" class="form-select">
+                  <option value="">Select...</option>
+                </select>
+              </div>
+              <div class="col-md-4">
+                <label class="form-label"
+                  >Contractor's ID <span class="text-danger">*</span>
+                  <span class="field-required">Required</span></label
+                >
+                <span class="field-hint"
+                  >PE: identification number. Company: company number. No
+                  number: "-"</span
+                >
+                <input
+                  type="text"
+                  id="contractorId"
+                  class="form-control"
+                  required
+                />
+              </div>
+              <div class="col-md-4">
+                <label class="form-label"
+                  >Contractor's VAT ID <span class="text-danger">*</span>
+                  <span class="field-required">Required</span></label
+                >
+                <span class="field-hint">No number: "-"</span>
+                <input
+                  type="text"
+                  id="contractorVatId"
+                  class="form-control"
+                  required
+                />
+              </div>
+            </div>
+            <div class="row mb-3">
+              <div class="col-md-4">
+                <label class="form-label"
+                  >Contractor's jurisdiction <span class="text-danger">*</span>
+                  <span class="field-required">Required</span></label
+                >
+                <span class="field-hint"></span>
+                <input
+                  type="text"
+                  id="contractorJurisdiction"
+                  class="form-control"
+                  required
+                />
+              </div>
+              <div class="col-md-8">
+                <label class="form-label"
+                  >Contractor's address <span class="text-danger">*</span>
+                  <span class="field-required">Required</span></label
+                >
+                <span class="field-hint"></span>
+                <input
+                  type="text"
+                  id="contractorAddress"
+                  class="form-control"
+                  required
+                />
+              </div>
+            </div>
+            <div class="row mb-3">
+              <div class="col-md-4">
+                <label class="form-label">Registration number</label>
+                <span class="field-hint"
+                  >For PE contracts in Ukrainian only</span
+                >
+                <input
+                  type="text"
+                  id="registrationNumber"
+                  class="form-control"
+                />
+              </div>
+              <div class="col-md-4">
+                <label class="form-label">Date of registration</label>
+                <span class="field-hint"
+                  >For PE contracts in Ukrainian only</span
+                >
+                <input type="date" id="registrationDate" class="form-control" />
+              </div>
+              <div class="col-md-4">
+                <label class="form-label">Contractor's email</label>
+                <span class="field-hint"></span>
+                <input type="email" id="contractorEmail" class="form-control" />
+              </div>
+            </div>
+          </div>
+
+          <!-- Section 3: Work Conditions -->
+          <h5 class="section-title">
+            <i class="bi bi-briefcase"></i> Work Conditions
+          </h5>
+          <div class="form-section" id="work-conditions-section">
+            <div class="row mb-3">
+              <div class="col-md-4">
+                <label class="form-label">Currency of rate</label>
+                <span class="field-hint"></span>
+                <select id="currencyOfRate" class="form-select">
+                  <option value="">Select...</option>
+                </select>
+              </div>
+            </div>
+            
+            <!-- Dynamic Roles/Rates Table -->
+            <div id="rolesRatesContainer">
+              <label class="form-label mb-2">Contractor's roles and rates</label>
+              <table class="table table-bordered" id="rolesRatesTable">
+                <thead class="table-light">
+                  <tr>
+                    <th style="width: 50px">#</th>
+                    <th>Role</th>
+                    <th style="width: 150px">Rate</th>
+                    <th style="width: 50px"></th>
+                  </tr>
+                </thead>
+                <tbody id="rolesRatesBody">
+                  <tr data-row="1">
+                    <td class="text-center align-middle">1</td>
+                    <td>
+                      <input type="text" class="form-control role-input" name="role_1" placeholder="Enter role..." />
+                    </td>
+                    <td>
+                      <input type="number" class="form-control rate-input" name="rate_1" step="0.01" min="0" placeholder="0.00" />
+                    </td>
+                    <td class="text-center align-middle">
+                      <button type="button" class="btn btn-outline-danger btn-sm remove-rate-row" title="Remove row" disabled>
+                        <i class="bi bi-trash"></i>
+                      </button>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+              <button type="button" class="btn btn-outline-primary btn-sm" id="addRateRowBtn">
+                <i class="bi bi-plus-circle me-1"></i>Add role/rate
+              </button>
+            </div>
+          </div>
+
+          <!-- Section 4: Bank Details -->
+          <h5 class="section-title"><i class="bi bi-bank"></i> Bank Details</h5>
+          <div class="form-section">
+            <div class="row mb-3">
+              <div class="col-md-4">
+                <label class="form-label">Bank account UAH</label>
+                <span class="field-hint"></span>
+                <input type="text" id="bankAccountUAH" class="form-control" />
+              </div>
+              <div class="col-md-4">
+                <label class="form-label">Bank account USD</label>
+                <span class="field-hint">If no account, enter "-"</span>
+                <input type="text" id="bankAccountUSD" class="form-control" />
+              </div>
+              <div class="col-md-4">
+                <label class="form-label">Bank account EUR</label>
+                <span class="field-hint">If no account, enter "-"</span>
+                <input type="text" id="bankAccountEUR" class="form-control" />
+              </div>
+            </div>
+            <div class="row mb-3">
+              <div class="col-md-4">
+                <label class="form-label">Bank name</label>
+                <span class="field-hint"></span>
+                <input type="text" id="bankName" class="form-control" />
+              </div>
+              <div class="col-md-4">
+                <label class="form-label">Account type</label>
+                <span class="field-hint"></span>
+                <select id="accountType" class="form-select">
+                  <option value="">Select...</option>
+                </select>
+              </div>
+              <div class="col-md-4">
+                <label class="form-label">Bank code</label>
+                <span class="field-hint"></span>
+                <input type="text" id="bankCode" class="form-control" />
+              </div>
+            </div>
+          </div>
+
+          <!-- Result messages area -->
+          <div id="result" class="mt-4"></div>
+
+          <!-- Create mode buttons -->
+          <div id="create-buttons" class="row mt-4" style="display: none">
+            <div class="col-md-12 d-flex justify-content-end gap-2">
+              <button
+                id="confirm-btn"
+                class="btn btn-success"
+                onclick="confirmContract()"
+              >
+                Confirm
+              </button>
+              <button
+                id="cancel-btn"
+                class="btn btn-outline-secondary"
+                onclick="goToContractsList()"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+
+          <!-- View mode buttons -->
+          <div id="view-buttons" class="row mt-4" style="display: none">
+            <div class="col-md-12 d-flex justify-content-end gap-2">
+              <button
+                class="btn btn-outline-secondary"
+                onclick="switchToMode('edit')"
+              >
+                Edit
+              </button>
+              <button class="btn btn-outline-danger" onclick="deleteContract()">
+                Delete
+              </button>
+              <button
+                class="btn btn-outline-primary"
+                onclick="goToContractsList()"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+
+          <!-- Edit mode buttons -->
+          <div id="edit-buttons" class="row mt-4" style="display: none">
+            <div class="col-md-12 d-flex justify-content-end gap-2">
+              <button class="btn btn-success" onclick="saveContract()">
+                Save changes
+              </button>
+              <button
+                class="btn btn-outline-secondary"
+                onclick="goToContractsList()"
+              >
+                Discard changes
+              </button>
+            </div>
+          </div>
+
+          <!-- Delete mode buttons -->
+          <div id="delete-buttons" class="row mt-4" style="display: none">
+            <div class="col-md-12 d-flex justify-content-end gap-2">
+              <button class="btn btn-danger" onclick="deleteContract()">
+                Confirm Delete
+              </button>
+              <button
+                class="btn btn-outline-secondary"
+                onclick="switchToMode('view')"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+
+        </div>
+        <!-- End of form-sections-after-template -->
+      </div>
+    </div>
+    <!-- Close main-content -->
+
+    <script>
+      const BASE_URL = "<?= baseUrl ?>";
+      let mode = "<?= mode ?>" || "create";
+      let contractId = "<?= contractId ?>";
+
+      // ============================================
+      // FIELD VISIBILITY CONFIGURATION
+      // Key format: "cooperationType|ourCompany" or "cooperationType|ourCompany|documentType"
+      // Search order: 3 params -> 2 params -> _default
+      // Each field can be: { visible: true/false, required: true/false }
+      // Fields not listed default to: { visible: true, required: false }
+      // ============================================
+      const FIELD_CONFIG = {
+        // In-house | Accountant
+        "In-house|Accountant": {
+          // Contractor Information
+          folderLink: { visible: true, required: true },
+          attachmentNumber: { visible: false, required: false },
+          contractorName: { visible: true, required: true },
+          pe: { visible: true, required: true },
+          contractorId: { visible: true, required: true },
+          contractorVatId: { visible: false, required: false },
+          contractorJurisdiction: { visible: false, required: false },
+          contractorAddress: { visible: true, required: true },
+          registrationNumber: { visible: false, required: false },
+          registrationDate: { visible: false, required: false },
+          contractorEmail: { visible: false, required: false },
+          // Contract Details
+          contractNumber: { visible: true, required: true },
+          contractDate: { visible: true, required: true },
+          probationPeriod: { visible: false, required: false },
+          terminationDate: { visible: true, required: true },
+          sowStartDateRequired: { visible: false, required: false },
+          sowStartDate: { visible: false, required: false },
+          // Work Conditions
+          rolesRatesContainer: { visible: false, required: false },
+          currencyOfRate: { visible: false, required: false },
+          // Bank Details
+          bankAccountUAH: { visible: false, required: false },
+          bankAccountUSD: { visible: false, required: false },
+          bankAccountEUR: { visible: false, required: false },
+          bankName: { visible: false, required: false },
+          accountType: { visible: false, required: false },
+          bankCode: { visible: false, required: false },
+        },
+
+        // In-house | Sloboda Software Gmbh
+        "In-house|Sloboda Software Gmbh": {
+          // Contractor Information
+          folderLink: { visible: true, required: true },
+          attachmentNumber: { visible: false, required: false },
+          contractorName: { visible: true, required: true },
+          pe: { visible: true, required: true },
+          contractorId: { visible: true, required: true },
+          contractorVatId: { visible: true, required: true },
+          contractorJurisdiction: { visible: false, required: false },
+          contractorAddress: { visible: true, required: true },
+          registrationNumber: { visible: false, required: false },
+          registrationDate: { visible: false, required: false },
+          contractorEmail: { visible: true, required: true },
+          // Contract Details
+          contractNumber: { visible: true, required: true },
+          contractDate: { visible: true, required: true },
+          probationPeriod: { visible: true, required: true },
+          terminationDate: { visible: true, required: true },
+          sowStartDateRequired: { visible: false, required: false },
+          sowStartDate: { visible: false, required: false },
+          // Work Conditions
+          rolesRatesContainer: { visible: false, required: false },
+          currencyOfRate: { visible: false, required: false },
+          // Bank Details
+          bankAccountUAH: { visible: false, required: false },
+          bankAccountUSD: { visible: true, required: true },
+          bankAccountEUR: { visible: true, required: true },
+          bankName: { visible: false, required: false },
+          accountType: { visible: true, required: true },
+          bankCode: { visible: true, required: true },
+        },
+
+        // Freelance | Sloboda Software Gmbh | Attachment - new role/rate
+        "Freelance|Sloboda Software Gmbh|Attachment - new role/rate": {
+          // Contractor Information
+          folderLink: { visible: true, required: true },
+          attachmentNumber: { visible: true, required: true },
+          contractorName: { visible: true, required: true },
+          pe: { visible: true, required: false },
+          contractorId: { visible: true, required: true },
+          contractorVatId: { visible: true, required: true },
+          contractorJurisdiction: { visible: true, required: true },
+          contractorAddress: { visible: true, required: true },
+          registrationNumber: { visible: false, required: false },
+          registrationDate: { visible: false, required: false },
+          contractorEmail: { visible: false, required: false },
+          // Contract Details
+          contractNumber: { visible: true, required: true },
+          contractDate: { visible: true, required: true },
+          probationPeriod: { visible: false, required: false },
+          terminationDate: { visible: false, required: false },
+          sowStartDateRequired: { visible: false, required: false },
+          sowStartDate: { visible: true, required: true },
+          // Work Conditions
+          rolesRatesContainer: { visible: true, required: true },
+          currencyOfRate: { visible: true, required: true },
+          // Bank Details
+          bankAccountUAH: { visible: false, required: false },
+          bankAccountUSD: { visible: true, required: true },
+          bankAccountEUR: { visible: true, required: true },
+          bankName: { visible: true, required: true },
+          accountType: { visible: true, required: true },
+          bankCode: { visible: true, required: true },
+        },
+
+        // Partner | Sloboda Software Gmbh | Attachment - new role/rate
+        "Partner|Sloboda Software Gmbh|Attachment - new role/rate": {
+          // Contractor Information
+          folderLink: { visible: true, required: true },
+          attachmentNumber: { visible: true, required: true },
+          contractorName: { visible: true, required: true },
+          pe: { visible: true, required: false },
+          contractorId: { visible: true, required: true },
+          contractorVatId: { visible: true, required: true },
+          contractorJurisdiction: { visible: true, required: true },
+          contractorAddress: { visible: true, required: true },
+          registrationNumber: { visible: false, required: false },
+          registrationDate: { visible: false, required: false },
+          contractorEmail: { visible: false, required: false },
+          // Contract Details
+          contractNumber: { visible: true, required: true },
+          contractDate: { visible: true, required: true },
+          probationPeriod: { visible: false, required: false },
+          terminationDate: { visible: false, required: false },
+          sowStartDateRequired: { visible: false, required: false },
+          sowStartDate: { visible: true, required: true },
+          // Work Conditions
+          rolesRatesContainer: { visible: true, required: true },
+          currencyOfRate: { visible: true, required: true },
+          // Bank Details
+          bankAccountUAH: { visible: false, required: false },
+          bankAccountUSD: { visible: true, required: true },
+          bankAccountEUR: { visible: true, required: true },
+          bankName: { visible: true, required: true },
+          accountType: { visible: true, required: true },
+          bankCode: { visible: true, required: true },
+        },
+
+        // Freelance | Sloboda Software Gmbh
+        "Freelance|Sloboda Software Gmbh": {
+          // Contractor Information
+          folderLink: { visible: true, required: true },
+          attachmentNumber: { visible: false, required: false },
+          contractorName: { visible: true, required: true },
+          pe: { visible: true, required: false },
+          contractorId: { visible: true, required: true },
+          contractorVatId: { visible: true, required: true },
+          contractorJurisdiction: { visible: true, required: true },
+          contractorAddress: { visible: true, required: true },
+          registrationNumber: { visible: false, required: false },
+          registrationDate: { visible: false, required: false },
+          contractorEmail: { visible: false, required: false },
+          // Contract Details
+          contractNumber: { visible: true, required: true },
+          contractDate: { visible: true, required: true },
+          probationPeriod: { visible: false, required: false },
+          terminationDate: { visible: false, required: false },
+          sowStartDateRequired: { visible: true, required: false },
+          sowStartDate: { visible: true, required: false },
+          // Work Conditions
+          rolesRatesContainer: { visible: true, required: true },
+          currencyOfRate: { visible: true, required: true },
+          // Bank Details
+          bankAccountUAH: { visible: false, required: false },
+          bankAccountUSD: { visible: true, required: true },
+          bankAccountEUR: { visible: true, required: true },
+          bankName: { visible: true, required: true },
+          accountType: { visible: true, required: false },
+          bankCode: { visible: true, required: false },
+        },
+
+        // Partner | Sloboda Software Gmbh
+        "Partner|Sloboda Software Gmbh": {
+          // Contractor Information
+          folderLink: { visible: true, required: true },
+          attachmentNumber: { visible: false, required: false },
+          contractorName: { visible: true, required: true },
+          pe: { visible: true, required: false },
+          contractorId: { visible: true, required: true },
+          contractorVatId: { visible: true, required: true },
+          contractorJurisdiction: { visible: true, required: true },
+          contractorAddress: { visible: true, required: true },
+          registrationNumber: { visible: false, required: false },
+          registrationDate: { visible: false, required: false },
+          contractorEmail: { visible: false, required: false },
+          // Contract Details
+          contractNumber: { visible: true, required: true },
+          contractDate: { visible: true, required: true },
+          probationPeriod: { visible: false, required: false },
+          terminationDate: { visible: false, required: false },
+          sowStartDateRequired: { visible: true, required: false },
+          sowStartDate: { visible: true, required: false },
+          // Work Conditions
+          rolesRatesContainer: { visible: true, required: true },
+          currencyOfRate: { visible: true, required: true },
+          // Bank Details
+          bankAccountUAH: { visible: false, required: false },
+          bankAccountUSD: { visible: true, required: true },
+          bankAccountEUR: { visible: true, required: true },
+          bankName: { visible: true, required: true },
+          accountType: { visible: true, required: false },
+          bankCode: { visible: true, required: false },
+        },
+
+        // Freelance | Sloboda Soft LLC
+        "Freelance|Sloboda Soft LLC": {
+          // Contractor Information
+          folderLink: { visible: true, required: true },
+          attachmentNumber: { visible: false, required: false },
+          contractorName: { visible: true, required: true },
+          pe: { visible: true, required: false },
+          contractorId: { visible: true, required: true },
+          contractorVatId: { visible: false, required: false },
+          contractorJurisdiction: { visible: false, required: false },
+          contractorAddress: { visible: true, required: true },
+          registrationNumber: { visible: false, required: false },
+          registrationDate: { visible: false, required: false },
+          contractorEmail: { visible: false, required: false },
+          // Contract Details
+          contractNumber: { visible: true, required: true },
+          contractDate: { visible: true, required: true },
+          probationPeriod: { visible: false, required: false },
+          terminationDate: { visible: false, required: false },
+          sowStartDateRequired: { visible: true, required: false },
+          sowStartDate: { visible: true, required: false },
+          // Work Conditions
+          rolesRatesContainer: { visible: true, required: true },
+          currencyOfRate: { visible: true, required: true },
+          // Bank Details
+          bankAccountUAH: { visible: true, required: true },
+          bankAccountUSD: { visible: false, required: false },
+          bankAccountEUR: { visible: false, required: false },
+          bankName: { visible: true, required: true },
+          accountType: { visible: false, required: false },
+          bankCode: { visible: false, required: false },
+        },
+
+        // Partner | Sloboda Soft LLC
+        "Partner|Sloboda Soft LLC": {
+          // Contractor Information
+          folderLink: { visible: true, required: true },
+          attachmentNumber: { visible: false, required: false },
+          contractorName: { visible: true, required: true },
+          pe: { visible: true, required: false },
+          contractorId: { visible: true, required: true },
+          contractorVatId: { visible: false, required: false },
+          contractorJurisdiction: { visible: false, required: false },
+          contractorAddress: { visible: true, required: true },
+          registrationNumber: { visible: false, required: false },
+          registrationDate: { visible: false, required: false },
+          contractorEmail: { visible: false, required: false },
+          // Contract Details
+          contractNumber: { visible: true, required: true },
+          contractDate: { visible: true, required: true },
+          probationPeriod: { visible: false, required: false },
+          terminationDate: { visible: false, required: false },
+          sowStartDateRequired: { visible: true, required: false },
+          sowStartDate: { visible: true, required: false },
+          // Work Conditions
+          rolesRatesContainer: { visible: true, required: true },
+          currencyOfRate: { visible: true, required: true },
+          // Bank Details
+          bankAccountUAH: { visible: true, required: true },
+          bankAccountUSD: { visible: false, required: false },
+          bankAccountEUR: { visible: false, required: false },
+          bankName: { visible: true, required: true },
+          accountType: { visible: false, required: false },
+          bankCode: { visible: false, required: false },
+        },
+
+        // In-house | Слобода Софт ТОВ
+        "In-house|Слобода Софт ТОВ": {
+          // Contractor Information
+          folderLink: { visible: true, required: true },
+          attachmentNumber: { visible: false, required: false },
+          contractorName: { visible: true, required: true },
+          pe: { visible: true, required: true },
+          contractorId: { visible: true, required: true },
+          contractorVatId: { visible: false, required: false },
+          contractorJurisdiction: { visible: false, required: false },
+          contractorAddress: { visible: true, required: true },
+          registrationNumber: { visible: true, required: true },
+          registrationDate: { visible: true, required: true },
+          contractorEmail: { visible: true, required: true },
+          // Contract Details
+          contractNumber: { visible: true, required: true },
+          contractDate: { visible: true, required: true },
+          probationPeriod: { visible: false, required: false },
+          terminationDate: { visible: true, required: true },
+          sowStartDateRequired: { visible: false, required: false },
+          sowStartDate: { visible: false, required: false },
+          // Work Conditions
+          rolesRatesContainer: { visible: false, required: false },
+          currencyOfRate: { visible: false, required: false },
+          // Bank Details
+          bankAccountUAH: { visible: true, required: true },
+          bankAccountUSD: { visible: false, required: false },
+          bankAccountEUR: { visible: false, required: false },
+          bankName: { visible: true, required: true },
+          accountType: { visible: false, required: false },
+          bankCode: { visible: false, required: false },
+        },
+
+        // Default configuration (all fields visible, original required settings)
+        _default: {
+          folderLink: { visible: true, required: false },
+          attachmentNumber: { visible: true, required: false },
+          contractorName: { visible: true, required: true },
+          pe: { visible: true, required: false },
+          contractorId: { visible: true, required: true },
+          contractorVatId: { visible: true, required: true },
+          contractorJurisdiction: { visible: true, required: true },
+          contractorAddress: { visible: true, required: true },
+          registrationNumber: { visible: true, required: false },
+          registrationDate: { visible: true, required: false },
+          contractorEmail: { visible: true, required: false },
+          contractNumber: { visible: true, required: true },
+          contractDate: { visible: true, required: true },
+          probationPeriod: { visible: true, required: false },
+          terminationDate: { visible: true, required: false },
+          sowStartDateRequired: { visible: true, required: false },
+          sowStartDate: { visible: true, required: false },
+          rolesRatesContainer: { visible: true, required: false },
+          currencyOfRate: { visible: true, required: false },
+          bankAccountUAH: { visible: true, required: false },
+          bankAccountUSD: { visible: true, required: false },
+          bankAccountEUR: { visible: true, required: false },
+          bankName: { visible: true, required: false },
+          accountType: { visible: true, required: false },
+          bankCode: { visible: true, required: false },
+        },
+      };
+
+      // Robust navigation back to contracts list
+      function safeNavigateToContractsList() {
+        const target = "<?= baseUrl ?>?page=ContractsList";
+        try {
+          window.top.location.href = target;
+          return;
+        } catch (e) {}
+        try {
+          window.location.href = target;
+          return;
+        } catch (e2) {}
+        if (
+          google &&
+          google.script &&
+          google.script.host &&
+          google.script.host.close
+        ) {
+          google.script.host.close();
+        }
+      }
+
+      // Alias for Cancel button
+      function goToContractsList() {
+        safeNavigateToContractsList();
+      }
+
+      // Show validation error messages
+      function showValidationError(messages) {
+        const result = document.getElementById("result");
+        result.innerHTML = `
+          <div class="alert alert-danger">
+            <strong>Please fill out the following fields:</strong>
+            <ul>${messages.map((msg) => "<li>" + msg + "</li>").join("")}</ul>
+          </div>
+        `;
+        result.scrollIntoView({ behavior: "smooth" });
+      }
+
+      // Clear validation error
+      function clearValidationError() {
+        const result = document.getElementById("result");
+        if (result) result.innerHTML = "";
+      }
+
+      // Apply field visibility based on selected cooperation type and service type
+      function applyFieldVisibility() {
+        const cooperationType =
+          document.getElementById("cooperationType").value;
+        const ourCompany = document.getElementById("ourCompany").value;
+        const serviceType = document.getElementById("serviceType").value;
+        const documentType = document.getElementById("documentType").value;
+
+        // Get config: first try 3 params (with docType), then 2 params, then default
+        const configKey3 =
+          cooperationType + "|" + ourCompany + "|" + documentType;
+        const configKey2 = cooperationType + "|" + ourCompany;
+        const config =
+          FIELD_CONFIG[configKey3] ||
+          FIELD_CONFIG[configKey2] ||
+          FIELD_CONFIG["_default"];
+
+        // Apply visibility and required for each field
+        Object.keys(config).forEach(function (fieldId) {
+          const fieldConfig = config[fieldId];
+          const field = document.getElementById(fieldId);
+
+          if (!field) return;
+
+          // Find the parent column (col-md-*) to hide/show
+          // For rolesRatesContainer, use the element itself
+          let parentCol = field.closest('[class*="col-md"]');
+          if (!parentCol && fieldId === "rolesRatesContainer") {
+            parentCol = field; // The container itself
+          }
+
+          if (parentCol) {
+            // Find visual required indicators (star and "Required" text)
+            const label = parentCol.querySelector("label");
+            const starSpan = label ? label.querySelector(".text-danger") : null;
+            const requiredSpan = label
+              ? label.querySelector(".field-required")
+              : null;
+
+            if (fieldConfig.visible) {
+              parentCol.style.display = "";
+              // Set required attribute and visual indicators
+              if (fieldConfig.required) {
+                field.setAttribute("required", "required");
+                // Show visual indicators
+                if (starSpan) starSpan.style.display = "";
+                if (requiredSpan) requiredSpan.style.display = "";
+                // Add indicators if they don't exist
+                if (label && !starSpan) {
+                  const star = document.createElement("span");
+                  star.className = "text-danger";
+                  star.textContent = " *";
+                  label.appendChild(star);
+                }
+                if (label && !requiredSpan) {
+                  const req = document.createElement("span");
+                  req.className = "field-required";
+                  req.textContent = " Required";
+                  label.appendChild(req);
+                }
+              } else {
+                field.removeAttribute("required");
+                // Hide visual indicators
+                if (starSpan) starSpan.style.display = "none";
+                if (requiredSpan) requiredSpan.style.display = "none";
+              }
+            } else {
+              parentCol.style.display = "none";
+              // Remove required from hidden fields
+              field.removeAttribute("required");
+              // Hide visual indicators
+              if (starSpan) starSpan.style.display = "none";
+              if (requiredSpan) requiredSpan.style.display = "none";
+            }
+          }
+        });
+
+        // Hide empty rows and sections
+        hideEmptyRowsAndSections();
+      }
+
+      // Navigation
+      function goToContractsList() {
+        const target = BASE_URL + "?page=ContractsList";
+        try {
+          window.top.location.href = target;
+          return;
+        } catch (e) {}
+        try {
+          window.location.href = target;
+          return;
+        } catch (e2) {}
+        if (
+          google &&
+          google.script &&
+          google.script.host &&
+          google.script.host.close
+        ) {
+          google.script.host.close();
+        }
+      }
+
+      // Switch between modes
+      function switchToMode(newMode) {
+        if (contractId) {
+          const target =
+            BASE_URL +
+            "?page=ContractGenerator&id=" +
+            contractId +
+            "&mode=" +
+            newMode;
+          try {
+            window.top.location.href = target;
+          } catch (e) {
+            window.location.href = target;
+          }
+        } else {
+          mode = newMode;
+          updateUIForMode();
+        }
+      }
+
+      // Set form fields readonly or editable
+      function setFormReadonly(isReadonly, keepInitialDataLocked = false) {
+        const formEl = document.getElementById("contract-form");
+        if (isReadonly) {
+          formEl.classList.add("view-mode");
+        } else {
+          formEl.classList.remove("view-mode");
+        }
+
+        // Initial data fields that should stay locked in edit mode
+        const initialDataFields = ["ourCompany", "serviceType", "cooperationType", "documentType"];
+
+        document
+          .querySelectorAll("#contract-form input, #contract-form select")
+          .forEach((el) => {
+            if (keepInitialDataLocked && initialDataFields.includes(el.id)) {
+              el.disabled = true;
+            } else {
+              el.disabled = isReadonly;
+            }
+          });
+        
+        // Hide/show roles table buttons
+        const addRateBtn = document.getElementById("addRateRowBtn");
+        const removeRateBtns = document.querySelectorAll(".remove-rate-row");
+        
+        if (addRateBtn) {
+          addRateBtn.style.display = isReadonly ? "none" : "";
+        }
+        removeRateBtns.forEach(btn => {
+          btn.style.display = isReadonly ? "none" : "";
+        });
+      }
+
+      // Update UI based on current mode
+      function updateUIForMode() {
+        const titleEl = document.getElementById("page-title");
+
+        // Hide all button containers
+        document.getElementById("create-buttons").style.display = "none";
+        document.getElementById("view-buttons").style.display = "none";
+        document.getElementById("edit-buttons").style.display = "none";
+        document.getElementById("delete-buttons").style.display = "none";
+
+        switch (mode) {
+          case "create":
+            titleEl.textContent = "Create Contract";
+            document.getElementById("create-buttons").style.display = "flex";
+            setFormReadonly(false);
+            break;
+          case "view":
+            titleEl.textContent = "Contract - View";
+            document.getElementById("view-buttons").style.display = "flex";
+            setFormReadonly(true);
+            break;
+          case "edit":
+            titleEl.textContent = "Contract - Edit";
+            document.getElementById("edit-buttons").style.display = "flex";
+            setFormReadonly(false, true); // Keep initial data fields locked
+            loadDropdownOptionsForEdit();
+            break;
+          case "delete":
+            titleEl.textContent = "Contract - Delete";
+            document.getElementById("delete-buttons").style.display = "flex";
+            setFormReadonly(true);
+            break;
+          default:
+            titleEl.textContent = "Create Contract";
+            document.getElementById("create-buttons").style.display = "flex";
+            setFormReadonly(false);
+        }
+      }
+
+      // Populate dropdown lists from Lists sheet
+      function populateDropdowns(callback) {
+        google.script.run
+          .withSuccessHandler(function (options) {
+            // PE dropdown (column D)
+            fillDropdown("pe", options.peOptions);
+
+            // Our company dropdown (column B)
+            fillDropdown("ourCompany", options.ourCompanies);
+
+            // Type of services dropdown (column C)
+            fillDropdown("serviceType", options.serviceTypes);
+
+            // Type of cooperation dropdown (column A)
+            fillDropdown("cooperationType", options.cooperationTypes);
+
+            // Account type dropdown (column E)
+            fillDropdown("accountType", options.accountTypes);
+
+            // Currency dropdown (column F)
+            fillDropdown("currencyOfRate", options.currencies);
+
+            // Document type dropdown (column G)
+            fillDropdown("documentType", options.documentTypes);
+
+            // Call callback after dropdowns are populated
+            if (callback) callback();
+          })
+          .withFailureHandler(function (error) {
+            console.error("Error loading dropdown options:", error);
+            if (callback) callback();
+          })
+          .getContractDropdownOptions();
+      }
+
+      function fillDropdown(elementId, options) {
+        const select = document.getElementById(elementId);
+        if (!select) return;
+
+        // Clear existing options except first
+        while (select.options.length > 1) {
+          select.remove(1);
+        }
+
+        // Add new options
+        if (options && options.length > 0) {
+          options.forEach((opt) => {
+            const option = document.createElement("option");
+            option.value = opt;
+            option.textContent = opt;
+            select.appendChild(option);
+          });
+        }
+      }
+
+      // Load contract templates based on selected criteria
+      function loadContractTemplates() {
+        // Skip template loading in view/edit/delete modes - template is loaded from DB
+        if (mode === "view" || mode === "edit" || mode === "delete") {
+          return;
+        }
+
+        const cooperationType =
+          document.getElementById("cooperationType").value;
+        const ourCompany = document.getElementById("ourCompany").value;
+        const serviceType = document.getElementById("serviceType").value;
+        const documentType = document.getElementById("documentType").value;
+
+        const statusText = document.getElementById("contractTemplateStatus");
+        const linkBtn = document.getElementById("contractTemplateLinkBtn");
+
+        // Clear if not all fields are selected
+        if (!cooperationType || !ourCompany || !serviceType || !documentType) {
+          statusText.textContent = "Select all fields above...";
+          statusText.className = "text-muted";
+          linkBtn.style.display = "none";
+          linkBtn.href = "#";
+          return;
+        }
+
+        statusText.textContent = "Loading...";
+        statusText.className = "text-muted";
+
+        google.script.run
+          .withSuccessHandler(function (templates) {
+            var sectionsDiv = document.getElementById(
+              "form-sections-after-template"
+            );
+            if (templates && templates.length > 0) {
+              // Use first matching template - show button
+              statusText.textContent = "Template found ✓";
+              statusText.className = "text-success";
+              // Open in preview mode to prevent editing
+              var previewLink = templates[0].link.replace(
+                /\/edit.*$/,
+                "/preview"
+              );
+              linkBtn.href = previewLink;
+              linkBtn.style.display = "inline-block";
+              // Show form sections
+              sectionsDiv.style.display = "block";
+              // Apply field visibility rules
+              applyFieldVisibility();
+              // Update buttons for current mode
+              updateUIForMode();
+            } else {
+              statusText.textContent = "No template found";
+              // Hide form sections
+              sectionsDiv.style.display = "none";
+              statusText.className = "text-danger";
+              linkBtn.style.display = "none";
+              linkBtn.href = "#";
+            }
+          })
+          .withFailureHandler(function (error) {
+            console.error("Error loading templates:", error);
+            statusText.textContent = "Error loading template";
+            statusText.className = "text-danger";
+            linkBtn.style.display = "none";
+            linkBtn.href = "#";
+            // Hide form sections
+            document.getElementById(
+              "form-sections-after-template"
+            ).style.display = "none";
+          })
+          .getContractTemplates(
+            cooperationType,
+            ourCompany,
+            serviceType,
+            documentType
+          );
+      }
+
+      // Action handlers
+      function confirmContract() {
+        // Clear previous errors
+        clearValidationError();
+
+        // Field labels for error messages
+        const fieldLabels = {
+          folderLink: "Link to the contractor's folder",
+          contractorName: "Contractor's name",
+          pe: "PE",
+          contractorId: "Contractor's ID",
+          contractorVatId: "Contractor's VAT ID",
+          contractorJurisdiction: "Contractor's jurisdiction",
+          contractorAddress: "Contractor's address",
+          contractNumber: "Contract's number",
+          contractDate: "Contract's date",
+          probationPeriod: "Probation period",
+          terminationDate: "Termination date",
+          registrationNumber: "Registration number",
+          registrationDate: "Date of registration",
+          contractorEmail: "Contractor's email",
+          rolesRates: "Contractor's roles and rates",
+          currencyOfRate: "Currency of rate",
+          attachmentNumber: "Attachment number",
+          sowStartDateRequired: "Does Attachment have Start date?",
+          sowStartDate: "Attachment Start date",
+          bankAccountUAH: "Bank account UAH",
+          bankAccountUSD: "Bank account USD",
+          bankAccountEUR: "Bank account EUR",
+          bankName: "Bank name",
+          accountType: "Account type",
+          bankCode: "Bank code",
+        };
+
+        // Basic validation - check required fields
+        const requiredFields = document.querySelectorAll(
+          "#form-sections-after-template [required]"
+        );
+        const errors = [];
+
+        requiredFields.forEach(function (field) {
+          // Only validate visible fields
+          const parentCol = field.closest('[class*="col-md"]');
+          if (parentCol && parentCol.style.display !== "none" && !field.value) {
+            field.classList.add("is-invalid");
+            const label = fieldLabels[field.id] || field.id;
+            errors.push(label + " is required.");
+          } else {
+            field.classList.remove("is-invalid");
+          }
+        });
+
+        if (errors.length > 0) {
+          showValidationError(errors);
+          return;
+        }
+
+        // Collect form data
+        const formData = {
+          folderLink: document.getElementById("folderLink").value,
+          contractorName: document.getElementById("contractorName").value,
+          pe: document.getElementById("pe").value,
+          ourCompany: document.getElementById("ourCompany").value,
+          serviceType: document.getElementById("serviceType").value,
+          cooperationType: document.getElementById("cooperationType").value,
+          documentType: document.getElementById("documentType").value,
+          contractNumber: document.getElementById("contractNumber").value,
+          contractDate: document.getElementById("contractDate").value,
+          probationPeriod: document.getElementById("probationPeriod").value,
+          terminationDate: document.getElementById("terminationDate").value,
+          registrationNumber:
+            document.getElementById("registrationNumber").value,
+          registrationDate: document.getElementById("registrationDate").value,
+          contractorId: document.getElementById("contractorId").value,
+          contractorVatId: document.getElementById("contractorVatId").value,
+          contractorJurisdiction: document.getElementById(
+            "contractorJurisdiction"
+          ).value,
+          contractorAddress: document.getElementById("contractorAddress").value,
+          bankAccountUAH: document.getElementById("bankAccountUAH").value,
+          bankAccountUSD: document.getElementById("bankAccountUSD").value,
+          bankAccountEUR: document.getElementById("bankAccountEUR").value,
+          bankName: document.getElementById("bankName").value,
+          accountType: document.getElementById("accountType").value,
+          bankCode: document.getElementById("bankCode").value,
+          contractorEmail: document.getElementById("contractorEmail").value,
+          rolesRates: getRolesRatesData(),
+          currencyOfRate: document.getElementById("currencyOfRate").value,
+          attachmentNumber: document.getElementById("attachmentNumber").value,
+          sowStartDateRequired: document.getElementById("sowStartDateRequired")
+            .value,
+          sowStartDate: document.getElementById("sowStartDate").value,
+          templateLink:
+            document.getElementById("contractTemplateLinkBtn").href || "",
+        };
+
+        // Disable button and show loading
+        const confirmBtn = document.querySelector(
+          '#create-buttons button[onclick="confirmContract()"]'
+        );
+        const cancelBtn = document.querySelector(
+          '#create-buttons button[onclick="goToContractsList()"]'
+        );
+        if (confirmBtn) {
+          confirmBtn.disabled = true;
+          confirmBtn.innerHTML =
+            '<i class="bi bi-hourglass-split"></i> Saving...';
+        }
+        if (cancelBtn) {
+          cancelBtn.disabled = true;
+        }
+
+        // Disable all form fields
+        setFormReadonly(true);
+
+        // Save to backend
+        google.script.run
+          .withSuccessHandler(function (result) {
+            if (result.success) {
+              // Hide buttons and show success message with back button and document link
+              let successHtml = `
+                <div class="col-12">
+                  <div class="alert alert-success" role="alert">
+                    <i class="bi bi-check-circle-fill me-2"></i>
+                    Contract saved successfully!
+                  </div>
+                  <div class="d-flex gap-2">
+              `;
+
+              // Add button to open document
+              if (result.documentUrl) {
+                successHtml += `
+                    <a href="${result.documentUrl}" target="_blank" class="btn btn-success px-4 fw-bold">
+                      <i class="bi bi-file-earmark-text me-2"></i>Open document
+                    </a>
+                `;
+              }
+
+              successHtml += `
+                    <button class="btn btn-primary px-4 fw-bold" onclick="safeNavigateToContractsList()">
+                      <i class="bi bi-arrow-left me-2"></i>Back to the list
+                    </button>
+                  </div>
+                </div>
+              `;
+
+              document.getElementById("create-buttons").innerHTML = successHtml;
+            } else {
+              alert("Error: " + result.message);
+              if (confirmBtn) {
+                confirmBtn.disabled = false;
+                confirmBtn.innerHTML =
+                  '<i class="bi bi-check-circle"></i> Confirm';
+              }
+              if (cancelBtn) {
+                cancelBtn.disabled = false;
+              }
+              // Re-enable form fields on error
+              setFormReadonly(false);
+            }
+          })
+          .withFailureHandler(function (error) {
+            alert("Error saving contract: " + error);
+            if (confirmBtn) {
+              confirmBtn.disabled = false;
+              confirmBtn.innerHTML =
+                '<i class="bi bi-check-circle"></i> Confirm';
+            }
+            if (cancelBtn) {
+              cancelBtn.disabled = false;
+            }
+            // Re-enable form fields on error
+            setFormReadonly(false);
+          })
+          .saveContract(formData);
+      }
+
+      function saveContractChanges() {
+        alert("Save changes - coming soon!");
+      }
+
+      // Load dropdown options for edit mode (for select fields that need options)
+      function loadDropdownOptionsForEdit() {
+        google.script.run
+          .withSuccessHandler(function (options) {
+            // Load options for editable select fields (not the initial 4)
+            fillDropdownKeepValue("pe", options.peOptions);
+            fillDropdownKeepValue("accountType", options.accountTypes);
+            fillDropdownKeepValue("currencyOfRate", options.currencies);
+            fillDropdownKeepValue("sowStartDateRequired", ["Yes", "No"]);
+          })
+          .withFailureHandler(function (error) {
+            console.error("Error loading dropdown options for edit:", error);
+          })
+          .getContractDropdownOptions();
+      }
+
+      // Fill dropdown but keep current value selected
+      function fillDropdownKeepValue(elementId, options) {
+        const select = document.getElementById(elementId);
+        if (!select) return;
+        
+        const currentValue = select.value;
+        
+        // Clear all options
+        select.innerHTML = '<option value="">Select...</option>';
+        
+        // Add new options
+        if (options && options.length) {
+          options.forEach(function (opt) {
+            const option = document.createElement("option");
+            option.value = opt;
+            option.textContent = opt;
+            if (opt === currentValue) {
+              option.selected = true;
+            }
+            select.appendChild(option);
+          });
+        }
+        
+        // If current value not in options, add it
+        if (currentValue && !Array.from(select.options).some(o => o.value === currentValue)) {
+          const option = document.createElement("option");
+          option.value = currentValue;
+          option.textContent = currentValue;
+          option.selected = true;
+          select.appendChild(option);
+        }
+      }
+
+      // Save contract changes (edit mode)
+      function saveContract() {
+        if (!contractId || contractId === "") {
+          alert("Contract ID not found");
+          return;
+        }
+
+        // Validate visible required fields
+        const requiredFields = document.querySelectorAll(
+          '#contract-form [required]:not([disabled])'
+        );
+        let isValid = true;
+        let firstInvalid = null;
+
+        requiredFields.forEach(function (field) {
+          const parentCol = field.closest('[class*="col-md"]');
+          if (parentCol && parentCol.style.display !== "none") {
+            if (!field.value || field.value.trim() === "") {
+              field.classList.add("is-invalid");
+              isValid = false;
+              if (!firstInvalid) firstInvalid = field;
+            } else {
+              field.classList.remove("is-invalid");
+            }
+          }
+        });
+
+        if (!isValid) {
+          if (firstInvalid) firstInvalid.focus();
+          const alertDiv = document.getElementById("validation-alert");
+          if (alertDiv) {
+            alertDiv.style.display = "block";
+            alertDiv.textContent = "Please fill in all required fields";
+          }
+          return;
+        }
+
+        // Collect form data
+        const formData = {
+          id: contractId,
+          folderLink: document.getElementById("folderLink").value,
+          contractorName: document.getElementById("contractorName").value,
+          pe: document.getElementById("pe").value,
+          ourCompany: document.getElementById("ourCompany").value,
+          serviceType: document.getElementById("serviceType").value,
+          cooperationType: document.getElementById("cooperationType").value,
+          documentType: document.getElementById("documentType").value,
+          contractNumber: document.getElementById("contractNumber").value,
+          contractDate: document.getElementById("contractDate").value,
+          probationPeriod: document.getElementById("probationPeriod").value,
+          terminationDate: document.getElementById("terminationDate").value,
+          registrationNumber: document.getElementById("registrationNumber").value,
+          registrationDate: document.getElementById("registrationDate").value,
+          contractorId: document.getElementById("contractorId").value,
+          contractorVatId: document.getElementById("contractorVatId").value,
+          contractorJurisdiction: document.getElementById("contractorJurisdiction").value,
+          contractorAddress: document.getElementById("contractorAddress").value,
+          bankAccountUAH: document.getElementById("bankAccountUAH").value,
+          bankAccountUSD: document.getElementById("bankAccountUSD").value,
+          bankAccountEUR: document.getElementById("bankAccountEUR").value,
+          bankName: document.getElementById("bankName").value,
+          accountType: document.getElementById("accountType").value,
+          bankCode: document.getElementById("bankCode").value,
+          contractorEmail: document.getElementById("contractorEmail").value,
+          rolesRates: getRolesRatesData(),
+          currencyOfRate: document.getElementById("currencyOfRate").value,
+          attachmentNumber: document.getElementById("attachmentNumber").value,
+          sowStartDateRequired: document.getElementById("sowStartDateRequired").value,
+          sowStartDate: document.getElementById("sowStartDate").value,
+          templateLink: document.getElementById("contractTemplateLinkBtn").href.replace('/preview', '/edit'),
+        };
+
+        // Disable buttons and show loading
+        const saveBtn = document.querySelector('#edit-buttons .btn-success');
+        const cancelBtn = document.querySelector('#edit-buttons .btn-outline-secondary');
+        if (saveBtn) {
+          saveBtn.disabled = true;
+          saveBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Saving...';
+        }
+        if (cancelBtn) cancelBtn.disabled = true;
+
+        // Call backend to update
+        google.script.run
+          .withSuccessHandler(function (result) {
+            if (result.success) {
+              // Show success and redirect to list
+              const mainContent = document.querySelector(".main-content");
+              mainContent.innerHTML = `
+                <div class="col-12 text-center py-5">
+                  <div class="alert alert-success" role="alert">
+                    <i class="bi bi-check-circle me-2"></i>
+                    Contract updated successfully!
+                  </div>
+                  ${result.documentUrl ? `<a href="${result.documentUrl}" target="_blank" class="btn btn-primary mb-3">
+                    <i class="bi bi-file-earmark-text me-2"></i>Open Document
+                  </a><br>` : ''}
+                  <button class="btn btn-outline-primary" onclick="safeNavigateToContractsList()">
+                    <i class="bi bi-arrow-left me-2"></i>Back to the list
+                  </button>
+                </div>
+              `;
+            } else {
+              alert("Error: " + result.message);
+              if (saveBtn) {
+                saveBtn.disabled = false;
+                saveBtn.innerHTML = 'Save changes';
+              }
+              if (cancelBtn) cancelBtn.disabled = false;
+            }
+          })
+          .withFailureHandler(function (error) {
+            alert("Error updating contract: " + error);
+            if (saveBtn) {
+              saveBtn.disabled = false;
+              saveBtn.innerHTML = 'Save changes';
+            }
+            if (cancelBtn) cancelBtn.disabled = false;
+          })
+          .updateContract(formData);
+      }
+
+      function deleteContract() {
+        // Use the global contractId variable (set from GAS template)
+        if (!contractId || contractId === "") {
+          alert("Contract ID not found");
+          return;
+        }
+
+        // Hide the form and show loading message
+        const formSections = document.getElementById(
+          "form-sections-after-template"
+        );
+        const viewBtns = document.getElementById("view-buttons");
+        const deleteBtns = document.getElementById("delete-buttons");
+
+        if (formSections) formSections.style.display = "none";
+        if (viewBtns) viewBtns.style.display = "none";
+        if (deleteBtns) deleteBtns.style.display = "flex";
+
+        // Show loading in the main content area
+        const mainContent = document.querySelector(".main-content");
+        mainContent.innerHTML = `
+          <div class="col-12 text-center py-5">
+            <div class="spinner-border text-primary" role="status">
+              <span class="visually-hidden">Deleting...</span>
+            </div>
+            <p class="mt-3">Deleting contract...</p>
+          </div>
+        `;
+
+        // Call backend to delete
+        google.script.run
+          .withSuccessHandler(function (result) {
+            if (result.success) {
+              // Show success message and back button
+              mainContent.innerHTML = `
+                <div class="text-center py-5">
+                  <div class="alert alert-success d-inline-block" role="alert">
+                    <i class="bi bi-check-circle-fill me-2"></i>
+                    Contract deleted successfully!
+                  </div>
+                  <div class="mt-4">
+                    <button class="btn btn-primary px-4 fw-bold" onclick="safeNavigateToContractsList()">
+                      <i class="bi bi-arrow-left me-2"></i>Back to the list
+                    </button>
+                  </div>
+                </div>
+              `;
+            } else {
+              mainContent.innerHTML = `
+                <div class="text-center py-5">
+                  <div class="alert alert-danger d-inline-block" role="alert">
+                    <i class="bi bi-exclamation-circle-fill me-2"></i>
+                    Error: ${result.message}
+                  </div>
+                  <div class="mt-4">
+                    <button class="btn btn-primary px-4 fw-bold" onclick="safeNavigateToContractsList()">
+                      <i class="bi bi-arrow-left me-2"></i>Back to the list
+                    </button>
+                  </div>
+                </div>
+              `;
+            }
+          })
+          .withFailureHandler(function (error) {
+            mainContent.innerHTML = `
+              <div class="text-center py-5">
+                <div class="alert alert-danger d-inline-block" role="alert">
+                  <i class="bi bi-exclamation-circle-fill me-2"></i>
+                  Error: ${error}
+                </div>
+                <div class="mt-4">
+                  <button class="btn btn-primary px-4 fw-bold" onclick="safeNavigateToContractsList()">
+                    <i class="bi bi-arrow-left me-2"></i>Back to the list
+                  </button>
+                </div>
+              </div>
+            `;
+          })
+          .deleteContract(contractId);
+      }
+
+      // Open contractor folder in new tab
+      function openContractorFolder() {
+        const folderLink = document.getElementById("folderLink").value.trim();
+        if (folderLink) {
+          window.open(folderLink, "_blank");
+        } else {
+          alert("Please enter a folder link first");
+        }
+      }
+
+      // ============================================
+      // DYNAMIC ROLES/RATES TABLE
+      // ============================================
+      const MAX_RATE_ROWS = 20;
+      let currentRateRows = 1;
+
+      function addRateRow() {
+        if (currentRateRows >= MAX_RATE_ROWS) {
+          alert("Maximum " + MAX_RATE_ROWS + " rows allowed");
+          return;
+        }
+        
+        currentRateRows++;
+        const tbody = document.getElementById("rolesRatesBody");
+        const newRow = document.createElement("tr");
+        newRow.setAttribute("data-row", currentRateRows);
+        newRow.innerHTML = `
+          <td class="text-center align-middle">${currentRateRows}</td>
+          <td>
+            <input type="text" class="form-control role-input" name="role_${currentRateRows}" placeholder="Enter role..." />
+          </td>
+          <td>
+            <input type="number" class="form-control rate-input" name="rate_${currentRateRows}" step="0.01" min="0" placeholder="0.00" />
+          </td>
+          <td class="text-center align-middle">
+            <button type="button" class="btn btn-outline-danger btn-sm remove-rate-row" title="Remove row">
+              <i class="bi bi-trash"></i>
+            </button>
+          </td>
+        `;
+        tbody.appendChild(newRow);
+        updateRemoveButtons();
+      }
+
+      function removeRateRow(btn) {
+        const row = btn.closest("tr");
+        if (row) {
+          row.remove();
+          currentRateRows--;
+          renumberRateRows();
+          updateRemoveButtons();
+        }
+      }
+
+      function renumberRateRows() {
+        const rows = document.querySelectorAll("#rolesRatesBody tr");
+        rows.forEach((row, index) => {
+          const num = index + 1;
+          row.setAttribute("data-row", num);
+          row.querySelector("td:first-child").textContent = num;
+          row.querySelector(".role-input").name = "role_" + num;
+          row.querySelector(".rate-input").name = "rate_" + num;
+        });
+      }
+
+      function updateRemoveButtons() {
+        const rows = document.querySelectorAll("#rolesRatesBody tr");
+        rows.forEach((row, index) => {
+          const btn = row.querySelector(".remove-rate-row");
+          if (btn) {
+            // Disable remove button if only one row left
+            btn.disabled = rows.length <= 1;
+          }
+        });
+      }
+
+      function getRolesRatesData() {
+        const rows = document.querySelectorAll("#rolesRatesBody tr");
+        const data = [];
+        rows.forEach((row) => {
+          const role = row.querySelector(".role-input").value.trim();
+          const rate = row.querySelector(".rate-input").value.trim();
+          data.push({ role: role, rate: rate });
+        });
+        return data;
+      }
+
+      function setRolesRatesData(dataArray) {
+        const tbody = document.getElementById("rolesRatesBody");
+        tbody.innerHTML = "";
+        currentRateRows = 0;
+        
+        if (!dataArray || dataArray.length === 0) {
+          // Add one empty row
+          addRateRow();
+          return;
+        }
+        
+        dataArray.forEach((item, index) => {
+          currentRateRows = index + 1;
+          const row = document.createElement("tr");
+          row.setAttribute("data-row", currentRateRows);
+          row.innerHTML = `
+            <td class="text-center align-middle">${currentRateRows}</td>
+            <td>
+              <input type="text" class="form-control role-input" name="role_${currentRateRows}" value="${item.role || ''}" placeholder="Enter role..." />
+            </td>
+            <td>
+              <input type="number" class="form-control rate-input" name="rate_${currentRateRows}" step="0.01" min="0" value="${item.rate || ''}" placeholder="0.00" />
+            </td>
+            <td class="text-center align-middle">
+              <button type="button" class="btn btn-outline-danger btn-sm remove-rate-row" title="Remove row">
+                <i class="bi bi-trash"></i>
+              </button>
+            </td>
+          `;
+          tbody.appendChild(row);
+        });
+        
+        updateRemoveButtons();
+        
+        // Hide buttons in view mode
+        if (mode === "view") {
+          const addRateBtn = document.getElementById("addRateRowBtn");
+          const removeRateBtns = document.querySelectorAll(".remove-rate-row");
+          if (addRateBtn) addRateBtn.style.display = "none";
+          removeRateBtns.forEach(btn => btn.style.display = "none");
+        }
+      }
+
+      // Validate Google Drive folder link
+      function validateFolderLink() {
+        const input = document.getElementById("folderLink");
+        const value = input.value.trim();
+
+        // Empty is allowed (field is optional)
+        if (!value) {
+          input.classList.remove("is-invalid");
+          return true;
+        }
+
+        // Check for Google Drive folder link pattern
+        // Supports: /drive/folders/, /drive/u/0/folders/, /folders/, /open?id=, /file/d/
+        const drivePattern =
+          /^https:\/\/drive\.google\.com\/(drive\/(u\/\d+\/)?folders\/|open\?id=|file\/d\/|folders\/)/i;
+
+        if (drivePattern.test(value)) {
+          input.classList.remove("is-invalid");
+          return true;
+        } else {
+          input.classList.add("is-invalid");
+          return false;
+        }
+      }
+
+      // Initialize on page load
+      window.addEventListener("DOMContentLoaded", function () {
+        // For view mode - load contract data directly (faster, no dropdown options needed)
+        if (mode === "view" && contractId) {
+          console.log("Loading contract in view mode, ID:", contractId);
+          google.script.run
+            .withSuccessHandler(fillContractFormViewMode)
+            .withFailureHandler(function (error) {
+              console.error("Error loading contract:", error);
+              alert("Failed to load contract data");
+            })
+            .getContractDataById(contractId);
+        } else {
+          // For create/edit/copy - load dropdown options first
+          populateDropdowns(function () {
+            if (contractId && mode !== "create") {
+              google.script.run
+                .withSuccessHandler(fillContractForm)
+                .withFailureHandler(function (error) {
+                  console.error("Error loading contract:", error);
+                  alert("Failed to load contract data");
+                })
+                .getContractDataById(contractId);
+            }
+          });
+        }
+
+        updateUIForMode();
+
+        // Add folder link validation on input
+        const folderLinkInput = document.getElementById("folderLink");
+        folderLinkInput.addEventListener("input", validateFolderLink);
+        folderLinkInput.addEventListener("blur", validateFolderLink);
+
+        // Roles/Rates table event listeners
+        document.getElementById("addRateRowBtn").addEventListener("click", addRateRow);
+        document.getElementById("rolesRatesBody").addEventListener("click", function(e) {
+          if (e.target.closest(".remove-rate-row")) {
+            removeRateRow(e.target.closest(".remove-rate-row"));
+          }
+        });
+
+        // Add listeners for template auto-loading
+        [
+          "cooperationType",
+          "ourCompany",
+          "serviceType",
+          "documentType",
+        ].forEach((id) => {
+          const el = document.getElementById(id);
+          if (el) {
+            el.addEventListener("change", loadContractTemplates);
+          }
+        });
+      });
+
+      // Fill form in VIEW mode - fast, no dropdown loading
+      function fillContractFormViewMode(data) {
+        console.log("fillContractFormViewMode called with:", data);
+        if (!data) {
+          console.log("No data received in fillContractFormViewMode");
+          return;
+        }
+
+        // Show form sections
+        const formSectionsAfterTemplate = document.getElementById("form-sections-after-template");
+        if (formSectionsAfterTemplate) {
+          formSectionsAfterTemplate.style.display = "block";
+        }
+
+        // Apply field visibility based on data from DB (not from dropdowns)
+        applyFieldVisibilityFromData(
+          data.cooperationType,
+          data.ourCompany,
+          data.documentType
+        );
+
+        // Set all text/input fields
+        document.getElementById("folderLink").value = data.folderLink || "";
+        document.getElementById("contractorName").value =
+          data.contractorName || "";
+        document.getElementById("contractorId").value = data.contractorId || "";
+        document.getElementById("contractorVatId").value =
+          data.contractorVatId || "";
+        document.getElementById("contractorJurisdiction").value =
+          data.contractorJurisdiction || "";
+        document.getElementById("contractorAddress").value =
+          data.contractorAddress || "";
+        document.getElementById("registrationNumber").value =
+          data.registrationNumber || "";
+        document.getElementById("contractorEmail").value =
+          data.contractorEmail || "";
+        document.getElementById("contractNumber").value =
+          data.contractNumber || "";
+        
+        // Set roles/rates table data
+        if (data.rolesRates && Array.isArray(data.rolesRates)) {
+          setRolesRatesData(data.rolesRates);
+        }
+        
+        document.getElementById("bankAccountUAH").value =
+          data.bankAccountUAH || "";
+        document.getElementById("bankAccountUSD").value =
+          data.bankAccountUSD || "";
+        document.getElementById("bankAccountEUR").value =
+          data.bankAccountEUR || "";
+        document.getElementById("bankName").value = data.bankName || "";
+        document.getElementById("bankCode").value = data.bankCode || "";
+        document.getElementById("attachmentNumber").value =
+          data.attachmentNumber || "";
+
+        // Set date fields
+        document.getElementById("registrationDate").value =
+          data.registrationDate || "";
+        document.getElementById("contractDate").value = data.contractDate || "";
+        document.getElementById("probationPeriod").value =
+          data.probationPeriod || "";
+        document.getElementById("terminationDate").value =
+          data.terminationDate || "";
+        document.getElementById("sowStartDate").value = data.sowStartDate || "";
+
+        // For select fields in view mode - add option and set value
+        setSelectValueViewMode("pe", data.pe);
+        setSelectValueViewMode("ourCompany", data.ourCompany);
+        setSelectValueViewMode("serviceType", data.serviceType);
+        setSelectValueViewMode("cooperationType", data.cooperationType);
+        setSelectValueViewMode("documentType", data.documentType);
+        setSelectValueViewMode("accountType", data.accountType);
+        setSelectValueViewMode("currencyOfRate", data.currencyOfRate);
+        setSelectValueViewMode(
+          "sowStartDateRequired",
+          data.sowStartDateRequired
+        );
+
+        // Hide template section in view mode
+        const templateStatus = document.getElementById(
+          "contractTemplateStatus"
+        );
+        if (templateStatus) {
+          const templateCol = templateStatus.closest(".col-md-6");
+          if (templateCol) {
+            templateCol.style.display = "none";
+          }
+        }
+
+        // Update UI for view mode
+        updateUIForMode();
+      }
+
+      // Helper: set select value in view mode (add single option)
+      function setSelectValueViewMode(elementId, value) {
+        const select = document.getElementById(elementId);
+        if (!select) return;
+        // Clear existing options
+        select.innerHTML = "";
+        if (value) {
+          // Add the value as single option
+          const option = document.createElement("option");
+          option.value = value;
+          option.textContent = value;
+          option.selected = true;
+          select.appendChild(option);
+        }
+      }
+
+      // Apply field visibility from data (not from dropdown values)
+      function applyFieldVisibilityFromData(
+        cooperationType,
+        ourCompany,
+        documentType
+      ) {
+        // Get config: first try 3 params (with docType), then 2 params, then default
+        const configKey3 =
+          cooperationType + "|" + ourCompany + "|" + documentType;
+        const configKey2 = cooperationType + "|" + ourCompany;
+        const config =
+          FIELD_CONFIG[configKey3] ||
+          FIELD_CONFIG[configKey2] ||
+          FIELD_CONFIG["_default"];
+
+        // Apply visibility for each field
+        Object.keys(config).forEach(function (fieldId) {
+          const fieldConfig = config[fieldId];
+          const field = document.getElementById(fieldId);
+          if (!field) return;
+
+          // For rolesRatesContainer, use the element itself
+          let parentCol = field.closest('[class*="col-md"]');
+          if (!parentCol && fieldId === "rolesRatesContainer") {
+            parentCol = field;
+          }
+          
+          if (parentCol) {
+            if (fieldConfig.visible) {
+              parentCol.style.display = "";
+            } else {
+              parentCol.style.display = "none";
+            }
+          }
+        });
+
+        // Hide empty rows and sections
+        hideEmptyRowsAndSections();
+      }
+
+      // Hide rows where all columns are hidden, and sections where all rows are hidden
+      function hideEmptyRowsAndSections() {
+        // Hide empty rows
+        document
+          .querySelectorAll("#form-sections-after-template .row.mb-3")
+          .forEach(function (row) {
+            const cols = row.querySelectorAll('[class*="col-md"]');
+            let hasVisibleCol = false;
+            cols.forEach(function (col) {
+              if (col.style.display !== "none") {
+                hasVisibleCol = true;
+              }
+            });
+            row.style.display = hasVisibleCol ? "" : "none";
+          });
+
+        // Hide empty sections
+        document
+          .querySelectorAll("#form-sections-after-template .form-section")
+          .forEach(function (section) {
+            const rows = section.querySelectorAll(".row.mb-3");
+            let hasVisibleRow = false;
+            rows.forEach(function (row) {
+              if (row.style.display !== "none") {
+                hasVisibleRow = true;
+              }
+            });
+            section.style.display = hasVisibleRow ? "" : "none";
+            const title = section.previousElementSibling;
+            if (title && title.classList.contains("section-title")) {
+              title.style.display = hasVisibleRow ? "" : "none";
+            }
+          });
+      }
+
+      // Fill form with contract data
+      function fillContractForm(data) {
+        if (!data) {
+          return;
+        }
+
+        // Set text/url/email fields
+        document.getElementById("folderLink").value = data.folderLink || "";
+        document.getElementById("contractorName").value =
+          data.contractorName || "";
+        document.getElementById("contractorId").value = data.contractorId || "";
+        document.getElementById("contractorVatId").value =
+          data.contractorVatId || "";
+        document.getElementById("contractorJurisdiction").value =
+          data.contractorJurisdiction || "";
+        document.getElementById("contractorAddress").value =
+          data.contractorAddress || "";
+        document.getElementById("registrationNumber").value =
+          data.registrationNumber || "";
+        document.getElementById("contractorEmail").value =
+          data.contractorEmail || "";
+        document.getElementById("contractNumber").value =
+          data.contractNumber || "";
+        
+        // Set roles/rates table data
+        if (data.rolesRates && Array.isArray(data.rolesRates)) {
+          setRolesRatesData(data.rolesRates);
+        }
+        
+        document.getElementById("currencyOfRate").value =
+          data.currencyOfRate || "";
+        document.getElementById("bankAccountUAH").value =
+          data.bankAccountUAH || "";
+        document.getElementById("bankAccountUSD").value =
+          data.bankAccountUSD || "";
+        document.getElementById("bankAccountEUR").value =
+          data.bankAccountEUR || "";
+        document.getElementById("bankName").value = data.bankName || "";
+        document.getElementById("bankCode").value = data.bankCode || "";
+
+        // Set date fields
+        document.getElementById("registrationDate").value =
+          data.registrationDate || "";
+        document.getElementById("contractDate").value = data.contractDate || "";
+        document.getElementById("probationPeriod").value =
+          data.probationPeriod || "";
+        document.getElementById("terminationDate").value =
+          data.terminationDate || "";
+        document.getElementById("sowStartDate").value = data.sowStartDate || "";
+
+        // Set additional text fields
+        document.getElementById("attachmentNumber").value =
+          data.attachmentNumber || "";
+
+        // Set select fields (dropdowns are already populated via callback)
+        document.getElementById("pe").value = data.pe || "";
+        document.getElementById("ourCompany").value = data.ourCompany || "";
+        document.getElementById("serviceType").value = data.serviceType || "";
+        document.getElementById("cooperationType").value =
+          data.cooperationType || "";
+        document.getElementById("documentType").value = data.documentType || "";
+        document.getElementById("accountType").value = data.accountType || "";
+        document.getElementById("currencyOfRate").value =
+          data.currencyOfRate || "";
+        document.getElementById("sowStartDateRequired").value =
+          data.sowStartDateRequired || "";
+
+        // Show form sections
+        document.getElementById("form-sections-after-template").style.display =
+          "block";
+
+        // Apply field visibility based on selection
+        applyFieldVisibility();
+
+        // Update UI for current mode
+        updateUIForMode();
+
+        // Set template link if available
+        if (data.templateLink) {
+          const statusText = document.getElementById("contractTemplateStatus");
+          const linkBtn = document.getElementById("contractTemplateLinkBtn");
+          statusText.textContent = "Template loaded ✓";
+          statusText.className = "text-success";
+          linkBtn.href = data.templateLink.replace(/\/edit.*$/, "/preview");
+          linkBtn.style.display = "inline-block";
+        }
+      }
+    </script>
+  </body>
+</html>

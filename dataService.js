@@ -1408,3 +1408,1091 @@ function updateCreditNoteByIdFromData(data) {
     return { success: false, message: error.message };
   }
 }
+
+// ============================================
+// CONTRACTS FUNCTIONS
+// ============================================
+
+/**
+ * Get dropdown options for contract form from Lists sheet
+ * @returns {Object} Object with arrays for each dropdown
+ */
+function getContractDropdownOptionsFromData() {
+  try {
+    const spreadsheet = SpreadsheetApp.openById(
+      CONFIG.CONTRACTORS_SPREADSHEET_ID
+    );
+    const listsSheet = spreadsheet.getSheetByName("Lists");
+
+    if (!listsSheet) {
+      console.log("Lists sheet not found in contractors spreadsheet");
+      return {
+        cooperationTypes: [],
+        ourCompanies: [],
+        serviceTypes: [],
+        peOptions: [],
+        accountTypes: [],
+        currencies: [],
+        documentTypes: [],
+      };
+    }
+
+    const data = listsSheet.getDataRange().getValues();
+
+    // Extract unique values from each column (skip header row)
+    const cooperationTypes = []; // Column A
+    const ourCompanies = []; // Column B
+    const serviceTypes = []; // Column C
+    const peOptions = []; // Column D
+    const accountTypes = []; // Column E
+    const currencies = []; // Column F
+    const documentTypes = []; // Column G
+
+    for (let i = 1; i < data.length; i++) {
+      const row = data[i];
+
+      if (row[0] && row[0].toString().trim() !== "") {
+        const val = row[0].toString().trim();
+        if (!cooperationTypes.includes(val)) cooperationTypes.push(val);
+      }
+      if (row[1] && row[1].toString().trim() !== "") {
+        const val = row[1].toString().trim();
+        if (!ourCompanies.includes(val)) ourCompanies.push(val);
+      }
+      if (row[2] && row[2].toString().trim() !== "") {
+        const val = row[2].toString().trim();
+        if (!serviceTypes.includes(val)) serviceTypes.push(val);
+      }
+      if (row[3] && row[3].toString().trim() !== "") {
+        const val = row[3].toString().trim();
+        if (!peOptions.includes(val)) peOptions.push(val);
+      }
+      if (row[4] && row[4].toString().trim() !== "") {
+        const val = row[4].toString().trim();
+        if (!accountTypes.includes(val)) accountTypes.push(val);
+      }
+      if (row[5] && row[5].toString().trim() !== "") {
+        const val = row[5].toString().trim();
+        if (!currencies.includes(val)) currencies.push(val);
+      }
+      if (row[6] && row[6].toString().trim() !== "") {
+        const val = row[6].toString().trim();
+        if (!documentTypes.includes(val)) documentTypes.push(val);
+      }
+    }
+
+    return {
+      cooperationTypes: cooperationTypes.sort(),
+      ourCompanies: ourCompanies.sort(),
+      serviceTypes: serviceTypes.sort(),
+      peOptions: peOptions.sort(),
+      accountTypes: accountTypes.sort(),
+      currencies: currencies.sort(),
+      documentTypes: documentTypes.sort(),
+    };
+  } catch (error) {
+    console.error("Error getting contract dropdown options:", error);
+    return {
+      cooperationTypes: [],
+      ourCompanies: [],
+      serviceTypes: [],
+      peOptions: [],
+      accountTypes: [],
+      currencies: [],
+      documentTypes: [],
+    };
+  }
+}
+
+/**
+ * Get contract templates from Templates sheet
+ * Filters by cooperation type, our company, and service type
+ * @param {string} cooperationType
+ * @param {string} ourCompany
+ * @param {string} serviceType
+ * @returns {Array} Array of template objects {name, link}
+ */
+function getContractTemplatesFromData(
+  cooperationType,
+  ourCompany,
+  serviceType,
+  documentType
+) {
+  try {
+    const spreadsheet = SpreadsheetApp.openById(
+      CONFIG.CONTRACTORS_SPREADSHEET_ID
+    );
+    const templatesSheet = spreadsheet.getSheetByName("Templates");
+
+    if (!templatesSheet) {
+      console.log("Templates sheet not found");
+      return [];
+    }
+
+    const data = templatesSheet.getDataRange().getValues();
+    const templates = [];
+
+    // Columns: A = Type of cooperation, B = Our company, C = Type of services, D = Document type, E = Template link
+    for (let i = 1; i < data.length; i++) {
+      const row = data[i];
+      const rowCoopType = (row[0] || "").toString().trim();
+      const rowCompany = (row[1] || "").toString().trim();
+      const rowServiceType = (row[2] || "").toString().trim();
+      const rowDocType = (row[3] || "").toString().trim();
+      const templateLink = (row[4] || "").toString().trim();
+
+      // Filter by matching criteria (if provided)
+      const matchCoop = !cooperationType || rowCoopType === cooperationType;
+      const matchCompany = !ourCompany || rowCompany === ourCompany;
+      const matchService = !serviceType || rowServiceType === serviceType;
+      const matchDocType = !documentType || rowDocType === documentType;
+
+      if (
+        matchCoop &&
+        matchCompany &&
+        matchService &&
+        matchDocType &&
+        templateLink
+      ) {
+        templates.push({
+          cooperationType: rowCoopType,
+          ourCompany: rowCompany,
+          serviceType: rowServiceType,
+          documentType: rowDocType,
+          link: templateLink,
+          name: `${rowCoopType} - ${rowCompany} - ${rowServiceType} - ${rowDocType}`,
+        });
+      }
+    }
+
+    return templates;
+  } catch (error) {
+    console.error("Error getting contract templates:", error);
+    return [];
+  }
+}
+
+/**
+ * Get contract list from the Contracts sheet
+ * @returns {Array} Array of contract objects
+ */
+function getContractListFromData() {
+  try {
+    const spreadsheet = SpreadsheetApp.openById(
+      CONFIG.CONTRACTORS_SPREADSHEET_ID
+    );
+    const sheet = spreadsheet.getSheetByName("Contracts");
+
+    if (!sheet) {
+      console.log("Contracts sheet not found");
+      return [];
+    }
+
+    const data = sheet.getDataRange().getValues();
+
+    if (data.length < 2) {
+      return []; // Only header row or empty
+    }
+
+    // Build header index map
+    const headers = data[0];
+    const indexMap = {};
+    headers.forEach((header, index) => {
+      if (header) {
+        indexMap[header.toString().trim()] = index;
+      }
+    });
+
+    const contracts = [];
+
+    // Process data rows (skip header)
+    for (let i = 1; i < data.length; i++) {
+      const row = data[i];
+
+      // Skip empty rows
+      if (!row[0]) continue;
+
+      const contractDate = row[indexMap["Дата договора"]];
+      let formattedDate = "";
+      if (contractDate) {
+        if (contractDate instanceof Date) {
+          formattedDate = Utilities.formatDate(
+            contractDate,
+            Session.getScriptTimeZone(),
+            "dd-MM-yyyy"
+          );
+        } else {
+          formattedDate = contractDate.toString();
+        }
+      }
+
+      contracts.push({
+        id: row[0] || "", // Column A = ID
+        documentLink: row[1] || "", // Column B = Document link
+        folderLink: row[indexMap["Ссылка на папку с договором"]] || "",
+        contractorName: row[indexMap["Название контрактора"]] || "",
+        ourCompany: row[indexMap["Наша компания"]] || "",
+        serviceType: row[indexMap["Вид услуг"]] || "",
+        cooperationType: row[indexMap["Вид сотрудничества"]] || "",
+        contractNumber: row[indexMap["№ договора"]] || "",
+        contractDate: formattedDate,
+        documentType: row[indexMap["Вид документа"]] || "",
+        attachmentNumber: row[indexMap["Номер приложения"]] || "",
+      });
+    }
+
+    console.log("Loaded " + contracts.length + " contracts");
+    return contracts;
+  } catch (error) {
+    console.error("Error getting contracts list:", error);
+    return [];
+  }
+}
+
+/**
+ * Extract roles/rates array from a contract row
+ * @param {Array} row - Sheet row data
+ * @param {Object} indexMap - Column name to index mapping
+ * @returns {Array} Array of {role, rate} objects
+ */
+function getRolesRatesFromRow(row, indexMap) {
+  const rolesRates = [];
+
+  for (let i = 1; i <= CONFIG.CONTRACT_RATES_TABLE.MAX_ROWS; i++) {
+    const roleColName = "Роль контрактора " + i;
+    const rateColName = "Рейт контрактора " + i;
+
+    const roleIndex = indexMap[roleColName];
+    const rateIndex = indexMap[rateColName];
+
+    const role = roleIndex !== undefined ? row[roleIndex] || "" : "";
+    const rate = rateIndex !== undefined ? row[rateIndex] || "" : "";
+
+    // Only include non-empty rows
+    if (role || rate) {
+      rolesRates.push({ role: role.toString(), rate: rate.toString() });
+    }
+  }
+
+  return rolesRates.length > 0 ? rolesRates : [{ role: "", rate: "" }];
+}
+
+/**
+ * Get contract data by ID from spreadsheet
+ * @param {string} id - Contract ID
+ * @returns {Object} Contract data
+ */
+function getContractDataByIdFromData(id) {
+  try {
+    if (!id || id.toString().trim() === "") {
+      console.log("Invalid ID provided to getContractDataByIdFromData");
+      return null;
+    }
+
+    const spreadsheet = SpreadsheetApp.openById(
+      CONFIG.CONTRACTORS_SPREADSHEET_ID
+    );
+    const sheet = spreadsheet.getSheetByName("Contracts");
+
+    if (!sheet) {
+      console.log("Contracts sheet not found");
+      return null;
+    }
+
+    const data = sheet.getDataRange().getValues();
+    const headers = data[0];
+    const indexMap = {};
+    headers.forEach((header, index) => {
+      if (header) {
+        indexMap[header.toString().trim()] = index;
+      }
+    });
+
+    let row = null;
+    console.log("Searching for contract ID:", id);
+    console.log("Total rows in sheet:", data.length);
+    for (let i = 1; i < data.length; i++) {
+      const rowId = data[i][0]; // Column A = ID
+      console.log("Row " + i + " ID:", rowId);
+      if (
+        rowId == id ||
+        rowId === id ||
+        (rowId && rowId.toString() === id.toString())
+      ) {
+        row = data[i];
+        console.log("Found contract at row", i);
+        break;
+      }
+    }
+
+    if (!row) {
+      console.log(
+        "Contract with ID " +
+          id +
+          " not found in " +
+          (data.length - 1) +
+          " rows."
+      );
+      return null;
+    }
+
+    // Format date for input field (YYYY-MM-DD)
+    function formatDateForInput(dateVal) {
+      if (!dateVal) return "";
+      if (dateVal instanceof Date) {
+        return Utilities.formatDate(
+          dateVal,
+          Session.getScriptTimeZone(),
+          "yyyy-MM-dd"
+        );
+      }
+      // Try to parse DD/MM/YYYY format (new format)
+      const matchSlash = String(dateVal).match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+      if (matchSlash) {
+        return matchSlash[3] + "-" + matchSlash[2] + "-" + matchSlash[1];
+      }
+      // Try to parse DD-MM-YYYY format (old format)
+      const matchDash = String(dateVal).match(/^(\d{2})-(\d{2})-(\d{4})$/);
+      if (matchDash) {
+        return matchDash[3] + "-" + matchDash[2] + "-" + matchDash[1];
+      }
+      return String(dateVal);
+    }
+
+    // Helper to safely get column value
+    function getColValue(columnName) {
+      const colIndex = indexMap[columnName];
+      return colIndex !== undefined ? row[colIndex] || "" : "";
+    }
+
+    function getColDateValue(columnName) {
+      const colIndex = indexMap[columnName];
+      return colIndex !== undefined ? formatDateForInput(row[colIndex]) : "";
+    }
+
+    const result = {
+      id: row[0] || "",
+      documentLink: row[1] || "",
+      folderLink: getColValue("Ссылка на папку с договором"),
+      contractorName: getColValue("Название контрактора"),
+      pe: getColValue("ФОП"),
+      ourCompany: getColValue("Наша компания"),
+      serviceType: getColValue("Вид услуг"),
+      cooperationType: getColValue("Вид сотрудничества"),
+      documentType: getColValue("Вид документа"),
+      contractNumber: getColValue("№ договора"),
+      contractDate: getColDateValue("Дата договора"),
+      probationPeriod: getColDateValue("Срок ИС"),
+      terminationDate: getColDateValue("Дата окончания договора"),
+      registrationNumber: getColValue("№ гос.регистрации"),
+      registrationDate: getColDateValue("Дата гос.регистрации"),
+      contractorId: getColValue("Номер контрактора"),
+      contractorVatId: getColValue("Номер НДС контрактора"),
+      contractorJurisdiction: getColValue("Юрисдикция контрактора"),
+      contractorAddress: getColValue("Адрес контрактора"),
+      bankAccountUAH: getColValue("Счет (грн)"),
+      bankAccountUSD: getColValue("Счет (долл)"),
+      bankAccountEUR: getColValue("Счет (евро)"),
+      bankName: getColValue("Банк"),
+      accountType: getColValue("Тип счета"),
+      bankCode: getColValue("Код банка"),
+      contractorEmail: getColValue("Эл.почта"),
+      rolesRates: [],
+      currencyOfRate: getColValue("Валюта рейта"),
+      attachmentNumber: getColValue("Номер приложения"),
+      sowStartDateRequired: getColValue("Дата старта термин"),
+      sowStartDate: getColDateValue("Дата старта"),
+      templateLink: getColValue("Шаблон договора"),
+    };
+
+    // Get roles/rates separately to catch errors
+    try {
+      result.rolesRates = getRolesRatesFromRow(row, indexMap);
+    } catch (rrError) {
+      console.error("Error getting roles/rates:", rrError);
+      result.rolesRates = [];
+    }
+
+    console.log("Returning contract data for ID:", id);
+    console.log("Result object:", JSON.stringify(result));
+    return result;
+  } catch (error) {
+    console.error("Error getting contract data by ID:", error);
+    return null;
+  }
+}
+
+/**
+ * Field mapping: form field ID -> sheet column name
+ */
+const CONTRACT_FIELD_MAPPING = {
+  folderLink: "Ссылка на папку с договором",
+  contractorName: "Название контрактора",
+  pe: "ФОП",
+  ourCompany: "Наша компания",
+  serviceType: "Вид услуг",
+  cooperationType: "Вид сотрудничества",
+  documentType: "Вид документа",
+  contractNumber: "№ договора",
+  contractDate: "Дата договора",
+  probationPeriod: "Срок ИС",
+  terminationDate: "Дата окончания договора",
+  registrationNumber: "№ гос.регистрации",
+  registrationDate: "Дата гос.регистрации",
+  contractorId: "Номер контрактора",
+  contractorVatId: "Номер НДС контрактора",
+  contractorJurisdiction: "Юрисдикция контрактора",
+  contractorAddress: "Адрес контрактора",
+  bankAccountUAH: "Счет (грн)",
+  bankAccountUSD: "Счет (долл)",
+  bankAccountEUR: "Счет (евро)",
+  bankName: "Банк",
+  accountType: "Тип счета",
+  bankCode: "Код банка",
+  contractorEmail: "Эл.почта",
+  // rolesRates is handled separately (multiple columns)
+  currencyOfRate: "Валюта рейта",
+  attachmentNumber: "Номер приложения",
+  sowStartDateRequired: "Дата старта термин",
+  sowStartDate: "Дата старта",
+  templateLink: "Шаблон договора",
+};
+
+/**
+ * Placeholder mapping: form field ID -> placeholder in template
+ */
+const CONTRACT_PLACEHOLDER_MAPPING = {
+  contractorName: "{Название контрактора}",
+  pe: "{ФОП}",
+  ourCompany: "{Наша компания}",
+  serviceType: "{Вид услуг}",
+  cooperationType: "{Вид сотрудничества}",
+  contractNumber: "{№ договора}",
+  contractDate: "{Дата договора}",
+  probationPeriod: "{Срок ИС}",
+  terminationDate: "{Дата окончания договора}",
+  registrationNumber: "{№ гос.регистрации}",
+  registrationDate: "{Дата гос.регистрации}",
+  contractorId: "{Номер контрактора}",
+  contractorVatId: "{Номер НДС контрактора}",
+  contractorJurisdiction: "{Юрисдикция контрактора}",
+  contractorAddress: "{Адрес контрактора}",
+  bankAccountUAH: "{Счет грн}",
+  bankAccountUSD: "{Счет долл}",
+  bankAccountEUR: "{Счет евро}",
+  bankName: "{Банк}",
+  accountType: "{Тип счета}",
+  bankCode: "{Код банка}",
+  contractorEmail: "{Эл.почта}",
+  // rolesRates is handled separately (table in document)
+  currencyOfRate: "{Валюта рейта}",
+  attachmentNumber: "{Номер приложения}",
+  sowStartDateRequired: "{Дата старта термин}",
+  sowStartDate: "{Дата старта}",
+};
+
+/**
+ * Extract folder ID from Google Drive folder URL
+ * @param {string} folderUrl - Google Drive folder URL
+ * @returns {string|null} Folder ID or null
+ */
+function extractFolderIdFromUrl(folderUrl) {
+  if (!folderUrl) return null;
+
+  // Match patterns like:
+  // https://drive.google.com/drive/folders/FOLDER_ID
+  // https://drive.google.com/drive/u/0/folders/FOLDER_ID
+  const match = folderUrl.match(/folders\/([a-zA-Z0-9_-]+)/);
+  return match ? match[1] : null;
+}
+
+/**
+ * Extract document ID from Google Docs URL
+ * @param {string} docUrl - Google Docs URL
+ * @returns {string|null} Document ID or null
+ */
+function extractDocIdFromUrl(docUrl) {
+  if (!docUrl) return null;
+
+  // Match patterns like:
+  // https://docs.google.com/document/d/DOC_ID/edit
+  // https://docs.google.com/document/d/DOC_ID/preview
+  const match = docUrl.match(/\/d\/([a-zA-Z0-9_-]+)/);
+  return match ? match[1] : null;
+}
+
+/**
+ * Generate document name based on document type
+ * @param {Object} formData - Form data
+ * @returns {string} Document name
+ */
+function generateContractDocumentName(formData) {
+  const documentType = (formData.documentType || "").toLowerCase();
+  const ourCompany = formData.ourCompany || "Company";
+  const contractorName = formData.contractorName || "Contractor";
+
+  if (
+    documentType.includes("attachment") ||
+    documentType.includes("addendum")
+  ) {
+    // Addendum_[attachmentNumber]_[sowStartDate]_[ourCompany]-[contractorName]
+    const attachmentNumber = formData.attachmentNumber || "1";
+    const startDate = formatDateForFilename(formData.sowStartDate || "");
+    return (
+      "Addendum_" +
+      attachmentNumber +
+      "_" +
+      startDate +
+      "_" +
+      ourCompany +
+      "-" +
+      contractorName
+    );
+  } else {
+    // Contract_[contractNumber]_[contractDate]_[ourCompany]-[contractorName]
+    const contractNumber = formData.contractNumber || "";
+    const contractDate = formatDateForFilename(formData.contractDate || "");
+    return (
+      "Contract_" +
+      contractNumber +
+      "_" +
+      contractDate +
+      "_" +
+      ourCompany +
+      "-" +
+      contractorName
+    );
+  }
+}
+
+/**
+ * Format date from YYYY-MM-DD to DD-MM-YYYY
+ * @param {string} dateStr - Date string in YYYY-MM-DD format
+ * @returns {string} Date string in DD-MM-YYYY format
+ */
+function formatDateForContract(dateStr) {
+  if (!dateStr) return "";
+
+  // Handle YYYY-MM-DD format - returns DD/MM/YYYY for document content
+  const match = dateStr.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (match) {
+    return match[3] + "/" + match[2] + "/" + match[1]; // DD/MM/YYYY
+  }
+
+  // Return as-is if not in expected format
+  return dateStr;
+}
+
+function formatDateForFilename(dateStr) {
+  if (!dateStr) return "";
+
+  // Handle YYYY-MM-DD format - returns DD-MM-YYYY for filenames (no slashes!)
+  const match = dateStr.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (match) {
+    return match[3] + "-" + match[2] + "-" + match[1]; // DD-MM-YYYY
+  }
+
+  // Return as-is if not in expected format
+  return dateStr;
+}
+
+/**
+ * Date fields that need formatting
+ */
+const DATE_FIELDS = [
+  "contractDate",
+  "terminationDate",
+  "registrationDate",
+  "sowStartDate",
+];
+
+/**
+ * Copy template to folder and replace placeholders
+ * @param {string} templateUrl - URL of the template document
+ * @param {string} folderUrl - URL of the destination folder
+ * @param {Object} formData - Form data for replacements
+ * @returns {Object} Result with document URL or error
+ */
+/**
+ * Fill roles/rates table in the document
+ * Finds the table with {Роль контрактора} placeholder and fills it with data
+ * @param {Body} body - Google Doc body
+ * @param {Array} rolesRates - Array of {role, rate} objects
+ */
+function fillRolesRatesTable(body, rolesRates) {
+  try {
+    // Find all tables in the document
+    const tables = body.getTables();
+
+    for (let t = 0; t < tables.length; t++) {
+      const table = tables[t];
+      const numRows = table.getNumRows();
+
+      // Look for the table with role/rate placeholders
+      for (let r = 0; r < numRows; r++) {
+        const row = table.getRow(r);
+        const rowText = row.getText();
+
+        if (
+          rowText.includes("{Роль контрактора}") ||
+          rowText.includes("{Рейт контрактора}")
+        ) {
+          // Found the template row - this is the data row we need to fill
+          const templateRowIndex = r;
+
+          // Fill the first role/rate in the template row
+          if (rolesRates.length > 0) {
+            const cell0 = row.getCell(0);
+            const cell1 = row.getCell(1);
+            cell0.setText(rolesRates[0].role || "");
+            cell1.setText(rolesRates[0].rate || "");
+          }
+
+          // Add additional rows for remaining roles/rates
+          for (let i = 1; i < rolesRates.length; i++) {
+            const newRow = table.insertTableRow(templateRowIndex + i);
+            newRow.appendTableCell(rolesRates[i].role || "");
+            newRow.appendTableCell(rolesRates[i].rate || "");
+          }
+
+          return; // Done
+        }
+      }
+    }
+
+    // If no table found, just replace text placeholders with first role/rate
+    if (rolesRates.length > 0) {
+      body.replaceText("\\{Роль контрактора\\}", rolesRates[0].role || "");
+      body.replaceText("\\{Рейт контрактора\\}", rolesRates[0].rate || "");
+    }
+  } catch (error) {
+    console.warn("Error filling roles/rates table:", error);
+    // Fallback: just replace placeholders with first values
+    if (rolesRates.length > 0) {
+      body.replaceText("\\{Роль контрактора\\}", rolesRates[0].role || "");
+      body.replaceText("\\{Рейт контрактора\\}", rolesRates[0].rate || "");
+    }
+  }
+}
+
+function createContractDocument(templateUrl, folderUrl, formData) {
+  try {
+    // Extract IDs from URLs
+    const templateId = extractDocIdFromUrl(templateUrl);
+    const folderId = extractFolderIdFromUrl(folderUrl);
+
+    if (!templateId) {
+      throw new Error("Invalid template URL");
+    }
+
+    if (!folderId) {
+      throw new Error("Invalid folder URL");
+    }
+
+    // Get template and destination folder
+    const templateFile = DriveApp.getFileById(templateId);
+    const destFolder = DriveApp.getFolderById(folderId);
+
+    // Generate document name
+    const docName = generateContractDocumentName(formData);
+
+    // Copy template to destination folder
+    const copiedFile = templateFile.makeCopy(docName, destFolder);
+    const copiedDocId = copiedFile.getId();
+
+    // Open the copied document and replace placeholders
+    const doc = DocumentApp.openById(copiedDocId);
+    const body = doc.getBody();
+
+    // Replace all placeholders
+    Object.keys(CONTRACT_PLACEHOLDER_MAPPING).forEach(function (fieldId) {
+      const placeholder = CONTRACT_PLACEHOLDER_MAPPING[fieldId];
+      let value = formData[fieldId] || "";
+
+      // Format date fields to DD-MM-YYYY
+      if (DATE_FIELDS.includes(fieldId)) {
+        value = formatDateForContract(value);
+      }
+
+      body.replaceText(placeholder.replace(/[{}]/g, "\\$&"), value);
+    });
+
+    // Fill roles/rates table
+    if (
+      formData.rolesRates &&
+      Array.isArray(formData.rolesRates) &&
+      formData.rolesRates.length > 0
+    ) {
+      fillRolesRatesTable(body, formData.rolesRates);
+    }
+
+    // Save and close
+    doc.saveAndClose();
+
+    // Get the URL of the created document
+    const docUrl =
+      "https://docs.google.com/document/d/" + copiedDocId + "/edit";
+
+    console.log("Contract document created:", docUrl);
+
+    return {
+      success: true,
+      documentUrl: docUrl,
+      documentId: copiedDocId,
+    };
+  } catch (error) {
+    console.error("Error creating contract document:", error);
+    return {
+      success: false,
+      documentUrl: null,
+      error: error.toString(),
+    };
+  }
+}
+
+/**
+ * Save a new contract to the Contracts sheet
+ * @param {Object} formData - Object with form field values
+ * @returns {Object} Result with success status and contract ID
+ */
+function saveContractToData(formData) {
+  try {
+    const spreadsheet = SpreadsheetApp.openById(
+      CONFIG.CONTRACTORS_SPREADSHEET_ID
+    );
+    const sheet = spreadsheet.getSheetByName("Contracts");
+
+    if (!sheet) {
+      throw new Error("Contracts sheet not found");
+    }
+
+    // Get headers from first row
+    const headers = sheet
+      .getRange(1, 1, 1, sheet.getLastColumn())
+      .getValues()[0];
+
+    // Build column index map: column name -> column index (0-based)
+    const columnMap = {};
+    headers.forEach((header, index) => {
+      if (header) {
+        columnMap[header.toString().trim()] = index;
+      }
+    });
+
+    // Generate unique ID
+    const contractId = Utilities.getUuid();
+
+    // Step 1: Create the contract document from template
+    let documentUrl = "";
+    if (formData.templateLink && formData.folderLink) {
+      const docResult = createContractDocument(
+        formData.templateLink,
+        formData.folderLink,
+        formData
+      );
+
+      if (docResult.success) {
+        documentUrl = docResult.documentUrl;
+      } else {
+        console.warn("Could not create document:", docResult.error);
+        // Continue saving data even if document creation fails
+      }
+    }
+
+    // Step 2: Prepare row data array (fill with empty strings)
+    const rowData = new Array(headers.length).fill("");
+
+    // Column A (index 0) = ID
+    rowData[0] = contractId;
+
+    // Column B (index 1) = Document link
+    rowData[1] = documentUrl;
+
+    // Map form data to columns using the mapping
+    Object.keys(formData).forEach(function (fieldId) {
+      if (fieldId === "rolesRates") return; // Handle separately
+      const columnName = CONTRACT_FIELD_MAPPING[fieldId];
+      if (columnName && columnMap.hasOwnProperty(columnName)) {
+        const colIndex = columnMap[columnName];
+        let value = formData[fieldId] || "";
+        // Format dates to DD/MM/YYYY for storage
+        if (DATE_FIELDS.includes(fieldId) && value) {
+          value = formatDateForContract(value);
+        }
+        rowData[colIndex] = value;
+      }
+    });
+
+    // Save roles/rates to separate columns
+    if (formData.rolesRates && Array.isArray(formData.rolesRates)) {
+      formData.rolesRates.forEach(function (item, index) {
+        const rowNum = index + 1;
+        const roleColName = "Роль контрактора " + rowNum;
+        const rateColName = "Рейт контрактора " + rowNum;
+
+        if (columnMap.hasOwnProperty(roleColName)) {
+          rowData[columnMap[roleColName]] = item.role || "";
+        }
+        if (columnMap.hasOwnProperty(rateColName)) {
+          rowData[columnMap[rateColName]] = item.rate || "";
+        }
+      });
+    }
+
+    // Append the row to the sheet
+    sheet.appendRow(rowData);
+
+    console.log("Contract saved successfully with ID:", contractId);
+
+    return {
+      success: true,
+      id: contractId,
+      documentUrl: documentUrl,
+      message: documentUrl
+        ? "Contract saved and document created successfully"
+        : "Contract saved (document creation skipped)",
+    };
+  } catch (error) {
+    console.error("Error saving contract:", error);
+    return {
+      success: false,
+      id: null,
+      message: "Error saving contract: " + error.toString(),
+    };
+  }
+}
+
+/**
+ * Delete a contract by ID
+ * - Finds the row in the Contracts sheet
+ * - Deletes the generated document file if exists
+ * - Deletes the row from the sheet
+ * @param {string} id - Contract ID
+ * @returns {Object} Result with success status
+ */
+function deleteContractFromData(id) {
+  try {
+    if (!id || id.toString().trim() === "") {
+      return { success: false, message: "Invalid contract ID" };
+    }
+
+    const spreadsheet = SpreadsheetApp.openById(
+      CONFIG.CONTRACTORS_SPREADSHEET_ID
+    );
+    const sheet = spreadsheet.getSheetByName("Contracts");
+
+    if (!sheet) {
+      return { success: false, message: "Contracts sheet not found" };
+    }
+
+    const data = sheet.getDataRange().getValues();
+
+    // Find the row with matching ID (Column A)
+    let rowIndex = -1;
+    let documentLink = null;
+
+    for (let i = 1; i < data.length; i++) {
+      const rowId = data[i][0];
+      if (rowId == id || rowId === id || rowId.toString() === id.toString()) {
+        rowIndex = i + 1; // Sheet rows are 1-indexed
+        documentLink = data[i][1]; // Column B = document link
+        break;
+      }
+    }
+
+    if (rowIndex === -1) {
+      return { success: false, message: "Contract not found" };
+    }
+
+    // Delete the generated document if it exists
+    if (documentLink) {
+      try {
+        const docIdMatch = documentLink.match(/\/d\/([a-zA-Z0-9_-]+)/);
+        if (docIdMatch && docIdMatch[1]) {
+          const docId = docIdMatch[1];
+          const file = DriveApp.getFileById(docId);
+          file.setTrashed(true); // Move to trash
+          console.log("Document moved to trash:", docId);
+        }
+      } catch (docError) {
+        console.warn("Could not delete document:", docError);
+        // Continue with row deletion even if document deletion fails
+      }
+    }
+
+    // Delete the row from the sheet
+    sheet.deleteRow(rowIndex);
+
+    console.log("Contract deleted successfully, ID:", id);
+
+    return {
+      success: true,
+      message: "Contract deleted successfully",
+    };
+  } catch (error) {
+    console.error("Error deleting contract:", error);
+    return {
+      success: false,
+      message: "Error deleting contract: " + error.toString(),
+    };
+  }
+}
+
+/**
+ * Update an existing contract
+ * @param {Object} formData - Contract form data including id
+ * @returns {Object} Result with success status and document URL
+ */
+function updateContractToData(formData) {
+  try {
+    const contractId = formData.id;
+    if (!contractId || contractId.toString().trim() === "") {
+      return { success: false, message: "Invalid contract ID" };
+    }
+
+    const spreadsheet = SpreadsheetApp.openById(
+      CONFIG.CONTRACTORS_SPREADSHEET_ID
+    );
+    const sheet = spreadsheet.getSheetByName("Contracts");
+
+    if (!sheet) {
+      return { success: false, message: "Contracts sheet not found" };
+    }
+
+    const data = sheet.getDataRange().getValues();
+    const headers = data[0];
+
+    // Build column index map
+    const columnMap = {};
+    headers.forEach((header, index) => {
+      if (header) {
+        columnMap[header.toString().trim()] = index;
+      }
+    });
+
+    // Find the row with matching ID
+    let rowIndex = -1;
+    let oldDocumentLink = null;
+
+    for (let i = 1; i < data.length; i++) {
+      const rowId = data[i][0];
+      if (
+        rowId == contractId ||
+        rowId === contractId ||
+        rowId.toString() === contractId.toString()
+      ) {
+        rowIndex = i + 1; // Sheet rows are 1-indexed
+        oldDocumentLink = data[i][1]; // Column B = document link
+        break;
+      }
+    }
+
+    if (rowIndex === -1) {
+      return { success: false, message: "Contract not found" };
+    }
+
+    // Step 1: Delete old document if exists
+    if (oldDocumentLink) {
+      try {
+        const docIdMatch = oldDocumentLink.match(/\/d\/([a-zA-Z0-9_-]+)/);
+        if (docIdMatch && docIdMatch[1]) {
+          const docId = docIdMatch[1];
+          const file = DriveApp.getFileById(docId);
+          file.setTrashed(true);
+          console.log("Old document moved to trash:", docId);
+        }
+      } catch (docError) {
+        console.warn("Could not delete old document:", docError);
+        // Continue anyway
+      }
+    }
+
+    // Step 2: Create new document
+    let newDocumentUrl = "";
+    if (formData.templateLink && formData.folderLink) {
+      const docResult = createContractDocument(
+        formData.templateLink,
+        formData.folderLink,
+        formData
+      );
+
+      if (docResult.success) {
+        newDocumentUrl = docResult.documentUrl;
+      } else {
+        console.warn("Could not create new document:", docResult.error);
+      }
+    }
+
+    // Step 3: Update row data
+    // Column A (index 0) = ID - don't change
+    // Column B (index 1) = Document link
+    sheet.getRange(rowIndex, 2).setValue(newDocumentUrl);
+
+    // Update other columns using mapping
+    Object.keys(formData).forEach(function (fieldId) {
+      if (fieldId === "id" || fieldId === "rolesRates") return; // Skip ID and rolesRates
+
+      const columnName = CONTRACT_FIELD_MAPPING[fieldId];
+      if (columnName && columnMap.hasOwnProperty(columnName)) {
+        const colIndex = columnMap[columnName] + 1; // Sheet columns are 1-indexed
+        let value = formData[fieldId] || "";
+        // Format dates to DD/MM/YYYY for storage
+        if (DATE_FIELDS.includes(fieldId) && value) {
+          value = formatDateForContract(value);
+        }
+        sheet.getRange(rowIndex, colIndex).setValue(value);
+      }
+    });
+
+    // Update roles/rates in separate columns
+    if (formData.rolesRates && Array.isArray(formData.rolesRates)) {
+      // First, clear all existing roles/rates columns
+      for (let i = 1; i <= CONFIG.CONTRACT_RATES_TABLE.MAX_ROWS; i++) {
+        const roleColName = "Роль контрактора " + i;
+        const rateColName = "Рейт контрактора " + i;
+
+        if (columnMap.hasOwnProperty(roleColName)) {
+          sheet.getRange(rowIndex, columnMap[roleColName] + 1).setValue("");
+        }
+        if (columnMap.hasOwnProperty(rateColName)) {
+          sheet.getRange(rowIndex, columnMap[rateColName] + 1).setValue("");
+        }
+      }
+
+      // Then set new values
+      formData.rolesRates.forEach(function (item, index) {
+        const rowNum = index + 1;
+        const roleColName = "Роль контрактора " + rowNum;
+        const rateColName = "Рейт контрактора " + rowNum;
+
+        if (columnMap.hasOwnProperty(roleColName)) {
+          sheet
+            .getRange(rowIndex, columnMap[roleColName] + 1)
+            .setValue(item.role || "");
+        }
+        if (columnMap.hasOwnProperty(rateColName)) {
+          sheet
+            .getRange(rowIndex, columnMap[rateColName] + 1)
+            .setValue(item.rate || "");
+        }
+      });
+    }
+
+    console.log("Contract updated successfully, ID:", contractId);
+
+    return {
+      success: true,
+      id: contractId,
+      documentUrl: newDocumentUrl,
+      message: newDocumentUrl
+        ? "Contract updated and document recreated successfully"
+        : "Contract updated (document creation skipped)",
+    };
+  } catch (error) {
+    console.error("Error updating contract:", error);
+    return {
+      success: false,
+      message: "Error updating contract: " + error.toString(),
+    };
+  }
+}
