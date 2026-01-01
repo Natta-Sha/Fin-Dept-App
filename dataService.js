@@ -1797,7 +1797,7 @@ function getContractDataByIdFromData(id) {
       accountType: getColValue("Тип счета"),
       bankCode: getColValue("Код банка"),
       contractorEmail: getColValue("Эл.почта"),
-      rolesRates: getRolesRatesFromRow(row, indexMap),
+      rolesRates: [],
       currencyOfRate: getColValue("Валюта рейта"),
       attachmentNumber: getColValue("Номер приложения"),
       sowStartDateRequired: getColValue("Дата старта термин"),
@@ -1805,6 +1805,15 @@ function getContractDataByIdFromData(id) {
       templateLink: getColValue("Шаблон договора"),
     };
 
+    // Get roles/rates separately to catch errors
+    try {
+      result.rolesRates = getRolesRatesFromRow(row, indexMap);
+    } catch (rrError) {
+      console.error("Error getting roles/rates:", rrError);
+      result.rolesRates = [];
+    }
+
+    console.log("Returning contract data for ID:", id);
     return result;
   } catch (error) {
     console.error("Error getting contract data by ID:", error);
