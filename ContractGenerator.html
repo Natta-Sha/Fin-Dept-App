@@ -1247,6 +1247,17 @@
               el.disabled = isReadonly;
             }
           });
+        
+        // Hide/show roles table buttons
+        const addRateBtn = document.getElementById("addRateRowBtn");
+        const removeRateBtns = document.querySelectorAll(".remove-rate-row");
+        
+        if (addRateBtn) {
+          addRateBtn.style.display = isReadonly ? "none" : "";
+        }
+        removeRateBtns.forEach(btn => {
+          btn.style.display = isReadonly ? "none" : "";
+        });
       }
 
       // Update UI based on current mode
@@ -1973,6 +1984,14 @@
         });
         
         updateRemoveButtons();
+        
+        // Hide buttons in view mode
+        if (mode === "view") {
+          const addRateBtn = document.getElementById("addRateRowBtn");
+          const removeRateBtns = document.querySelectorAll(".remove-rate-row");
+          if (addRateBtn) addRateBtn.style.display = "none";
+          removeRateBtns.forEach(btn => btn.style.display = "none");
+        }
       }
 
       // Validate Google Drive folder link
