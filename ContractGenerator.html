@@ -2023,6 +2023,7 @@
       window.addEventListener("DOMContentLoaded", function () {
         // For view mode - load contract data directly (faster, no dropdown options needed)
         if (mode === "view" && contractId) {
+          console.log("Loading contract in view mode, ID:", contractId);
           google.script.run
             .withSuccessHandler(fillContractFormViewMode)
             .withFailureHandler(function (error) {
@@ -2076,7 +2077,9 @@
 
       // Fill form in VIEW mode - fast, no dropdown loading
       function fillContractFormViewMode(data) {
+        console.log("fillContractFormViewMode called with:", data);
         if (!data) {
+          console.log("No data received in fillContractFormViewMode");
           return;
         }
 
