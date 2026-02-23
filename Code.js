@@ -1,6 +1,54 @@
 // Main application entry point - Optimized version
 // This file contains the web app endpoints and main business logic
 
+// ── Access Control ──────────────────────────────────────────────────────────
+
+function getCurrentUserEmail() {
+  return Session.getActiveUser().getEmail().toLowerCase();
+}
+
+function getPageSection(page) {
+  return CONFIG.ACCESS_CONTROL.PAGE_TO_SECTION[page] || null;
+}
+
+function hasAccessToSection(email, section) {
+  var ac = CONFIG.ACCESS_CONTROL;
+  var normalizedEmail = email.toLowerCase();
+  if (ac.DEFAULT_EMAILS.some(function (e) { return e.toLowerCase() === normalizedEmail; })) {
+    return true;
+  }
+  var extraEmails = ac.SECTION_EXTRA_EMAILS[section] || [];
+  return extraEmails.some(function (e) { return e.toLowerCase() === normalizedEmail; });
+}
+
+function hasAccessToPage(email, page) {
+  var section = getPageSection(page);
+  if (!section) {
+    return CONFIG.ACCESS_CONTROL.DEFAULT_EMAILS.some(
+      function (e) { return e.toLowerCase() === email.toLowerCase(); }
+    );
+  }
+  return hasAccessToSection(email, section);
+}
+
+/**
+ * Build a map of {sectionName: boolean} for every section found in PAGE_TO_SECTION.
+ */
+function getUserNavAccess(email) {
+  var ac = CONFIG.ACCESS_CONTROL;
+  var sections = {};
+  Object.keys(ac.PAGE_TO_SECTION).forEach(function (page) {
+    sections[ac.PAGE_TO_SECTION[page]] = true;
+  });
+  var access = {};
+  Object.keys(sections).forEach(function (section) {
+    access[section] = hasAccessToSection(email, section);
+  });
+  return access;
+}
+
+// ── Web App Entry Point ─────────────────────────────────────────────────────
+
 /**
  * Main web app entry point
  * @param {Object} e - Event object with parameters
@@ -8,8 +56,43 @@
  */
 function doGet(e) {
   try {
-    const page = e.parameter.page || "Home";
-    const template = HtmlService.createTemplateFromFile(page);
+    var email = getCurrentUserEmail();
+    var page = e.parameter.page || "Home";
+
+    // Access check
+    if (!hasAccessToPage(email, page)) {
+      var navAccess = getUserNavAccess(email);
+      var hasAnyAccess = Object.keys(navAccess).some(function (k) {
+        return navAccess[k];
+      });
+
+      if (!hasAnyAccess) {
+        return HtmlService.createHtmlOutput(
+          '<!DOCTYPE html><html><head><meta charset="UTF-8">' +
+            "<style>" +
+            "body{display:flex;justify-content:center;align-items:center;height:100vh;margin:0;" +
+            'font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;background:#f8f9fa;}' +
+            ".card{text-align:center;background:#fff;border-radius:15px;padding:3rem;" +
+            "box-shadow:0 10px 30px rgba(0,0,0,.1);max-width:460px;}" +
+            "h1{color:#6c757d;font-size:2rem;margin-bottom:.75rem;}" +
+            "p{color:#adb5bd;font-size:1.05rem;margin:0;}" +
+            ".email{font-size:.85rem;color:#ced4da;margin-top:1.5rem;}" +
+            "</style></head><body>" +
+            '<div class="card"><h1>No access</h1>' +
+            "<p>You do not have permission to use this application.</p>" +
+            '<p class="email">' +
+            email +
+            "</p></div></body></html>"
+        ).setTitle("No Access");
+      }
+
+      var denied = HtmlService.createTemplateFromFile("AccessDenied");
+      denied.baseUrl = ScriptApp.getService().getUrl();
+      denied.activePage = "";
+      return denied.evaluate().setTitle("No Access");
+    }
+
+    var template = HtmlService.createTemplateFromFile(page);
     template.baseUrl = ScriptApp.getService().getUrl();
     template.invoiceId = e.parameter.invoiceId || e.parameter.id || "";
     template.creditNoteId = e.parameter.invoiceId || e.parameter.id || "";
@@ -279,10 +362,13 @@ function updateInvoiceById(id, data) {
  * @param {string} activePage - Current active page identifier
  * @returns {string} Navigation HTML
  */
-function getNavigation(activePage = "") {
-  const template = HtmlService.createTemplateFromFile("Navigation");
+function getNavigation(activePage) {
+  activePage = activePage || "";
+  var template = HtmlService.createTemplateFromFile("Navigation");
   template.activePage = activePage;
   template.baseUrl = ScriptApp.getService().getUrl();
+  var email = getCurrentUserEmail();
+  template.navAccess = getUserNavAccess(email);
   return template.evaluate().getContent();
 }
 

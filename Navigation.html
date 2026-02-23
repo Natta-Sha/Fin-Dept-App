@@ -45,6 +45,17 @@
     font-weight: 600;
   }
 
+  .nav-link.disabled-access {
+    opacity: 0.35 !important;
+    cursor: not-allowed !important;
+    pointer-events: none;
+  }
+
+  .nav-link.disabled-access:hover {
+    transform: none;
+    background: rgba(255, 255, 255, 0.1);
+  }
+
   /* Dropdown styling */
   .dropdown-menu {
     border: none;
@@ -68,7 +79,27 @@
     color: #1976d2;
     font-weight: 500;
   }
+
+  .dropdown-item.disabled-access {
+    opacity: 0.5 !important;
+    cursor: not-allowed !important;
+    pointer-events: none;
+  }
 </style>
+
+<?
+  var ha = (typeof navAccess !== 'undefined' && navAccess)
+           ? navAccess
+           : {home:true, invoices:true, creditnotes:true, contracts:true};
+
+  var homeOk        = ha.home === true;
+  var invoicesOk    = ha.invoices === true;
+  var creditnotesOk = ha.creditnotes === true;
+  var contractsOk   = ha.contracts === true;
+
+  var clientsOk     = invoicesOk || creditnotesOk;
+  var contractorsOk = contractsOk;
+?>
 
 <nav class="top-nav">
   <div class="container-fluid">
@@ -81,118 +112,152 @@
       <!-- Centered Navigation -->
       <div class="d-flex justify-content-center flex-grow-1">
         <div class="d-flex">
-          <!-- Home Button -->
+
+          <!-- Home -->
           <div class="nav-item mx-3">
-            <a
-              href="<?= baseUrl ?>"
-              class="nav-link <?= activePage === 'home' ? 'active' : '' ?>"
-              >Home</a
-            >
+            <? if (homeOk) { ?>
+              <a
+                href="<?= baseUrl ?>"
+                class="nav-link <?= activePage === 'home' ? 'active' : '' ?>"
+              >Home</a>
+            <? } else { ?>
+              <span class="nav-link disabled-access" title="No access">Home</span>
+            <? } ?>
           </div>
 
           <!-- Clients Dropdown -->
           <div class="nav-item dropdown mx-3">
-            <a
-              href="#"
-              class="nav-link dropdown-toggle <?= activePage === 'invoices' || activePage === 'creditnotes' ? 'active' : '' ?>"
-              role="button"
-              data-bs-toggle="dropdown"
-            >
-              Clients
-            </a>
-            <ul class="dropdown-menu">
-              <li>
-                <a
-                  href="#"
-                  class="dropdown-item"
-                  data-bs-toggle="tooltip"
-                  title="Coming soon"
-                  style="cursor: not-allowed; opacity: 0.6"
-                  onclick="return false;"
-                  >Information</a
-                >
-              </li>
-              <li>
-                <a
-                  href="#"
-                  class="dropdown-item"
-                  data-bs-toggle="tooltip"
-                  title="Coming soon"
-                  style="cursor: not-allowed; opacity: 0.6"
-                  onclick="return false;"
-                  >Financial overview</a
-                >
-              </li>
-              <li>
-                <a
-                  href="<?= baseUrl ?>?page=InvoicesList"
-                  class="dropdown-item <?= activePage === 'invoices' ? 'active' : '' ?>"
-                  >Invoices</a
-                >
-              </li>
-              <li>
-                <a
-                  href="<?= baseUrl ?>?page=CreditNotesList"
-                  class="dropdown-item <?= activePage === 'creditnotes' ? 'active' : '' ?>"
-                  >Credit Notes</a
-                >
-              </li>
-              <li>
-                <a
-                  href="#"
-                  class="dropdown-item"
-                  data-bs-toggle="tooltip"
-                  title="Coming soon"
-                  style="cursor: not-allowed; opacity: 0.6"
-                  onclick="return false;"
-                  >Payments</a
-                >
-              </li>
-            </ul>
+            <? if (clientsOk) { ?>
+              <a
+                href="#"
+                class="nav-link dropdown-toggle <?= activePage === 'invoices' || activePage === 'creditnotes' ? 'active' : '' ?>"
+                role="button"
+                data-bs-toggle="dropdown"
+              >Clients</a>
+
+              <ul class="dropdown-menu">
+                <li>
+                  <a
+                    href="#"
+                    class="dropdown-item"
+                    data-bs-toggle="tooltip"
+                    title="Coming soon"
+                    style="cursor: not-allowed; opacity: 0.6"
+                    onclick="return false;"
+                  >Information</a>
+                </li>
+                <li>
+                  <a
+                    href="#"
+                    class="dropdown-item"
+                    data-bs-toggle="tooltip"
+                    title="Coming soon"
+                    style="cursor: not-allowed; opacity: 0.6"
+                    onclick="return false;"
+                  >Financial overview</a>
+                </li>
+                <li>
+                  <? if (invoicesOk) { ?>
+                    <a
+                      href="<?= baseUrl ?>?page=InvoicesList"
+                      class="dropdown-item <?= activePage === 'invoices' ? 'active' : '' ?>"
+                    >Invoices</a>
+                  <? } else { ?>
+                    <a
+                      href="#"
+                      class="dropdown-item disabled-access"
+                      onclick="return false;"
+                      title="No access"
+                    >Invoices</a>
+                  <? } ?>
+                </li>
+                <li>
+                  <? if (creditnotesOk) { ?>
+                    <a
+                      href="<?= baseUrl ?>?page=CreditNotesList"
+                      class="dropdown-item <?= activePage === 'creditnotes' ? 'active' : '' ?>"
+                    >Credit Notes</a>
+                  <? } else { ?>
+                    <a
+                      href="#"
+                      class="dropdown-item disabled-access"
+                      onclick="return false;"
+                      title="No access"
+                    >Credit Notes</a>
+                  <? } ?>
+                </li>
+                <li>
+                  <a
+                    href="#"
+                    class="dropdown-item"
+                    data-bs-toggle="tooltip"
+                    title="Coming soon"
+                    style="cursor: not-allowed; opacity: 0.6"
+                    onclick="return false;"
+                  >Payments</a>
+                </li>
+              </ul>
+            <? } else { ?>
+              <span class="nav-link disabled-access dropdown-toggle" title="No access">
+                Clients
+              </span>
+            <? } ?>
           </div>
 
           <!-- Contractors Dropdown -->
           <div class="nav-item dropdown mx-3">
-            <a
-              href="#"
-              class="nav-link dropdown-toggle <?= activePage === 'contracts' ? 'active' : '' ?>"
-              role="button"
-              data-bs-toggle="dropdown"
-            >
-              Contractors
-            </a>
-            <ul class="dropdown-menu">
-              <li>
-                <a
-                  href="#"
-                  class="dropdown-item"
-                  data-bs-toggle="tooltip"
-                  title="Coming soon"
-                  style="cursor: not-allowed; opacity: 0.6"
-                  onclick="return false;"
-                  >Information</a
-                >
-              </li>
-              <li>
-                <a
-                  href="<?= baseUrl ?>?page=ContractsList"
-                  class="dropdown-item <?= activePage === 'contracts' ? 'active' : '' ?>"
-                  >Contracts</a
-                >
-              </li>
-              <li>
-                <a
-                  href="#"
-                  class="dropdown-item"
-                  data-bs-toggle="tooltip"
-                  title="Coming soon"
-                  style="cursor: not-allowed; opacity: 0.6"
-                  onclick="return false;"
-                  >Bills</a
-                >
-              </li>
-            </ul>
+            <? if (contractorsOk) { ?>
+              <a
+                href="#"
+                class="nav-link dropdown-toggle <?= activePage === 'contracts' ? 'active' : '' ?>"
+                role="button"
+                data-bs-toggle="dropdown"
+              >Contractors</a>
+
+              <ul class="dropdown-menu">
+                <li>
+                  <a
+                    href="#"
+                    class="dropdown-item"
+                    data-bs-toggle="tooltip"
+                    title="Coming soon"
+                    style="cursor: not-allowed; opacity: 0.6"
+                    onclick="return false;"
+                  >Information</a>
+                </li>
+                <li>
+                  <? if (contractsOk) { ?>
+                    <a
+                      href="<?= baseUrl ?>?page=ContractsList"
+                      class="dropdown-item <?= activePage === 'contracts' ? 'active' : '' ?>"
+                    >Contracts</a>
+                  <? } else { ?>
+                    <a
+                      href="#"
+                      class="dropdown-item disabled-access"
+                      onclick="return false;"
+                      title="No access"
+                    >Contracts</a>
+                  <? } ?>
+                </li>
+                <li>
+                  <a
+                    href="#"
+                    class="dropdown-item"
+                    data-bs-toggle="tooltip"
+                    title="Coming soon"
+                    style="cursor: not-allowed; opacity: 0.6"
+                    onclick="return false;"
+                  >Bills</a>
+                </li>
+              </ul>
+            <? } else { ?>
+              <span class="nav-link disabled-access dropdown-toggle" title="No access">
+                Contractors
+              </span>
+            <? } ?>
           </div>
+
         </div>
       </div>
 
