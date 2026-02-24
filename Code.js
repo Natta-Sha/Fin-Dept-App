@@ -1,7 +1,17 @@
 // Main application entry point - Optimized version
 // This file contains the web app endpoints and main business logic
 
-// ── Access Control (emails from spreadsheet) ─────────────────────────────────
+// ── Access Control (emails from spreadsheet, cached 5 min) ───────────────────
+
+var ACCESS_CACHE_TTL_SECONDS = 300; // 5 minutes
+var ACCESS_CACHE_KEYS = {
+  FULL: "access_emails_full",
+  HOME: "access_emails_limited_home",
+  CONTRACTS: "access_emails_limited_contracts",
+};
+
+// In-memory store — avoids repeated CacheService calls within a single request
+var _accessMemory = {};
 
 function getCurrentUserEmail() {
   return Session.getActiveUser().getEmail().toLowerCase();
@@ -12,10 +22,7 @@ function getPageSection(page) {
 }
 
 /**
- * Read emails from a sheet (column A). Skips empty cells and optional header row if first cell is "email".
- * @param {string} spreadsheetId
- * @param {string} sheetName
- * @returns {string[]} Array of lowercase trimmed emails
+ * Read emails from a sheet (column A). Skips empty cells and optional header row.
  */
 function getEmailsFromAccessSheet(spreadsheetId, sheetName) {
   try {
@@ -40,16 +47,37 @@ function getEmailsFromAccessSheet(spreadsheetId, sheetName) {
   }
 }
 
-function getDefaultEmails() {
+/**
+ * Two-layer cache: in-memory (instant, within request) → CacheService (5 min, across requests) → Spreadsheet.
+ */
+function getCachedEmails(cacheKey, sheetName) {
+  if (_accessMemory[cacheKey]) return _accessMemory[cacheKey];
+
+  var cache = CacheService.getScriptCache();
+  var cached = cache.get(cacheKey);
+  if (cached !== null) {
+    var parsed = JSON.parse(cached);
+    _accessMemory[cacheKey] = parsed;
+    return parsed;
+  }
+
   var ac = CONFIG.ACCESS_CONTROL;
-  return getEmailsFromAccessSheet(ac.SPREADSHEET_ID, ac.SHEETS.FULL_ACCESS);
+  var emails = getEmailsFromAccessSheet(ac.SPREADSHEET_ID, sheetName);
+  cache.put(cacheKey, JSON.stringify(emails), ACCESS_CACHE_TTL_SECONDS);
+  _accessMemory[cacheKey] = emails;
+  return emails;
+}
+
+function getDefaultEmails() {
+  return getCachedEmails(ACCESS_CACHE_KEYS.FULL, CONFIG.ACCESS_CONTROL.SHEETS.FULL_ACCESS);
 }
 
 function getSectionExtraEmails(section) {
   var ac = CONFIG.ACCESS_CONTROL;
   var sheetName = ac.SECTION_SHEETS[section];
   if (!sheetName) return [];
-  return getEmailsFromAccessSheet(ac.SPREADSHEET_ID, sheetName);
+  var cacheKey = "access_emails_limited_" + section;
+  return getCachedEmails(cacheKey, sheetName);
 }
 
 function hasAccessToSection(email, section) {

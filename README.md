@@ -46,8 +46,6 @@ cd ~/projects/sloboda-webapp/
 clasp pull
 code .
 
-Влить бранч на гитхабе:
-
 Если смерджила бранч в гитхабе и сюда нужно подтянуть:
 git pull origin main
 
