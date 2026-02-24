@@ -1,6 +1,101 @@
 // Main application entry point - Optimized version
 // This file contains the web app endpoints and main business logic
 
+// ── Access Control (emails from spreadsheet) ─────────────────────────────────
+
+function getCurrentUserEmail() {
+  return Session.getActiveUser().getEmail().toLowerCase();
+}
+
+function getPageSection(page) {
+  return CONFIG.ACCESS_CONTROL.PAGE_TO_SECTION[page] || null;
+}
+
+/**
+ * Read emails from a sheet (column A). Skips empty cells and optional header row if first cell is "email".
+ * @param {string} spreadsheetId
+ * @param {string} sheetName
+ * @returns {string[]} Array of lowercase trimmed emails
+ */
+function getEmailsFromAccessSheet(spreadsheetId, sheetName) {
+  try {
+    var spreadsheet = getSpreadsheet(spreadsheetId);
+    var sheet = getSheet(spreadsheet, sheetName);
+    var lastRow = sheet.getLastRow();
+    if (lastRow < 1) return [];
+    var values = sheet.getRange(1, 1, lastRow, 1).getValues();
+    var emails = [];
+    for (var i = 0; i < values.length; i++) {
+      var cell = values[i][0];
+      if (cell === null || cell === undefined) continue;
+      var s = String(cell).trim().toLowerCase();
+      if (s === "") continue;
+      if (i === 0 && (s === "email" || s === "e-mail")) continue;
+      emails.push(s);
+    }
+    return emails;
+  } catch (e) {
+    console.error("getEmailsFromAccessSheet(" + sheetName + "):", e);
+    return [];
+  }
+}
+
+function getDefaultEmails() {
+  var ac = CONFIG.ACCESS_CONTROL;
+  return getEmailsFromAccessSheet(ac.SPREADSHEET_ID, ac.SHEETS.FULL_ACCESS);
+}
+
+function getSectionExtraEmails(section) {
+  var ac = CONFIG.ACCESS_CONTROL;
+  var sheetName = ac.SECTION_SHEETS[section];
+  if (!sheetName) return [];
+  return getEmailsFromAccessSheet(ac.SPREADSHEET_ID, sheetName);
+}
+
+function hasAccessToSection(email, section) {
+  var normalizedEmail = email.toLowerCase();
+  var defaultEmails = getDefaultEmails();
+  for (var i = 0; i < defaultEmails.length; i++) {
+    if (defaultEmails[i] === normalizedEmail) return true;
+  }
+  var extraEmails = getSectionExtraEmails(section);
+  for (var j = 0; j < extraEmails.length; j++) {
+    if (extraEmails[j] === normalizedEmail) return true;
+  }
+  return false;
+}
+
+function hasAccessToPage(email, page) {
+  var section = getPageSection(page);
+  if (!section) {
+    var defaultEmails = getDefaultEmails();
+    var normalized = email.toLowerCase();
+    for (var i = 0; i < defaultEmails.length; i++) {
+      if (defaultEmails[i] === normalized) return true;
+    }
+    return false;
+  }
+  return hasAccessToSection(email, section);
+}
+
+/**
+ * Build a map of {sectionName: boolean} for every section found in PAGE_TO_SECTION.
+ */
+function getUserNavAccess(email) {
+  var ac = CONFIG.ACCESS_CONTROL;
+  var sections = {};
+  Object.keys(ac.PAGE_TO_SECTION).forEach(function (page) {
+    sections[ac.PAGE_TO_SECTION[page]] = true;
+  });
+  var access = {};
+  Object.keys(sections).forEach(function (section) {
+    access[section] = hasAccessToSection(email, section);
+  });
+  return access;
+}
+
+// ── Web App Entry Point ─────────────────────────────────────────────────────
+
 /**
  * Main web app entry point
  * @param {Object} e - Event object with parameters
@@ -8,8 +103,43 @@
  */
 function doGet(e) {
   try {
-    const page = e.parameter.page || "Home";
-    const template = HtmlService.createTemplateFromFile(page);
+    var email = getCurrentUserEmail();
+    var page = e.parameter.page || "Home";
+
+    // Access check
+    if (!hasAccessToPage(email, page)) {
+      var navAccess = getUserNavAccess(email);
+      var hasAnyAccess = Object.keys(navAccess).some(function (k) {
+        return navAccess[k];
+      });
+
+      if (!hasAnyAccess) {
+        return HtmlService.createHtmlOutput(
+          '<!DOCTYPE html><html><head><meta charset="UTF-8">' +
+            "<style>" +
+            "body{display:flex;justify-content:center;align-items:center;height:100vh;margin:0;" +
+            'font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;background:#f8f9fa;}' +
+            ".card{text-align:center;background:#fff;border-radius:15px;padding:3rem;" +
+            "box-shadow:0 10px 30px rgba(0,0,0,.1);max-width:460px;}" +
+            "h1{color:#6c757d;font-size:2rem;margin-bottom:.75rem;}" +
+            "p{color:#adb5bd;font-size:1.05rem;margin:0;}" +
+            ".email{font-size:.85rem;color:#ced4da;margin-top:1.5rem;}" +
+            "</style></head><body>" +
+            '<div class="card"><h1>No access</h1>' +
+            "<p>You do not have permission to use this application.</p>" +
+            '<p class="email">' +
+            email +
+            "</p></div></body></html>"
+        ).setTitle("No Access");
+      }
+
+      var denied = HtmlService.createTemplateFromFile("AccessDenied");
+      denied.baseUrl = ScriptApp.getService().getUrl();
+      denied.activePage = "";
+      return denied.evaluate().setTitle("No Access");
+    }
+
+    var template = HtmlService.createTemplateFromFile(page);
     template.baseUrl = ScriptApp.getService().getUrl();
     template.invoiceId = e.parameter.invoiceId || e.parameter.id || "";
     template.creditNoteId = e.parameter.invoiceId || e.parameter.id || "";
@@ -279,10 +409,13 @@ function updateInvoiceById(id, data) {
  * @param {string} activePage - Current active page identifier
  * @returns {string} Navigation HTML
  */
-function getNavigation(activePage = "") {
-  const template = HtmlService.createTemplateFromFile("Navigation");
+function getNavigation(activePage) {
+  activePage = activePage || "";
+  var template = HtmlService.createTemplateFromFile("Navigation");
   template.activePage = activePage;
   template.baseUrl = ScriptApp.getService().getUrl();
+  var email = getCurrentUserEmail();
+  template.navAccess = getUserNavAccess(email);
   return template.evaluate().getContent();
 }
 
