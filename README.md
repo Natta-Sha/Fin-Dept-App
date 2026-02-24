@@ -1,3 +1,5 @@
+Правила с clasp (синхронизация с гугл скриптом):
+
 ✅ Пошагово:
 🔁 Шаг 1: Активируй нужный аккаунт вручную
 Если хочешь поработать, например, с аккаунтом Sloboda:
@@ -44,5 +46,9 @@ cd ~/projects/sloboda-webapp/
 clasp pull
 code .
 
+Влить бранч на гитхабе:
+
 Если смерджила бранч в гитхабе и сюда нужно подтянуть:
 git pull origin main
+
+Файл с правами доступов к приложению (имейлы): https://docs.google.com/spreadsheets/d/1xBB9PdNKdu8hBCAAe-iEW5cTW4_oQWOZjDzwFn8bH_U/edit?gid=0#gid=0
