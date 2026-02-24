@@ -1,7 +1,7 @@
 // Main application entry point - Optimized version
 // This file contains the web app endpoints and main business logic
 
-// ── Access Control ──────────────────────────────────────────────────────────
+// ── Access Control (emails from spreadsheet) ─────────────────────────────────
 
 function getCurrentUserEmail() {
   return Session.getActiveUser().getEmail().toLowerCase();
@@ -11,22 +11,69 @@ function getPageSection(page) {
   return CONFIG.ACCESS_CONTROL.PAGE_TO_SECTION[page] || null;
 }
 
-function hasAccessToSection(email, section) {
-  var ac = CONFIG.ACCESS_CONTROL;
-  var normalizedEmail = email.toLowerCase();
-  if (ac.DEFAULT_EMAILS.some(function (e) { return e.toLowerCase() === normalizedEmail; })) {
-    return true;
+/**
+ * Read emails from a sheet (column A). Skips empty cells and optional header row if first cell is "email".
+ * @param {string} spreadsheetId
+ * @param {string} sheetName
+ * @returns {string[]} Array of lowercase trimmed emails
+ */
+function getEmailsFromAccessSheet(spreadsheetId, sheetName) {
+  try {
+    var spreadsheet = getSpreadsheet(spreadsheetId);
+    var sheet = getSheet(spreadsheet, sheetName);
+    var lastRow = sheet.getLastRow();
+    if (lastRow < 1) return [];
+    var values = sheet.getRange(1, 1, lastRow, 1).getValues();
+    var emails = [];
+    for (var i = 0; i < values.length; i++) {
+      var cell = values[i][0];
+      if (cell === null || cell === undefined) continue;
+      var s = String(cell).trim().toLowerCase();
+      if (s === "") continue;
+      if (i === 0 && (s === "email" || s === "e-mail")) continue;
+      emails.push(s);
+    }
+    return emails;
+  } catch (e) {
+    console.error("getEmailsFromAccessSheet(" + sheetName + "):", e);
+    return [];
   }
-  var extraEmails = ac.SECTION_EXTRA_EMAILS[section] || [];
-  return extraEmails.some(function (e) { return e.toLowerCase() === normalizedEmail; });
+}
+
+function getDefaultEmails() {
+  var ac = CONFIG.ACCESS_CONTROL;
+  return getEmailsFromAccessSheet(ac.SPREADSHEET_ID, ac.SHEETS.FULL_ACCESS);
+}
+
+function getSectionExtraEmails(section) {
+  var ac = CONFIG.ACCESS_CONTROL;
+  var sheetName = ac.SECTION_SHEETS[section];
+  if (!sheetName) return [];
+  return getEmailsFromAccessSheet(ac.SPREADSHEET_ID, sheetName);
+}
+
+function hasAccessToSection(email, section) {
+  var normalizedEmail = email.toLowerCase();
+  var defaultEmails = getDefaultEmails();
+  for (var i = 0; i < defaultEmails.length; i++) {
+    if (defaultEmails[i] === normalizedEmail) return true;
+  }
+  var extraEmails = getSectionExtraEmails(section);
+  for (var j = 0; j < extraEmails.length; j++) {
+    if (extraEmails[j] === normalizedEmail) return true;
+  }
+  return false;
 }
 
 function hasAccessToPage(email, page) {
   var section = getPageSection(page);
   if (!section) {
-    return CONFIG.ACCESS_CONTROL.DEFAULT_EMAILS.some(
-      function (e) { return e.toLowerCase() === email.toLowerCase(); }
-    );
+    var defaultEmails = getDefaultEmails();
+    var normalized = email.toLowerCase();
+    for (var i = 0; i < defaultEmails.length; i++) {
+      if (defaultEmails[i] === normalized) return true;
+    }
+    return false;
   }
   return hasAccessToSection(email, section);
 }
