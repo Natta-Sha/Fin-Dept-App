@@ -1619,7 +1619,7 @@ function getContractListFromData() {
           formattedDate = Utilities.formatDate(
             contractDate,
             Session.getScriptTimeZone(),
-            "dd-MM-yyyy"
+            "dd/MM/yyyy"
           );
         } else {
           formattedDate = contractDate.toString();
