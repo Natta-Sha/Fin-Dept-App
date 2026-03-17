@@ -2114,6 +2114,11 @@ function createContractDocument(templateUrl, folderUrl, formData) {
         value = formatDateForContract(value);
       }
 
+      // Map sowStartDateRequired yes/no to document text
+      if (fieldId === "sowStartDateRequired") {
+        value = (value || "").toLowerCase() === "yes" ? "Start date" : "";
+      }
+
       body.replaceText(placeholder.replace(/[{}]/g, "\\$&"), value);
     });
 

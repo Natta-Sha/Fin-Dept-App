@@ -818,7 +818,7 @@
           contractDate: { visible: true, required: true },
           probationPeriod: { visible: false, required: false },
           terminationDate: { visible: false, required: false },
-          sowStartDateRequired: { visible: true, required: false },
+          sowStartDateRequired: { visible: false, required: false },
           sowStartDate: { visible: true, required: true },
           // Work Conditions
           rolesRatesContainer: { visible: true, required: true },
@@ -851,7 +851,7 @@
           contractDate: { visible: true, required: true },
           probationPeriod: { visible: false, required: false },
           terminationDate: { visible: false, required: false },
-          sowStartDateRequired: { visible: true, required: false },
+          sowStartDateRequired: { visible: false, required: false },
           sowStartDate: { visible: true, required: true },
           // Work Conditions
           rolesRatesContainer: { visible: true, required: true },
@@ -1528,6 +1528,12 @@
             document.getElementById("contractTemplateLinkBtn").href || "",
         };
 
+        // For Attachment: start date is always required
+        var docTypeLower = (formData.documentType || "").toLowerCase();
+        if (docTypeLower.includes("attachment") || docTypeLower.includes("addendum")) {
+          formData.sowStartDateRequired = "yes";
+        }
+
         // Disable button and show loading
         const confirmBtn = document.querySelector(
           '#create-buttons button[onclick="confirmContract()"]'
@@ -1733,6 +1739,12 @@
           sowStartDate: document.getElementById("sowStartDate").value,
           templateLink: document.getElementById("contractTemplateLinkBtn").href.replace('/preview', '/edit'),
         };
+
+        // For Attachment: start date is always required
+        var editDocTypeLower = (formData.documentType || "").toLowerCase();
+        if (editDocTypeLower.includes("attachment") || editDocTypeLower.includes("addendum")) {
+          formData.sowStartDateRequired = "yes";
+        }
 
         // Disable buttons and show loading
         const saveBtn = document.querySelector('#edit-buttons .btn-success');
