@@ -1,7 +1,10 @@
 // Main application entry point - Optimized version
 // This file contains the web app endpoints and main business logic
 
-// ── Access Control (emails from spreadsheet) ─────────────────────────────────
+// ── Access Control (per-user cache, 30 min TTL) ─────────────────────────────
+
+var ACCESS_CACHE_TTL_SECONDS = 1800; // 30 minutes
+var _userAccessMap = null; // in-memory: avoids repeated CacheService calls within one request
 
 function getCurrentUserEmail() {
   return Session.getActiveUser().getEmail().toLowerCase();
@@ -12,10 +15,7 @@ function getPageSection(page) {
 }
 
 /**
- * Read emails from a sheet (column A). Skips empty cells and optional header row if first cell is "email".
- * @param {string} spreadsheetId
- * @param {string} sheetName
- * @returns {string[]} Array of lowercase trimmed emails
+ * Read emails from a sheet (column A). Skips empty cells and optional header row.
  */
 function getEmailsFromAccessSheet(spreadsheetId, sheetName) {
   try {
@@ -40,58 +40,104 @@ function getEmailsFromAccessSheet(spreadsheetId, sheetName) {
   }
 }
 
-function getDefaultEmails() {
+/**
+ * Build full access map for a user by reading all access sheets.
+ * Called only on cache miss (once per 30 min per user).
+ */
+function buildUserAccessMap(email) {
   var ac = CONFIG.ACCESS_CONTROL;
-  return getEmailsFromAccessSheet(ac.SPREADSHEET_ID, ac.SHEETS.FULL_ACCESS);
+  var normalizedEmail = email.toLowerCase();
+
+  var fullAccessEmails = getEmailsFromAccessSheet(ac.SPREADSHEET_ID, ac.SHEETS.FULL_ACCESS);
+  var isFullAccess = fullAccessEmails.indexOf(normalizedEmail) !== -1;
+
+  var allSections = {};
+  Object.keys(ac.PAGE_TO_SECTION).forEach(function (page) {
+    allSections[ac.PAGE_TO_SECTION[page]] = true;
+  });
+
+  var access = {};
+  Object.keys(allSections).forEach(function (section) {
+    if (isFullAccess) {
+      access[section] = true;
+      return;
+    }
+    var sheetName = ac.SECTION_SHEETS[section];
+    if (!sheetName) {
+      access[section] = false;
+      return;
+    }
+    var sectionEmails = getEmailsFromAccessSheet(ac.SPREADSHEET_ID, sheetName);
+    access[section] = sectionEmails.indexOf(normalizedEmail) !== -1;
+  });
+
+  return access;
 }
 
-function getSectionExtraEmails(section) {
-  var ac = CONFIG.ACCESS_CONTROL;
-  var sheetName = ac.SECTION_SHEETS[section];
-  if (!sheetName) return [];
-  return getEmailsFromAccessSheet(ac.SPREADSHEET_ID, sheetName);
+/**
+ * Get the access map for the current user. One CacheService call per page load,
+ * or zero if already loaded during this request.
+ */
+function getUserNavAccess(email) {
+  if (_userAccessMap) return _userAccessMap;
+
+  var cacheKey = "access_user_" + email.toLowerCase();
+  var cache = CacheService.getScriptCache();
+  var cached = cache.get(cacheKey);
+
+  if (cached !== null) {
+    _userAccessMap = JSON.parse(cached);
+    return _userAccessMap;
+  }
+
+  _userAccessMap = buildUserAccessMap(email);
+  cache.put(cacheKey, JSON.stringify(_userAccessMap), ACCESS_CACHE_TTL_SECONDS);
+  return _userAccessMap;
 }
 
 function hasAccessToSection(email, section) {
-  var normalizedEmail = email.toLowerCase();
-  var defaultEmails = getDefaultEmails();
-  for (var i = 0; i < defaultEmails.length; i++) {
-    if (defaultEmails[i] === normalizedEmail) return true;
-  }
-  var extraEmails = getSectionExtraEmails(section);
-  for (var j = 0; j < extraEmails.length; j++) {
-    if (extraEmails[j] === normalizedEmail) return true;
-  }
-  return false;
+  var access = getUserNavAccess(email);
+  return access[section] === true;
 }
 
 function hasAccessToPage(email, page) {
   var section = getPageSection(page);
   if (!section) {
-    var defaultEmails = getDefaultEmails();
-    var normalized = email.toLowerCase();
-    for (var i = 0; i < defaultEmails.length; i++) {
-      if (defaultEmails[i] === normalized) return true;
-    }
-    return false;
+    var access = getUserNavAccess(email);
+    return Object.keys(access).some(function (k) { return access[k]; });
   }
   return hasAccessToSection(email, section);
 }
 
 /**
- * Build a map of {sectionName: boolean} for every section found in PAGE_TO_SECTION.
+ * Clear all access caches. Call after editing the access spreadsheet.
+ * Can be run from Apps Script editor or attached to a button in the spreadsheet.
  */
-function getUserNavAccess(email) {
+function clearAccessCache() {
+  var cache = CacheService.getScriptCache();
+  cache.remove("access_user_" + getCurrentUserEmail());
+
   var ac = CONFIG.ACCESS_CONTROL;
-  var sections = {};
-  Object.keys(ac.PAGE_TO_SECTION).forEach(function (page) {
-    sections[ac.PAGE_TO_SECTION[page]] = true;
+  var allSheets = [ac.SHEETS.FULL_ACCESS];
+  Object.keys(ac.SECTION_SHEETS).forEach(function (section) {
+    allSheets.push(ac.SECTION_SHEETS[section]);
   });
-  var access = {};
-  Object.keys(sections).forEach(function (section) {
-    access[section] = hasAccessToSection(email, section);
+
+  var spreadsheet = getSpreadsheet(ac.SPREADSHEET_ID);
+  allSheets.forEach(function (sheetName) {
+    var sheet = getSheet(spreadsheet, sheetName);
+    var lastRow = sheet.getLastRow();
+    if (lastRow < 1) return;
+    var values = sheet.getRange(1, 1, lastRow, 1).getValues();
+    for (var i = 0; i < values.length; i++) {
+      var s = String(values[i][0] || "").trim().toLowerCase();
+      if (s === "" || s === "email" || s === "e-mail") continue;
+      cache.remove("access_user_" + s);
+    }
   });
-  return access;
+
+  _userAccessMap = null;
+  return { success: true, message: "Access cache cleared" };
 }
 
 // ── Web App Entry Point ─────────────────────────────────────────────────────

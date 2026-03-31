@@ -547,6 +547,21 @@
                 <input type="email" id="contractorEmail" class="form-control" />
               </div>
             </div>
+            <div class="row mb-3">
+              <div class="col-md-4">
+                <label class="form-label"
+                  >Signatory <span class="text-danger">*</span>
+                  <span class="field-required">Required</span></label
+                >
+                <span class="field-hint"></span>
+                <input
+                  type="text"
+                  id="signatory"
+                  class="form-control"
+                  required
+                />
+              </div>
+            </div>
           </div>
 
           <!-- Section 3: Work Conditions -->
@@ -747,6 +762,7 @@
           registrationNumber: { visible: false, required: false },
           registrationDate: { visible: false, required: false },
           contractorEmail: { visible: false, required: false },
+          signatory: { visible: true, required: true },
           // Contract Details
           contractNumber: { visible: true, required: true },
           contractDate: { visible: true, required: true },
@@ -780,6 +796,7 @@
           registrationNumber: { visible: false, required: false },
           registrationDate: { visible: false, required: false },
           contractorEmail: { visible: true, required: true },
+          signatory: { visible: true, required: true },
           // Contract Details
           contractNumber: { visible: true, required: true },
           contractDate: { visible: true, required: true },
@@ -813,6 +830,7 @@
           registrationNumber: { visible: false, required: false },
           registrationDate: { visible: false, required: false },
           contractorEmail: { visible: false, required: false },
+          signatory: { visible: true, required: true },
           // Contract Details
           contractNumber: { visible: true, required: true },
           contractDate: { visible: true, required: true },
@@ -846,6 +864,7 @@
           registrationNumber: { visible: false, required: false },
           registrationDate: { visible: false, required: false },
           contractorEmail: { visible: false, required: false },
+          signatory: { visible: true, required: true },
           // Contract Details
           contractNumber: { visible: true, required: true },
           contractDate: { visible: true, required: true },
@@ -879,6 +898,7 @@
           registrationNumber: { visible: false, required: false },
           registrationDate: { visible: false, required: false },
           contractorEmail: { visible: false, required: false },
+          signatory: { visible: true, required: true },
           // Contract Details
           contractNumber: { visible: true, required: true },
           contractDate: { visible: true, required: true },
@@ -912,6 +932,7 @@
           registrationNumber: { visible: false, required: false },
           registrationDate: { visible: false, required: false },
           contractorEmail: { visible: false, required: false },
+          signatory: { visible: true, required: true },
           // Contract Details
           contractNumber: { visible: true, required: true },
           contractDate: { visible: true, required: true },
@@ -945,6 +966,7 @@
           registrationNumber: { visible: false, required: false },
           registrationDate: { visible: false, required: false },
           contractorEmail: { visible: false, required: false },
+          signatory: { visible: true, required: true },
           // Contract Details
           contractNumber: { visible: true, required: true },
           contractDate: { visible: true, required: true },
@@ -978,6 +1000,7 @@
           registrationNumber: { visible: false, required: false },
           registrationDate: { visible: false, required: false },
           contractorEmail: { visible: false, required: false },
+          signatory: { visible: true, required: true },
           // Contract Details
           contractNumber: { visible: true, required: true },
           contractDate: { visible: true, required: true },
@@ -1011,6 +1034,7 @@
           registrationNumber: { visible: true, required: true },
           registrationDate: { visible: true, required: true },
           contractorEmail: { visible: true, required: true },
+          signatory: { visible: true, required: true },
           // Contract Details
           contractNumber: { visible: true, required: true },
           contractDate: { visible: true, required: true },
@@ -1043,6 +1067,7 @@
           registrationNumber: { visible: true, required: false },
           registrationDate: { visible: true, required: false },
           contractorEmail: { visible: true, required: false },
+          signatory: { visible: true, required: true },
           contractNumber: { visible: true, required: true },
           contractDate: { visible: true, required: true },
           probationPeriod: { visible: true, required: false },
@@ -1453,6 +1478,7 @@
           registrationNumber: "Registration number",
           registrationDate: "Date of registration",
           contractorEmail: "Contractor's email",
+          signatory: "Signatory",
           rolesRates: "Contractor's roles and rates",
           currencyOfRate: "Currency of rate",
           attachmentNumber: "Attachment number",
@@ -1518,6 +1544,7 @@
           accountType: document.getElementById("accountType").value,
           bankCode: document.getElementById("bankCode").value,
           contractorEmail: document.getElementById("contractorEmail").value,
+          signatory: document.getElementById("signatory").value,
           rolesRates: getRolesRatesData(),
           currencyOfRate: document.getElementById("currencyOfRate").value,
           attachmentNumber: document.getElementById("attachmentNumber").value,
@@ -1527,6 +1554,12 @@
           templateLink:
             document.getElementById("contractTemplateLinkBtn").href || "",
         };
+
+        // For Attachment: start date is always required
+        var docTypeLower = (formData.documentType || "").toLowerCase();
+        if (docTypeLower.includes("attachment") || docTypeLower.includes("addendum")) {
+          formData.sowStartDateRequired = "yes";
+        }
 
         // Disable button and show loading
         const confirmBtn = document.querySelector(
@@ -1726,6 +1759,7 @@
           accountType: document.getElementById("accountType").value,
           bankCode: document.getElementById("bankCode").value,
           contractorEmail: document.getElementById("contractorEmail").value,
+          signatory: document.getElementById("signatory").value,
           rolesRates: getRolesRatesData(),
           currencyOfRate: document.getElementById("currencyOfRate").value,
           attachmentNumber: document.getElementById("attachmentNumber").value,
@@ -1733,6 +1767,12 @@
           sowStartDate: document.getElementById("sowStartDate").value,
           templateLink: document.getElementById("contractTemplateLinkBtn").href.replace('/preview', '/edit'),
         };
+
+        // For Attachment: start date is always required
+        var editDocTypeLower = (formData.documentType || "").toLowerCase();
+        if (editDocTypeLower.includes("attachment") || editDocTypeLower.includes("addendum")) {
+          formData.sowStartDateRequired = "yes";
+        }
 
         // Disable buttons and show loading
         const saveBtn = document.querySelector('#edit-buttons .btn-success');
@@ -2111,6 +2151,7 @@
           data.registrationNumber || "";
         document.getElementById("contractorEmail").value =
           data.contractorEmail || "";
+        document.getElementById("signatory").value = data.signatory || "";
         document.getElementById("contractNumber").value =
           data.contractNumber || "";
         
@@ -2280,6 +2321,7 @@
           data.registrationNumber || "";
         document.getElementById("contractorEmail").value =
           data.contractorEmail || "";
+        document.getElementById("signatory").value = data.signatory || "";
         document.getElementById("contractNumber").value =
           data.contractNumber || "";
         
