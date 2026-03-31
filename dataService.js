@@ -1797,6 +1797,7 @@ function getContractDataByIdFromData(id) {
       accountType: getColValue("Тип счета"),
       bankCode: getColValue("Код банка"),
       contractorEmail: getColValue("Эл.почта"),
+      signatory: getColValue("Подписант"),
       rolesRates: [],
       currencyOfRate: getColValue("Валюта рейта"),
       attachmentNumber: getColValue("Номер приложения"),
@@ -1850,6 +1851,7 @@ const CONTRACT_FIELD_MAPPING = {
   accountType: "Тип счета",
   bankCode: "Код банка",
   contractorEmail: "Эл.почта",
+  signatory: "Подписант",
   // rolesRates is handled separately (multiple columns)
   currencyOfRate: "Валюта рейта",
   attachmentNumber: "Номер приложения",
@@ -1884,6 +1886,7 @@ const CONTRACT_PLACEHOLDER_MAPPING = {
   accountType: "{Тип счета}",
   bankCode: "{Код банка}",
   contractorEmail: "{Эл.почта}",
+  signatory: "{Signatory}",
   // rolesRates is handled separately (table in document)
   currencyOfRate: "{Валюта рейта}",
   attachmentNumber: "{Номер приложения}",
