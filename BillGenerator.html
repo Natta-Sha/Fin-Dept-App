@@ -337,11 +337,14 @@
         <!-- Buttons -->
         <div class="d-flex justify-content-end gap-2 mt-4 mb-4">
           <button
+            id="confirm-btn"
             class="btn btn-success"
-            style="cursor: not-allowed; opacity: 0.6"
-            disabled
-          >Confirm</button>
+            onclick="submitBill()"
+          >Confirm
+            <span id="spinner" class="spinner-border spinner-border-sm ms-2" role="status" style="display: none"></span>
+          </button>
           <button
+            id="cancel-btn"
             class="btn btn-outline-secondary"
             onclick="goToBillsList()"
           >Cancel</button>
@@ -538,6 +541,127 @@
             console.error("Failed to load dropdown options:", err);
           })
           .getBillDropdownOptions();
+      }
+
+      // --- Submit ---
+
+      function setFormDisabled(disabled) {
+        var inputs = document.querySelectorAll("#bill-form input, #bill-form select, #bill-form button");
+        inputs.forEach(function (el) { el.disabled = disabled; });
+        if (!disabled) updateRemoveButtons();
+      }
+
+      function validateForm() {
+        var required = [
+          { id: "pe", label: "PE" },
+          { id: "contractorName", label: "Contractor's name" },
+          { id: "contractorId", label: "Contractor's ID" },
+          { id: "contractorAddress", label: "Contractor's address" },
+          { id: "isContractorEU", label: "Is Contractor from EU?" },
+          { id: "currency", label: "Currency" },
+          { id: "bankAccountNumber", label: "Bank account number" },
+          { id: "bankName", label: "Bank name" },
+          { id: "invoiceNumber", label: "Invoice number" },
+          { id: "agreementNumber", label: "Agreement number" },
+          { id: "invoiceDate", label: "Invoice date" },
+        ];
+
+        if (isEU) {
+          required.push({ id: "contractorVatId", label: "Contractor's VAT ID" });
+        }
+
+        if (document.getElementById("accountType").value !== "") {
+          required.push({ id: "bankCode", label: "Bank code" });
+        }
+
+        var missing = [];
+        required.forEach(function (f) {
+          var el = document.getElementById(f.id);
+          if (!el || !el.value.trim()) {
+            missing.push(f.label);
+            if (el) el.classList.add("is-invalid");
+          } else {
+            if (el) el.classList.remove("is-invalid");
+          }
+        });
+
+        if (missing.length > 0) {
+          alert("Please fill in required fields:\n• " + missing.join("\n• "));
+          return false;
+        }
+        return true;
+      }
+
+      function collectFormData() {
+        var data = {
+          pe: document.getElementById("pe").value,
+          contractorName: document.getElementById("contractorName").value.trim(),
+          contractorId: document.getElementById("contractorId").value.trim(),
+          contractorAddress: document.getElementById("contractorAddress").value.trim(),
+          isContractorEU: document.getElementById("isContractorEU").value,
+          contractorVatId: document.getElementById("contractorVatId").value.trim(),
+          currency: document.getElementById("currency").value,
+          bankAccountNumber: document.getElementById("bankAccountNumber").value.trim(),
+          bankName: document.getElementById("bankName").value.trim(),
+          accountType: document.getElementById("accountType").value,
+          bankCode: document.getElementById("bankCode").value.trim(),
+          invoiceNumber: document.getElementById("invoiceNumber").value.trim(),
+          agreementNumber: document.getElementById("agreementNumber").value.trim(),
+          invoiceDate: document.getElementById("invoiceDate").value,
+          yesNoDueDate: document.getElementById("yesNoDueDate").value,
+          dueDate: document.getElementById("dueDate").value,
+          vatRate: document.getElementById("vatRate").value.trim(),
+          vatAmount: document.getElementById("vatAmount").value.trim(),
+          totalAmount: document.getElementById("totalAmount").value.trim(),
+          services: [],
+        };
+
+        document.querySelectorAll("#servicesBody tr").forEach(function (row) {
+          data.services.push({
+            services: row.querySelector(".svc-services").value.trim(),
+            period: row.querySelector(".svc-period").value.trim(),
+            hours: row.querySelector(".svc-hours").value.trim(),
+            rate: row.querySelector(".svc-rate").value.trim(),
+            amount: row.querySelector(".svc-amount").value.trim(),
+          });
+        });
+
+        return data;
+      }
+
+      function submitBill() {
+        if (!validateForm()) return;
+
+        var formData = collectFormData();
+
+        document.getElementById("confirm-btn").disabled = true;
+        document.getElementById("spinner").style.display = "inline-block";
+        setFormDisabled(true);
+
+        google.script.run
+          .withSuccessHandler(function (result) {
+            document.getElementById("spinner").style.display = "none";
+            if (result.success) {
+              document.getElementById("result").innerHTML =
+                '<div class="alert alert-success">' +
+                '<i class="bi bi-check-circle me-2"></i>Bill saved successfully (ID: ' + result.id + ')' +
+                '</div>';
+              document.getElementById("confirm-btn").style.display = "none";
+              document.getElementById("cancel-btn").textContent = "Back to Bills";
+              document.getElementById("cancel-btn").disabled = false;
+            } else {
+              alert("Error: " + result.message);
+              setFormDisabled(false);
+              document.getElementById("confirm-btn").disabled = false;
+            }
+          })
+          .withFailureHandler(function (err) {
+            document.getElementById("spinner").style.display = "none";
+            alert("Error saving bill: " + err);
+            setFormDisabled(false);
+            document.getElementById("confirm-btn").disabled = false;
+          })
+          .saveBill(formData);
       }
 
       // --- Init ---

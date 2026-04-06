@@ -2639,3 +2639,116 @@ function getBillDropdownOptionsFromData() {
     return { choices: [], currencies: [], accountTypes: [] };
   }
 }
+
+/**
+ * Field mapping: bill form field ID -> Bills sheet column name
+ */
+var BILL_FIELD_MAPPING = {
+  pe: "ФОП",
+  contractorName: "Название контрактора",
+  contractorId: "Номер контрактора",
+  contractorAddress: "Адрес контрактора",
+  isContractorEU: "Контрактор из ЕС",
+  contractorVatId: "Номер НДС контрактора",
+  currency: "Валюта",
+  bankAccountNumber: "Номер банковского счета",
+  bankName: "Банк",
+  accountType: "Тип счета",
+  bankCode: "Код банка",
+  invoiceNumber: "Номер инвойса",
+  agreementNumber: "№ договора",
+  invoiceDate: "Дата инвойса",
+  yesNoDueDate: "Необходимость срока оплаты",
+  dueDate: "Срок оплаты",
+  vatRate: "% НДС",
+  vatAmount: "Сумма НДС",
+  totalAmount: "Общая сумма",
+};
+
+var BILL_DATE_FIELDS = ["invoiceDate", "dueDate"];
+
+/**
+ * Save a new bill to the Bills sheet.
+ * Uses header-based column mapping (like contracts).
+ * @param {Object} formData - { pe, contractorName, ..., services: [{services, period, hours, rate, amount}, ...] }
+ * @returns {Object} { success, id, message }
+ */
+function saveBillToData(formData) {
+  try {
+    var spreadsheet = SpreadsheetApp.openById(CONFIG.BILLS_SPREADSHEET_ID);
+    var sheet = spreadsheet.getSheetByName(CONFIG.SHEETS.BILLS);
+    if (!sheet) throw new Error("Bills sheet not found");
+
+    var headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
+
+    var columnMap = {};
+    headers.forEach(function (header, index) {
+      if (header) columnMap[header.toString().trim()] = index;
+    });
+
+    var billId = Utilities.getUuid();
+    var rowData = new Array(headers.length).fill("");
+
+    // Column A = ID
+    rowData[0] = billId;
+
+    // Map simple fields
+    Object.keys(formData).forEach(function (fieldId) {
+      if (fieldId === "services") return;
+      var columnName = BILL_FIELD_MAPPING[fieldId];
+      if (columnName && columnMap.hasOwnProperty(columnName)) {
+        var value = formData[fieldId] || "";
+        if (BILL_DATE_FIELDS.indexOf(fieldId) !== -1 && value) {
+          value = formatDateForBill(value);
+        }
+        rowData[columnMap[columnName]] = value;
+      }
+    });
+
+    // Map services rows (up to 10)
+    if (formData.services && Array.isArray(formData.services)) {
+      formData.services.forEach(function (svc, idx) {
+        var num = idx + 1;
+        var cols = {
+          services: "Вид услуг" + num,
+          period: "Период работы" + num,
+          hours: "Часы" + num,
+          rate: "Рейт" + num,
+          amount: "Сумма" + num,
+        };
+        Object.keys(cols).forEach(function (key) {
+          if (columnMap.hasOwnProperty(cols[key])) {
+            rowData[columnMap[cols[key]]] = svc[key] || "";
+          }
+        });
+      });
+    }
+
+    sheet.appendRow(rowData);
+
+    return {
+      success: true,
+      id: billId,
+      message: "Bill saved successfully",
+    };
+  } catch (error) {
+    console.error("Error saving bill:", error);
+    return {
+      success: false,
+      id: null,
+      message: "Error saving bill: " + error.toString(),
+    };
+  }
+}
+
+/**
+ * Format date from YYYY-MM-DD (HTML input) to DD/MM/YYYY for storage
+ */
+function formatDateForBill(dateStr) {
+  if (!dateStr) return "";
+  var parts = dateStr.split("-");
+  if (parts.length === 3) {
+    return parts[2] + "/" + parts[1] + "/" + parts[0];
+  }
+  return dateStr;
+}

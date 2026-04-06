@@ -397,6 +397,15 @@ function getBillDropdownOptions() {
   return getBillDropdownOptionsFromData();
 }
 
+/**
+ * Save a new bill
+ * @param {Object} formData - Bill form data
+ * @returns {Object} { success, id, message }
+ */
+function saveBill(formData) {
+  return saveBillToData(formData);
+}
+
 // Error handling and performance monitoring removed for cleaner code
 
 // Performance monitoring removed for cleaner code
