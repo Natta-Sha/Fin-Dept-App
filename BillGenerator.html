@@ -756,8 +756,12 @@
       function fillBillFormViewMode(data) {
         if (!data || data._error) {
           var msg = "Bill not found (ID: " + billId + ").";
+          if (data && data._message) {
+            msg += "<br><small><b>Error:</b> " + data._message + "</small>";
+            if (data._stack) msg += "<br><small>" + data._stack + "</small>";
+          }
           if (data && data._availableIds) {
-            msg += "<br><small>Available IDs in sheet: " + data._availableIds.join(", ") + "</small>";
+            msg += "<br><small><b>IDs in sheet:</b> " + data._availableIds.join(", ") + "</small>";
           }
           document.getElementById("result").innerHTML =
             '<div class="alert alert-danger">' + msg + '</div>';

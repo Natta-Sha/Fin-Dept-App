@@ -2734,7 +2734,13 @@ function getBillDataByIdFromData(id) {
 
     function getColDateValue(columnName) {
       var colIndex = indexMap[columnName];
-      return colIndex !== undefined ? formatDateForInput(row[colIndex]) : "";
+      if (colIndex === undefined) return "";
+      try {
+        return formatDateForInput(row[colIndex]);
+      } catch (e) {
+        console.error("getColDateValue('" + columnName + "') error:", e);
+        return "";
+      }
     }
 
     var result = {
@@ -2781,7 +2787,7 @@ function getBillDataByIdFromData(id) {
     return result;
   } catch (error) {
     console.error("Error in getBillDataByIdFromData:", error, error.stack);
-    return null;
+    return { _error: true, _message: String(error), _stack: error.stack ? String(error.stack).substring(0, 300) : "" };
   }
 }
 
