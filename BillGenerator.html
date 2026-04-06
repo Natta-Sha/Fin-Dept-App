@@ -343,27 +343,31 @@
         <div id="result" class="mt-4"></div>
 
         <!-- Create mode buttons -->
-        <div id="create-buttons" class="d-flex justify-content-end gap-2 mt-4 mb-4" style="<?= mode === 'view' ? 'display:none !important' : '' ?>">
-          <button
-            id="confirm-btn"
-            class="btn btn-success"
-            onclick="submitBill()"
-          >Confirm
-            <span id="spinner" class="spinner-border spinner-border-sm ms-2" role="status" style="display: none"></span>
-          </button>
-          <button
-            id="cancel-btn"
-            class="btn btn-outline-secondary"
-            onclick="goToBillsList()"
-          >Cancel</button>
+        <div id="create-buttons" class="mt-4 mb-4" style="display: none">
+          <div class="d-flex justify-content-end gap-2">
+            <button
+              id="confirm-btn"
+              class="btn btn-success"
+              onclick="submitBill()"
+            >Confirm
+              <span id="spinner" class="spinner-border spinner-border-sm ms-2" role="status" style="display: none"></span>
+            </button>
+            <button
+              id="cancel-btn"
+              class="btn btn-outline-secondary"
+              onclick="goToBillsList()"
+            >Cancel</button>
+          </div>
         </div>
 
         <!-- View mode buttons -->
-        <div id="view-buttons" class="d-flex justify-content-end gap-2 mt-4 mb-4" style="display: <?= mode === 'view' ? 'flex' : 'none' ?>">
-          <button
-            class="btn btn-outline-secondary"
-            onclick="goToBillsList()"
-          >Back to list</button>
+        <div id="view-buttons" class="mt-4 mb-4" style="display: none">
+          <div class="d-flex justify-content-end gap-2">
+            <button
+              class="btn btn-outline-secondary"
+              onclick="goToBillsList()"
+            >Back to list</button>
+          </div>
         </div>
       </div>
     </div>
@@ -737,11 +741,27 @@
         }
       }
 
+      function fmtView2(val) {
+        if (!val && val !== 0) return "";
+        var n = parseNum(val);
+        return n === 0 && String(val).trim() === "" ? "" : fmt2(n);
+      }
+
+      function fmtViewInt(val) {
+        if (!val && val !== 0) return "";
+        var n = parseInt(val, 10);
+        return isNaN(n) ? String(val) : String(n);
+      }
+
       function fillBillFormViewMode(data) {
-        if (!data) {
+        if (!data || data._error) {
+          var msg = "Bill not found (ID: " + billId + ").";
+          if (data && data._availableIds) {
+            msg += "<br><small>Available IDs in sheet: " + data._availableIds.join(", ") + "</small>";
+          }
           document.getElementById("result").innerHTML =
-            '<div class="alert alert-danger">Bill not found (ID: ' + billId + ').</div>';
-          document.getElementById("view-buttons").style.display = "flex";
+            '<div class="alert alert-danger">' + msg + '</div>';
+          document.getElementById("view-buttons").style.display = "block";
           return;
         }
 
@@ -777,10 +797,10 @@
         document.getElementById("bankCodeRow").style.display =
           data.accountType ? "" : "none";
 
-        // Totals
-        document.getElementById("vatRate").value = data.vatRate || "";
-        document.getElementById("vatAmount").value = data.vatAmount || "";
-        document.getElementById("totalAmount").value = data.totalAmount || "";
+        // Totals (vatRate = integer, rest = 2 decimals)
+        document.getElementById("vatRate").value = fmtViewInt(data.vatRate);
+        document.getElementById("vatAmount").value = fmtView2(data.vatAmount);
+        document.getElementById("totalAmount").value = fmtView2(data.totalAmount);
 
         // Services table
         var tbody = document.getElementById("servicesBody");
@@ -796,9 +816,9 @@
             '<td class="text-center align-middle">' + num + '</td>' +
             '<td><input type="text" class="form-control svc-services" name="services_' + num + '" value="' + (svc.services || "") + '" /></td>' +
             '<td><input type="text" class="form-control svc-period" name="period_' + num + '" value="' + (svc.period || "") + '" /></td>' +
-            '<td><input type="text" class="form-control svc-hours svc-num" name="hours_' + num + '" value="' + (svc.hours || "") + '" /></td>' +
-            '<td><input type="text" class="form-control svc-rate svc-num" name="rate_' + num + '" value="' + (svc.rate || "") + '" /></td>' +
-            '<td><input type="text" class="form-control svc-amount svc-num" name="amount_' + num + '" value="' + (svc.amount || "") + '" readonly /></td>' +
+            '<td><input type="text" class="form-control svc-hours svc-num" name="hours_' + num + '" value="' + fmtView2(svc.hours) + '" /></td>' +
+            '<td><input type="text" class="form-control svc-rate svc-num" name="rate_' + num + '" value="' + fmtView2(svc.rate) + '" /></td>' +
+            '<td><input type="text" class="form-control svc-amount svc-num" name="amount_' + num + '" value="' + fmtView2(svc.amount) + '" readonly /></td>' +
             '<td class="text-center align-middle"><button type="button" class="icon-button remove-svc-row" title="Remove"><i class="bi bi-trash text-danger"></i></button></td>';
           tbody.appendChild(tr);
         });
@@ -825,12 +845,12 @@
         switch (mode) {
           case "view":
             title.textContent = "Bill - View";
-            viewBtns.style.display = "flex";
+            viewBtns.style.display = "block";
             setFormReadonly(true);
             break;
           default:
             title.textContent = "Create Bill";
-            createBtns.style.display = "flex";
+            createBtns.style.display = "block";
             setFormReadonly(false);
             break;
         }

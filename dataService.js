@@ -2548,11 +2548,8 @@ function getBillListFromData() {
     }
 
     var result = [];
-    console.log("getBillListFromData: processing " + data.length + " data rows, lastCol=" + lastCol);
     for (var i = 0; i < data.length; i++) {
       var row = data[i];
-      var rawId = row[0];
-      console.log("  data[" + i + "]: colA=[" + (rawId !== null && rawId !== undefined ? rawId.toString() : "NULL") + "] type=" + typeof rawId + " contractor=[" + (row[indexMap["Название контрактора"]] || "") + "]");
       if (!row[indexMap["Название контрактора"]]) continue;
 
       var invoiceDate = row[indexMap["Дата инвойса"]];
@@ -2710,8 +2707,13 @@ function getBillDataByIdFromData(id) {
     }
 
     if (!row) {
-      console.log("getBillDataByIdFromData: not found, id=" + id);
-      return null;
+      var allIds = [];
+      for (var j = 1; j < data.length; j++) {
+        var cellA = data[j][0];
+        allIds.push("[" + (cellA !== null && cellA !== undefined ? cellA.toString().substring(0, 12) : "NULL") + "...] type=" + typeof cellA);
+      }
+      console.log("getBillDataByIdFromData: NOT FOUND. searchId=" + id + " availableIds=" + allIds.join(", "));
+      return { _error: true, _searchId: String(id), _availableIds: allIds };
     }
 
     // Simple helpers — exact same pattern as contracts
