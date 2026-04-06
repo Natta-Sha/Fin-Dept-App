@@ -298,7 +298,7 @@
                 <td><input type="text" class="form-control svc-period" name="period_1" /></td>
                 <td><input type="text" class="form-control svc-hours svc-num" name="hours_1" inputmode="decimal" placeholder="0.00" /></td>
                 <td><input type="text" class="form-control svc-rate svc-num" name="rate_1" inputmode="decimal" placeholder="0.00" /></td>
-                <td><input type="text" class="form-control svc-amount svc-num" name="amount_1" placeholder="0.00" readonly /></td>
+                <td><input type="text" class="form-control svc-amount svc-num" name="amount_1" placeholder="0.00" /></td>
                 <td class="text-center align-middle">
                   <button type="button" class="icon-button remove-svc-row" title="Remove" disabled><i class="bi bi-trash text-danger"></i></button>
                 </td>
@@ -321,7 +321,7 @@
           </div>
           <div class="row mb-3" id="vatRateRow" style="display: none">
             <div class="col-md-4">
-              <label class="form-label">VAT rate (%)</label>
+              <label class="form-label">VAT rate (%) <span class="text-danger">*</span> <span class="field-required">Required when EU</span></label>
               <input type="text" id="vatRate" class="form-control svc-num" inputmode="decimal" placeholder="0" />
             </div>
           </div>
@@ -428,10 +428,13 @@
         document.getElementById("vatRateRow").style.display = isEU ? "" : "none";
         document.getElementById("vatAmountRow").style.display = isEU ? "" : "none";
         var vatIdInput = document.getElementById("contractorVatId");
+        var vatRateInput = document.getElementById("vatRate");
         if (isEU) {
           vatIdInput.setAttribute("required", "required");
+          vatRateInput.setAttribute("required", "required");
         } else {
           vatIdInput.removeAttribute("required");
+          vatRateInput.removeAttribute("required");
           vatIdInput.value = "";
           document.getElementById("vatRate").value = "";
         }
@@ -474,12 +477,13 @@
           '<td><input type="text" class="form-control svc-period" name="period_' + currentRows + '" /></td>' +
           '<td><input type="text" class="form-control svc-hours svc-num" name="hours_' + currentRows + '" inputmode="decimal" placeholder="0.00" /></td>' +
           '<td><input type="text" class="form-control svc-rate svc-num" name="rate_' + currentRows + '" inputmode="decimal" placeholder="0.00" /></td>' +
-          '<td><input type="text" class="form-control svc-amount svc-num" name="amount_' + currentRows + '" placeholder="0.00" readonly /></td>' +
+          '<td><input type="text" class="form-control svc-amount svc-num" name="amount_' + currentRows + '" placeholder="0.00" /></td>' +
           '<td class="text-center align-middle"><button type="button" class="icon-button remove-svc-row" title="Remove"><i class="bi bi-trash text-danger"></i></button></td>';
         tbody.appendChild(tr);
         updateRemoveButtons();
         updateAddRowButton();
         attachRowListeners(tr);
+        syncRowAmountState(tr);
       }
 
       function removeServiceRow(btn) {
@@ -516,7 +520,25 @@
         });
       }
 
+      function rowHasHoursAndRateForCalc(row) {
+        var h = row.querySelector(".svc-hours");
+        var r = row.querySelector(".svc-rate");
+        return h && r && h.value.trim() !== "" && r.value.trim() !== "";
+      }
+
+      function syncRowAmountState(row) {
+        var amt = row.querySelector(".svc-amount");
+        if (!amt) return;
+        if (rowHasHoursAndRateForCalc(row)) {
+          amt.readOnly = true;
+          calcRowAmount(row);
+        } else {
+          amt.readOnly = false;
+        }
+      }
+
       function calcRowAmount(row) {
+        if (!rowHasHoursAndRateForCalc(row)) return;
         var hours = parseNum(row.querySelector(".svc-hours").value);
         var rate = parseNum(row.querySelector(".svc-rate").value);
         row.querySelector(".svc-amount").value = fmt2(hours * rate);
@@ -538,8 +560,24 @@
       function attachRowListeners(row) {
         var hours = row.querySelector(".svc-hours");
         var rate = row.querySelector(".svc-rate");
-        if (hours) hours.addEventListener("input", function () { calcRowAmount(row); recalcTotals(); });
-        if (rate) rate.addEventListener("input", function () { calcRowAmount(row); recalcTotals(); });
+        var amount = row.querySelector(".svc-amount");
+        if (hours) {
+          hours.addEventListener("input", function () {
+            syncRowAmountState(row);
+            recalcTotals();
+          });
+        }
+        if (rate) {
+          rate.addEventListener("input", function () {
+            syncRowAmountState(row);
+            recalcTotals();
+          });
+        }
+        if (amount) {
+          amount.addEventListener("input", function () {
+            recalcTotals();
+          });
+        }
       }
 
       // Format on blur: ensure 2 decimal places
@@ -550,11 +588,24 @@
         }
       }
 
+      function formatHoursOnBlur(input) {
+        var t = input.value.trim();
+        if (t === "") return;
+        var n = parseNum(t);
+        if (Math.abs(n - Math.round(n)) < 1e-9) {
+          input.value = String(Math.round(n));
+        } else {
+          input.value = n.toFixed(10).replace(/\.?0+$/, "");
+        }
+      }
+
       function attachBlurFormat(row) {
         var hours = row.querySelector(".svc-hours");
         var rate = row.querySelector(".svc-rate");
-        if (hours) hours.addEventListener("blur", function () { formatOnBlur(hours); });
+        var amount = row.querySelector(".svc-amount");
+        if (hours) hours.addEventListener("blur", function () { formatHoursOnBlur(hours); });
         if (rate) rate.addEventListener("blur", function () { formatOnBlur(rate); });
+        if (amount) amount.addEventListener("blur", function () { formatOnBlur(amount); });
       }
 
       // --- Dropdowns ---
@@ -633,6 +684,7 @@
 
         if (isEU) {
           required.push({ id: "contractorVatId", label: "Contractor's VAT ID" });
+          required.push({ id: "vatRate", label: "VAT rate (%)" });
         }
 
         if (document.getElementById("accountType").value !== "") {
@@ -727,8 +779,6 @@
                 okHtml +=
                   '<div class="card mt-3" style="background-color: #d4edda; border-color: #c3e6cb;">' +
                   '<div class="card-body">' +
-                  '<h6 class="card-title text-success mb-3">' +
-                  '<i class="bi bi-check-circle"></i> Document generated</h6>' +
                   '<div class="d-flex flex-wrap gap-2">' +
                   '<a href="' + result.docUrl + '" target="_blank" rel="noopener" class="btn btn-outline-success btn-sm">' +
                   '<i class="bi bi-file-earmark-text"></i> Open Google Doc</a>' +
@@ -790,6 +840,14 @@
         if (!val && val !== 0) return "";
         var n = parseNum(val);
         return n === 0 && String(val).trim() === "" ? "" : fmt2(n);
+      }
+
+      function fmtViewHours(val) {
+        if (val === "" || val === null || val === undefined) return "";
+        var n = parseNum(val);
+        if (String(val).trim() === "" && n === 0) return "";
+        if (Math.abs(n - Math.round(n)) < 1e-9) return String(Math.round(n));
+        return n.toFixed(10).replace(/\.?0+$/, "");
       }
 
       function fmtViewInt(val) {
@@ -865,7 +923,7 @@
             '<td class="text-center align-middle">' + num + '</td>' +
             '<td><input type="text" class="form-control svc-services" name="services_' + num + '" value="' + (svc.services || "") + '" /></td>' +
             '<td><input type="text" class="form-control svc-period" name="period_' + num + '" value="' + (svc.period || "") + '" /></td>' +
-            '<td><input type="text" class="form-control svc-hours svc-num" name="hours_' + num + '" value="' + fmtView2(svc.hours) + '" /></td>' +
+            '<td><input type="text" class="form-control svc-hours svc-num" name="hours_' + num + '" value="' + fmtViewHours(svc.hours) + '" /></td>' +
             '<td><input type="text" class="form-control svc-rate svc-num" name="rate_' + num + '" value="' + fmtView2(svc.rate) + '" /></td>' +
             '<td><input type="text" class="form-control svc-amount svc-num" name="amount_' + num + '" value="' + fmtView2(svc.amount) + '" readonly /></td>' +
             '<td class="text-center align-middle"><button type="button" class="icon-button remove-svc-row" title="Remove"><i class="bi bi-trash text-danger"></i></button></td>';
@@ -965,6 +1023,7 @@
         if (firstRow) {
           attachRowListeners(firstRow);
           attachBlurFormat(firstRow);
+          syncRowAmountState(firstRow);
         }
 
         var origAdd = addServiceRow;

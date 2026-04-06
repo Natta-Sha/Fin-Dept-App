@@ -2850,6 +2850,16 @@ function billFormatTwoDecimals(val) {
   return n.toFixed(2);
 }
 
+/** Hours in bill Google Doc: whole numbers without ".00", decimals trimmed (e.g. 2, 2.25). */
+function formatBillHoursForDoc(val) {
+  var n = billParseNum(val);
+  if (isNaN(n)) return "";
+  if (Math.abs(n - Math.round(n)) < 1e-9) {
+    return String(Math.round(n));
+  }
+  return n.toFixed(10).replace(/\.?0+$/, "");
+}
+
 function billCurrencySymbol(currency) {
   var c = (currency || "").toString().trim().toUpperCase();
   if (CONFIG.CURRENCY_SYMBOLS && CONFIG.CURRENCY_SYMBOLS[c]) {
@@ -2920,8 +2930,15 @@ function buildBillDocumentPlaceholderMap(formData) {
   var vatPct = Math.round(billParseNum(formData.vatRate));
   if (isNaN(vatPct)) vatPct = 0;
   map["{VAT%}"] = String(vatPct);
-  map["{Сумма НДС}"] = billMoneyWithSymbol(formData, formData.vatAmount);
-  map["{Общая сумма}"] = billMoneyWithSymbol(formData, formData.totalAmount);
+  var sym = billCurrencySymbol(formData.currency);
+  var vatN = billParseNum(formData.vatAmount);
+  var totN = billParseNum(formData.totalAmount);
+  map["{Сумма НДС}"] = isNaN(vatN)
+    ? ""
+    : formatCurrencyFromUtils(vatN, sym);
+  map["{Общая сумма}"] = isNaN(totN)
+    ? ""
+    : formatCurrencyFromUtils(totN, sym);
 
   return map;
 }

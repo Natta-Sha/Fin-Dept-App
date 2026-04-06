@@ -233,7 +233,7 @@ function updateBillTable(body, formData) {
   });
 
   rows.forEach(function (svc, idx) {
-    const hoursStr = billFormatTwoDecimals(svc.hours);
+    const hoursStr = formatBillHoursForDoc(svc.hours);
     const rateNum = billParseNum(svc.rate);
     const amtNum = billParseNum(svc.amount);
     const rateDisplay = isNaN(rateNum)
