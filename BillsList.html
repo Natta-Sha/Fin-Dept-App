@@ -122,6 +122,17 @@
 
     <!-- Main Content -->
     <div class="main-content container-xl">
+      <div class="mb-3 d-flex justify-content-start">
+        <a
+          href="#"
+          class="btn btn-nav"
+          style="cursor: not-allowed; opacity: 0.6"
+          onclick="return false;"
+        >
+          Create new
+        </a>
+      </div>
+
       <h2 class="mb-4">List of Bills</h2>
 
       <table
@@ -136,6 +147,7 @@
             <th>Invoice date</th>
             <th>Total amount</th>
             <th>Currency</th>
+            <th>Actions</th>
           </tr>
           <tr>
             <th><input type="text" placeholder="Search Contractor" /></th>
@@ -143,6 +155,7 @@
             <th><input type="text" placeholder="Search Date" /></th>
             <th><input type="text" placeholder="Search Amount" /></th>
             <th><input type="text" placeholder="Search Currency" /></th>
+            <th></th>
           </tr>
         </thead>
         <tbody></tbody>
@@ -166,6 +179,11 @@
               {
                 targets: 3,
                 className: "dt-body-right dt-head-center",
+              },
+              {
+                targets: 5,
+                className: "dt-body-center dt-head-center",
+                orderable: false,
               },
             ],
           });
@@ -197,6 +215,7 @@
                   row.invoiceDate || "",
                   row.totalAmount || "",
                   row.currency || "",
+                  '<button class="btn btn-sm btn-outline-primary" style="white-space: nowrap; cursor: not-allowed; opacity: 0.6" disabled>Open details</button>',
                 ]);
               });
 
