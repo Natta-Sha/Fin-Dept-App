@@ -2595,3 +2595,47 @@ function getBillListFromData() {
     return [];
   }
 }
+
+/**
+ * Get dropdown options for the Bill form from the Bills spreadsheet, Lists sheet.
+ * Column A: Choice (yes/no), Column B: Currency, Column C: Account type
+ */
+function getBillDropdownOptionsFromData() {
+  try {
+    var spreadsheet = SpreadsheetApp.openById(CONFIG.BILLS_SPREADSHEET_ID);
+    var listsSheet = spreadsheet.getSheetByName("Lists");
+    if (!listsSheet) {
+      return { choices: [], currencies: [], accountTypes: [] };
+    }
+
+    var data = listsSheet.getDataRange().getValues();
+    var choices = [];
+    var currencies = [];
+    var accountTypes = [];
+
+    for (var i = 1; i < data.length; i++) {
+      var row = data[i];
+      if (row[0] && row[0].toString().trim() !== "") {
+        var v = row[0].toString().trim();
+        if (choices.indexOf(v) === -1) choices.push(v);
+      }
+      if (row[1] && row[1].toString().trim() !== "") {
+        var v2 = row[1].toString().trim();
+        if (currencies.indexOf(v2) === -1) currencies.push(v2);
+      }
+      if (row[2] && row[2].toString().trim() !== "") {
+        var v3 = row[2].toString().trim();
+        if (accountTypes.indexOf(v3) === -1) accountTypes.push(v3);
+      }
+    }
+
+    return {
+      choices: choices,
+      currencies: currencies,
+      accountTypes: accountTypes,
+    };
+  } catch (error) {
+    console.error("Error in getBillDropdownOptionsFromData:", error);
+    return { choices: [], currencies: [], accountTypes: [] };
+  }
+}

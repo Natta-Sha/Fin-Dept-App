@@ -190,6 +190,7 @@ function doGet(e) {
     template.invoiceId = e.parameter.invoiceId || e.parameter.id || "";
     template.creditNoteId = e.parameter.invoiceId || e.parameter.id || "";
     template.contractId = e.parameter.contractId || e.parameter.id || "";
+    template.billId = e.parameter.billId || e.parameter.id || "";
     template.mode = e.parameter.mode || "";
 
     // Set active page for navigation
@@ -388,6 +389,14 @@ function getBillList() {
   return getBillListFromData();
 }
 
+/**
+ * Get dropdown options for the Bill form
+ * @returns {Object} { choices, currencies, accountTypes }
+ */
+function getBillDropdownOptions() {
+  return getBillDropdownOptionsFromData();
+}
+
 // Error handling and performance monitoring removed for cleaner code
 
 // Performance monitoring removed for cleaner code
@@ -499,6 +508,8 @@ function getActivePageForNavigation(page, params = {}) {
       // ContractGenerator is part of contracts section
       return "contracts";
     case "BillsList":
+      return "bills";
+    case "BillGenerator":
       return "bills";
     default:
       return "";
