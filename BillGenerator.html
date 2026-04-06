@@ -144,7 +144,7 @@
     <?!= getNavigation(activePage) ?>
 
     <div class="main-content container py-4">
-      <h2 class="mb-4">Create Bill</h2>
+      <h2 id="page-title" class="mb-4">Create Bill</h2>
 
       <div id="bill-form">
         <!-- Section 1: Contractor Information -->
@@ -334,8 +334,8 @@
         <!-- Result messages -->
         <div id="result" class="mt-4"></div>
 
-        <!-- Buttons -->
-        <div class="d-flex justify-content-end gap-2 mt-4 mb-4">
+        <!-- Create mode buttons -->
+        <div id="create-buttons" class="d-flex justify-content-end gap-2 mt-4 mb-4">
           <button
             id="confirm-btn"
             class="btn btn-success"
@@ -349,11 +349,21 @@
             onclick="goToBillsList()"
           >Cancel</button>
         </div>
+
+        <!-- View mode buttons -->
+        <div id="view-buttons" class="d-flex justify-content-end gap-2 mt-4 mb-4" style="display: none">
+          <button
+            class="btn btn-outline-secondary"
+            onclick="goToBillsList()"
+          >Back to list</button>
+        </div>
       </div>
     </div>
 
     <script>
       var BASE_URL = "<?= baseUrl ?>";
+      var billId = "<?= billId ?>";
+      var mode = "<?= mode ?>" || "create";
       var MAX_ROWS = 10;
       var currentRows = 1;
       var isEU = false;
@@ -692,11 +702,133 @@
           .saveBill(formData);
       }
 
+      // --- View mode helpers ---
+
+      function setFormReadonly(readonly) {
+        document.querySelectorAll("#bill-form input, #bill-form select").forEach(function (el) {
+          el.disabled = readonly;
+        });
+        var addBtn = document.getElementById("add-row-btn");
+        if (addBtn) addBtn.style.display = readonly ? "none" : "";
+        document.querySelectorAll(".remove-svc-row").forEach(function (btn) {
+          btn.style.display = readonly ? "none" : "";
+        });
+      }
+
+      function setSelectValueViewMode(id, value) {
+        var sel = document.getElementById(id);
+        if (!sel) return;
+        sel.innerHTML = "";
+        if (value) {
+          var opt = document.createElement("option");
+          opt.value = value;
+          opt.textContent = value;
+          opt.selected = true;
+          sel.appendChild(opt);
+        }
+      }
+
+      function fillBillFormViewMode(data) {
+        if (!data) {
+          document.getElementById("result").innerHTML =
+            '<div class="alert alert-danger">Bill not found.</div>';
+          return;
+        }
+
+        // Simple fields
+        document.getElementById("contractorName").value = data.contractorName || "";
+        document.getElementById("contractorId").value = data.contractorId || "";
+        document.getElementById("contractorAddress").value = data.contractorAddress || "";
+        document.getElementById("contractorVatId").value = data.contractorVatId || "";
+        document.getElementById("bankAccountNumber").value = data.bankAccountNumber || "";
+        document.getElementById("bankName").value = data.bankName || "";
+        document.getElementById("bankCode").value = data.bankCode || "";
+        document.getElementById("invoiceNumber").value = data.invoiceNumber || "";
+        document.getElementById("agreementNumber").value = data.agreementNumber || "";
+        document.getElementById("invoiceDate").value = data.invoiceDate || "";
+        document.getElementById("dueDate").value = data.dueDate || "";
+
+        // Selects
+        setSelectValueViewMode("pe", data.pe);
+        setSelectValueViewMode("isContractorEU", data.isContractorEU);
+        setSelectValueViewMode("currency", data.currency);
+        setSelectValueViewMode("accountType", data.accountType);
+        setSelectValueViewMode("yesNoDueDate", data.yesNoDueDate);
+
+        // Conditional fields visibility
+        isEU = (data.isContractorEU || "").toLowerCase() === "yes";
+        document.getElementById("vatIdRow").style.display = isEU ? "" : "none";
+        document.getElementById("vatRateRow").style.display = isEU ? "" : "none";
+        document.getElementById("vatAmountRow").style.display = isEU ? "" : "none";
+
+        document.getElementById("dueDateRow").style.display =
+          (data.yesNoDueDate || "").toLowerCase() === "yes" ? "" : "none";
+
+        document.getElementById("bankCodeRow").style.display =
+          data.accountType ? "" : "none";
+
+        // Totals
+        document.getElementById("vatRate").value = data.vatRate || "";
+        document.getElementById("vatAmount").value = data.vatAmount || "";
+        document.getElementById("totalAmount").value = data.totalAmount || "";
+
+        // Services table
+        var tbody = document.getElementById("servicesBody");
+        tbody.innerHTML = "";
+        var services = data.services && data.services.length > 0 ? data.services : [{}];
+        currentRows = 0;
+        services.forEach(function (svc, idx) {
+          currentRows++;
+          var num = idx + 1;
+          var tr = document.createElement("tr");
+          tr.setAttribute("data-row", num);
+          tr.innerHTML =
+            '<td class="text-center align-middle">' + num + '</td>' +
+            '<td><input type="text" class="form-control svc-services" name="services_' + num + '" value="' + (svc.services || "") + '" /></td>' +
+            '<td><input type="text" class="form-control svc-period" name="period_' + num + '" value="' + (svc.period || "") + '" /></td>' +
+            '<td><input type="text" class="form-control svc-hours svc-num" name="hours_' + num + '" value="' + (svc.hours || "") + '" /></td>' +
+            '<td><input type="text" class="form-control svc-rate svc-num" name="rate_' + num + '" value="' + (svc.rate || "") + '" /></td>' +
+            '<td><input type="text" class="form-control svc-amount svc-num" name="amount_' + num + '" value="' + (svc.amount || "") + '" readonly /></td>' +
+            '<td class="text-center align-middle"><button type="button" class="icon-button remove-svc-row" title="Remove"><i class="bi bi-trash text-danger"></i></button></td>';
+          tbody.appendChild(tr);
+        });
+
+        // Subtotal
+        var subtotal = 0;
+        document.querySelectorAll("#servicesBody .svc-amount").forEach(function (el) {
+          subtotal += parseNum(el.value);
+        });
+        document.getElementById("subtotal").value = fmt2(subtotal);
+
+        // Update UI
+        updateUIForMode();
+      }
+
+      function updateUIForMode() {
+        var title = document.getElementById("page-title");
+        var createBtns = document.getElementById("create-buttons");
+        var viewBtns = document.getElementById("view-buttons");
+
+        createBtns.style.display = "none";
+        viewBtns.style.display = "none";
+
+        switch (mode) {
+          case "view":
+            title.textContent = "Bill - View";
+            viewBtns.style.display = "flex";
+            setFormReadonly(true);
+            break;
+          default:
+            title.textContent = "Create Bill";
+            createBtns.style.display = "flex";
+            setFormReadonly(false);
+            break;
+        }
+      }
+
       // --- Init ---
 
       window.addEventListener("DOMContentLoaded", function () {
-        loadDropdownOptions();
-
         document.getElementById("isContractorEU").addEventListener("change", onEUChange);
         document.getElementById("yesNoDueDate").addEventListener("change", onDueDateChange);
         document.getElementById("accountType").addEventListener("change", onAccountTypeChange);
@@ -724,13 +856,27 @@
 
         document.getElementById("vatRate").addEventListener("input", recalcTotals);
 
+        // View mode: load data directly, skip dropdown loading
+        if (mode === "view" && billId) {
+          google.script.run
+            .withSuccessHandler(fillBillFormViewMode)
+            .withFailureHandler(function (err) {
+              document.getElementById("result").innerHTML =
+                '<div class="alert alert-danger">Error loading bill: ' + err + '</div>';
+            })
+            .getBillDataById(billId);
+          return;
+        }
+
+        // Create mode: load dropdowns
+        loadDropdownOptions();
+
         var firstRow = document.querySelector("#servicesBody tr");
         if (firstRow) {
           attachRowListeners(firstRow);
           attachBlurFormat(firstRow);
         }
 
-        // Attach blur formatting to dynamically added rows
         var origAdd = addServiceRow;
         addServiceRow = function () {
           origAdd();

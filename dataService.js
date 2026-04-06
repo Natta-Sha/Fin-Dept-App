@@ -2581,6 +2581,7 @@ function getBillListFromData() {
       }
 
       result.push({
+        id: row[0] || "",
         contractorName: row[indexMap["Название контрактора"]] || "",
         invoiceNumber: row[indexMap["Номер инвойса"]] || "",
         invoiceDate: formattedDate,
@@ -2666,6 +2667,97 @@ var BILL_FIELD_MAPPING = {
 };
 
 var BILL_DATE_FIELDS = ["invoiceDate", "dueDate"];
+
+/**
+ * Get bill data by ID from the Bills sheet.
+ * @param {string} id - Bill ID (column A)
+ * @returns {Object|null} Bill data object or null
+ */
+function getBillDataByIdFromData(id) {
+  try {
+    if (!id || id.toString().trim() === "") return null;
+
+    var spreadsheet = SpreadsheetApp.openById(CONFIG.BILLS_SPREADSHEET_ID);
+    var sheet = spreadsheet.getSheetByName(CONFIG.SHEETS.BILLS);
+    if (!sheet) return null;
+
+    var data = sheet.getDataRange().getValues();
+    var headers = data[0];
+    var indexMap = {};
+    headers.forEach(function (header, index) {
+      if (header) indexMap[header.toString().trim()] = index;
+    });
+
+    var row = null;
+    for (var i = 1; i < data.length; i++) {
+      var rowId = data[i][0];
+      if (rowId && rowId.toString() === id.toString()) {
+        row = data[i];
+        break;
+      }
+    }
+    if (!row) return null;
+
+    function getCol(name) {
+      var idx = indexMap[name];
+      return idx !== undefined ? (row[idx] || "") : "";
+    }
+
+    function getColDate(name) {
+      var idx = indexMap[name];
+      if (idx === undefined) return "";
+      var val = row[idx];
+      if (!val) return "";
+      if (val instanceof Date) {
+        return Utilities.formatDate(val, Session.getScriptTimeZone(), "yyyy-MM-dd");
+      }
+      var m = String(val).match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+      if (m) return m[3] + "-" + m[2] + "-" + m[1];
+      return String(val);
+    }
+
+    var result = {
+      id: row[0] || "",
+      pe: getCol("ФОП"),
+      contractorName: getCol("Название контрактора"),
+      contractorId: getCol("Номер контрактора"),
+      contractorAddress: getCol("Адрес контрактора"),
+      isContractorEU: getCol("Контрактор из ЕС"),
+      contractorVatId: getCol("Номер НДС контрактора"),
+      currency: getCol("Валюта"),
+      bankAccountNumber: getCol("Номер банковского счета"),
+      bankName: getCol("Банк"),
+      accountType: getCol("Тип счета"),
+      bankCode: getCol("Код банка"),
+      invoiceNumber: getCol("Номер инвойса"),
+      agreementNumber: getCol("№ договора"),
+      invoiceDate: getColDate("Дата инвойса"),
+      yesNoDueDate: getCol("Необходимость срока оплаты"),
+      dueDate: getColDate("Срок оплаты"),
+      vatRate: getCol("% НДС"),
+      vatAmount: getCol("Сумма НДС"),
+      totalAmount: getCol("Общая сумма"),
+      services: [],
+    };
+
+    for (var n = 1; n <= 10; n++) {
+      var svc = getCol("Вид услуг" + n);
+      if (!svc && !getCol("Часы" + n) && !getCol("Рейт" + n) && !getCol("Сумма" + n)) continue;
+      result.services.push({
+        services: svc,
+        period: getCol("Период работы" + n),
+        hours: getCol("Часы" + n),
+        rate: getCol("Рейт" + n),
+        amount: getCol("Сумма" + n),
+      });
+    }
+
+    return result;
+  } catch (error) {
+    console.error("Error in getBillDataByIdFromData:", error);
+    return null;
+  }
+}
 
 /**
  * Save a new bill to the Bills sheet.

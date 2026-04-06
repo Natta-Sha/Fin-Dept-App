@@ -206,6 +206,7 @@
                 return;
               }
 
+              var baseUrl = "<?= baseUrl ?>";
               data.forEach(function (row) {
                 table.row.add([
                   row.contractorName || "",
@@ -213,7 +214,7 @@
                   row.invoiceDate || "",
                   row.totalAmount || "",
                   row.currency || "",
-                  '<button class="btn btn-sm btn-outline-primary" style="white-space: nowrap; cursor: not-allowed; opacity: 0.6" disabled>Open details</button>',
+                  '<a href="' + baseUrl + '?page=BillGenerator&id=' + row.id + '&mode=view" class="btn btn-sm btn-outline-primary" style="white-space: nowrap;">Open details</a>',
                 ]);
               });
 

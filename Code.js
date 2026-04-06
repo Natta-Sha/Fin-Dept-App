@@ -406,6 +406,15 @@ function saveBill(formData) {
   return saveBillToData(formData);
 }
 
+/**
+ * Get bill data by ID
+ * @param {string} id - Bill ID
+ * @returns {Object} Bill data
+ */
+function getBillDataById(id) {
+  return getBillDataByIdFromData(id);
+}
+
 // Error handling and performance monitoring removed for cleaner code
 
 // Performance monitoring removed for cleaner code
