@@ -717,10 +717,21 @@
           .withSuccessHandler(function (result) {
             document.getElementById("spinner").style.display = "none";
             if (result.success) {
-              document.getElementById("result").innerHTML =
+              var okHtml =
                 '<div class="alert alert-success">' +
-                '<i class="bi bi-check-circle me-2"></i>Bill saved successfully (ID: ' + result.id + ')' +
-                '</div>';
+                '<i class="bi bi-check-circle me-2"></i>Bill saved successfully (ID: ' + result.id + ')';
+              if (result.docUrl) {
+                okHtml +=
+                  '<p class="mb-0 mt-2"><a href="' + result.docUrl + '" target="_blank" rel="noopener">Open document</a></p>';
+              }
+              if (result.docError) {
+                okHtml +=
+                  '<p class="small text-warning mb-0 mt-2">' +
+                  String(result.docError).replace(/</g, "&lt;").replace(/>/g, "&gt;") +
+                  "</p>";
+              }
+              okHtml += "</div>";
+              document.getElementById("result").innerHTML = okHtml;
               document.getElementById("confirm-btn").style.display = "none";
               document.getElementById("cancel-btn").textContent = "Back to Bills";
               document.getElementById("cancel-btn").disabled = false;

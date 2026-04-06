@@ -2710,7 +2710,6 @@ function getBillDataByIdFromData(id) {
         var cellA = data[j][0];
         allIds.push("[" + (cellA !== null && cellA !== undefined ? cellA.toString().substring(0, 12) : "NULL") + "...] type=" + typeof cellA);
       }
-      console.log("getBillDataByIdFromData: NOT FOUND. searchId=" + id + " availableIds=" + allIds.join(", "));
       return { _error: true, _searchId: String(id), _availableIds: allIds };
     }
 
@@ -2795,10 +2794,201 @@ function getBillDataByIdFromData(id) {
 }
 
 /**
+ * Folder URL from Bills spreadsheet, sheet "Bills storage", cell B1.
+ */
+function getBillStorageFolderUrlFromData() {
+  var spreadsheet = SpreadsheetApp.openById(CONFIG.BILLS_SPREADSHEET_ID);
+  var sh = spreadsheet.getSheetByName(CONFIG.SHEETS.BILLS_STORAGE);
+  if (!sh) {
+    throw new Error('Sheet "' + CONFIG.SHEETS.BILLS_STORAGE + '" not found');
+  }
+  return (sh.getRange("B1").getValue() || "").toString().trim();
+}
+
+/**
+ * Google Doc template URL from Templates sheet: column A yes/no (EU), column B link.
+ */
+function getBillTemplateUrlForEUFromData(isContractorEUYes) {
+  var spreadsheet = SpreadsheetApp.openById(CONFIG.BILLS_SPREADSHEET_ID);
+  var sh = spreadsheet.getSheetByName(CONFIG.SHEETS.BILLS_TEMPLATES);
+  if (!sh) {
+    throw new Error('Sheet "' + CONFIG.SHEETS.BILLS_TEMPLATES + '" not found');
+  }
+  var data = sh.getDataRange().getValues();
+  var want = isContractorEUYes ? "yes" : "no";
+  for (var i = 1; i < data.length; i++) {
+    var cellA = (data[i][0] || "").toString().trim().toLowerCase();
+    if (cellA === want) {
+      var url = (data[i][1] || "").toString().trim();
+      if (url) return url;
+    }
+  }
+  return "";
+}
+
+/**
+ * YYYY-MM-DD (form) or DD/MM/YYYY → dd.MM.yyyy for doc / filename
+ */
+function formatBillDateForDocument(dateStr) {
+  if (!dateStr) return "";
+  var s = String(dateStr).trim();
+  var mDash = s.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (mDash) return mDash[3] + "." + mDash[2] + "." + mDash[1];
+  var mSlash = s.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+  if (mSlash) return mSlash[1] + "." + mSlash[2] + "." + mSlash[3];
+  return s;
+}
+
+function billParseNum(val) {
+  if (val === null || val === undefined || val === "") return NaN;
+  return parseFloat(String(val).replace(",", "."));
+}
+
+function billFormatTwoDecimals(val) {
+  var n = billParseNum(val);
+  if (isNaN(n)) return "";
+  return n.toFixed(2);
+}
+
+function billCurrencySymbol(currency) {
+  var c = (currency || "").toString().trim().toUpperCase();
+  if (CONFIG.CURRENCY_SYMBOLS && CONFIG.CURRENCY_SYMBOLS[c]) {
+    return CONFIG.CURRENCY_SYMBOLS[c];
+  }
+  if (c === "$" || c === "USD") return "$";
+  if (c === "€" || c === "EUR") return "€";
+  return "";
+}
+
+function billMoneyWithSymbol(formData, val) {
+  var sym = billCurrencySymbol(formData.currency);
+  var n = billParseNum(val);
+  if (isNaN(n)) return sym ? sym + "0.00" : "";
+  return sym + n.toFixed(2);
+}
+
+function escapeGoogleDocReplacementValue(str) {
+  return String(str).replace(/\$/g, "$$$$");
+}
+
+function buildBillDocumentFileName(formData) {
+  var contractor = (formData.contractorName || "")
+    .replace(/[\\/:*?"<>|]/g, "")
+    .trim();
+  var inv = (formData.invoiceNumber || "")
+    .replace(/[\\/:*?"<>|]/g, "")
+    .trim();
+  var agr = (formData.agreementNumber || "")
+    .replace(/[\\/:*?"<>|]/g, "")
+    .trim();
+  var datePart = formatBillDateForDocument(formData.invoiceDate);
+  var numPart = inv + "\uFF0F" + agr;
+  return contractor + "_Invoice_" + numPart + "_" + datePart;
+}
+
+/**
+ * Build placeholder → value map for bill Google Doc (same data source as save: formData).
+ */
+function buildBillDocumentPlaceholderMap(formData) {
+  var map = {};
+  var peYes = (formData.pe || "").toString().trim().toLowerCase() === "yes";
+  map["{ФОП}"] = peYes ? "PE" : "";
+  map["{Название контрактора}"] = (formData.contractorName || "").toString();
+  map["{Номер контрактора}"] = (formData.contractorId || "").toString();
+  map["{Адрес контрактора}"] = (formData.contractorAddress || "").toString();
+  map["{VAT ID}"] = (formData.contractorVatId || "").toString();
+  map["{Валюта}"] = (formData.currency || "").toString();
+  map["{Номер счета}"] = (formData.bankAccountNumber || "").toString();
+  map["{Банк}"] = (formData.bankName || "").toString();
+  map["{Тип счета}"] = (formData.accountType || "").toString();
+  map["{Код банка}"] = (formData.bankCode || "").toString();
+  map["{Номер инвойса}"] = (formData.invoiceNumber || "").toString();
+  map["{Номер договора}"] = (formData.agreementNumber || "").toString();
+  map["{Дата инвойса}"] = formatBillDateForDocument(formData.invoiceDate);
+  var dueNeeded =
+    (formData.yesNoDueDate || "").toString().trim().toLowerCase() === "yes";
+  map["{Due date:}"] = dueNeeded ? "Due date:" : "";
+  map["{Срок оплаты}"] = dueNeeded
+    ? formatBillDateForDocument(formData.dueDate)
+    : "";
+
+  var vatPct = Math.round(billParseNum(formData.vatRate));
+  if (isNaN(vatPct)) vatPct = 0;
+  map["{VAT%}"] = String(vatPct);
+  map["{Сумма НДС}"] = billMoneyWithSymbol(formData, formData.vatAmount);
+  map["{Общая сумма}"] = billMoneyWithSymbol(formData, formData.totalAmount);
+
+  var services = formData.services && Array.isArray(formData.services)
+    ? formData.services
+    : [];
+  for (var r = 1; r <= 10; r++) {
+    var svc = services[r - 1] || {};
+    map["{Вид услуг" + r + "}"] = (svc.services || "").toString();
+    map["{Период работы" + r + "}"] = (svc.period || "").toString();
+    map["{Часы" + r + "}"] = billFormatTwoDecimals(svc.hours);
+    map["{Рейт" + r + "}"] = billMoneyWithSymbol(formData, svc.rate);
+    map["{Сумма" + r + "}"] = billMoneyWithSymbol(formData, svc.amount);
+  }
+
+  return map;
+}
+
+/**
+ * Copy bill template, replace placeholders from formData, save to folderUrl.
+ */
+function createBillDocument(formData, templateUrl, folderUrl) {
+  try {
+    var templateId = extractDocIdFromUrl(templateUrl);
+    var folderId = extractFolderIdFromUrl(folderUrl);
+    if (!templateId) {
+      return { success: false, documentUrl: null, error: "Invalid template URL" };
+    }
+    if (!folderId) {
+      return { success: false, documentUrl: null, error: "Invalid Bills storage folder URL (B1)" };
+    }
+
+    var templateFile = DriveApp.getFileById(templateId);
+    var destFolder = DriveApp.getFolderById(folderId);
+    var docName = buildBillDocumentFileName(formData);
+    var copiedFile = templateFile.makeCopy(docName, destFolder);
+    var copiedDocId = copiedFile.getId();
+
+    var doc = DocumentApp.openById(copiedDocId);
+    var body = doc.getBody();
+    var phMap = buildBillDocumentPlaceholderMap(formData);
+
+    var keys = Object.keys(phMap).sort(function (a, b) {
+      return b.length - a.length;
+    });
+    keys.forEach(function (placeholder) {
+      var value = phMap[placeholder];
+      if (value === null || value === undefined) value = "";
+      var pattern = placeholder.replace(/[{}]/g, "\\$&");
+      body.replaceText(pattern, escapeGoogleDocReplacementValue(String(value)));
+    });
+
+    doc.saveAndClose();
+
+    var documentUrl = "https://docs.google.com/document/d/" + copiedDocId + "/edit";
+    return {
+      success: true,
+      documentUrl: documentUrl,
+      documentId: copiedDocId,
+    };
+  } catch (error) {
+    return {
+      success: false,
+      documentUrl: null,
+      error: error.toString(),
+    };
+  }
+}
+
+/**
  * Save a new bill to the Bills sheet.
  * Uses header-based column mapping (like contracts).
  * @param {Object} formData - { pe, contractorName, ..., services: [{services, period, hours, rate, amount}, ...] }
- * @returns {Object} { success, id, message }
+ * @returns {Object} { success, id, message, docUrl?, docError? }
  */
 function saveBillToData(formData) {
   try {
@@ -2853,10 +3043,50 @@ function saveBillToData(formData) {
 
     sheet.appendRow(rowData);
 
+    var docUrl = "";
+    var docError = "";
+    try {
+      var folderUrl = getBillStorageFolderUrlFromData();
+      var isEU =
+        (formData.isContractorEU || "").toString().trim().toLowerCase() ===
+        "yes";
+      var templateUrl = getBillTemplateUrlForEUFromData(isEU);
+      if (!folderUrl) {
+        docError = "Bills storage B1 is empty (folder URL missing).";
+      } else if (!templateUrl) {
+        docError =
+          "No template URL for EU=" +
+          (isEU ? "yes" : "no") +
+          " on Templates sheet.";
+      } else {
+        var docResult = createBillDocument(
+          formData,
+          templateUrl,
+          folderUrl
+        );
+        if (docResult.success) {
+          docUrl = docResult.documentUrl;
+        } else {
+          docError = docResult.error || "Document creation failed.";
+        }
+      }
+    } catch (docEx) {
+      docError = docEx.toString();
+    }
+
+    var message = "Bill saved successfully";
+    if (docUrl) {
+      message += ". Document created.";
+    } else if (docError) {
+      message += " Document was not created: " + docError;
+    }
+
     return {
       success: true,
       id: billId,
-      message: "Bill saved successfully",
+      message: message,
+      docUrl: docUrl || "",
+      docError: docError || "",
     };
   } catch (error) {
     console.error("Error saving bill:", error);
