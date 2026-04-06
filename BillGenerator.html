@@ -413,7 +413,7 @@
 
       function addServiceRow() {
         if (currentRows >= MAX_ROWS) {
-          alert("Maximum " + MAX_ROWS + " rows allowed");
+          showValidationError(["Maximum " + MAX_ROWS + " rows allowed."]);
           return;
         }
         currentRows++;
@@ -551,6 +551,20 @@
         if (!disabled) updateRemoveButtons();
       }
 
+      function showValidationError(messages) {
+        var result = document.getElementById("result");
+        result.innerHTML =
+          '<div class="alert alert-danger">' +
+          '<strong>Please fill out the following fields:</strong>' +
+          '<ul>' + messages.map(function (msg) { return '<li>' + msg + '</li>'; }).join('') + '</ul>' +
+          '</div>';
+        result.scrollIntoView({ behavior: "smooth" });
+      }
+
+      function clearValidationError() {
+        document.getElementById("result").innerHTML = "";
+      }
+
       function validateForm() {
         var required = [
           { id: "pe", label: "PE" },
@@ -574,21 +588,22 @@
           required.push({ id: "bankCode", label: "Bank code" });
         }
 
-        var missing = [];
+        var errors = [];
         required.forEach(function (f) {
           var el = document.getElementById(f.id);
           if (!el || !el.value.trim()) {
-            missing.push(f.label);
+            errors.push(f.label + " is required.");
             if (el) el.classList.add("is-invalid");
           } else {
             if (el) el.classList.remove("is-invalid");
           }
         });
 
-        if (missing.length > 0) {
-          alert("Please fill in required fields:\n• " + missing.join("\n• "));
+        if (errors.length > 0) {
+          showValidationError(errors);
           return false;
         }
+        clearValidationError();
         return true;
       }
 
@@ -673,6 +688,20 @@
         document.getElementById("yesNoDueDate").addEventListener("change", onDueDateChange);
         document.getElementById("accountType").addEventListener("change", onAccountTypeChange);
         document.getElementById("add-row-btn").addEventListener("click", addServiceRow);
+
+        // Clear is-invalid on input/change
+        document.getElementById("bill-form").addEventListener("input", function (e) {
+          if (e.target.classList.contains("is-invalid")) {
+            e.target.classList.remove("is-invalid");
+          }
+          clearValidationError();
+        });
+        document.getElementById("bill-form").addEventListener("change", function (e) {
+          if (e.target.classList.contains("is-invalid")) {
+            e.target.classList.remove("is-invalid");
+          }
+          clearValidationError();
+        });
 
         document.getElementById("servicesBody").addEventListener("click", function (e) {
           if (e.target.closest(".remove-svc-row")) {
