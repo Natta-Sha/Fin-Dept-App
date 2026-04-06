@@ -900,11 +900,13 @@
           document.getElementById("loading-spinner").style.display = "";
           google.script.run
             .withSuccessHandler(function (data) {
+              console.log("getBillDataById SUCCESS, type=" + typeof data + ", isNull=" + (data === null) + ", data=", data);
               document.getElementById("loading-spinner").style.display = "none";
               document.getElementById("bill-form").style.display = "";
               fillBillFormViewMode(data);
             })
             .withFailureHandler(function (err) {
+              console.log("getBillDataById FAILURE:", err);
               document.getElementById("loading-spinner").style.display = "none";
               document.getElementById("bill-form").style.display = "";
               document.getElementById("result").innerHTML =

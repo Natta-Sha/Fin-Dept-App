@@ -2716,10 +2716,16 @@ function getBillDataByIdFromData(id) {
       return { _error: true, _searchId: String(id), _availableIds: allIds };
     }
 
-    // Simple helpers — exact same pattern as contracts
+    // Simple helpers — always return strings to avoid serialization issues
     function getColValue(columnName) {
       var colIndex = indexMap[columnName];
-      return colIndex !== undefined ? (row[colIndex] || "") : "";
+      if (colIndex === undefined) return "";
+      var val = row[colIndex];
+      if (val === null || val === undefined || val === "") return "";
+      if (val instanceof Date) {
+        return Utilities.formatDate(val, Session.getScriptTimeZone(), "dd/MM/yyyy");
+      }
+      return String(val);
     }
 
     function formatDateForInput(dateVal) {
@@ -2744,7 +2750,7 @@ function getBillDataByIdFromData(id) {
     }
 
     var result = {
-      id: row[0] || "",
+      id: String(row[0] || ""),
       pe: getColValue("ФОП"),
       contractorName: getColValue("Название контрактора"),
       contractorId: getColValue("Номер контрактора"),
