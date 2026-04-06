@@ -36,17 +36,6 @@
         margin-bottom: 1rem;
       }
 
-      .field-hint {
-        display: block;
-        font-size: 0.75rem;
-        color: #6c757d;
-        font-style: italic;
-        font-weight: normal;
-        min-height: 1.2em;
-        line-height: 1.2em;
-        margin-bottom: 0.25rem;
-      }
-
       .field-required {
         color: #dc3545;
         font-size: 0.75rem;
@@ -143,6 +132,10 @@
         color: #dc3545 !important;
         border: 2px solid #dc3545 !important;
       }
+
+      .svc-num {
+        text-align: right;
+      }
     </style>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
   </head>
@@ -157,89 +150,121 @@
         <!-- Section 1: Contractor Information -->
         <h5 class="section-title"><i class="bi bi-person-badge"></i> Contractor Information</h5>
         <div class="form-section">
-          <div class="mb-3">
-            <label class="form-label">PE</label>
-            <select id="pe" class="form-select">
-              <option value="">Select...</option>
-            </select>
+          <div class="row mb-3">
+            <div class="col-md-4">
+              <label class="form-label">PE <span class="text-danger">*</span> <span class="field-required">Required</span></label>
+              <select id="pe" class="form-select" required>
+                <option value="">Select...</option>
+              </select>
+            </div>
           </div>
-          <div class="mb-3">
-            <label class="form-label">Contractor's name <span class="text-danger">*</span> <span class="field-required">Required</span></label>
-            <input type="text" id="contractorName" class="form-control" required />
+          <div class="row mb-3">
+            <div class="col-md-6">
+              <label class="form-label">Contractor's name <span class="text-danger">*</span> <span class="field-required">Required</span></label>
+              <input type="text" id="contractorName" class="form-control" required />
+            </div>
           </div>
-          <div class="mb-3">
-            <label class="form-label">Contractor's ID <span class="text-danger">*</span> <span class="field-required">Required</span></label>
-            <input type="text" id="contractorId" class="form-control" required />
+          <div class="row mb-3">
+            <div class="col-md-6">
+              <label class="form-label">Contractor's ID <span class="text-danger">*</span> <span class="field-required">Required</span></label>
+              <input type="text" id="contractorId" class="form-control" required />
+            </div>
           </div>
-          <div class="mb-3">
-            <label class="form-label">Contractor's address <span class="text-danger">*</span> <span class="field-required">Required</span></label>
-            <input type="text" id="contractorAddress" class="form-control" required />
+          <div class="row mb-3">
+            <div class="col-md-6">
+              <label class="form-label">Contractor's address <span class="text-danger">*</span> <span class="field-required">Required</span></label>
+              <input type="text" id="contractorAddress" class="form-control" required />
+            </div>
           </div>
-          <div class="mb-3">
-            <label class="form-label">Is Contractor from EU?</label>
-            <select id="isContractorEU" class="form-select">
-              <option value="">Select...</option>
-            </select>
+          <div class="row mb-3">
+            <div class="col-md-4">
+              <label class="form-label">Is Contractor from EU? <span class="text-danger">*</span> <span class="field-required">Required</span></label>
+              <select id="isContractorEU" class="form-select" required>
+                <option value="">Select...</option>
+              </select>
+            </div>
           </div>
-          <div class="mb-3" id="vatIdRow" style="display: none">
-            <label class="form-label">Contractor's VAT ID <span class="text-danger">*</span> <span class="field-required">Required</span></label>
-            <input type="text" id="contractorVatId" class="form-control" />
+          <div class="row mb-3" id="vatIdRow" style="display: none">
+            <div class="col-md-6">
+              <label class="form-label">Contractor's VAT ID <span class="text-danger">*</span> <span class="field-required">Required</span></label>
+              <input type="text" id="contractorVatId" class="form-control" />
+            </div>
           </div>
         </div>
 
         <!-- Section 2: Bank Details -->
         <h5 class="section-title"><i class="bi bi-bank"></i> Bank Details</h5>
         <div class="form-section">
-          <div class="mb-3">
-            <label class="form-label">Currency <span class="text-danger">*</span> <span class="field-required">Required</span></label>
-            <select id="currency" class="form-select" required>
-              <option value="">Select...</option>
-            </select>
+          <div class="row mb-3">
+            <div class="col-md-4">
+              <label class="form-label">Currency <span class="text-danger">*</span> <span class="field-required">Required</span></label>
+              <select id="currency" class="form-select" required>
+                <option value="">Select...</option>
+              </select>
+            </div>
           </div>
-          <div class="mb-3">
-            <label class="form-label">Bank account number <span class="text-danger">*</span> <span class="field-required">Required</span></label>
-            <input type="text" id="bankAccountNumber" class="form-control" required />
+          <div class="row mb-3">
+            <div class="col-md-6">
+              <label class="form-label">Bank account number <span class="text-danger">*</span> <span class="field-required">Required</span></label>
+              <input type="text" id="bankAccountNumber" class="form-control" required />
+            </div>
           </div>
-          <div class="mb-3">
-            <label class="form-label">Bank name <span class="text-danger">*</span> <span class="field-required">Required</span></label>
-            <input type="text" id="bankName" class="form-control" required />
+          <div class="row mb-3">
+            <div class="col-md-6">
+              <label class="form-label">Bank name <span class="text-danger">*</span> <span class="field-required">Required</span></label>
+              <input type="text" id="bankName" class="form-control" required />
+            </div>
           </div>
-          <div class="mb-3">
-            <label class="form-label">Account type</label>
-            <select id="accountType" class="form-select">
-              <option value="">Select...</option>
-            </select>
+          <div class="row mb-3">
+            <div class="col-md-4">
+              <label class="form-label">Account type</label>
+              <select id="accountType" class="form-select">
+                <option value="">Select...</option>
+              </select>
+            </div>
           </div>
-          <div class="mb-3">
-            <label class="form-label">Bank code</label>
-            <input type="text" id="bankCode" class="form-control" />
+          <div class="row mb-3" id="bankCodeRow" style="display: none">
+            <div class="col-md-6">
+              <label class="form-label">Bank code <span class="text-danger">*</span> <span class="field-required">Required</span></label>
+              <input type="text" id="bankCode" class="form-control" />
+            </div>
           </div>
         </div>
 
         <!-- Section 3: Invoice Details -->
         <h5 class="section-title"><i class="bi bi-file-earmark-text"></i> Invoice Details</h5>
         <div class="form-section">
-          <div class="mb-3">
-            <label class="form-label">Invoice number <span class="text-danger">*</span> <span class="field-required">Required</span></label>
-            <input type="text" id="invoiceNumber" class="form-control" required />
+          <div class="row mb-3">
+            <div class="col-md-4">
+              <label class="form-label">Invoice number <span class="text-danger">*</span> <span class="field-required">Required</span></label>
+              <input type="text" id="invoiceNumber" class="form-control" required />
+            </div>
           </div>
-          <div class="mb-3">
-            <label class="form-label">Agreement number <span class="text-danger">*</span> <span class="field-required">Required</span></label>
-            <input type="text" id="agreementNumber" class="form-control" required />
+          <div class="row mb-3">
+            <div class="col-md-4">
+              <label class="form-label">Agreement number <span class="text-danger">*</span> <span class="field-required">Required</span></label>
+              <input type="text" id="agreementNumber" class="form-control" required />
+            </div>
           </div>
-          <div class="mb-3">
-            <label class="form-label">Invoice date <span class="text-danger">*</span> <span class="field-required">Required</span></label>
-            <input type="date" id="invoiceDate" class="form-control" required />
+          <div class="row mb-3">
+            <div class="col-md-4">
+              <label class="form-label">Invoice date <span class="text-danger">*</span> <span class="field-required">Required</span></label>
+              <input type="date" id="invoiceDate" class="form-control" required />
+            </div>
           </div>
-          <div class="mb-3">
-            <label class="form-label">Is due date necessary?</label>
-            <select id="yesNoDueDate" class="form-select">
-              <option value="">Select...</option>
-            </select>
+          <div class="row mb-3">
+            <div class="col-md-4">
+              <label class="form-label">Is due date necessary?</label>
+              <select id="yesNoDueDate" class="form-select">
+                <option value="">Select...</option>
+              </select>
+            </div>
           </div>
-          <div class="mb-3" id="dueDateRow" style="display: none">
-            <label class="form-label">Due date</label>
-            <input type="date" id="dueDate" class="form-control" />
+          <div class="row mb-3" id="dueDateRow" style="display: none">
+            <div class="col-md-4">
+              <label class="form-label">Due date</label>
+              <input type="date" id="dueDate" class="form-control" />
+            </div>
           </div>
         </div>
 
@@ -252,8 +277,8 @@
                 <th style="width: 40px">#</th>
                 <th>Services</th>
                 <th>Period</th>
-                <th style="width: 120px">Hours</th>
-                <th style="width: 120px">Rate</th>
+                <th style="width: 130px">Hours</th>
+                <th style="width: 130px">Rate</th>
                 <th style="width: 140px">Amount</th>
                 <th style="width: 40px"></th>
               </tr>
@@ -263,9 +288,9 @@
                 <td class="text-center align-middle">1</td>
                 <td><input type="text" class="form-control svc-services" name="services_1" /></td>
                 <td><input type="text" class="form-control svc-period" name="period_1" /></td>
-                <td><input type="number" class="form-control svc-hours" name="hours_1" step="0.01" min="0" placeholder="0.00" /></td>
-                <td><input type="number" class="form-control svc-rate" name="rate_1" step="0.01" min="0" placeholder="0.00" /></td>
-                <td><input type="number" class="form-control svc-amount" name="amount_1" step="0.01" min="0" placeholder="0.00" readonly /></td>
+                <td><input type="text" class="form-control svc-hours svc-num" name="hours_1" inputmode="decimal" placeholder="0.00" /></td>
+                <td><input type="text" class="form-control svc-rate svc-num" name="rate_1" inputmode="decimal" placeholder="0.00" /></td>
+                <td><input type="text" class="form-control svc-amount svc-num" name="amount_1" placeholder="0.00" readonly /></td>
                 <td class="text-center align-middle">
                   <button type="button" class="icon-button remove-svc-row" title="Remove" disabled><i class="bi bi-trash text-danger"></i></button>
                 </td>
@@ -280,21 +305,29 @@
         <!-- Section 5: Totals -->
         <h5 class="section-title"><i class="bi bi-calculator"></i> Totals</h5>
         <div class="form-section">
-          <div class="mb-3">
-            <label class="form-label">Subtotal</label>
-            <input type="number" id="subtotal" class="form-control" step="0.01" placeholder="0.00" readonly />
+          <div class="row mb-3">
+            <div class="col-md-4">
+              <label class="form-label">Subtotal</label>
+              <input type="text" id="subtotal" class="form-control svc-num" placeholder="0.00" readonly />
+            </div>
           </div>
-          <div class="mb-3" id="vatRateRow" style="display: none">
-            <label class="form-label">VAT rate (%)</label>
-            <input type="number" id="vatRate" class="form-control" step="0.01" min="0" placeholder="0" />
+          <div class="row mb-3" id="vatRateRow" style="display: none">
+            <div class="col-md-4">
+              <label class="form-label">VAT rate (%)</label>
+              <input type="text" id="vatRate" class="form-control svc-num" inputmode="decimal" placeholder="0" />
+            </div>
           </div>
-          <div class="mb-3" id="vatAmountRow" style="display: none">
-            <label class="form-label">VAT amount</label>
-            <input type="number" id="vatAmount" class="form-control" step="0.01" placeholder="0.00" readonly />
+          <div class="row mb-3" id="vatAmountRow" style="display: none">
+            <div class="col-md-4">
+              <label class="form-label">VAT amount</label>
+              <input type="text" id="vatAmount" class="form-control svc-num" placeholder="0.00" readonly />
+            </div>
           </div>
-          <div class="mb-3">
-            <label class="form-label">Total amount</label>
-            <input type="number" id="totalAmount" class="form-control" step="0.01" placeholder="0.00" readonly />
+          <div class="row mb-3">
+            <div class="col-md-4">
+              <label class="form-label">Total amount</label>
+              <input type="text" id="totalAmount" class="form-control svc-num" placeholder="0.00" readonly />
+            </div>
           </div>
         </div>
 
@@ -327,7 +360,19 @@
         try { window.location.href = BASE_URL + "?page=BillsList"; return; } catch(e2) {}
       }
 
-      // "Is Contractor from EU?" → show/hide VAT ID, VAT rate, VAT amount
+      // Parse numeric value: accept both dot and comma, return float
+      function parseNum(str) {
+        if (!str) return 0;
+        return parseFloat(String(str).replace(",", ".")) || 0;
+      }
+
+      // Format number to 2 decimal places with dot separator
+      function fmt2(n) {
+        return n.toFixed(2);
+      }
+
+      // --- Conditional fields ---
+
       function onEUChange() {
         isEU = document.getElementById("isContractorEU").value === "yes";
         document.getElementById("vatIdRow").style.display = isEU ? "" : "none";
@@ -344,10 +389,21 @@
         recalcTotals();
       }
 
-      // Due date visibility
       function onDueDateChange() {
         document.getElementById("dueDateRow").style.display =
           document.getElementById("yesNoDueDate").value === "yes" ? "" : "none";
+      }
+
+      function onAccountTypeChange() {
+        var hasType = document.getElementById("accountType").value !== "";
+        document.getElementById("bankCodeRow").style.display = hasType ? "" : "none";
+        var bankCodeInput = document.getElementById("bankCode");
+        if (hasType) {
+          bankCodeInput.setAttribute("required", "required");
+        } else {
+          bankCodeInput.removeAttribute("required");
+          bankCodeInput.value = "";
+        }
       }
 
       // --- Services table ---
@@ -365,9 +421,9 @@
           '<td class="text-center align-middle">' + currentRows + '</td>' +
           '<td><input type="text" class="form-control svc-services" name="services_' + currentRows + '" /></td>' +
           '<td><input type="text" class="form-control svc-period" name="period_' + currentRows + '" /></td>' +
-          '<td><input type="number" class="form-control svc-hours" name="hours_' + currentRows + '" step="0.01" min="0" placeholder="0.00" /></td>' +
-          '<td><input type="number" class="form-control svc-rate" name="rate_' + currentRows + '" step="0.01" min="0" placeholder="0.00" /></td>' +
-          '<td><input type="number" class="form-control svc-amount" name="amount_' + currentRows + '" step="0.01" min="0" placeholder="0.00" readonly /></td>' +
+          '<td><input type="text" class="form-control svc-hours svc-num" name="hours_' + currentRows + '" inputmode="decimal" placeholder="0.00" /></td>' +
+          '<td><input type="text" class="form-control svc-rate svc-num" name="rate_' + currentRows + '" inputmode="decimal" placeholder="0.00" /></td>' +
+          '<td><input type="text" class="form-control svc-amount svc-num" name="amount_' + currentRows + '" placeholder="0.00" readonly /></td>' +
           '<td class="text-center align-middle"><button type="button" class="icon-button remove-svc-row" title="Remove"><i class="bi bi-trash text-danger"></i></button></td>';
         tbody.appendChild(tr);
         updateRemoveButtons();
@@ -408,22 +464,22 @@
       }
 
       function calcRowAmount(row) {
-        var hours = parseFloat(row.querySelector(".svc-hours").value) || 0;
-        var rate = parseFloat(row.querySelector(".svc-rate").value) || 0;
-        row.querySelector(".svc-amount").value = (hours * rate).toFixed(2);
+        var hours = parseNum(row.querySelector(".svc-hours").value);
+        var rate = parseNum(row.querySelector(".svc-rate").value);
+        row.querySelector(".svc-amount").value = fmt2(hours * rate);
       }
 
       function recalcTotals() {
         var subtotal = 0;
         document.querySelectorAll("#servicesBody tr").forEach(function (row) {
-          subtotal += parseFloat(row.querySelector(".svc-amount").value) || 0;
+          subtotal += parseNum(row.querySelector(".svc-amount").value);
         });
-        document.getElementById("subtotal").value = subtotal.toFixed(2);
+        document.getElementById("subtotal").value = fmt2(subtotal);
 
-        var vatRate = parseFloat(document.getElementById("vatRate").value) || 0;
+        var vatRate = parseNum(document.getElementById("vatRate").value);
         var vatAmount = isEU ? (subtotal * vatRate) / 100 : 0;
-        document.getElementById("vatAmount").value = vatAmount.toFixed(2);
-        document.getElementById("totalAmount").value = (subtotal + vatAmount).toFixed(2);
+        document.getElementById("vatAmount").value = fmt2(vatAmount);
+        document.getElementById("totalAmount").value = fmt2(subtotal + vatAmount);
       }
 
       function attachRowListeners(row) {
@@ -431,6 +487,21 @@
         var rate = row.querySelector(".svc-rate");
         if (hours) hours.addEventListener("input", function () { calcRowAmount(row); recalcTotals(); });
         if (rate) rate.addEventListener("input", function () { calcRowAmount(row); recalcTotals(); });
+      }
+
+      // Format on blur: ensure 2 decimal places
+      function formatOnBlur(input) {
+        var v = parseNum(input.value);
+        if (input.value.trim() !== "") {
+          input.value = fmt2(v);
+        }
+      }
+
+      function attachBlurFormat(row) {
+        var hours = row.querySelector(".svc-hours");
+        var rate = row.querySelector(".svc-rate");
+        if (hours) hours.addEventListener("blur", function () { formatOnBlur(hours); });
+        if (rate) rate.addEventListener("blur", function () { formatOnBlur(rate); });
       }
 
       // --- Dropdowns ---
@@ -476,6 +547,7 @@
 
         document.getElementById("isContractorEU").addEventListener("change", onEUChange);
         document.getElementById("yesNoDueDate").addEventListener("change", onDueDateChange);
+        document.getElementById("accountType").addEventListener("change", onAccountTypeChange);
         document.getElementById("add-row-btn").addEventListener("click", addServiceRow);
 
         document.getElementById("servicesBody").addEventListener("click", function (e) {
@@ -487,7 +559,18 @@
         document.getElementById("vatRate").addEventListener("input", recalcTotals);
 
         var firstRow = document.querySelector("#servicesBody tr");
-        if (firstRow) attachRowListeners(firstRow);
+        if (firstRow) {
+          attachRowListeners(firstRow);
+          attachBlurFormat(firstRow);
+        }
+
+        // Attach blur formatting to dynamically added rows
+        var origAdd = addServiceRow;
+        addServiceRow = function () {
+          origAdd();
+          var rows = document.querySelectorAll("#servicesBody tr");
+          attachBlurFormat(rows[rows.length - 1]);
+        };
       });
     </script>
   </body>
