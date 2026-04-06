@@ -380,6 +380,14 @@ function updateContract(formData) {
   return updateContractToData(formData);
 }
 
+/**
+ * Get list of all bills
+ * @returns {Array} Array of bill objects
+ */
+function getBillList() {
+  return getBillListFromData();
+}
+
 // Error handling and performance monitoring removed for cleaner code
 
 // Performance monitoring removed for cleaner code
@@ -490,6 +498,8 @@ function getActivePageForNavigation(page, params = {}) {
     case "ContractGenerator":
       // ContractGenerator is part of contracts section
       return "contracts";
+    case "BillsList":
+      return "bills";
     default:
       return "";
   }

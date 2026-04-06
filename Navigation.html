@@ -96,9 +96,10 @@
   var invoicesOk    = ha.invoices === true;
   var creditnotesOk = ha.creditnotes === true;
   var contractsOk   = ha.contracts === true;
+  var billsOk       = ha.bills === true;
 
   var clientsOk     = invoicesOk || creditnotesOk;
-  var contractorsOk = contractsOk;
+  var contractorsOk = contractsOk || billsOk;
 ?>
 
 <nav class="top-nav">
@@ -209,7 +210,7 @@
             <? if (contractorsOk) { ?>
               <a
                 href="#"
-                class="nav-link dropdown-toggle <?= activePage === 'contracts' ? 'active' : '' ?>"
+                class="nav-link dropdown-toggle <?= activePage === 'contracts' || activePage === 'bills' ? 'active' : '' ?>"
                 role="button"
                 data-bs-toggle="dropdown"
               >Contractors</a>
@@ -241,14 +242,19 @@
                   <? } ?>
                 </li>
                 <li>
-                  <a
-                    href="#"
-                    class="dropdown-item"
-                    data-bs-toggle="tooltip"
-                    title="Coming soon"
-                    style="cursor: not-allowed; opacity: 0.6"
-                    onclick="return false;"
-                  >Bills</a>
+                  <? if (billsOk) { ?>
+                    <a
+                      href="<?= baseUrl ?>?page=BillsList"
+                      class="dropdown-item <?= activePage === 'bills' ? 'active' : '' ?>"
+                    >Bills</a>
+                  <? } else { ?>
+                    <a
+                      href="#"
+                      class="dropdown-item disabled-access"
+                      onclick="return false;"
+                      title="No access"
+                    >Bills</a>
+                  <? } ?>
                 </li>
               </ul>
             <? } else { ?>

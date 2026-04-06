@@ -2504,3 +2504,94 @@ function updateContractToData(formData) {
     };
   }
 }
+
+// ── Bills ────────────────────────────────────────────────────────────────────
+
+/**
+ * Get bill list from the Bills sheet
+ * @returns {Array} Array of bill objects
+ */
+function getBillListFromData() {
+  try {
+    var spreadsheet = SpreadsheetApp.openById(CONFIG.BILLS_SPREADSHEET_ID);
+    var sheet = spreadsheet.getSheetByName(CONFIG.SHEETS.BILLS);
+
+    if (!sheet) {
+      console.error("Bills sheet not found");
+      return [];
+    }
+
+    var lastRow = sheet.getLastRow();
+    var lastCol = sheet.getLastColumn();
+    if (lastRow < 2) return [];
+
+    var headers = sheet.getRange(1, 1, 1, lastCol).getValues()[0];
+    var data = sheet.getRange(2, 1, lastRow - 1, lastCol).getValues();
+
+    var indexMap = {};
+    headers.forEach(function (h, i) {
+      if (h) indexMap[h.toString().trim()] = i;
+    });
+
+    var requiredCols = [
+      "Название контрактора",
+      "Номер инвойса",
+      "Дата инвойса",
+      "Общая сумма",
+      "Валюта",
+    ];
+    for (var c = 0; c < requiredCols.length; c++) {
+      if (indexMap[requiredCols[c]] === undefined) {
+        console.error("Bills: missing column " + requiredCols[c]);
+        return [];
+      }
+    }
+
+    var result = [];
+    for (var i = 0; i < data.length; i++) {
+      var row = data[i];
+      if (!row[indexMap["Название контрактора"]]) continue;
+
+      var invoiceDate = row[indexMap["Дата инвойса"]];
+      var formattedDate = "";
+      if (invoiceDate) {
+        if (invoiceDate instanceof Date) {
+          formattedDate = Utilities.formatDate(
+            invoiceDate,
+            Session.getScriptTimeZone(),
+            "dd/MM/yyyy"
+          );
+        } else {
+          formattedDate = invoiceDate.toString();
+        }
+      }
+
+      var totalAmount = row[indexMap["Общая сумма"]];
+      var formattedAmount = "";
+      if (totalAmount !== "" && totalAmount !== null && totalAmount !== undefined) {
+        var num = parseFloat(totalAmount);
+        if (!isNaN(num)) {
+          formattedAmount = num.toLocaleString(undefined, {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2,
+          });
+        } else {
+          formattedAmount = totalAmount.toString();
+        }
+      }
+
+      result.push({
+        contractorName: row[indexMap["Название контрактора"]] || "",
+        invoiceNumber: row[indexMap["Номер инвойса"]] || "",
+        invoiceDate: formattedDate,
+        totalAmount: formattedAmount,
+        currency: row[indexMap["Валюта"]] || "",
+      });
+    }
+
+    return result;
+  } catch (error) {
+    console.error("Error in getBillListFromData:", error);
+    return [];
+  }
+}
