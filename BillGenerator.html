@@ -254,8 +254,8 @@
           </div>
           <div class="row mb-3">
             <div class="col-md-4">
-              <label class="form-label">Is due date necessary?</label>
-              <select id="yesNoDueDate" class="form-select">
+              <label class="form-label">Is due date necessary? <span class="text-danger">*</span> <span class="field-required">Required</span></label>
+              <select id="yesNoDueDate" class="form-select" required>
                 <option value="">Select...</option>
               </select>
             </div>
@@ -592,6 +592,7 @@
           { id: "invoiceNumber", label: "Invoice number" },
           { id: "agreementNumber", label: "Agreement number" },
           { id: "invoiceDate", label: "Invoice date" },
+          { id: "yesNoDueDate", label: "Is due date necessary?" },
         ];
 
         if (isEU) {
@@ -855,6 +856,9 @@
         });
 
         document.getElementById("vatRate").addEventListener("input", recalcTotals);
+
+        // Set UI for mode immediately (hide/show correct buttons)
+        updateUIForMode();
 
         // View mode: load data directly, skip dropdown loading
         if (mode === "view" && billId) {
