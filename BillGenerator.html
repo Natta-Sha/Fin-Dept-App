@@ -411,11 +411,19 @@
 
       // --- Services table ---
 
-      function addServiceRow() {
+      function updateAddRowButton() {
+        var btn = document.getElementById("add-row-btn");
         if (currentRows >= MAX_ROWS) {
-          showValidationError(["Maximum " + MAX_ROWS + " rows allowed."]);
-          return;
+          btn.disabled = true;
+          btn.setAttribute("title", "Maximum " + MAX_ROWS + " rows");
+        } else {
+          btn.disabled = false;
+          btn.removeAttribute("title");
         }
+      }
+
+      function addServiceRow() {
+        if (currentRows >= MAX_ROWS) return;
         currentRows++;
         var tbody = document.getElementById("servicesBody");
         var tr = document.createElement("tr");
@@ -430,6 +438,7 @@
           '<td class="text-center align-middle"><button type="button" class="icon-button remove-svc-row" title="Remove"><i class="bi bi-trash text-danger"></i></button></td>';
         tbody.appendChild(tr);
         updateRemoveButtons();
+        updateAddRowButton();
         attachRowListeners(tr);
       }
 
@@ -440,6 +449,7 @@
           currentRows--;
           renumberRows();
           updateRemoveButtons();
+          updateAddRowButton();
           recalcTotals();
         }
       }
