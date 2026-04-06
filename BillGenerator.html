@@ -157,112 +157,89 @@
         <!-- Section 1: Contractor Information -->
         <h5 class="section-title"><i class="bi bi-person-badge"></i> Contractor Information</h5>
         <div class="form-section">
-          <div class="row mb-3">
-            <div class="col-md-4">
-              <label class="form-label">PE</label>
-              <span class="field-hint"></span>
-              <select id="pe" class="form-select">
-                <option value="">Select...</option>
-              </select>
-            </div>
-            <div class="col-md-4">
-              <label class="form-label">Contractor's name <span class="text-danger">*</span> <span class="field-required">Required</span></label>
-              <span class="field-hint"></span>
-              <input type="text" id="contractorName" class="form-control" required />
-            </div>
-            <div class="col-md-4">
-              <label class="form-label">Contractor's ID <span class="text-danger">*</span> <span class="field-required">Required</span></label>
-              <span class="field-hint"></span>
-              <input type="text" id="contractorId" class="form-control" required />
-            </div>
+          <div class="mb-3">
+            <label class="form-label">PE</label>
+            <select id="pe" class="form-select">
+              <option value="">Select...</option>
+            </select>
           </div>
-          <div class="row mb-3">
-            <div class="col-md-6">
-              <label class="form-label">Contractor's address <span class="text-danger">*</span> <span class="field-required">Required</span></label>
-              <span class="field-hint"></span>
-              <input type="text" id="contractorAddress" class="form-control" required />
-            </div>
-            <div class="col-md-6">
-              <label class="form-label">Contractor's VAT ID</label>
-              <span class="field-hint"></span>
-              <input type="text" id="contractorVatId" class="form-control" />
-            </div>
+          <div class="mb-3">
+            <label class="form-label">Contractor's name <span class="text-danger">*</span> <span class="field-required">Required</span></label>
+            <input type="text" id="contractorName" class="form-control" required />
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Contractor's ID <span class="text-danger">*</span> <span class="field-required">Required</span></label>
+            <input type="text" id="contractorId" class="form-control" required />
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Contractor's address <span class="text-danger">*</span> <span class="field-required">Required</span></label>
+            <input type="text" id="contractorAddress" class="form-control" required />
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Is Contractor from EU?</label>
+            <select id="isContractorEU" class="form-select">
+              <option value="">Select...</option>
+            </select>
+          </div>
+          <div class="mb-3" id="vatIdRow" style="display: none">
+            <label class="form-label">Contractor's VAT ID <span class="text-danger">*</span> <span class="field-required">Required</span></label>
+            <input type="text" id="contractorVatId" class="form-control" />
           </div>
         </div>
 
         <!-- Section 2: Bank Details -->
         <h5 class="section-title"><i class="bi bi-bank"></i> Bank Details</h5>
         <div class="form-section">
-          <div class="row mb-3">
-            <div class="col-md-3">
-              <label class="form-label">Currency <span class="text-danger">*</span> <span class="field-required">Required</span></label>
-              <span class="field-hint"></span>
-              <select id="currency" class="form-select" required>
-                <option value="">Select...</option>
-              </select>
-            </div>
-            <div class="col-md-3">
-              <label class="form-label">Bank account number <span class="text-danger">*</span> <span class="field-required">Required</span></label>
-              <span class="field-hint"></span>
-              <input type="text" id="bankAccountNumber" class="form-control" required />
-            </div>
-            <div class="col-md-3">
-              <label class="form-label">Bank name <span class="text-danger">*</span> <span class="field-required">Required</span></label>
-              <span class="field-hint"></span>
-              <input type="text" id="bankName" class="form-control" required />
-            </div>
-            <div class="col-md-3">
-              <label class="form-label">Bank code</label>
-              <span class="field-hint"></span>
-              <input type="text" id="bankCode" class="form-control" />
-            </div>
+          <div class="mb-3">
+            <label class="form-label">Currency <span class="text-danger">*</span> <span class="field-required">Required</span></label>
+            <select id="currency" class="form-select" required>
+              <option value="">Select...</option>
+            </select>
           </div>
-          <div class="row mb-3">
-            <div class="col-md-3">
-              <label class="form-label">Account type</label>
-              <span class="field-hint"></span>
-              <select id="accountType" class="form-select">
-                <option value="">Select...</option>
-              </select>
-            </div>
+          <div class="mb-3">
+            <label class="form-label">Bank account number <span class="text-danger">*</span> <span class="field-required">Required</span></label>
+            <input type="text" id="bankAccountNumber" class="form-control" required />
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Bank name <span class="text-danger">*</span> <span class="field-required">Required</span></label>
+            <input type="text" id="bankName" class="form-control" required />
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Account type</label>
+            <select id="accountType" class="form-select">
+              <option value="">Select...</option>
+            </select>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Bank code</label>
+            <input type="text" id="bankCode" class="form-control" />
           </div>
         </div>
 
         <!-- Section 3: Invoice Details -->
         <h5 class="section-title"><i class="bi bi-file-earmark-text"></i> Invoice Details</h5>
         <div class="form-section">
-          <div class="row mb-3">
-            <div class="col-md-3">
-              <label class="form-label">Invoice number <span class="text-danger">*</span> <span class="field-required">Required</span></label>
-              <span class="field-hint"></span>
-              <input type="text" id="invoiceNumber" class="form-control" required />
-            </div>
-            <div class="col-md-3">
-              <label class="form-label">Agreement number <span class="text-danger">*</span> <span class="field-required">Required</span></label>
-              <span class="field-hint"></span>
-              <input type="text" id="agreementNumber" class="form-control" required />
-            </div>
-            <div class="col-md-3">
-              <label class="form-label">Invoice date <span class="text-danger">*</span> <span class="field-required">Required</span></label>
-              <span class="field-hint"></span>
-              <input type="date" id="invoiceDate" class="form-control" required />
-            </div>
-            <div class="col-md-3">
-              <label class="form-label">Is due date necessary?</label>
-              <span class="field-hint"></span>
-              <select id="yesNoDueDate" class="form-select">
-                <option value="">Select...</option>
-                <option value="yes">Yes</option>
-                <option value="no">No</option>
-              </select>
-            </div>
+          <div class="mb-3">
+            <label class="form-label">Invoice number <span class="text-danger">*</span> <span class="field-required">Required</span></label>
+            <input type="text" id="invoiceNumber" class="form-control" required />
           </div>
-          <div class="row mb-3">
-            <div class="col-md-3" id="dueDateCol" style="display: none">
-              <label class="form-label">Due date</label>
-              <span class="field-hint"></span>
-              <input type="date" id="dueDate" class="form-control" />
-            </div>
+          <div class="mb-3">
+            <label class="form-label">Agreement number <span class="text-danger">*</span> <span class="field-required">Required</span></label>
+            <input type="text" id="agreementNumber" class="form-control" required />
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Invoice date <span class="text-danger">*</span> <span class="field-required">Required</span></label>
+            <input type="date" id="invoiceDate" class="form-control" required />
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Is due date necessary?</label>
+            <select id="yesNoDueDate" class="form-select">
+              <option value="">Select...</option>
+            </select>
+          </div>
+          <div class="mb-3" id="dueDateRow" style="display: none">
+            <label class="form-label">Due date</label>
+            <input type="date" id="dueDate" class="form-control" />
           </div>
         </div>
 
@@ -303,22 +280,21 @@
         <!-- Section 5: Totals -->
         <h5 class="section-title"><i class="bi bi-calculator"></i> Totals</h5>
         <div class="form-section">
-          <div class="row mb-3">
-            <div class="col-md-3">
-              <label class="form-label">VAT rate (%)</label>
-              <span class="field-hint"></span>
-              <input type="number" id="vatRate" class="form-control" step="0.01" min="0" placeholder="0" />
-            </div>
-            <div class="col-md-3">
-              <label class="form-label">VAT amount</label>
-              <span class="field-hint"></span>
-              <input type="number" id="vatAmount" class="form-control" step="0.01" placeholder="0.00" readonly />
-            </div>
-            <div class="col-md-3">
-              <label class="form-label">Total amount <span class="text-danger">*</span> <span class="field-required">Required</span></label>
-              <span class="field-hint"></span>
-              <input type="number" id="totalAmount" class="form-control" step="0.01" placeholder="0.00" readonly />
-            </div>
+          <div class="mb-3">
+            <label class="form-label">Subtotal</label>
+            <input type="number" id="subtotal" class="form-control" step="0.01" placeholder="0.00" readonly />
+          </div>
+          <div class="mb-3" id="vatRateRow" style="display: none">
+            <label class="form-label">VAT rate (%)</label>
+            <input type="number" id="vatRate" class="form-control" step="0.01" min="0" placeholder="0" />
+          </div>
+          <div class="mb-3" id="vatAmountRow" style="display: none">
+            <label class="form-label">VAT amount</label>
+            <input type="number" id="vatAmount" class="form-control" step="0.01" placeholder="0.00" readonly />
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Total amount</label>
+            <input type="number" id="totalAmount" class="form-control" step="0.01" placeholder="0.00" readonly />
           </div>
         </div>
 
@@ -326,18 +302,16 @@
         <div id="result" class="mt-4"></div>
 
         <!-- Buttons -->
-        <div class="row mt-4">
-          <div class="col-md-12 d-flex justify-content-end gap-2">
-            <button
-              class="btn btn-success"
-              style="cursor: not-allowed; opacity: 0.6"
-              disabled
-            >Confirm</button>
-            <button
-              class="btn btn-outline-secondary"
-              onclick="goToBillsList()"
-            >Cancel</button>
-          </div>
+        <div class="d-flex justify-content-end gap-2 mt-4 mb-4">
+          <button
+            class="btn btn-success"
+            style="cursor: not-allowed; opacity: 0.6"
+            disabled
+          >Confirm</button>
+          <button
+            class="btn btn-outline-secondary"
+            onclick="goToBillsList()"
+          >Cancel</button>
         </div>
       </div>
     </div>
@@ -346,19 +320,38 @@
       var BASE_URL = "<?= baseUrl ?>";
       var MAX_ROWS = 10;
       var currentRows = 1;
+      var isEU = false;
 
       function goToBillsList() {
         try { window.top.location.href = BASE_URL + "?page=BillsList"; return; } catch(e) {}
         try { window.location.href = BASE_URL + "?page=BillsList"; return; } catch(e2) {}
       }
 
-      // Due date visibility
-      document.getElementById("yesNoDueDate").addEventListener("change", function () {
-        document.getElementById("dueDateCol").style.display =
-          this.value === "yes" ? "" : "none";
-      });
+      // "Is Contractor from EU?" → show/hide VAT ID, VAT rate, VAT amount
+      function onEUChange() {
+        isEU = document.getElementById("isContractorEU").value === "yes";
+        document.getElementById("vatIdRow").style.display = isEU ? "" : "none";
+        document.getElementById("vatRateRow").style.display = isEU ? "" : "none";
+        document.getElementById("vatAmountRow").style.display = isEU ? "" : "none";
+        var vatIdInput = document.getElementById("contractorVatId");
+        if (isEU) {
+          vatIdInput.setAttribute("required", "required");
+        } else {
+          vatIdInput.removeAttribute("required");
+          vatIdInput.value = "";
+          document.getElementById("vatRate").value = "";
+        }
+        recalcTotals();
+      }
 
-      // Services table: add row
+      // Due date visibility
+      function onDueDateChange() {
+        document.getElementById("dueDateRow").style.display =
+          document.getElementById("yesNoDueDate").value === "yes" ? "" : "none";
+      }
+
+      // --- Services table ---
+
       function addServiceRow() {
         if (currentRows >= MAX_ROWS) {
           alert("Maximum " + MAX_ROWS + " rows allowed");
@@ -414,7 +407,6 @@
         });
       }
 
-      // Auto-calculate amount = hours * rate per row, then totals
       function calcRowAmount(row) {
         var hours = parseFloat(row.querySelector(".svc-hours").value) || 0;
         var rate = parseFloat(row.querySelector(".svc-rate").value) || 0;
@@ -426,8 +418,10 @@
         document.querySelectorAll("#servicesBody tr").forEach(function (row) {
           subtotal += parseFloat(row.querySelector(".svc-amount").value) || 0;
         });
+        document.getElementById("subtotal").value = subtotal.toFixed(2);
+
         var vatRate = parseFloat(document.getElementById("vatRate").value) || 0;
-        var vatAmount = (subtotal * vatRate) / 100;
+        var vatAmount = isEU ? (subtotal * vatRate) / 100 : 0;
         document.getElementById("vatAmount").value = vatAmount.toFixed(2);
         document.getElementById("totalAmount").value = (subtotal + vatAmount).toFixed(2);
       }
@@ -438,6 +432,8 @@
         if (hours) hours.addEventListener("input", function () { calcRowAmount(row); recalcTotals(); });
         if (rate) rate.addEventListener("input", function () { calcRowAmount(row); recalcTotals(); });
       }
+
+      // --- Dropdowns ---
 
       function populateSelect(id, options) {
         var sel = document.getElementById(id);
@@ -452,13 +448,15 @@
       function loadDropdownOptions() {
         google.script.run
           .withSuccessHandler(function (data) {
-            populateSelect("pe", data.choices || []);
+            var choices = data.choices || [];
+            populateSelect("pe", choices);
+            populateSelect("isContractorEU", choices);
             populateSelect("currency", data.currencies || []);
             populateSelect("accountType", data.accountTypes || []);
 
             var dueDateSel = document.getElementById("yesNoDueDate");
             dueDateSel.innerHTML = '<option value="">Select...</option>';
-            (data.choices || []).forEach(function (val) {
+            choices.forEach(function (val) {
               var opt = document.createElement("option");
               opt.value = val;
               opt.textContent = val;
@@ -471,10 +469,13 @@
           .getBillDropdownOptions();
       }
 
-      // Init
+      // --- Init ---
+
       window.addEventListener("DOMContentLoaded", function () {
         loadDropdownOptions();
 
+        document.getElementById("isContractorEU").addEventListener("change", onEUChange);
+        document.getElementById("yesNoDueDate").addEventListener("change", onDueDateChange);
         document.getElementById("add-row-btn").addEventListener("click", addServiceRow);
 
         document.getElementById("servicesBody").addEventListener("click", function (e) {
@@ -485,7 +486,6 @@
 
         document.getElementById("vatRate").addEventListener("input", recalcTotals);
 
-        // Attach listeners to first row
         var firstRow = document.querySelector("#servicesBody tr");
         if (firstRow) attachRowListeners(firstRow);
       });
