@@ -2867,8 +2867,13 @@ function billMoneyWithSymbol(formData, val) {
   return sym + n.toFixed(2);
 }
 
+/**
+ * DocumentApp replaceText treats "$" in replacement specially; "$$" → one literal "$".
+ */
 function escapeGoogleDocReplacementValue(str) {
-  return String(str).replace(/\$/g, "$$$$");
+  var dollar = String.fromCharCode(36);
+  var oneLiteralDollar = dollar + dollar;
+  return String(str).replace(/\$/g, oneLiteralDollar);
 }
 
 function buildBillDocumentFileName(formData) {
@@ -2918,18 +2923,6 @@ function buildBillDocumentPlaceholderMap(formData) {
   map["{Сумма НДС}"] = billMoneyWithSymbol(formData, formData.vatAmount);
   map["{Общая сумма}"] = billMoneyWithSymbol(formData, formData.totalAmount);
 
-  var services = formData.services && Array.isArray(formData.services)
-    ? formData.services
-    : [];
-  for (var r = 1; r <= 10; r++) {
-    var svc = services[r - 1] || {};
-    map["{Вид услуг" + r + "}"] = (svc.services || "").toString();
-    map["{Период работы" + r + "}"] = (svc.period || "").toString();
-    map["{Часы" + r + "}"] = billFormatTwoDecimals(svc.hours);
-    map["{Рейт" + r + "}"] = billMoneyWithSymbol(formData, svc.rate);
-    map["{Сумма" + r + "}"] = billMoneyWithSymbol(formData, svc.amount);
-  }
-
   return map;
 }
 
@@ -2938,6 +2931,8 @@ function buildBillDocumentPlaceholderMap(formData) {
  */
 function createBillDocument(formData, templateUrl, folderUrl) {
   try {
+    normalizeBillFormServices(formData);
+
     var templateId = extractDocIdFromUrl(templateUrl);
     var folderId = extractFolderIdFromUrl(folderUrl);
     if (!templateId) {
@@ -2955,6 +2950,9 @@ function createBillDocument(formData, templateUrl, folderUrl) {
 
     var doc = DocumentApp.openById(copiedDocId);
     var body = doc.getBody();
+
+    updateBillTable(body, formData);
+
     var phMap = buildBillDocumentPlaceholderMap(formData);
 
     var keys = Object.keys(phMap).sort(function (a, b) {
@@ -2985,6 +2983,37 @@ function createBillDocument(formData, templateUrl, folderUrl) {
 }
 
 /**
+ * google.script.run may deserialize arrays as objects with numeric keys; normalize to Array.
+ */
+function normalizeBillFormServices(formData) {
+  if (!formData) return;
+  var s = formData.services;
+  if (s == null) {
+    formData.services = [];
+    return;
+  }
+  if (Array.isArray(s)) return;
+  if (typeof s === "object") {
+    var nums = [];
+    for (var k in s) {
+      if (Object.prototype.hasOwnProperty.call(s, k) && /^\d+$/.test(k)) {
+        nums.push(Number(k));
+      }
+    }
+    nums.sort(function (a, b) {
+      return a - b;
+    });
+    var out = [];
+    for (var i = 0; i < nums.length; i++) {
+      out.push(s[String(nums[i])]);
+    }
+    formData.services = out.length ? out : [];
+    return;
+  }
+  formData.services = [];
+}
+
+/**
  * Save a new bill to the Bills sheet.
  * Uses header-based column mapping (like contracts).
  * @param {Object} formData - { pe, contractorName, ..., services: [{services, period, hours, rate, amount}, ...] }
@@ -2992,6 +3021,8 @@ function createBillDocument(formData, templateUrl, folderUrl) {
  */
 function saveBillToData(formData) {
   try {
+    normalizeBillFormServices(formData);
+
     var spreadsheet = SpreadsheetApp.openById(CONFIG.BILLS_SPREADSHEET_ID);
     var sheet = spreadsheet.getSheetByName(CONFIG.SHEETS.BILLS);
     if (!sheet) throw new Error("Bills sheet not found");

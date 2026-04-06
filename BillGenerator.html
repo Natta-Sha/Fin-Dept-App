@@ -708,6 +708,9 @@
         if (!validateForm()) return;
 
         var formData = collectFormData();
+        if (Array.isArray(formData.services)) {
+          formData.services = formData.services.slice(0);
+        }
 
         document.getElementById("confirm-btn").disabled = true;
         document.getElementById("spinner").style.display = "inline-block";
@@ -718,11 +721,18 @@
             document.getElementById("spinner").style.display = "none";
             if (result.success) {
               var okHtml =
-                '<div class="alert alert-success">' +
-                '<i class="bi bi-check-circle me-2"></i>Bill saved successfully (ID: ' + result.id + ')';
+                '<div class="alert alert-success mt-4">' +
+                '<strong>Bill created successfully!</strong>';
               if (result.docUrl) {
                 okHtml +=
-                  '<p class="mb-0 mt-2"><a href="' + result.docUrl + '" target="_blank" rel="noopener">Open document</a></p>';
+                  '<div class="card mt-3" style="background-color: #d4edda; border-color: #c3e6cb;">' +
+                  '<div class="card-body">' +
+                  '<h6 class="card-title text-success mb-3">' +
+                  '<i class="bi bi-check-circle"></i> Document generated</h6>' +
+                  '<div class="d-flex flex-wrap gap-2">' +
+                  '<a href="' + result.docUrl + '" target="_blank" rel="noopener" class="btn btn-outline-success btn-sm">' +
+                  '<i class="bi bi-file-earmark-text"></i> Open Google Doc</a>' +
+                  "</div></div></div>";
               }
               if (result.docError) {
                 okHtml +=

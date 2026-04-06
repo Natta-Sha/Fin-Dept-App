@@ -179,6 +179,93 @@ function updateInvoiceTable(body, data) {
 }
 
 /**
+ * Update contractor bill table: header #, Services, Period, Hours, Rate/hour, Amount;
+ * template keeps one header row; data rows are rebuilt from formData.services.
+ * @param {Body} body - Document body
+ * @param {Object} formData - Bill form (services normalized via normalizeBillFormServices)
+ */
+function updateBillTable(body, formData) {
+  normalizeBillFormServices(formData);
+
+  const tables = body.getTables();
+  let targetTable = null;
+
+  for (const table of tables) {
+    const headers = [];
+    for (let i = 0; i < table.getRow(0).getNumCells(); i++) {
+      headers.push(table.getRow(0).getCell(i).getText().trim());
+    }
+
+    if (
+      headers.length >= 6 &&
+      headers[0] === "#" &&
+      headers[1] === "Services" &&
+      headers[2] === "Period" &&
+      headers[3] === "Hours" &&
+      headers[4] === "Rate/hour" &&
+      headers[5] === "Amount"
+    ) {
+      targetTable = table;
+      break;
+    }
+  }
+
+  if (!targetTable) {
+    throw new Error(ERROR_MESSAGES.TABLE_NOT_FOUND);
+  }
+
+  const numRows = targetTable.getNumRows();
+  for (let i = numRows - 1; i > 0; i--) {
+    targetTable.removeRow(i);
+  }
+
+  const currencySym = billCurrencySymbol(formData.currency);
+  const services = formData.services || [];
+  const rows = services.filter(function (row) {
+    if (!row) return false;
+    return (
+      String(row.services || "").trim() ||
+      String(row.period || "").trim() ||
+      String(row.hours || "").trim() ||
+      String(row.rate || "").trim() ||
+      String(row.amount || "").trim()
+    );
+  });
+
+  rows.forEach(function (svc, idx) {
+    const hoursStr = billFormatTwoDecimals(svc.hours);
+    const rateNum = billParseNum(svc.rate);
+    const amtNum = billParseNum(svc.amount);
+    const rateDisplay = isNaN(rateNum)
+      ? ""
+      : formatCurrencyFromUtils(rateNum, currencySym);
+    const amtDisplay = isNaN(amtNum)
+      ? ""
+      : formatCurrencyFromUtils(amtNum, currencySym);
+
+    const cells = [
+      String(idx + 1),
+      (svc.services || "").toString(),
+      (svc.period || "").toString(),
+      hoursStr,
+      rateDisplay,
+      amtDisplay,
+    ];
+
+    const newRow = targetTable.appendTableRow();
+    cells.forEach(function (text, index) {
+      const cellElement = newRow.appendTableCell(text || "");
+      if (index === 3 || index === 4 || index === 5) {
+        cellElement
+          .getChild(0)
+          .asParagraph()
+          .setAlignment(DocumentApp.HorizontalAlignment.RIGHT);
+      }
+    });
+  });
+}
+
+/**
  * Replace placeholders in document
  * @param {Body} body - Document body
  * @param {Object} data - Invoice data
