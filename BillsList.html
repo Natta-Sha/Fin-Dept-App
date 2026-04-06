@@ -207,9 +207,7 @@
               }
 
               var baseUrl = "<?= baseUrl ?>";
-              console.log("Bills loaded, count=" + data.length);
-              data.forEach(function (row, idx) {
-                console.log("Bill[" + idx + "] id=[" + row.id + "] name=[" + row.contractorName + "] link=" + baseUrl + "?page=BillGenerator&id=" + encodeURIComponent(row.id) + "&mode=view");
+              data.forEach(function (row) {
                 table.row.add([
                   row.contractorName || "",
                   row.invoiceNumber || "",

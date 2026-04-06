@@ -2696,12 +2696,10 @@ function getBillDataByIdFromData(id) {
 
     // Find row by ID — same pattern as contracts
     var row = null;
-    console.log("getBillDataByIdFromData: searching for id:", id, "total rows:", data.length);
     for (var i = 1; i < data.length; i++) {
       var rowId = data[i][0];
       if (rowId == id || rowId === id || (rowId && rowId.toString() === id.toString())) {
         row = data[i];
-        console.log("getBillDataByIdFromData: found at row", i);
         break;
       }
     }
@@ -2789,7 +2787,6 @@ function getBillDataByIdFromData(id) {
       });
     }
 
-    console.log("getBillDataByIdFromData: returning result for id=" + id);
     return result;
   } catch (error) {
     console.error("Error in getBillDataByIdFromData:", error, error.stack);
