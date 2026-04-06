@@ -413,13 +413,7 @@
 
       function updateAddRowButton() {
         var btn = document.getElementById("add-row-btn");
-        if (currentRows >= MAX_ROWS) {
-          btn.disabled = true;
-          btn.setAttribute("title", "Maximum " + MAX_ROWS + " rows");
-        } else {
-          btn.disabled = false;
-          btn.removeAttribute("title");
-        }
+        btn.disabled = currentRows >= MAX_ROWS;
       }
 
       function addServiceRow() {
@@ -608,6 +602,15 @@
             if (el) el.classList.remove("is-invalid");
           }
         });
+
+        // At least one service row must have Services filled
+        var hasService = false;
+        document.querySelectorAll("#servicesBody tr").forEach(function (row) {
+          if (row.querySelector(".svc-services").value.trim() !== "") hasService = true;
+        });
+        if (!hasService) {
+          errors.push("At least one row in Services table must be filled (Services field).");
+        }
 
         if (errors.length > 0) {
           showValidationError(errors);
