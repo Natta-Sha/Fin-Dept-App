@@ -147,14 +147,14 @@
       <h2 id="page-title" class="mb-4">Create Bill</h2>
 
       <!-- Loading spinner (shown in view mode while data loads) -->
-      <div id="loading-spinner" class="text-center py-5" style="display: <?= mode === 'view' ? '' : 'none' ?>">
+      <div id="loading-spinner" class="text-center py-5" style="display: <?= (mode === 'view' || mode === 'delete') ? '' : 'none' ?>">
         <div class="spinner-border text-primary" role="status" style="width: 3rem; height: 3rem;">
           <span class="visually-hidden">Loading...</span>
         </div>
         <p class="mt-3 text-muted">Loading bill data...</p>
       </div>
 
-      <div id="bill-form" style="<?= mode === 'view' ? 'display:none' : '' ?>">
+      <div id="bill-form" style="<?= (mode === 'view' || mode === 'delete') ? 'display:none' : '' ?>">
         <!-- Section 1: Contractor Information -->
         <h5 class="section-title"><i class="bi bi-person-badge"></i> Contractor Information</h5>
         <div class="form-section">
@@ -373,12 +373,24 @@
             >Edit</button>
             <button
               class="btn btn-outline-danger"
-              onclick="deleteBill()"
+              onclick="switchToBillMode('delete')"
             >Delete</button>
             <button
               class="btn btn-outline-primary"
               onclick="goToBillsList()"
             >Cancel</button>
+          </div>
+        </div>
+
+        <!-- Delete mode: confirm step (same pattern as Contracts) -->
+        <div id="delete-buttons" class="mt-4 mb-4" style="display: none">
+          <div class="d-flex justify-content-end gap-2">
+            <button type="button" class="btn btn-danger" onclick="confirmDeleteBill()">
+              Confirm Delete
+            </button>
+            <button type="button" class="btn btn-outline-secondary" onclick="switchToBillMode('view')">
+              Cancel
+            </button>
           </div>
         </div>
       </div>
@@ -392,9 +404,49 @@
       var currentRows = 1;
       var isEU = false;
 
+      function safeNavigateToBillsList() {
+        var target = BASE_URL + "?page=BillsList";
+        try {
+          window.top.location.href = target;
+          return;
+        } catch (e) {}
+        try {
+          window.location.href = target;
+          return;
+        } catch (e2) {}
+        if (
+          typeof google !== "undefined" &&
+          google.script &&
+          google.script.host &&
+          google.script.host.close
+        ) {
+          google.script.host.close();
+        }
+      }
+
       function goToBillsList() {
-        try { window.top.location.href = BASE_URL + "?page=BillsList"; return; } catch(e) {}
-        try { window.location.href = BASE_URL + "?page=BillsList"; return; } catch(e2) {}
+        safeNavigateToBillsList();
+      }
+
+      function switchToBillMode(newMode) {
+        var id = (billId || "").toString().trim();
+        if (id) {
+          var target =
+            BASE_URL +
+            "?page=BillGenerator&id=" +
+            encodeURIComponent(id) +
+            "&mode=" +
+            encodeURIComponent(newMode);
+          try {
+            window.top.location.href = target;
+            return;
+          } catch (e) {
+            window.location.href = target;
+            return;
+          }
+        }
+        mode = newMode;
+        updateUIForMode();
       }
 
       function copyBill() {
@@ -405,31 +457,71 @@
         alert("Edit functionality is not yet implemented.");
       }
 
-      function deleteBill() {
+      function confirmDeleteBill() {
         var id = (billId || "").toString().trim();
         if (!id) {
-          alert("Missing bill ID.");
+          alert("Bill ID not found.");
           return;
         }
-        if (
-          !confirm(
-            "Delete this bill and move its Google Doc to trash? This cannot be undone."
-          )
-        ) {
-          return;
-        }
+
+        var mainContent = document.querySelector(".main-content");
+        if (!mainContent) return;
+
+        var viewBtns = document.getElementById("view-buttons");
+        var deleteBtns = document.getElementById("delete-buttons");
+        var billForm = document.getElementById("bill-form");
+        if (billForm) billForm.style.display = "none";
+        if (viewBtns) viewBtns.style.display = "none";
+        if (deleteBtns) deleteBtns.style.display = "none";
+
+        mainContent.innerHTML =
+          '<div class="col-12 text-center py-5">' +
+          '<div class="spinner-border text-primary" role="status">' +
+          '<span class="visually-hidden">Deleting...</span></div>' +
+          '<p class="mt-3">Deleting bill...</p></div>';
+
         google.script.run
-          .withSuccessHandler(function (res) {
-            if (res && res.success) {
-              goToBillsList();
+          .withSuccessHandler(function (result) {
+            if (result && result.success) {
+              mainContent.innerHTML =
+                '<div class="text-center py-5">' +
+                '<div class="alert alert-success d-inline-block" role="alert">' +
+                '<i class="bi bi-check-circle-fill me-2"></i>' +
+                "Bill deleted successfully!" +
+                "</div>" +
+                '<div class="mt-4">' +
+                '<button type="button" class="btn btn-primary px-4 fw-bold" onclick="safeNavigateToBillsList()">' +
+                '<i class="bi bi-arrow-left me-2"></i>Back to the list</button>' +
+                "</div></div>";
             } else {
-              alert(
-                (res && res.message) ? res.message : "Could not delete the bill."
-              );
+              var msg =
+                (result && result.message) ? String(result.message) : "Could not delete the bill.";
+              mainContent.innerHTML =
+                '<div class="text-center py-5">' +
+                '<div class="alert alert-danger d-inline-block" role="alert">' +
+                '<i class="bi bi-exclamation-circle-fill me-2"></i>' +
+                "Error: " +
+                msg.replace(/</g, "&lt;").replace(/>/g, "&gt;") +
+                "</div>" +
+                '<div class="mt-4">' +
+                '<button type="button" class="btn btn-primary px-4 fw-bold" onclick="safeNavigateToBillsList()">' +
+                '<i class="bi bi-arrow-left me-2"></i>Back to the list</button>' +
+                "</div></div>";
             }
           })
-          .withFailureHandler(function (err) {
-            alert("Error: " + err);
+          .withFailureHandler(function (error) {
+            var errText = String(error).replace(/</g, "&lt;").replace(/>/g, "&gt;");
+            mainContent.innerHTML =
+              '<div class="text-center py-5">' +
+              '<div class="alert alert-danger d-inline-block" role="alert">' +
+              '<i class="bi bi-exclamation-circle-fill me-2"></i>' +
+              "Error: " +
+              errText +
+              "</div>" +
+              '<div class="mt-4">' +
+              '<button type="button" class="btn btn-primary px-4 fw-bold" onclick="safeNavigateToBillsList()">' +
+              '<i class="bi bi-arrow-left me-2"></i>Back to the list</button>' +
+              "</div></div>";
           })
           .deleteBillById(id);
       }
@@ -970,14 +1062,21 @@
         var title = document.getElementById("page-title");
         var createBtns = document.getElementById("create-buttons");
         var viewBtns = document.getElementById("view-buttons");
+        var deleteBtns = document.getElementById("delete-buttons");
 
         createBtns.style.display = "none";
         viewBtns.style.display = "none";
+        if (deleteBtns) deleteBtns.style.display = "none";
 
         switch (mode) {
           case "view":
             title.textContent = "Bill - View";
             viewBtns.style.display = "block";
+            setFormReadonly(true);
+            break;
+          case "delete":
+            title.textContent = "Bill - Delete";
+            if (deleteBtns) deleteBtns.style.display = "block";
             setFormReadonly(true);
             break;
           default:
@@ -1021,8 +1120,8 @@
         // Set UI for mode immediately (hide/show correct buttons)
         updateUIForMode();
 
-        // View mode: load data directly, skip dropdown loading
-        if (mode === "view" && billId) {
+        // View / delete mode: load data directly, skip dropdown loading
+        if ((mode === "view" || mode === "delete") && billId) {
           document.getElementById("bill-form").style.display = "none";
           document.getElementById("loading-spinner").style.display = "";
           google.script.run
