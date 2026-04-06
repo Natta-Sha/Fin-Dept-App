@@ -415,6 +415,15 @@ function getBillDataById(id) {
   return getBillDataByIdFromData(id);
 }
 
+/**
+ * Delete bill by ID (sheet row + Google Doc from stored link)
+ * @param {string} id - Bill ID
+ * @returns {Object} { success, message?, note? }
+ */
+function deleteBillById(id) {
+  return deleteBillByIdFromData(id);
+}
+
 // Error handling and performance monitoring removed for cleaner code
 
 // Performance monitoring removed for cleaner code

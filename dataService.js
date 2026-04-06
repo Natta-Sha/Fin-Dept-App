@@ -2507,6 +2507,34 @@ function updateContractToData(formData) {
 
 // ── Bills ────────────────────────────────────────────────────────────────────
 
+/** Sheet column headers for the contractor invoice Google Doc URL (first match wins). */
+var BILL_DOC_URL_COLUMN_CANDIDATES = [
+  "Ссылка",
+  "Google Doc Link",
+  "Ссылка на Google Doc",
+];
+
+function getBillDocUrlColumnIndex_(columnMap) {
+  for (var i = 0; i < BILL_DOC_URL_COLUMN_CANDIDATES.length; i++) {
+    var name = BILL_DOC_URL_COLUMN_CANDIDATES[i];
+    if (columnMap.hasOwnProperty(name)) return columnMap[name];
+  }
+  return -1;
+}
+
+function readBillDocUrlFromRow_(row, indexMap) {
+  for (var i = 0; i < BILL_DOC_URL_COLUMN_CANDIDATES.length; i++) {
+    var ix = indexMap[BILL_DOC_URL_COLUMN_CANDIDATES[i]];
+    if (ix !== undefined) {
+      var v = row[ix];
+      if (v !== null && v !== undefined && String(v).trim() !== "") {
+        return String(v).trim();
+      }
+    }
+  }
+  return "";
+}
+
 /**
  * Get bill list from the Bills sheet
  * @returns {Array} Array of bill objects
@@ -2748,6 +2776,7 @@ function getBillDataByIdFromData(id) {
 
     var result = {
       id: String(row[0] || ""),
+      documentUrl: readBillDocUrlFromRow_(row, indexMap),
       pe: getColValue("ФОП"),
       contractorName: getColValue("Название контрактора"),
       contractorId: getColValue("Номер контрактора"),
@@ -2790,6 +2819,84 @@ function getBillDataByIdFromData(id) {
   } catch (error) {
     console.error("Error in getBillDataByIdFromData:", error, error.stack);
     return { _error: true, _message: String(error), _stack: error.stack ? String(error.stack).substring(0, 300) : "" };
+  }
+}
+
+/**
+ * Delete bill row by ID and trash linked Google Doc (if URL is stored in sheet).
+ * @param {string} id - Bill ID (column A)
+ * @returns {Object} { success, message?, note? }
+ */
+function deleteBillByIdFromData(id) {
+  try {
+    if (!id || id.toString().trim() === "") {
+      return { success: false, message: "Invalid bill ID." };
+    }
+
+    var spreadsheet = SpreadsheetApp.openById(CONFIG.BILLS_SPREADSHEET_ID);
+    var sheet = spreadsheet.getSheetByName(CONFIG.SHEETS.BILLS);
+    if (!sheet) {
+      return { success: false, message: "Bills sheet not found." };
+    }
+
+    var data = sheet.getDataRange().getValues();
+    if (data.length < 2) {
+      return { success: false, message: "Bill not found." };
+    }
+
+    var headers = data[0];
+    var indexMap = {};
+    headers.forEach(function (header, index) {
+      if (header) indexMap[header.toString().trim()] = index;
+    });
+
+    var rowToDelete = -1;
+    var docUrl = "";
+    var idStr = id.toString();
+
+    for (var i = 1; i < data.length; i++) {
+      var rowId = data[i][0];
+      if (
+        rowId == id ||
+        rowId === id ||
+        (rowId !== null &&
+          rowId !== undefined &&
+          rowId.toString() === idStr)
+      ) {
+        rowToDelete = i + 1;
+        docUrl = readBillDocUrlFromRow_(data[i], indexMap);
+        break;
+      }
+    }
+
+    if (rowToDelete === -1) {
+      return { success: false, message: "Bill not found." };
+    }
+
+    var deletedNotes = [];
+
+    if (docUrl) {
+      var docId = extractDocIdFromUrl(docUrl);
+      if (docId) {
+        try {
+          DriveApp.getFileById(docId).setTrashed(true);
+        } catch (err) {
+          var msg = "Google Doc already deleted or not accessible.";
+          Logger.log(msg + " " + err);
+          deletedNotes.push(msg);
+        }
+      }
+    }
+
+    sheet.deleteRow(rowToDelete);
+
+    return {
+      success: true,
+      note: deletedNotes.length ? deletedNotes.join(" ") : undefined,
+    };
+  } catch (error) {
+    console.error("Error deleting bill:", error);
+    return { success: false, message: error.message || String(error) };
   }
 }
 
@@ -3090,6 +3197,7 @@ function saveBillToData(formData) {
     }
 
     sheet.appendRow(rowData);
+    var newRowIndex = sheet.getLastRow();
 
     var docUrl = "";
     var docError = "";
@@ -3120,6 +3228,11 @@ function saveBillToData(formData) {
       }
     } catch (docEx) {
       docError = docEx.toString();
+    }
+
+    var docColIdx = getBillDocUrlColumnIndex_(columnMap);
+    if (docUrl && docColIdx >= 0) {
+      sheet.getRange(newRowIndex, docColIdx + 1).setValue(docUrl);
     }
 
     var message = "Bill saved successfully";
