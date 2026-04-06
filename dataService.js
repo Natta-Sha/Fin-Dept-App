@@ -2548,8 +2548,11 @@ function getBillListFromData() {
     }
 
     var result = [];
+    console.log("getBillListFromData: processing " + data.length + " data rows, lastCol=" + lastCol);
     for (var i = 0; i < data.length; i++) {
       var row = data[i];
+      var rawId = row[0];
+      console.log("  data[" + i + "]: colA=[" + (rawId !== null && rawId !== undefined ? rawId.toString() : "NULL") + "] type=" + typeof rawId + " contractor=[" + (row[indexMap["Название контрактора"]] || "") + "]");
       if (!row[indexMap["Название контрактора"]]) continue;
 
       var invoiceDate = row[indexMap["Дата инвойса"]];
@@ -2675,11 +2678,17 @@ var BILL_DATE_FIELDS = ["invoiceDate", "dueDate"];
  */
 function getBillDataByIdFromData(id) {
   try {
-    if (!id || id.toString().trim() === "") return null;
+    if (!id || id.toString().trim() === "") {
+      console.log("Invalid ID provided to getBillDataByIdFromData");
+      return null;
+    }
 
     var spreadsheet = SpreadsheetApp.openById(CONFIG.BILLS_SPREADSHEET_ID);
     var sheet = spreadsheet.getSheetByName(CONFIG.SHEETS.BILLS);
-    if (!sheet) return null;
+    if (!sheet) {
+      console.log("Bills sheet not found");
+      return null;
+    }
 
     var data = sheet.getDataRange().getValues();
     var headers = data[0];
@@ -2688,73 +2697,88 @@ function getBillDataByIdFromData(id) {
       if (header) indexMap[header.toString().trim()] = index;
     });
 
+    // Find row by ID — same pattern as contracts
     var row = null;
+    console.log("getBillDataByIdFromData: searching for id:", id, "total rows:", data.length);
     for (var i = 1; i < data.length; i++) {
       var rowId = data[i][0];
-      if (rowId && rowId.toString() === id.toString()) {
+      if (rowId == id || rowId === id || (rowId && rowId.toString() === id.toString())) {
         row = data[i];
+        console.log("getBillDataByIdFromData: found at row", i);
         break;
       }
     }
-    if (!row) return null;
 
-    function getCol(name) {
-      var idx = indexMap[name];
-      return idx !== undefined ? (row[idx] || "") : "";
+    if (!row) {
+      console.log("getBillDataByIdFromData: not found, id=" + id);
+      return null;
     }
 
-    function getColDate(name) {
-      var idx = indexMap[name];
-      if (idx === undefined) return "";
-      var val = row[idx];
-      if (!val) return "";
-      if (val instanceof Date) {
-        return Utilities.formatDate(val, Session.getScriptTimeZone(), "yyyy-MM-dd");
+    // Simple helpers — exact same pattern as contracts
+    function getColValue(columnName) {
+      var colIndex = indexMap[columnName];
+      return colIndex !== undefined ? (row[colIndex] || "") : "";
+    }
+
+    function formatDateForInput(dateVal) {
+      if (!dateVal) return "";
+      if (dateVal instanceof Date) {
+        return Utilities.formatDate(dateVal, Session.getScriptTimeZone(), "yyyy-MM-dd");
       }
-      var m = String(val).match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
-      if (m) return m[3] + "-" + m[2] + "-" + m[1];
-      return String(val);
+      var matchSlash = String(dateVal).match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+      if (matchSlash) return matchSlash[3] + "-" + matchSlash[2] + "-" + matchSlash[1];
+      return String(dateVal);
+    }
+
+    function getColDateValue(columnName) {
+      var colIndex = indexMap[columnName];
+      return colIndex !== undefined ? formatDateForInput(row[colIndex]) : "";
     }
 
     var result = {
       id: row[0] || "",
-      pe: getCol("ФОП"),
-      contractorName: getCol("Название контрактора"),
-      contractorId: getCol("Номер контрактора"),
-      contractorAddress: getCol("Адрес контрактора"),
-      isContractorEU: getCol("Контрактор из ЕС"),
-      contractorVatId: getCol("Номер НДС контрактора"),
-      currency: getCol("Валюта"),
-      bankAccountNumber: getCol("Номер банковского счета"),
-      bankName: getCol("Банк"),
-      accountType: getCol("Тип счета"),
-      bankCode: getCol("Код банка"),
-      invoiceNumber: getCol("Номер инвойса"),
-      agreementNumber: getCol("№ договора"),
-      invoiceDate: getColDate("Дата инвойса"),
-      yesNoDueDate: getCol("Необходимость срока оплаты"),
-      dueDate: getColDate("Срок оплаты"),
-      vatRate: getCol("% НДС"),
-      vatAmount: getCol("Сумма НДС"),
-      totalAmount: getCol("Общая сумма"),
+      pe: getColValue("ФОП"),
+      contractorName: getColValue("Название контрактора"),
+      contractorId: getColValue("Номер контрактора"),
+      contractorAddress: getColValue("Адрес контрактора"),
+      isContractorEU: getColValue("Контрактор из ЕС"),
+      contractorVatId: getColValue("Номер НДС контрактора"),
+      currency: getColValue("Валюта"),
+      bankAccountNumber: getColValue("Номер банковского счета"),
+      bankName: getColValue("Банк"),
+      accountType: getColValue("Тип счета"),
+      bankCode: getColValue("Код банка"),
+      invoiceNumber: getColValue("Номер инвойса"),
+      agreementNumber: getColValue("№ договора"),
+      invoiceDate: getColDateValue("Дата инвойса"),
+      yesNoDueDate: getColValue("Необходимость срока оплаты"),
+      dueDate: getColDateValue("Срок оплаты"),
+      vatRate: getColValue("% НДС"),
+      vatAmount: getColValue("Сумма НДС"),
+      totalAmount: getColValue("Общая сумма"),
       services: [],
     };
 
+    // Services — same loop, but using simple helpers
     for (var n = 1; n <= 10; n++) {
-      var svc = getCol("Вид услуг" + n);
-      if (!svc && !getCol("Часы" + n) && !getCol("Рейт" + n) && !getCol("Сумма" + n)) continue;
+      var svc = getColValue("Вид услуг" + n);
+      var hrs = getColValue("Часы" + n);
+      var rt  = getColValue("Рейт" + n);
+      var amt = getColValue("Сумма" + n);
+      if (!svc && !hrs && !rt && !amt) continue;
       result.services.push({
         services: svc,
-        period: getCol("Период работы" + n),
-        hours: getCol("Часы" + n),
-        rate: getCol("Рейт" + n),
-        amount: getCol("Сумма" + n),
+        period: getColValue("Период работы" + n),
+        hours: hrs,
+        rate: rt,
+        amount: amt,
       });
     }
 
+    console.log("getBillDataByIdFromData: returning result for id=" + id);
     return result;
   } catch (error) {
-    console.error("Error in getBillDataByIdFromData:", error);
+    console.error("Error in getBillDataByIdFromData:", error, error.stack);
     return null;
   }
 }

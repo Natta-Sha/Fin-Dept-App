@@ -207,14 +207,16 @@
               }
 
               var baseUrl = "<?= baseUrl ?>";
-              data.forEach(function (row) {
+              console.log("Bills loaded, count=" + data.length);
+              data.forEach(function (row, idx) {
+                console.log("Bill[" + idx + "] id=[" + row.id + "] name=[" + row.contractorName + "] link=" + baseUrl + "?page=BillGenerator&id=" + encodeURIComponent(row.id) + "&mode=view");
                 table.row.add([
                   row.contractorName || "",
                   row.invoiceNumber || "",
                   row.invoiceDate || "",
                   row.totalAmount || "",
                   row.currency || "",
-                  '<a href="' + baseUrl + '?page=BillGenerator&id=' + row.id + '&mode=view" class="btn btn-sm btn-outline-primary" style="white-space: nowrap;">Open details</a>',
+                  '<a href="' + baseUrl + '?page=BillGenerator&id=' + encodeURIComponent(row.id) + '&mode=view" class="btn btn-sm btn-outline-primary" style="white-space: nowrap;">Open details</a>',
                 ]);
               });
 

@@ -146,7 +146,15 @@
     <div class="main-content container py-4">
       <h2 id="page-title" class="mb-4">Create Bill</h2>
 
-      <div id="bill-form">
+      <!-- Loading spinner (shown in view mode while data loads) -->
+      <div id="loading-spinner" class="text-center py-5" style="display: <?= mode === 'view' ? '' : 'none' ?>">
+        <div class="spinner-border text-primary" role="status" style="width: 3rem; height: 3rem;">
+          <span class="visually-hidden">Loading...</span>
+        </div>
+        <p class="mt-3 text-muted">Loading bill data...</p>
+      </div>
+
+      <div id="bill-form" style="<?= mode === 'view' ? 'display:none' : '' ?>">
         <!-- Section 1: Contractor Information -->
         <h5 class="section-title"><i class="bi bi-person-badge"></i> Contractor Information</h5>
         <div class="form-section">
@@ -335,7 +343,7 @@
         <div id="result" class="mt-4"></div>
 
         <!-- Create mode buttons -->
-        <div id="create-buttons" class="d-flex justify-content-end gap-2 mt-4 mb-4">
+        <div id="create-buttons" class="d-flex justify-content-end gap-2 mt-4 mb-4" style="<?= mode === 'view' ? 'display:none !important' : '' ?>">
           <button
             id="confirm-btn"
             class="btn btn-success"
@@ -351,7 +359,7 @@
         </div>
 
         <!-- View mode buttons -->
-        <div id="view-buttons" class="d-flex justify-content-end gap-2 mt-4 mb-4" style="display: none">
+        <div id="view-buttons" class="d-flex justify-content-end gap-2 mt-4 mb-4" style="display: <?= mode === 'view' ? 'flex' : 'none' ?>">
           <button
             class="btn btn-outline-secondary"
             onclick="goToBillsList()"
@@ -732,7 +740,8 @@
       function fillBillFormViewMode(data) {
         if (!data) {
           document.getElementById("result").innerHTML =
-            '<div class="alert alert-danger">Bill not found.</div>';
+            '<div class="alert alert-danger">Bill not found (ID: ' + billId + ').</div>';
+          document.getElementById("view-buttons").style.display = "flex";
           return;
         }
 
@@ -858,13 +867,22 @@
         document.getElementById("vatRate").addEventListener("input", recalcTotals);
 
         // Set UI for mode immediately (hide/show correct buttons)
+        console.log("BillGenerator init: billId=[" + billId + "] mode=[" + mode + "]");
         updateUIForMode();
 
         // View mode: load data directly, skip dropdown loading
         if (mode === "view" && billId) {
+          document.getElementById("bill-form").style.display = "none";
+          document.getElementById("loading-spinner").style.display = "";
           google.script.run
-            .withSuccessHandler(fillBillFormViewMode)
+            .withSuccessHandler(function (data) {
+              document.getElementById("loading-spinner").style.display = "none";
+              document.getElementById("bill-form").style.display = "";
+              fillBillFormViewMode(data);
+            })
             .withFailureHandler(function (err) {
+              document.getElementById("loading-spinner").style.display = "none";
+              document.getElementById("bill-form").style.display = "";
               document.getElementById("result").innerHTML =
                 '<div class="alert alert-danger">Error loading bill: ' + err + '</div>';
             })
