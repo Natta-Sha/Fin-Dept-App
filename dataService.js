@@ -3251,8 +3251,6 @@ function buildBillDocumentPlaceholderMap(formData) {
  */
 function createBillDocument(formData, templateUrl, folderUrl) {
   try {
-    normalizeBillFormServices(formData);
-
     var templateId = extractDocIdFromUrl(templateUrl);
     var folderId = extractFolderIdFromUrl(folderUrl);
     if (!templateId) {
