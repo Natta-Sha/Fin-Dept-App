@@ -190,6 +190,7 @@ function doGet(e) {
     template.invoiceId = e.parameter.invoiceId || e.parameter.id || "";
     template.creditNoteId = e.parameter.invoiceId || e.parameter.id || "";
     template.contractId = e.parameter.contractId || e.parameter.id || "";
+    template.billId = e.parameter.billId || e.parameter.id || "";
     template.mode = e.parameter.mode || "";
 
     // Set active page for navigation
@@ -380,6 +381,58 @@ function updateContract(formData) {
   return updateContractToData(formData);
 }
 
+/**
+ * Get list of all bills
+ * @returns {Array} Array of bill objects
+ */
+function getBillList() {
+  return getBillListFromData();
+}
+
+/**
+ * Get dropdown options for the Bill form
+ * @returns {Object} { choices, currencies, accountTypes }
+ */
+function getBillDropdownOptions() {
+  return getBillDropdownOptionsFromData();
+}
+
+/**
+ * Save a new bill
+ * @param {Object} formData - Bill form data
+ * @returns {Object} { success, id, message }
+ */
+function saveBill(formData) {
+  return saveBillToData(formData);
+}
+
+/**
+ * Get bill data by ID
+ * @param {string} id - Bill ID
+ * @returns {Object} Bill data
+ */
+function getBillDataById(id) {
+  return getBillDataByIdFromData(id);
+}
+
+/**
+ * Delete bill by ID (sheet row + Google Doc from stored link)
+ * @param {string} id - Bill ID
+ * @returns {Object} { success, message?, note? }
+ */
+function deleteBillById(id) {
+  return deleteBillByIdFromData(id);
+}
+
+/**
+ * Update existing bill (overwrite row + recreate doc)
+ * @param {Object} formData - Bill form data including id
+ * @returns {Object} { success, docUrl?, docError?, message }
+ */
+function updateBill(formData) {
+  return updateBillByIdFromData(formData);
+}
+
 // Error handling and performance monitoring removed for cleaner code
 
 // Performance monitoring removed for cleaner code
@@ -490,6 +543,10 @@ function getActivePageForNavigation(page, params = {}) {
     case "ContractGenerator":
       // ContractGenerator is part of contracts section
       return "contracts";
+    case "BillsList":
+      return "bills";
+    case "BillGenerator":
+      return "bills";
     default:
       return "";
   }

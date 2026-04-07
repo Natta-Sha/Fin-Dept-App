@@ -1,0 +1,1357 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <base target="_top" />
+    <meta charset="utf-8" />
+    <title>Bill</title>
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css"
+      rel="stylesheet"
+    />
+    <style>
+      .main-content {
+        padding-top: 1rem;
+      }
+
+      .form-label {
+        font-weight: bold;
+      }
+
+      .section-title {
+        color: #667eea;
+        border-bottom: 2px solid #667eea;
+        padding-bottom: 0.5rem;
+        margin-bottom: 1rem;
+        margin-top: 1.5rem;
+      }
+
+      .form-section {
+        background: #f8f9fa;
+        padding: 1rem;
+        border-radius: 8px;
+        margin-bottom: 1rem;
+      }
+
+      .field-required {
+        color: #dc3545;
+        font-size: 0.75rem;
+        font-style: italic;
+        font-weight: normal;
+      }
+
+      .icon-button {
+        background: none;
+        border: none;
+        padding: 4px;
+        cursor: pointer;
+        color: #6c757d;
+        transition: transform 0.15s ease, color 0.15s ease;
+      }
+
+      .icon-button i {
+        transition: transform 0.15s ease, color 0.15s ease;
+      }
+
+      .icon-button:hover i {
+        color: #000 !important;
+        transform: scale(1.2);
+      }
+
+      .icon-button:focus {
+        outline: none;
+        box-shadow: none;
+      }
+
+      /* Universal button styles */
+      .btn {
+        font-weight: 600 !important;
+        border-radius: 25px !important;
+        padding: 0.75rem 2rem !important;
+        font-size: 1.1rem !important;
+        transition: all 0.3s ease !important;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1) !important;
+        border: none !important;
+      }
+
+      .btn:hover {
+        transform: translateY(-1px) !important;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2) !important;
+      }
+
+      .btn:focus,
+      .btn:active {
+        transform: translateY(-1px) !important;
+      }
+
+      .btn-sm {
+        padding: 0.25rem 0.75rem !important;
+        font-size: 0.8rem !important;
+        border-radius: 15px !important;
+      }
+
+      #add-row-btn {
+        padding: 0.4rem 1rem !important;
+        font-size: 0.9rem !important;
+        border-radius: 20px !important;
+      }
+
+      .btn-primary,
+      .btn-nav {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+        color: white !important;
+      }
+
+      .btn-success {
+        background: linear-gradient(135deg, #28a745 0%, #20692b 100%) !important;
+        color: white !important;
+      }
+
+      .btn-outline-secondary {
+        background: linear-gradient(135deg, rgba(108,117,125,0.1) 0%, rgba(73,80,87,0.1) 100%) !important;
+        color: #6c757d !important;
+        border: 2px solid #6c757d !important;
+      }
+
+      .btn-outline-secondary:hover {
+        background: linear-gradient(135deg, #6c757d 0%, #495057 100%) !important;
+        color: white !important;
+      }
+
+      .btn-outline-primary {
+        background: linear-gradient(135deg, rgba(102,126,234,0.1) 0%, rgba(118,75,162,0.1) 100%) !important;
+        color: #667eea !important;
+        border: 2px solid #667eea !important;
+      }
+
+      .btn-outline-danger {
+        background: linear-gradient(135deg, rgba(220,53,69,0.1) 0%, rgba(176,42,55,0.1) 100%) !important;
+        color: #dc3545 !important;
+        border: 2px solid #dc3545 !important;
+      }
+
+      .svc-num {
+        text-align: right;
+      }
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  </head>
+
+  <body>
+    <?!= getNavigation(activePage) ?>
+
+    <div class="main-content container py-4">
+      <h2 id="page-title" class="mb-4">Create Bill</h2>
+
+      <!-- Loading spinner (shown in view mode while data loads) -->
+      <div id="loading-spinner" class="text-center py-5" style="display: <?= (mode === 'view' || mode === 'edit' || mode === 'copy') ? '' : 'none' ?>">
+        <div class="spinner-border text-primary" role="status" style="width: 3rem; height: 3rem;">
+          <span class="visually-hidden">Loading...</span>
+        </div>
+        <p class="mt-3 text-muted">Loading bill data...</p>
+      </div>
+
+      <div id="bill-form" style="<?= (mode === 'view' || mode === 'edit' || mode === 'copy') ? 'display:none' : '' ?>">
+        <!-- Section 1: Contractor Information -->
+        <h5 class="section-title"><i class="bi bi-person-badge"></i> Contractor Information</h5>
+        <div class="form-section">
+          <div class="row mb-3">
+            <div class="col-md-4">
+              <label class="form-label">PE <span class="text-danger">*</span> <span class="field-required">Required</span></label>
+              <select id="pe" class="form-select" required>
+                <option value="">Select...</option>
+              </select>
+            </div>
+          </div>
+          <div class="row mb-3">
+            <div class="col-md-6">
+              <label class="form-label">Contractor's name <span class="text-danger">*</span> <span class="field-required">Required</span></label>
+              <input type="text" id="contractorName" class="form-control" required />
+            </div>
+          </div>
+          <div class="row mb-3">
+            <div class="col-md-6">
+              <label class="form-label">Contractor's ID <span class="text-danger">*</span> <span class="field-required">Required</span></label>
+              <input type="text" id="contractorId" class="form-control" required />
+            </div>
+          </div>
+          <div class="row mb-3">
+            <div class="col-md-6">
+              <label class="form-label">Contractor's address <span class="text-danger">*</span> <span class="field-required">Required</span></label>
+              <input type="text" id="contractorAddress" class="form-control" required />
+            </div>
+          </div>
+          <div class="row mb-3">
+            <div class="col-md-4">
+              <label class="form-label">Is Contractor from EU? <span class="text-danger">*</span> <span class="field-required">Required</span></label>
+              <select id="isContractorEU" class="form-select" required>
+                <option value="">Select...</option>
+              </select>
+            </div>
+          </div>
+          <div class="row mb-3" id="vatIdRow" style="display: none">
+            <div class="col-md-6">
+              <label class="form-label">Contractor's VAT ID <span class="text-danger">*</span> <span class="field-required">Required</span></label>
+              <input type="text" id="contractorVatId" class="form-control" />
+            </div>
+          </div>
+        </div>
+
+        <!-- Section 2: Bank Details -->
+        <h5 class="section-title"><i class="bi bi-bank"></i> Bank Details</h5>
+        <div class="form-section">
+          <div class="row mb-3">
+            <div class="col-md-4">
+              <label class="form-label">Currency <span class="text-danger">*</span> <span class="field-required">Required</span></label>
+              <select id="currency" class="form-select" required>
+                <option value="">Select...</option>
+              </select>
+            </div>
+          </div>
+          <div class="row mb-3">
+            <div class="col-md-6">
+              <label class="form-label">Bank account number <span class="text-danger">*</span> <span class="field-required">Required</span></label>
+              <input type="text" id="bankAccountNumber" class="form-control" required />
+            </div>
+          </div>
+          <div class="row mb-3">
+            <div class="col-md-6">
+              <label class="form-label">Bank name <span class="text-danger">*</span> <span class="field-required">Required</span></label>
+              <input type="text" id="bankName" class="form-control" required />
+            </div>
+          </div>
+          <div class="row mb-3">
+            <div class="col-md-4">
+              <label class="form-label">Account type</label>
+              <select id="accountType" class="form-select">
+                <option value="">Select...</option>
+              </select>
+            </div>
+          </div>
+          <div class="row mb-3" id="bankCodeRow" style="display: none">
+            <div class="col-md-6">
+              <label class="form-label">Bank code <span class="text-danger">*</span> <span class="field-required">Required</span></label>
+              <input type="text" id="bankCode" class="form-control" />
+            </div>
+          </div>
+        </div>
+
+        <!-- Section 3: Invoice Details -->
+        <h5 class="section-title"><i class="bi bi-file-earmark-text"></i> Invoice Details</h5>
+        <div class="form-section">
+          <div class="row mb-3">
+            <div class="col-md-4">
+              <label class="form-label">Invoice number <span class="text-danger">*</span> <span class="field-required">Required</span></label>
+              <input type="text" id="invoiceNumber" class="form-control" required />
+            </div>
+          </div>
+          <div class="row mb-3">
+            <div class="col-md-4">
+              <label class="form-label">Agreement number <span class="text-danger">*</span> <span class="field-required">Required</span></label>
+              <input type="text" id="agreementNumber" class="form-control" required />
+            </div>
+          </div>
+          <div class="row mb-3">
+            <div class="col-md-4">
+              <label class="form-label">Invoice date <span class="text-danger">*</span> <span class="field-required">Required</span></label>
+              <input type="date" id="invoiceDate" class="form-control" required />
+            </div>
+          </div>
+          <div class="row mb-3">
+            <div class="col-md-4">
+              <label class="form-label">Is due date necessary? <span class="text-danger">*</span> <span class="field-required">Required</span></label>
+              <select id="yesNoDueDate" class="form-select" required>
+                <option value="">Select...</option>
+              </select>
+            </div>
+          </div>
+          <div class="row mb-3" id="dueDateRow" style="display: none">
+            <div class="col-md-4">
+              <label class="form-label">Due date</label>
+              <input type="date" id="dueDate" class="form-control" />
+            </div>
+          </div>
+        </div>
+
+        <!-- Section 4: Services Table -->
+        <h5 class="section-title"><i class="bi bi-list-check"></i> Services</h5>
+        <div class="form-section">
+          <table class="table table-bordered" id="servicesTable">
+            <thead class="table-light">
+              <tr>
+                <th style="width: 40px">#</th>
+                <th>Services</th>
+                <th>Period</th>
+                <th style="width: 130px">Hours</th>
+                <th style="width: 130px">Rate</th>
+                <th style="width: 140px">Amount</th>
+                <th style="width: 40px"></th>
+              </tr>
+            </thead>
+            <tbody id="servicesBody">
+              <tr data-row="1">
+                <td class="text-center align-middle">1</td>
+                <td><input type="text" class="form-control svc-services" name="services_1" /></td>
+                <td><input type="text" class="form-control svc-period" name="period_1" /></td>
+                <td><input type="text" class="form-control svc-hours svc-num" name="hours_1" inputmode="decimal" placeholder="0.00" /></td>
+                <td><input type="text" class="form-control svc-rate svc-num" name="rate_1" inputmode="decimal" placeholder="0.00" /></td>
+                <td><input type="text" class="form-control svc-amount svc-num" name="amount_1" placeholder="0.00" /></td>
+                <td class="text-center align-middle">
+                  <button type="button" class="icon-button remove-svc-row" title="Remove" disabled><i class="bi bi-trash text-danger"></i></button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+          <button type="button" class="btn btn-outline-primary btn-sm" id="add-row-btn">
+            <i class="bi bi-plus-circle me-1"></i>Add row
+          </button>
+        </div>
+
+        <!-- Section 5: Totals -->
+        <h5 class="section-title"><i class="bi bi-calculator"></i> Totals</h5>
+        <div class="form-section">
+          <div class="row mb-3">
+            <div class="col-md-4">
+              <label class="form-label">Subtotal</label>
+              <input type="text" id="subtotal" class="form-control svc-num" placeholder="0.00" readonly />
+            </div>
+          </div>
+          <div class="row mb-3" id="vatRateRow" style="display: none">
+            <div class="col-md-4">
+              <label class="form-label">VAT rate (%) <span class="text-danger">*</span> <span class="field-required">Required when EU</span></label>
+              <input type="text" id="vatRate" class="form-control svc-num" inputmode="decimal" placeholder="0" />
+            </div>
+          </div>
+          <div class="row mb-3" id="vatAmountRow" style="display: none">
+            <div class="col-md-4">
+              <label class="form-label">VAT amount</label>
+              <input type="text" id="vatAmount" class="form-control svc-num" placeholder="0.00" readonly />
+            </div>
+          </div>
+          <div class="row mb-3">
+            <div class="col-md-4">
+              <label class="form-label">Total amount</label>
+              <input type="text" id="totalAmount" class="form-control svc-num" placeholder="0.00" readonly />
+            </div>
+          </div>
+        </div>
+
+        <!-- Result messages -->
+        <div id="result" class="mt-4"></div>
+
+        <!-- Create mode buttons -->
+        <div id="create-buttons" class="mt-4 mb-4" style="display: none">
+          <div class="d-flex justify-content-end gap-2">
+            <button
+              id="confirm-btn"
+              class="btn btn-success"
+              onclick="submitBill()"
+            >Confirm
+              <span id="spinner" class="spinner-border spinner-border-sm ms-2" role="status" style="display: none"></span>
+            </button>
+            <button
+              id="cancel-btn"
+              class="btn btn-outline-secondary"
+              onclick="goToBillsList()"
+            >Cancel</button>
+          </div>
+        </div>
+
+        <!-- View mode buttons -->
+        <div id="view-buttons" class="mt-4 mb-4" style="display: none">
+          <div class="d-flex justify-content-end gap-2">
+            <button
+              class="btn btn-outline-primary"
+              onclick="copyBill()"
+            >Copy</button>
+            <button
+              class="btn btn-outline-secondary"
+              onclick="editBill()"
+            >Edit</button>
+            <button
+              class="btn btn-outline-danger"
+              onclick="confirmDeleteBill()"
+            >Delete</button>
+            <button
+              class="btn btn-outline-primary"
+              onclick="goToBillsList()"
+            >Cancel</button>
+          </div>
+        </div>
+
+        <!-- Edit mode buttons -->
+        <div id="edit-buttons" class="mt-4 mb-4" style="display: none">
+          <div class="d-flex justify-content-end gap-2">
+            <button id="edit-confirm-btn" class="btn btn-success" onclick="submitBillUpdate()">
+              Confirm
+              <span id="edit-spinner" class="spinner-border spinner-border-sm ms-2" role="status" style="display: none"></span>
+            </button>
+            <button id="edit-cancel-btn" class="btn btn-outline-secondary" onclick="goToBillsList()">
+              Cancel
+            </button>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <script>
+      var BASE_URL = "<?= baseUrl ?>";
+      var billId = "<?= billId ?>";
+      var mode = "<?= mode ?>" || "create";
+      var MAX_ROWS = 10;
+      var currentRows = 1;
+      var isEU = false;
+
+      function safeNavigateToBillsList() {
+        var target = BASE_URL + "?page=BillsList";
+        try {
+          window.top.location.href = target;
+          return;
+        } catch (e) {}
+        try {
+          window.location.href = target;
+          return;
+        } catch (e2) {}
+        if (
+          typeof google !== "undefined" &&
+          google.script &&
+          google.script.host &&
+          google.script.host.close
+        ) {
+          google.script.host.close();
+        }
+      }
+
+      function goToBillsList() {
+        safeNavigateToBillsList();
+      }
+
+      function switchToBillMode(newMode) {
+        var id = (billId || "").toString().trim();
+        if (id) {
+          var target =
+            BASE_URL +
+            "?page=BillGenerator&id=" +
+            encodeURIComponent(id) +
+            "&mode=" +
+            encodeURIComponent(newMode);
+          try {
+            window.top.location.href = target;
+            return;
+          } catch (e) {
+            window.location.href = target;
+            return;
+          }
+        }
+        mode = newMode;
+        updateUIForMode();
+      }
+
+      function copyBill() {
+        switchToBillMode("copy");
+      }
+
+      function editBill() {
+        switchToBillMode("edit");
+      }
+
+      function confirmDeleteBill() {
+        var id = (billId || "").toString().trim();
+        if (!id) {
+          alert("Bill ID not found.");
+          return;
+        }
+
+        var mainContent = document.querySelector(".main-content");
+        if (!mainContent) return;
+
+        var viewBtns = document.getElementById("view-buttons");
+        var deleteBtns = document.getElementById("delete-buttons");
+        var billForm = document.getElementById("bill-form");
+        if (billForm) billForm.style.display = "none";
+        if (viewBtns) viewBtns.style.display = "none";
+        if (deleteBtns) deleteBtns.style.display = "none";
+
+        mainContent.innerHTML =
+          '<div class="col-12 text-center py-5">' +
+          '<div class="spinner-border text-primary" role="status">' +
+          '<span class="visually-hidden">Deleting...</span></div>' +
+          '<p class="mt-3">Deleting bill...</p></div>';
+
+        google.script.run
+          .withSuccessHandler(function (result) {
+            if (result && result.success) {
+              mainContent.innerHTML =
+                '<div class="text-center py-5">' +
+                '<div class="alert alert-success d-inline-block" role="alert">' +
+                '<i class="bi bi-check-circle-fill me-2"></i>' +
+                "Bill deleted successfully!" +
+                "</div>" +
+                '<div class="mt-4">' +
+                '<button type="button" class="btn btn-primary px-4 fw-bold" onclick="safeNavigateToBillsList()">' +
+                '<i class="bi bi-arrow-left me-2"></i>Back to the list</button>' +
+                "</div></div>";
+            } else {
+              var msg =
+                (result && result.message) ? String(result.message) : "Could not delete the bill.";
+              mainContent.innerHTML =
+                '<div class="text-center py-5">' +
+                '<div class="alert alert-danger d-inline-block" role="alert">' +
+                '<i class="bi bi-exclamation-circle-fill me-2"></i>' +
+                "Error: " +
+                msg.replace(/</g, "&lt;").replace(/>/g, "&gt;") +
+                "</div>" +
+                '<div class="mt-4">' +
+                '<button type="button" class="btn btn-primary px-4 fw-bold" onclick="safeNavigateToBillsList()">' +
+                '<i class="bi bi-arrow-left me-2"></i>Back to the list</button>' +
+                "</div></div>";
+            }
+          })
+          .withFailureHandler(function (error) {
+            var errText = String(error).replace(/</g, "&lt;").replace(/>/g, "&gt;");
+            mainContent.innerHTML =
+              '<div class="text-center py-5">' +
+              '<div class="alert alert-danger d-inline-block" role="alert">' +
+              '<i class="bi bi-exclamation-circle-fill me-2"></i>' +
+              "Error: " +
+              errText +
+              "</div>" +
+              '<div class="mt-4">' +
+              '<button type="button" class="btn btn-primary px-4 fw-bold" onclick="safeNavigateToBillsList()">' +
+              '<i class="bi bi-arrow-left me-2"></i>Back to the list</button>' +
+              "</div></div>";
+          })
+          .deleteBillById(id);
+      }
+
+      // Parse numeric value: accept both dot and comma, return float
+      function parseNum(str) {
+        if (!str) return 0;
+        return parseFloat(String(str).replace(",", ".")) || 0;
+      }
+
+      // Format number to 2 decimal places with dot separator
+      function fmt2(n) {
+        return n.toFixed(2);
+      }
+
+      // --- Conditional fields ---
+
+      function onEUChange() {
+        isEU = document.getElementById("isContractorEU").value === "yes";
+        document.getElementById("vatIdRow").style.display = isEU ? "" : "none";
+        document.getElementById("vatRateRow").style.display = isEU ? "" : "none";
+        document.getElementById("vatAmountRow").style.display = isEU ? "" : "none";
+        var vatIdInput = document.getElementById("contractorVatId");
+        var vatRateInput = document.getElementById("vatRate");
+        if (isEU) {
+          vatIdInput.setAttribute("required", "required");
+          vatRateInput.setAttribute("required", "required");
+        } else {
+          vatIdInput.removeAttribute("required");
+          vatRateInput.removeAttribute("required");
+          vatIdInput.value = "";
+          document.getElementById("vatRate").value = "";
+        }
+        recalcTotals();
+      }
+
+      function onDueDateChange() {
+        document.getElementById("dueDateRow").style.display =
+          document.getElementById("yesNoDueDate").value === "yes" ? "" : "none";
+      }
+
+      function onAccountTypeChange() {
+        var hasType = document.getElementById("accountType").value !== "";
+        document.getElementById("bankCodeRow").style.display = hasType ? "" : "none";
+        var bankCodeInput = document.getElementById("bankCode");
+        if (hasType) {
+          bankCodeInput.setAttribute("required", "required");
+        } else {
+          bankCodeInput.removeAttribute("required");
+          bankCodeInput.value = "";
+        }
+      }
+
+      // --- Services table ---
+
+      function updateAddRowButton() {
+        var btn = document.getElementById("add-row-btn");
+        btn.disabled = currentRows >= MAX_ROWS;
+      }
+
+      function addServiceRow() {
+        if (currentRows >= MAX_ROWS) return;
+        currentRows++;
+        var tbody = document.getElementById("servicesBody");
+        var tr = document.createElement("tr");
+        tr.setAttribute("data-row", currentRows);
+        tr.innerHTML =
+          '<td class="text-center align-middle">' + currentRows + '</td>' +
+          '<td><input type="text" class="form-control svc-services" name="services_' + currentRows + '" /></td>' +
+          '<td><input type="text" class="form-control svc-period" name="period_' + currentRows + '" /></td>' +
+          '<td><input type="text" class="form-control svc-hours svc-num" name="hours_' + currentRows + '" inputmode="decimal" placeholder="0.00" /></td>' +
+          '<td><input type="text" class="form-control svc-rate svc-num" name="rate_' + currentRows + '" inputmode="decimal" placeholder="0.00" /></td>' +
+          '<td><input type="text" class="form-control svc-amount svc-num" name="amount_' + currentRows + '" placeholder="0.00" /></td>' +
+          '<td class="text-center align-middle"><button type="button" class="icon-button remove-svc-row" title="Remove"><i class="bi bi-trash text-danger"></i></button></td>';
+        tbody.appendChild(tr);
+        updateRemoveButtons();
+        updateAddRowButton();
+        attachRowListeners(tr);
+        syncRowAmountState(tr);
+      }
+
+      function removeServiceRow(btn) {
+        var row = btn.closest("tr");
+        if (row) {
+          row.remove();
+          currentRows--;
+          renumberRows();
+          updateRemoveButtons();
+          updateAddRowButton();
+          recalcTotals();
+        }
+      }
+
+      function renumberRows() {
+        var rows = document.querySelectorAll("#servicesBody tr");
+        rows.forEach(function (row, idx) {
+          var num = idx + 1;
+          row.setAttribute("data-row", num);
+          row.querySelector("td:first-child").textContent = num;
+          row.querySelector(".svc-services").name = "services_" + num;
+          row.querySelector(".svc-period").name = "period_" + num;
+          row.querySelector(".svc-hours").name = "hours_" + num;
+          row.querySelector(".svc-rate").name = "rate_" + num;
+          row.querySelector(".svc-amount").name = "amount_" + num;
+        });
+      }
+
+      function updateRemoveButtons() {
+        var rows = document.querySelectorAll("#servicesBody tr");
+        rows.forEach(function (row) {
+          var btn = row.querySelector(".remove-svc-row");
+          if (btn) btn.disabled = rows.length <= 1;
+        });
+      }
+
+      function rowHasHoursAndRateForCalc(row) {
+        var h = row.querySelector(".svc-hours");
+        var r = row.querySelector(".svc-rate");
+        return h && r && h.value.trim() !== "" && r.value.trim() !== "";
+      }
+
+      function syncRowAmountState(row) {
+        var amt = row.querySelector(".svc-amount");
+        if (!amt) return;
+        if (rowHasHoursAndRateForCalc(row)) {
+          amt.readOnly = true;
+          calcRowAmount(row);
+        } else {
+          amt.readOnly = false;
+        }
+      }
+
+      function calcRowAmount(row) {
+        if (!rowHasHoursAndRateForCalc(row)) return;
+        var hours = parseNum(row.querySelector(".svc-hours").value);
+        var rate = parseNum(row.querySelector(".svc-rate").value);
+        row.querySelector(".svc-amount").value = fmt2(hours * rate);
+      }
+
+      function recalcTotals() {
+        var subtotal = 0;
+        document.querySelectorAll("#servicesBody tr").forEach(function (row) {
+          subtotal += parseNum(row.querySelector(".svc-amount").value);
+        });
+        document.getElementById("subtotal").value = fmt2(subtotal);
+
+        var vatRate = parseNum(document.getElementById("vatRate").value);
+        var vatAmount = isEU ? (subtotal * vatRate) / 100 : 0;
+        document.getElementById("vatAmount").value = fmt2(vatAmount);
+        document.getElementById("totalAmount").value = fmt2(subtotal + vatAmount);
+      }
+
+      function attachRowListeners(row) {
+        var hours = row.querySelector(".svc-hours");
+        var rate = row.querySelector(".svc-rate");
+        var amount = row.querySelector(".svc-amount");
+        if (hours) {
+          hours.addEventListener("input", function () {
+            syncRowAmountState(row);
+            recalcTotals();
+          });
+        }
+        if (rate) {
+          rate.addEventListener("input", function () {
+            syncRowAmountState(row);
+            recalcTotals();
+          });
+        }
+        if (amount) {
+          amount.addEventListener("input", function () {
+            recalcTotals();
+          });
+        }
+      }
+
+      // Format on blur: ensure 2 decimal places
+      function formatOnBlur(input) {
+        var v = parseNum(input.value);
+        if (input.value.trim() !== "") {
+          input.value = fmt2(v);
+        }
+      }
+
+      function formatHoursOnBlur(input) {
+        var t = input.value.trim();
+        if (t === "") return;
+        var n = parseNum(t);
+        if (Math.abs(n - Math.round(n)) < 1e-9) {
+          input.value = String(Math.round(n));
+        } else {
+          input.value = n.toFixed(10).replace(/\.?0+$/, "");
+        }
+      }
+
+      function attachBlurFormat(row) {
+        var hours = row.querySelector(".svc-hours");
+        var rate = row.querySelector(".svc-rate");
+        var amount = row.querySelector(".svc-amount");
+        if (hours) hours.addEventListener("blur", function () { formatHoursOnBlur(hours); });
+        if (rate) rate.addEventListener("blur", function () { formatOnBlur(rate); });
+        if (amount) amount.addEventListener("blur", function () { formatOnBlur(amount); });
+      }
+
+      // --- Dropdowns ---
+
+      function populateSelect(id, options) {
+        var sel = document.getElementById(id);
+        options.forEach(function (val) {
+          var opt = document.createElement("option");
+          opt.value = val;
+          opt.textContent = val;
+          sel.appendChild(opt);
+        });
+      }
+
+      function loadDropdownOptions(callback) {
+        google.script.run
+          .withSuccessHandler(function (data) {
+            var choices = data.choices || [];
+            populateSelect("pe", choices);
+            populateSelect("isContractorEU", choices);
+            populateSelect("currency", data.currencies || []);
+            populateSelect("accountType", data.accountTypes || []);
+
+            var dueDateSel = document.getElementById("yesNoDueDate");
+            dueDateSel.innerHTML = '<option value="">Select...</option>';
+            choices.forEach(function (val) {
+              var opt = document.createElement("option");
+              opt.value = val;
+              opt.textContent = val;
+              dueDateSel.appendChild(opt);
+            });
+            if (callback) callback();
+          })
+          .withFailureHandler(function (err) {
+            console.error("Failed to load dropdown options:", err);
+            if (callback) callback();
+          })
+          .getBillDropdownOptions();
+      }
+
+      function fillDropdownKeepValue(id, options) {
+        var sel = document.getElementById(id);
+        if (!sel) return;
+        var current = sel.value;
+        sel.innerHTML = '<option value="">Select...</option>';
+        if (options && options.length) {
+          options.forEach(function (val) {
+            var opt = document.createElement("option");
+            opt.value = val;
+            opt.textContent = val;
+            if (val === current) opt.selected = true;
+            sel.appendChild(opt);
+          });
+        }
+        if (current && !Array.from(sel.options).some(function (o) { return o.value === current; })) {
+          var extra = document.createElement("option");
+          extra.value = current;
+          extra.textContent = current;
+          extra.selected = true;
+          sel.appendChild(extra);
+        }
+      }
+
+      function loadDropdownOptionsForEdit() {
+        google.script.run
+          .withSuccessHandler(function (data) {
+            var choices = data.choices || [];
+            fillDropdownKeepValue("pe", choices);
+            fillDropdownKeepValue("isContractorEU", choices);
+            fillDropdownKeepValue("currency", data.currencies || []);
+            fillDropdownKeepValue("accountType", data.accountTypes || []);
+            fillDropdownKeepValue("yesNoDueDate", choices);
+          })
+          .withFailureHandler(function (err) {
+            console.error("Failed to load dropdown options for edit:", err);
+          })
+          .getBillDropdownOptions();
+      }
+
+      // --- Submit ---
+
+      function setFormDisabled(disabled) {
+        var inputs = document.querySelectorAll("#bill-form input, #bill-form select, #bill-form button");
+        inputs.forEach(function (el) { el.disabled = disabled; });
+        if (!disabled) updateRemoveButtons();
+      }
+
+      function showValidationError(messages) {
+        var result = document.getElementById("result");
+        result.innerHTML =
+          '<div class="alert alert-danger">' +
+          '<strong>Please fill out the following fields:</strong>' +
+          '<ul>' + messages.map(function (msg) { return '<li>' + msg + '</li>'; }).join('') + '</ul>' +
+          '</div>';
+        result.scrollIntoView({ behavior: "smooth" });
+      }
+
+      function clearValidationError() {
+        document.getElementById("result").innerHTML = "";
+      }
+
+      function validateForm() {
+        var required = [
+          { id: "pe", label: "PE" },
+          { id: "contractorName", label: "Contractor's name" },
+          { id: "contractorId", label: "Contractor's ID" },
+          { id: "contractorAddress", label: "Contractor's address" },
+          { id: "isContractorEU", label: "Is Contractor from EU?" },
+          { id: "currency", label: "Currency" },
+          { id: "bankAccountNumber", label: "Bank account number" },
+          { id: "bankName", label: "Bank name" },
+          { id: "invoiceNumber", label: "Invoice number" },
+          { id: "agreementNumber", label: "Agreement number" },
+          { id: "invoiceDate", label: "Invoice date" },
+          { id: "yesNoDueDate", label: "Is due date necessary?" },
+        ];
+
+        if (isEU) {
+          required.push({ id: "contractorVatId", label: "Contractor's VAT ID" });
+          required.push({ id: "vatRate", label: "VAT rate (%)" });
+        }
+
+        if (document.getElementById("accountType").value !== "") {
+          required.push({ id: "bankCode", label: "Bank code" });
+        }
+
+        var errors = [];
+        required.forEach(function (f) {
+          var el = document.getElementById(f.id);
+          if (!el || !el.value.trim()) {
+            errors.push(f.label + " is required.");
+            if (el) el.classList.add("is-invalid");
+          } else {
+            if (el) el.classList.remove("is-invalid");
+          }
+        });
+
+        // At least one service row must have Services filled
+        var hasService = false;
+        document.querySelectorAll("#servicesBody tr").forEach(function (row) {
+          if (row.querySelector(".svc-services").value.trim() !== "") hasService = true;
+        });
+        if (!hasService) {
+          errors.push("At least one row in Services table must be filled (Services field).");
+        }
+
+        if (errors.length > 0) {
+          showValidationError(errors);
+          return false;
+        }
+        clearValidationError();
+        return true;
+      }
+
+      function collectFormData() {
+        var data = {
+          pe: document.getElementById("pe").value,
+          contractorName: document.getElementById("contractorName").value.trim(),
+          contractorId: document.getElementById("contractorId").value.trim(),
+          contractorAddress: document.getElementById("contractorAddress").value.trim(),
+          isContractorEU: document.getElementById("isContractorEU").value,
+          contractorVatId: document.getElementById("contractorVatId").value.trim(),
+          currency: document.getElementById("currency").value,
+          bankAccountNumber: document.getElementById("bankAccountNumber").value.trim(),
+          bankName: document.getElementById("bankName").value.trim(),
+          accountType: document.getElementById("accountType").value,
+          bankCode: document.getElementById("bankCode").value.trim(),
+          invoiceNumber: document.getElementById("invoiceNumber").value.trim(),
+          agreementNumber: document.getElementById("agreementNumber").value.trim(),
+          invoiceDate: document.getElementById("invoiceDate").value,
+          yesNoDueDate: document.getElementById("yesNoDueDate").value,
+          dueDate: document.getElementById("dueDate").value,
+          vatRate: document.getElementById("vatRate").value.trim(),
+          vatAmount: document.getElementById("vatAmount").value.trim(),
+          totalAmount: document.getElementById("totalAmount").value.trim(),
+          services: [],
+        };
+
+        document.querySelectorAll("#servicesBody tr").forEach(function (row) {
+          data.services.push({
+            services: row.querySelector(".svc-services").value.trim(),
+            period: row.querySelector(".svc-period").value.trim(),
+            hours: row.querySelector(".svc-hours").value.trim(),
+            rate: row.querySelector(".svc-rate").value.trim(),
+            amount: row.querySelector(".svc-amount").value.trim(),
+          });
+        });
+
+        return data;
+      }
+
+      function submitBill() {
+        if (!validateForm()) return;
+
+        var formData = collectFormData();
+        if (Array.isArray(formData.services)) {
+          formData.services = formData.services.slice(0);
+        }
+
+        document.getElementById("confirm-btn").disabled = true;
+        document.getElementById("spinner").style.display = "inline-block";
+        setFormDisabled(true);
+
+        google.script.run
+          .withSuccessHandler(function (result) {
+            document.getElementById("spinner").style.display = "none";
+            if (result.success) {
+              var okHtml =
+                '<div class="alert alert-success mt-4">' +
+                '<strong>Bill created successfully!</strong>';
+              if (result.docUrl) {
+                okHtml +=
+                  '<div class="mt-2">' +
+                  '<a href="' + result.docUrl + '" target="_blank" rel="noopener" class="btn btn-outline-success btn-sm">' +
+                  '<i class="bi bi-file-earmark-text"></i> Open Google Doc</a>' +
+                  "</div>";
+              }
+              if (result.docError) {
+                okHtml +=
+                  '<p class="small text-warning mb-0 mt-2">' +
+                  String(result.docError).replace(/</g, "&lt;").replace(/>/g, "&gt;") +
+                  "</p>";
+              }
+              okHtml += "</div>";
+              document.getElementById("result").innerHTML = okHtml;
+              document.getElementById("confirm-btn").style.display = "none";
+              document.getElementById("cancel-btn").textContent = "Back to Bills";
+              document.getElementById("cancel-btn").disabled = false;
+            } else {
+              alert("Error: " + result.message);
+              setFormDisabled(false);
+              document.getElementById("confirm-btn").disabled = false;
+            }
+          })
+          .withFailureHandler(function (err) {
+            document.getElementById("spinner").style.display = "none";
+            alert("Error saving bill: " + err);
+            setFormDisabled(false);
+            document.getElementById("confirm-btn").disabled = false;
+          })
+          .saveBill(formData);
+      }
+
+      // --- View mode helpers ---
+
+      function setFormReadonly(readonly) {
+        document.querySelectorAll("#bill-form input, #bill-form select").forEach(function (el) {
+          el.disabled = readonly;
+        });
+        var addBtn = document.getElementById("add-row-btn");
+        if (addBtn) addBtn.style.display = readonly ? "none" : "";
+        document.querySelectorAll(".remove-svc-row").forEach(function (btn) {
+          btn.style.display = readonly ? "none" : "";
+        });
+      }
+
+      function setSelectValueViewMode(id, value) {
+        var sel = document.getElementById(id);
+        if (!sel) return;
+        sel.innerHTML = "";
+        if (value) {
+          var opt = document.createElement("option");
+          opt.value = value;
+          opt.textContent = value;
+          opt.selected = true;
+          sel.appendChild(opt);
+        }
+      }
+
+      function fmtView2(val) {
+        if (!val && val !== 0) return "";
+        var n = parseNum(val);
+        return n === 0 && String(val).trim() === "" ? "" : fmt2(n);
+      }
+
+      function fmtViewHours(val) {
+        if (val === "" || val === null || val === undefined) return "";
+        var n = parseNum(val);
+        if (String(val).trim() === "" && n === 0) return "";
+        if (Math.abs(n - Math.round(n)) < 1e-9) return String(Math.round(n));
+        return n.toFixed(10).replace(/\.?0+$/, "");
+      }
+
+      function fmtViewInt(val) {
+        if (!val && val !== 0) return "";
+        var n = parseInt(val, 10);
+        return isNaN(n) ? String(val) : String(n);
+      }
+
+      function fillBillFormViewMode(data) {
+        if (!data || data._error) {
+          var msg = "Bill not found (ID: " + billId + ").";
+          if (data && data._message) {
+            msg += "<br><small><b>Error:</b> " + data._message + "</small>";
+            if (data._stack) msg += "<br><small>" + data._stack + "</small>";
+          }
+          if (data && data._availableIds) {
+            msg += "<br><small><b>IDs in sheet:</b> " + data._availableIds.join(", ") + "</small>";
+          }
+          document.getElementById("result").innerHTML =
+            '<div class="alert alert-danger">' + msg + '</div>';
+          document.getElementById("view-buttons").style.display = "block";
+          return;
+        }
+
+        // Simple fields
+        document.getElementById("contractorName").value = data.contractorName || "";
+        document.getElementById("contractorId").value = data.contractorId || "";
+        document.getElementById("contractorAddress").value = data.contractorAddress || "";
+        document.getElementById("contractorVatId").value = data.contractorVatId || "";
+        document.getElementById("bankAccountNumber").value = data.bankAccountNumber || "";
+        document.getElementById("bankName").value = data.bankName || "";
+        document.getElementById("bankCode").value = data.bankCode || "";
+        document.getElementById("invoiceNumber").value = data.invoiceNumber || "";
+        document.getElementById("agreementNumber").value = data.agreementNumber || "";
+        document.getElementById("invoiceDate").value = data.invoiceDate || "";
+        document.getElementById("dueDate").value = data.dueDate || "";
+
+        // Selects
+        setSelectValueViewMode("pe", data.pe);
+        setSelectValueViewMode("isContractorEU", data.isContractorEU);
+        setSelectValueViewMode("currency", data.currency);
+        setSelectValueViewMode("accountType", data.accountType);
+        setSelectValueViewMode("yesNoDueDate", data.yesNoDueDate);
+
+        // Conditional fields visibility
+        isEU = (data.isContractorEU || "").toLowerCase() === "yes";
+        document.getElementById("vatIdRow").style.display = isEU ? "" : "none";
+        document.getElementById("vatRateRow").style.display = isEU ? "" : "none";
+        document.getElementById("vatAmountRow").style.display = isEU ? "" : "none";
+
+        document.getElementById("dueDateRow").style.display =
+          (data.yesNoDueDate || "").toLowerCase() === "yes" ? "" : "none";
+
+        document.getElementById("bankCodeRow").style.display =
+          data.accountType ? "" : "none";
+
+        // Totals (vatRate = integer, rest = 2 decimals)
+        document.getElementById("vatRate").value = fmtViewInt(data.vatRate);
+        document.getElementById("vatAmount").value = fmtView2(data.vatAmount);
+        document.getElementById("totalAmount").value = fmtView2(data.totalAmount);
+
+        // Services table
+        var tbody = document.getElementById("servicesBody");
+        tbody.innerHTML = "";
+        var services = data.services && data.services.length > 0 ? data.services : [{}];
+        currentRows = 0;
+        services.forEach(function (svc, idx) {
+          currentRows++;
+          var num = idx + 1;
+          var tr = document.createElement("tr");
+          tr.setAttribute("data-row", num);
+          tr.innerHTML =
+            '<td class="text-center align-middle">' + num + '</td>' +
+            '<td><input type="text" class="form-control svc-services" name="services_' + num + '" value="' + (svc.services || "") + '" /></td>' +
+            '<td><input type="text" class="form-control svc-period" name="period_' + num + '" value="' + (svc.period || "") + '" /></td>' +
+            '<td><input type="text" class="form-control svc-hours svc-num" name="hours_' + num + '" value="' + fmtViewHours(svc.hours) + '" /></td>' +
+            '<td><input type="text" class="form-control svc-rate svc-num" name="rate_' + num + '" value="' + fmtView2(svc.rate) + '" /></td>' +
+            '<td><input type="text" class="form-control svc-amount svc-num" name="amount_' + num + '" value="' + fmtView2(svc.amount) + '" readonly /></td>' +
+            '<td class="text-center align-middle"><button type="button" class="icon-button remove-svc-row" title="Remove"><i class="bi bi-trash text-danger"></i></button></td>';
+          tbody.appendChild(tr);
+        });
+
+        // Subtotal
+        var subtotal = 0;
+        document.querySelectorAll("#servicesBody .svc-amount").forEach(function (el) {
+          subtotal += parseNum(el.value);
+        });
+        document.getElementById("subtotal").value = fmt2(subtotal);
+
+        // Update UI
+        updateUIForMode();
+      }
+
+      function fillBillFormEditMode(data) {
+        if (!data || data._error) {
+          var msg = "Bill not found (ID: " + billId + ").";
+          if (data && data._message) msg += "<br><small><b>Error:</b> " + data._message + "</small>";
+          document.getElementById("result").innerHTML =
+            '<div class="alert alert-danger">' + msg + '</div>';
+          updateUIForMode();
+          return;
+        }
+
+        // Simple text fields
+        document.getElementById("contractorName").value = data.contractorName || "";
+        document.getElementById("contractorId").value = data.contractorId || "";
+        document.getElementById("contractorAddress").value = data.contractorAddress || "";
+        document.getElementById("contractorVatId").value = data.contractorVatId || "";
+        document.getElementById("bankAccountNumber").value = data.bankAccountNumber || "";
+        document.getElementById("bankName").value = data.bankName || "";
+        document.getElementById("bankCode").value = data.bankCode || "";
+        document.getElementById("invoiceNumber").value = data.invoiceNumber || "";
+        document.getElementById("agreementNumber").value = data.agreementNumber || "";
+        document.getElementById("invoiceDate").value = data.invoiceDate || "";
+        document.getElementById("dueDate").value = data.dueDate || "";
+
+        // Selects: set temporary value, then load real dropdown options while keeping it
+        setSelectValueViewMode("pe", data.pe);
+        setSelectValueViewMode("isContractorEU", data.isContractorEU);
+        setSelectValueViewMode("currency", data.currency);
+        setSelectValueViewMode("accountType", data.accountType);
+        setSelectValueViewMode("yesNoDueDate", data.yesNoDueDate);
+
+        // Conditional fields visibility
+        isEU = (data.isContractorEU || "").toLowerCase() === "yes";
+        document.getElementById("vatIdRow").style.display = isEU ? "" : "none";
+        document.getElementById("vatRateRow").style.display = isEU ? "" : "none";
+        document.getElementById("vatAmountRow").style.display = isEU ? "" : "none";
+        document.getElementById("dueDateRow").style.display =
+          (data.yesNoDueDate || "").toLowerCase() === "yes" ? "" : "none";
+        document.getElementById("bankCodeRow").style.display =
+          data.accountType ? "" : "none";
+
+        // Totals
+        document.getElementById("vatRate").value = fmtViewInt(data.vatRate);
+        document.getElementById("vatAmount").value = fmtView2(data.vatAmount);
+        document.getElementById("totalAmount").value = fmtView2(data.totalAmount);
+
+        // Services table
+        var tbody = document.getElementById("servicesBody");
+        tbody.innerHTML = "";
+        var services = data.services && data.services.length > 0 ? data.services : [{}];
+        currentRows = 0;
+        services.forEach(function (svc, idx) {
+          currentRows++;
+          var num = idx + 1;
+          var tr = document.createElement("tr");
+          tr.setAttribute("data-row", num);
+          tr.innerHTML =
+            '<td class="text-center align-middle">' + num + '</td>' +
+            '<td><input type="text" class="form-control svc-services" name="services_' + num + '" value="' + (svc.services || "") + '" /></td>' +
+            '<td><input type="text" class="form-control svc-period" name="period_' + num + '" value="' + (svc.period || "") + '" /></td>' +
+            '<td><input type="text" class="form-control svc-hours svc-num" name="hours_' + num + '" value="' + fmtViewHours(svc.hours) + '" inputmode="decimal" /></td>' +
+            '<td><input type="text" class="form-control svc-rate svc-num" name="rate_' + num + '" value="' + fmtView2(svc.rate) + '" inputmode="decimal" /></td>' +
+            '<td><input type="text" class="form-control svc-amount svc-num" name="amount_' + num + '" value="' + fmtView2(svc.amount) + '" /></td>' +
+            '<td class="text-center align-middle"><button type="button" class="icon-button remove-svc-row" title="Remove"><i class="bi bi-trash text-danger"></i></button></td>';
+          tbody.appendChild(tr);
+          attachRowListeners(tr);
+          attachBlurFormat(tr);
+          syncRowAmountState(tr);
+        });
+
+        // Subtotal
+        var subtotal = 0;
+        document.querySelectorAll("#servicesBody .svc-amount").forEach(function (el) {
+          subtotal += parseNum(el.value);
+        });
+        document.getElementById("subtotal").value = fmt2(subtotal);
+
+        updateRemoveButtons();
+        updateAddRowButton();
+
+        // Now load real dropdown options (replaces the single-value selects with full lists)
+        loadDropdownOptionsForEdit();
+
+        updateUIForMode();
+      }
+
+      function submitBillUpdate() {
+        if (!validateForm()) return;
+
+        var formData = collectFormData();
+        formData.id = billId;
+        if (Array.isArray(formData.services)) {
+          formData.services = formData.services.slice(0);
+        }
+
+        var confirmBtn = document.getElementById("edit-confirm-btn");
+        var cancelBtn = document.getElementById("edit-cancel-btn");
+        var spinner = document.getElementById("edit-spinner");
+        if (confirmBtn) confirmBtn.disabled = true;
+        if (cancelBtn) cancelBtn.disabled = true;
+        if (spinner) spinner.style.display = "inline-block";
+        setFormDisabled(true);
+
+        google.script.run
+          .withSuccessHandler(function (result) {
+            if (spinner) spinner.style.display = "none";
+            if (result && result.success) {
+              var mainContent = document.querySelector(".main-content");
+              var html =
+                '<div class="text-center py-5">' +
+                '<div class="alert alert-success d-inline-block" role="alert">' +
+                '<i class="bi bi-check-circle-fill me-2"></i>' +
+                'Bill updated successfully!</div>';
+              if (result.docUrl) {
+                html +=
+                  '<div class="mt-3">' +
+                  '<a href="' + result.docUrl + '" target="_blank" rel="noopener" class="btn btn-success px-4 fw-bold">' +
+                  '<i class="bi bi-file-earmark-text me-2"></i>Open Document</a></div>';
+              }
+              if (result.docError) {
+                html +=
+                  '<p class="small text-warning mt-2">' +
+                  String(result.docError).replace(/</g, "&lt;").replace(/>/g, "&gt;") + '</p>';
+              }
+              html +=
+                '<div class="mt-3">' +
+                '<button type="button" class="btn btn-outline-primary px-4 fw-bold" onclick="safeNavigateToBillsList()">' +
+                '<i class="bi bi-arrow-left me-2"></i>Back to the list</button></div></div>';
+              mainContent.innerHTML = html;
+            } else {
+              alert("Error: " + ((result && result.message) || "Unknown error"));
+              if (confirmBtn) confirmBtn.disabled = false;
+              if (cancelBtn) cancelBtn.disabled = false;
+              setFormDisabled(false);
+            }
+          })
+          .withFailureHandler(function (err) {
+            if (spinner) spinner.style.display = "none";
+            alert("Error updating bill: " + err);
+            if (confirmBtn) confirmBtn.disabled = false;
+            if (cancelBtn) cancelBtn.disabled = false;
+            setFormDisabled(false);
+          })
+          .updateBill(formData);
+      }
+
+      function updateUIForMode() {
+        var title = document.getElementById("page-title");
+        var createBtns = document.getElementById("create-buttons");
+        var viewBtns = document.getElementById("view-buttons");
+        var editBtns = document.getElementById("edit-buttons");
+
+        createBtns.style.display = "none";
+        viewBtns.style.display = "none";
+        if (editBtns) editBtns.style.display = "none";
+
+        switch (mode) {
+          case "view":
+            title.textContent = "Bill - View";
+            viewBtns.style.display = "block";
+            setFormReadonly(true);
+            break;
+          case "edit":
+            title.textContent = "Bill - Edit";
+            if (editBtns) editBtns.style.display = "block";
+            setFormReadonly(false);
+            break;
+          case "copy":
+            title.textContent = "Copy Bill";
+            createBtns.style.display = "block";
+            setFormReadonly(false);
+            break;
+          default:
+            title.textContent = "Create Bill";
+            createBtns.style.display = "block";
+            setFormReadonly(false);
+            break;
+        }
+      }
+
+      // --- Init ---
+
+      window.addEventListener("DOMContentLoaded", function () {
+        document.getElementById("isContractorEU").addEventListener("change", onEUChange);
+        document.getElementById("yesNoDueDate").addEventListener("change", onDueDateChange);
+        document.getElementById("accountType").addEventListener("change", onAccountTypeChange);
+        document.getElementById("add-row-btn").addEventListener("click", addServiceRow);
+
+        // Clear is-invalid on input/change
+        document.getElementById("bill-form").addEventListener("input", function (e) {
+          if (e.target.classList.contains("is-invalid")) {
+            e.target.classList.remove("is-invalid");
+          }
+          clearValidationError();
+        });
+        document.getElementById("bill-form").addEventListener("change", function (e) {
+          if (e.target.classList.contains("is-invalid")) {
+            e.target.classList.remove("is-invalid");
+          }
+          clearValidationError();
+        });
+
+        document.getElementById("servicesBody").addEventListener("click", function (e) {
+          if (e.target.closest(".remove-svc-row")) {
+            removeServiceRow(e.target.closest(".remove-svc-row"));
+          }
+        });
+
+        document.getElementById("vatRate").addEventListener("input", recalcTotals);
+
+        // Set UI for mode immediately (hide/show correct buttons)
+        updateUIForMode();
+
+        // View / Edit / Copy mode: load data, then fill form
+        if ((mode === "view" || mode === "edit" || mode === "copy") && billId) {
+          document.getElementById("bill-form").style.display = "none";
+          document.getElementById("loading-spinner").style.display = "";
+          google.script.run
+            .withSuccessHandler(function (data) {
+              document.getElementById("loading-spinner").style.display = "none";
+              document.getElementById("bill-form").style.display = "";
+              if (mode === "edit" || mode === "copy") {
+                fillBillFormEditMode(data);
+              } else {
+                fillBillFormViewMode(data);
+              }
+            })
+            .withFailureHandler(function (err) {
+              document.getElementById("loading-spinner").style.display = "none";
+              document.getElementById("bill-form").style.display = "";
+              document.getElementById("result").innerHTML =
+                '<div class="alert alert-danger">Error loading bill: ' + err + '</div>';
+            })
+            .getBillDataById(billId);
+          return;
+        }
+
+        // Create mode: load dropdowns
+        loadDropdownOptions();
+
+        var firstRow = document.querySelector("#servicesBody tr");
+        if (firstRow) {
+          attachRowListeners(firstRow);
+          attachBlurFormat(firstRow);
+          syncRowAmountState(firstRow);
+        }
+
+        var origAdd = addServiceRow;
+        addServiceRow = function () {
+          origAdd();
+          var rows = document.querySelectorAll("#servicesBody tr");
+          attachBlurFormat(rows[rows.length - 1]);
+        };
+      });
+    </script>
+  </body>
+</html>

@@ -2504,3 +2504,937 @@ function updateContractToData(formData) {
     };
   }
 }
+
+// ── Bills ────────────────────────────────────────────────────────────────────
+
+/** Sheet column headers for the contractor invoice Google Doc URL (first match wins). */
+var BILL_DOC_URL_COLUMN_CANDIDATES = [
+  "Ссылка",
+  "Google Doc Link",
+  "Ссылка на Google Doc",
+];
+
+function getBillDocUrlColumnIndex_(columnMap) {
+  for (var i = 0; i < BILL_DOC_URL_COLUMN_CANDIDATES.length; i++) {
+    var name = BILL_DOC_URL_COLUMN_CANDIDATES[i];
+    if (columnMap.hasOwnProperty(name)) return columnMap[name];
+  }
+  return -1;
+}
+
+function readBillDocUrlFromRow_(row, indexMap) {
+  for (var i = 0; i < BILL_DOC_URL_COLUMN_CANDIDATES.length; i++) {
+    var ix = indexMap[BILL_DOC_URL_COLUMN_CANDIDATES[i]];
+    if (ix !== undefined) {
+      var v = row[ix];
+      if (v !== null && v !== undefined && String(v).trim() !== "") {
+        return String(v).trim();
+      }
+    }
+  }
+  return "";
+}
+
+/**
+ * Get bill list from the Bills sheet
+ * @returns {Array} Array of bill objects
+ */
+function getBillListFromData() {
+  try {
+    var spreadsheet = SpreadsheetApp.openById(CONFIG.BILLS_SPREADSHEET_ID);
+    var sheet = spreadsheet.getSheetByName(CONFIG.SHEETS.BILLS);
+
+    if (!sheet) {
+      console.error("Bills sheet not found");
+      return [];
+    }
+
+    var lastRow = sheet.getLastRow();
+    var lastCol = sheet.getLastColumn();
+    if (lastRow < 2) return [];
+
+    var headers = sheet.getRange(1, 1, 1, lastCol).getValues()[0];
+    var data = sheet.getRange(2, 1, lastRow - 1, lastCol).getValues();
+
+    var indexMap = {};
+    headers.forEach(function (h, i) {
+      if (h) indexMap[h.toString().trim()] = i;
+    });
+
+    var requiredCols = [
+      "Название контрактора",
+      "Номер инвойса",
+      "Дата инвойса",
+      "Общая сумма",
+      "Валюта",
+    ];
+    for (var c = 0; c < requiredCols.length; c++) {
+      if (indexMap[requiredCols[c]] === undefined) {
+        console.error("Bills: missing column " + requiredCols[c]);
+        return [];
+      }
+    }
+
+    var result = [];
+    for (var i = 0; i < data.length; i++) {
+      var row = data[i];
+      if (!row[indexMap["Название контрактора"]]) continue;
+
+      var invoiceDate = row[indexMap["Дата инвойса"]];
+      var formattedDate = "";
+      if (invoiceDate) {
+        if (invoiceDate instanceof Date) {
+          formattedDate = Utilities.formatDate(
+            invoiceDate,
+            Session.getScriptTimeZone(),
+            "dd/MM/yyyy"
+          );
+        } else {
+          formattedDate = invoiceDate.toString();
+        }
+      }
+
+      var totalAmount = row[indexMap["Общая сумма"]];
+      var formattedAmount = "";
+      if (totalAmount !== "" && totalAmount !== null && totalAmount !== undefined) {
+        var num = parseFloat(totalAmount);
+        if (!isNaN(num)) {
+          formattedAmount = num.toLocaleString(undefined, {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2,
+          });
+        } else {
+          formattedAmount = totalAmount.toString();
+        }
+      }
+
+      result.push({
+        id: row[0] || "",
+        contractorName: row[indexMap["Название контрактора"]] || "",
+        agreementNumber: indexMap["№ договора"] !== undefined ? (row[indexMap["№ договора"]] || "").toString() : "",
+        invoiceNumber: row[indexMap["Номер инвойса"]] || "",
+        invoiceDate: formattedDate,
+        totalAmount: formattedAmount,
+        currency: row[indexMap["Валюта"]] || "",
+        isContractorEU: indexMap["Контрактор из ЕС"] !== undefined ? (row[indexMap["Контрактор из ЕС"]] || "").toString() : "",
+      });
+    }
+
+    return result;
+  } catch (error) {
+    console.error("Error in getBillListFromData:", error);
+    return [];
+  }
+}
+
+/**
+ * Get dropdown options for the Bill form from the Bills spreadsheet, Lists sheet.
+ * Column A: Choice (yes/no), Column B: Currency, Column C: Account type
+ */
+function getBillDropdownOptionsFromData() {
+  try {
+    var spreadsheet = SpreadsheetApp.openById(CONFIG.BILLS_SPREADSHEET_ID);
+    var listsSheet = spreadsheet.getSheetByName("Lists");
+    if (!listsSheet) {
+      return { choices: [], currencies: [], accountTypes: [] };
+    }
+
+    var data = listsSheet.getDataRange().getValues();
+    var choices = [];
+    var currencies = [];
+    var accountTypes = [];
+
+    for (var i = 1; i < data.length; i++) {
+      var row = data[i];
+      if (row[0] && row[0].toString().trim() !== "") {
+        var v = row[0].toString().trim();
+        if (choices.indexOf(v) === -1) choices.push(v);
+      }
+      if (row[1] && row[1].toString().trim() !== "") {
+        var v2 = row[1].toString().trim();
+        if (currencies.indexOf(v2) === -1) currencies.push(v2);
+      }
+      if (row[2] && row[2].toString().trim() !== "") {
+        var v3 = row[2].toString().trim();
+        if (accountTypes.indexOf(v3) === -1) accountTypes.push(v3);
+      }
+    }
+
+    return {
+      choices: choices,
+      currencies: currencies,
+      accountTypes: accountTypes,
+    };
+  } catch (error) {
+    console.error("Error in getBillDropdownOptionsFromData:", error);
+    return { choices: [], currencies: [], accountTypes: [] };
+  }
+}
+
+/**
+ * Field mapping: bill form field ID -> Bills sheet column name
+ */
+var BILL_FIELD_MAPPING = {
+  pe: "ФОП",
+  contractorName: "Название контрактора",
+  contractorId: "Номер контрактора",
+  contractorAddress: "Адрес контрактора",
+  isContractorEU: "Контрактор из ЕС",
+  contractorVatId: "Номер НДС контрактора",
+  currency: "Валюта",
+  bankAccountNumber: "Номер банковского счета",
+  bankName: "Банк",
+  accountType: "Тип счета",
+  bankCode: "Код банка",
+  invoiceNumber: "Номер инвойса",
+  agreementNumber: "№ договора",
+  invoiceDate: "Дата инвойса",
+  yesNoDueDate: "Необходимость срока оплаты",
+  dueDate: "Срок оплаты",
+  vatRate: "% НДС",
+  vatAmount: "Сумма НДС",
+  totalAmount: "Общая сумма",
+};
+
+var BILL_DATE_FIELDS = ["invoiceDate", "dueDate"];
+
+/**
+ * Get bill data by ID from the Bills sheet.
+ * @param {string} id - Bill ID (column A)
+ * @returns {Object|null} Bill data object or null
+ */
+function getBillDataByIdFromData(id) {
+  try {
+    if (!id || id.toString().trim() === "") {
+      console.log("Invalid ID provided to getBillDataByIdFromData");
+      return null;
+    }
+
+    var spreadsheet = SpreadsheetApp.openById(CONFIG.BILLS_SPREADSHEET_ID);
+    var sheet = spreadsheet.getSheetByName(CONFIG.SHEETS.BILLS);
+    if (!sheet) {
+      console.log("Bills sheet not found");
+      return null;
+    }
+
+    var dataRange = sheet.getDataRange();
+    var data = dataRange.getValues();
+    var displayData = dataRange.getDisplayValues();
+    var headers = data[0];
+    var indexMap = {};
+    headers.forEach(function (header, index) {
+      if (header) indexMap[header.toString().trim()] = index;
+    });
+
+    // Find row by ID — same pattern as contracts
+    var row = null;
+    var displayRow = null;
+    for (var i = 1; i < data.length; i++) {
+      var rowId = data[i][0];
+      if (rowId == id || rowId === id || (rowId && rowId.toString() === id.toString())) {
+        row = data[i];
+        displayRow = displayData[i];
+        break;
+      }
+    }
+
+    if (!row) {
+      var allIds = [];
+      for (var j = 1; j < data.length; j++) {
+        var cellA = data[j][0];
+        allIds.push("[" + (cellA !== null && cellA !== undefined ? cellA.toString().substring(0, 12) : "NULL") + "...] type=" + typeof cellA);
+      }
+      return { _error: true, _searchId: String(id), _availableIds: allIds };
+    }
+
+    // Simple helpers — always return strings to avoid serialization issues
+    function getColValue(columnName) {
+      var colIndex = indexMap[columnName];
+      if (colIndex === undefined) return "";
+      var val = row[colIndex];
+      if (val === null || val === undefined || val === "") return "";
+      if (val instanceof Date) {
+        return Utilities.formatDate(val, Session.getScriptTimeZone(), "dd/MM/yyyy");
+      }
+      return String(val);
+    }
+
+    function getDisplayColValue(columnName) {
+      var colIndex = indexMap[columnName];
+      if (colIndex === undefined) return "";
+      if (displayRow) return displayRow[colIndex] || "";
+      var val = row[colIndex];
+      if (val === null || val === undefined || val === "") return "";
+      return String(val);
+    }
+
+    function formatDateForInput(dateVal) {
+      if (!dateVal) return "";
+      if (dateVal instanceof Date) {
+        return Utilities.formatDate(dateVal, Session.getScriptTimeZone(), "yyyy-MM-dd");
+      }
+      var matchSlash = String(dateVal).match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+      if (matchSlash) return matchSlash[3] + "-" + matchSlash[2] + "-" + matchSlash[1];
+      return String(dateVal);
+    }
+
+    function getColDateValue(columnName) {
+      var colIndex = indexMap[columnName];
+      if (colIndex === undefined) return "";
+      try {
+        return formatDateForInput(row[colIndex]);
+      } catch (e) {
+        console.error("getColDateValue('" + columnName + "') error:", e);
+        return "";
+      }
+    }
+
+    var result = {
+      id: String(row[0] || ""),
+      documentUrl: readBillDocUrlFromRow_(row, indexMap),
+      pe: getColValue("ФОП"),
+      contractorName: getColValue("Название контрактора"),
+      contractorId: getColValue("Номер контрактора"),
+      contractorAddress: getColValue("Адрес контрактора"),
+      isContractorEU: getColValue("Контрактор из ЕС"),
+      contractorVatId: getColValue("Номер НДС контрактора"),
+      currency: getColValue("Валюта"),
+      bankAccountNumber: getColValue("Номер банковского счета"),
+      bankName: getColValue("Банк"),
+      accountType: getColValue("Тип счета"),
+      bankCode: getColValue("Код банка"),
+      invoiceNumber: getColValue("Номер инвойса"),
+      agreementNumber: getColValue("№ договора"),
+      invoiceDate: getColDateValue("Дата инвойса"),
+      yesNoDueDate: getColValue("Необходимость срока оплаты"),
+      dueDate: getColDateValue("Срок оплаты"),
+      vatRate: getColValue("% НДС"),
+      vatAmount: getColValue("Сумма НДС"),
+      totalAmount: getColValue("Общая сумма"),
+      services: [],
+    };
+
+    // Services — same loop, but using simple helpers
+    for (var n = 1; n <= 10; n++) {
+      var svc = getColValue("Вид услуг" + n);
+      var hrs = getColValue("Часы" + n);
+      var rt  = getColValue("Рейт" + n);
+      var amt = getColValue("Сумма" + n);
+      if (!svc && !hrs && !rt && !amt) continue;
+      result.services.push({
+        services: svc,
+        period: getDisplayColValue("Период работы" + n),
+        hours: hrs,
+        rate: rt,
+        amount: amt,
+      });
+    }
+
+    return result;
+  } catch (error) {
+    console.error("Error in getBillDataByIdFromData:", error, error.stack);
+    return { _error: true, _message: String(error), _stack: error.stack ? String(error.stack).substring(0, 300) : "" };
+  }
+}
+
+/**
+ * Delete bill row by ID and trash linked Google Doc (if URL is stored in sheet).
+ * @param {string} id - Bill ID (column A)
+ * @returns {Object} { success, message?, note? }
+ */
+function deleteBillByIdFromData(id) {
+  try {
+    if (!id || id.toString().trim() === "") {
+      return { success: false, message: "Invalid bill ID." };
+    }
+
+    var spreadsheet = SpreadsheetApp.openById(CONFIG.BILLS_SPREADSHEET_ID);
+    var sheet = spreadsheet.getSheetByName(CONFIG.SHEETS.BILLS);
+    if (!sheet) {
+      return { success: false, message: "Bills sheet not found." };
+    }
+
+    var data = sheet.getDataRange().getValues();
+    if (data.length < 2) {
+      return { success: false, message: "Bill not found." };
+    }
+
+    var headers = data[0];
+    var indexMap = {};
+    headers.forEach(function (header, index) {
+      if (header) indexMap[header.toString().trim()] = index;
+    });
+
+    var rowToDelete = -1;
+    var docUrl = "";
+    var idStr = id.toString();
+
+    for (var i = 1; i < data.length; i++) {
+      var rowId = data[i][0];
+      if (
+        rowId == id ||
+        rowId === id ||
+        (rowId !== null &&
+          rowId !== undefined &&
+          rowId.toString() === idStr)
+      ) {
+        rowToDelete = i + 1;
+        docUrl = readBillDocUrlFromRow_(data[i], indexMap);
+        break;
+      }
+    }
+
+    if (rowToDelete === -1) {
+      return { success: false, message: "Bill not found." };
+    }
+
+    var deletedNotes = [];
+
+    if (docUrl) {
+      var docId = extractDocIdFromUrl(docUrl);
+      if (docId) {
+        try {
+          DriveApp.getFileById(docId).setTrashed(true);
+        } catch (err) {
+          var msg = "Google Doc already deleted or not accessible.";
+          Logger.log(msg + " " + err);
+          deletedNotes.push(msg);
+        }
+      }
+    }
+
+    sheet.deleteRow(rowToDelete);
+
+    return {
+      success: true,
+      note: deletedNotes.length ? deletedNotes.join(" ") : undefined,
+    };
+  } catch (error) {
+    console.error("Error deleting bill:", error);
+    return { success: false, message: error.message || String(error) };
+  }
+}
+
+/**
+ * Update existing bill: overwrite row data, trash old doc, recreate doc from template.
+ * @param {Object} formData - { id, pe, contractorName, ... services: [...] }
+ * @returns {Object} { success, docUrl?, docError?, message }
+ */
+function updateBillByIdFromData(formData) {
+  try {
+    var billId = (formData.id || "").toString().trim();
+    if (!billId) {
+      return { success: false, message: "Invalid bill ID." };
+    }
+
+    normalizeBillFormServices(formData);
+
+    var spreadsheet = SpreadsheetApp.openById(CONFIG.BILLS_SPREADSHEET_ID);
+    var sheet = spreadsheet.getSheetByName(CONFIG.SHEETS.BILLS);
+    if (!sheet) {
+      return { success: false, message: "Bills sheet not found." };
+    }
+
+    var data = sheet.getDataRange().getValues();
+    var headers = data[0];
+    var columnMap = {};
+    headers.forEach(function (header, index) {
+      if (header) columnMap[header.toString().trim()] = index;
+    });
+
+    var rowIndex = -1;
+    var oldDocUrl = "";
+    for (var i = 1; i < data.length; i++) {
+      var rowId = data[i][0];
+      if (
+        rowId == billId ||
+        rowId === billId ||
+        (rowId !== null && rowId !== undefined && rowId.toString() === billId)
+      ) {
+        rowIndex = i + 1;
+        oldDocUrl = readBillDocUrlFromRow_(data[i], columnMap);
+        break;
+      }
+    }
+    if (rowIndex === -1) {
+      return { success: false, message: "Bill not found." };
+    }
+
+    // --- Trash old document ---
+    if (oldDocUrl) {
+      var oldDocId = extractDocIdFromUrl(oldDocUrl);
+      if (oldDocId) {
+        try {
+          DriveApp.getFileById(oldDocId).setTrashed(true);
+        } catch (err) {
+          Logger.log("Could not trash old bill doc: " + err);
+        }
+      }
+    }
+
+    // --- Overwrite row (keep ID in column A, update everything else) ---
+    Object.keys(formData).forEach(function (fieldId) {
+      if (fieldId === "services" || fieldId === "id") return;
+      var colName = BILL_FIELD_MAPPING[fieldId];
+      if (colName && columnMap.hasOwnProperty(colName)) {
+        var value = formData[fieldId] || "";
+        if (BILL_DATE_FIELDS.indexOf(fieldId) !== -1 && value) {
+          value = formatDateForBill(value);
+        }
+        sheet.getRange(rowIndex, columnMap[colName] + 1).setValue(value);
+      }
+    });
+
+    // Clear old service columns, then write new
+    for (var n = 1; n <= 10; n++) {
+      var svcCols = {
+        services: "Вид услуг" + n,
+        period: "Период работы" + n,
+        hours: "Часы" + n,
+        rate: "Рейт" + n,
+        amount: "Сумма" + n,
+      };
+      Object.keys(svcCols).forEach(function (key) {
+        if (columnMap.hasOwnProperty(svcCols[key])) {
+          sheet.getRange(rowIndex, columnMap[svcCols[key]] + 1).setValue("");
+        }
+      });
+    }
+    if (formData.services && Array.isArray(formData.services)) {
+      formData.services.forEach(function (svc, idx) {
+        var num = idx + 1;
+        var cols = {
+          services: "Вид услуг" + num,
+          period: "Период работы" + num,
+          hours: "Часы" + num,
+          rate: "Рейт" + num,
+          amount: "Сумма" + num,
+        };
+        Object.keys(cols).forEach(function (key) {
+          if (columnMap.hasOwnProperty(cols[key])) {
+            sheet.getRange(rowIndex, columnMap[cols[key]] + 1).setValue(svc[key] || "");
+          }
+        });
+      });
+    }
+
+    // --- Create new document ---
+    var docUrl = "";
+    var docError = "";
+    try {
+      var folderUrl = getBillStorageFolderUrlFromData();
+      var isEU =
+        (formData.isContractorEU || "").toString().trim().toLowerCase() === "yes";
+      var templateUrl = getBillTemplateUrlForEUFromData(isEU);
+      if (!folderUrl) {
+        docError = "Bills storage B1 is empty.";
+      } else if (!templateUrl) {
+        docError = "No template URL for EU=" + (isEU ? "yes" : "no") + ".";
+      } else {
+        var docResult = createBillDocument(formData, templateUrl, folderUrl);
+        if (docResult.success) {
+          docUrl = docResult.documentUrl;
+        } else {
+          docError = docResult.error || "Document creation failed.";
+        }
+      }
+    } catch (docEx) {
+      docError = docEx.toString();
+    }
+
+    // Write new doc URL
+    var docColIdx = getBillDocUrlColumnIndex_(columnMap);
+    if (docColIdx >= 0) {
+      sheet.getRange(rowIndex, docColIdx + 1).setValue(docUrl || "");
+    }
+
+    var message = "Bill updated successfully";
+    if (docUrl) {
+      message += ". Document recreated.";
+    } else if (docError) {
+      message += ". Document was not created: " + docError;
+    }
+
+    return {
+      success: true,
+      id: billId,
+      message: message,
+      docUrl: docUrl || "",
+      docError: docError || "",
+    };
+  } catch (error) {
+    console.error("Error updating bill:", error);
+    return { success: false, message: "Error updating bill: " + error.toString() };
+  }
+}
+
+/**
+ * Folder URL from Bills spreadsheet, sheet "Bills storage", cell B1.
+ */
+function getBillStorageFolderUrlFromData() {
+  var spreadsheet = SpreadsheetApp.openById(CONFIG.BILLS_SPREADSHEET_ID);
+  var sh = spreadsheet.getSheetByName(CONFIG.SHEETS.BILLS_STORAGE);
+  if (!sh) {
+    throw new Error('Sheet "' + CONFIG.SHEETS.BILLS_STORAGE + '" not found');
+  }
+  return (sh.getRange("B1").getValue() || "").toString().trim();
+}
+
+/**
+ * Google Doc template URL from Templates sheet: column A yes/no (EU), column B link.
+ */
+function getBillTemplateUrlForEUFromData(isContractorEUYes) {
+  var spreadsheet = SpreadsheetApp.openById(CONFIG.BILLS_SPREADSHEET_ID);
+  var sh = spreadsheet.getSheetByName(CONFIG.SHEETS.BILLS_TEMPLATES);
+  if (!sh) {
+    throw new Error('Sheet "' + CONFIG.SHEETS.BILLS_TEMPLATES + '" not found');
+  }
+  var data = sh.getDataRange().getValues();
+  var want = isContractorEUYes ? "yes" : "no";
+  for (var i = 1; i < data.length; i++) {
+    var cellA = (data[i][0] || "").toString().trim().toLowerCase();
+    if (cellA === want) {
+      var url = (data[i][1] || "").toString().trim();
+      if (url) return url;
+    }
+  }
+  return "";
+}
+
+/**
+ * YYYY-MM-DD (form) or DD/MM/YYYY → dd.MM.yyyy for doc / filename
+ */
+function formatBillDateForDocument(dateStr) {
+  if (!dateStr) return "";
+  var s = String(dateStr).trim();
+  var mDash = s.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (mDash) return mDash[3] + "." + mDash[2] + "." + mDash[1];
+  var mSlash = s.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+  if (mSlash) return mSlash[1] + "." + mSlash[2] + "." + mSlash[3];
+  return s;
+}
+
+function billParseNum(val) {
+  if (val === null || val === undefined || val === "") return NaN;
+  return parseFloat(String(val).replace(",", "."));
+}
+
+function billFormatTwoDecimals(val) {
+  var n = billParseNum(val);
+  if (isNaN(n)) return "";
+  return n.toFixed(2);
+}
+
+/** Hours in bill Google Doc: whole numbers without ".00", decimals trimmed (e.g. 2, 2.25). */
+function formatBillHoursForDoc(val) {
+  var n = billParseNum(val);
+  if (isNaN(n)) return "";
+  if (Math.abs(n - Math.round(n)) < 1e-9) {
+    return String(Math.round(n));
+  }
+  return n.toFixed(10).replace(/\.?0+$/, "");
+}
+
+function billCurrencySymbol(currency) {
+  var c = (currency || "").toString().trim().toUpperCase();
+  if (CONFIG.CURRENCY_SYMBOLS && CONFIG.CURRENCY_SYMBOLS[c]) {
+    return CONFIG.CURRENCY_SYMBOLS[c];
+  }
+  if (c === "$" || c === "USD") return "$";
+  if (c === "€" || c === "EUR") return "€";
+  return "";
+}
+
+function billMoneyWithSymbol(formData, val) {
+  var sym = billCurrencySymbol(formData.currency);
+  var n = billParseNum(val);
+  if (isNaN(n)) return sym ? sym + "0.00" : "";
+  return sym + n.toFixed(2);
+}
+
+/**
+ * DocumentApp replaceText treats "$" in replacement specially; "$$" → one literal "$".
+ */
+function escapeGoogleDocReplacementValue(str) {
+  var dollar = String.fromCharCode(36);
+  var oneLiteralDollar = dollar + dollar;
+  return String(str).replace(/\$/g, oneLiteralDollar);
+}
+
+function buildBillDocumentFileName(formData) {
+  var contractor = (formData.contractorName || "")
+    .replace(/[\\/:*?"<>|]/g, "")
+    .trim();
+  var inv = (formData.invoiceNumber || "")
+    .replace(/[\\/:*?"<>|]/g, "")
+    .trim();
+  var agr = (formData.agreementNumber || "")
+    .replace(/[\\/:*?"<>|]/g, "")
+    .trim();
+  var datePart = formatBillDateForDocument(formData.invoiceDate);
+  var numPart = inv + "\uFF0F" + agr;
+  return contractor + "_Invoice_" + numPart + "_" + datePart;
+}
+
+/**
+ * Build placeholder → value map for bill Google Doc (same data source as save: formData).
+ */
+function buildBillDocumentPlaceholderMap(formData) {
+  var map = {};
+  var peYes = (formData.pe || "").toString().trim().toLowerCase() === "yes";
+  map["{ФОП}"] = peYes ? "PE " : "";
+  map["{Название контрактора}"] = (formData.contractorName || "").toString();
+  map["{Номер контрактора}"] = (formData.contractorId || "").toString();
+  map["{Адрес контрактора}"] = (formData.contractorAddress || "").toString();
+  map["{VAT ID}"] = (formData.contractorVatId || "").toString();
+  map["{Валюта}"] = (formData.currency || "").toString();
+  map["{Номер счета}"] = (formData.bankAccountNumber || "").toString();
+  map["{Банк}"] = (formData.bankName || "").toString();
+  map["{Тип счета}"] = (formData.accountType || "").toString();
+  map["{Код банка}"] = (formData.bankCode || "").toString();
+  map["{Номер инвойса}"] = (formData.invoiceNumber || "").toString();
+  map["{Номер договора}"] = (formData.agreementNumber || "").toString();
+  map["{Дата инвойса}"] = formatBillDateForDocument(formData.invoiceDate);
+  var dueNeeded =
+    (formData.yesNoDueDate || "").toString().trim().toLowerCase() === "yes";
+  map["{Due date:}"] = dueNeeded ? "Due date:" : "";
+  map["{Срок оплаты}"] = dueNeeded
+    ? formatBillDateForDocument(formData.dueDate)
+    : "";
+
+  var vatPct = Math.round(billParseNum(formData.vatRate));
+  if (isNaN(vatPct)) vatPct = 0;
+  map["{VAT%}"] = String(vatPct);
+  var sym = billCurrencySymbol(formData.currency);
+  var vatN = billParseNum(formData.vatAmount);
+  var totN = billParseNum(formData.totalAmount);
+  map["{Сумма НДС}"] = isNaN(vatN)
+    ? ""
+    : formatCurrencyFromUtils(vatN, sym);
+  map["{Общая сумма}"] = isNaN(totN)
+    ? ""
+    : formatCurrencyFromUtils(totN, sym);
+
+  return map;
+}
+
+/**
+ * Copy bill template, replace placeholders from formData, save to folderUrl.
+ */
+function createBillDocument(formData, templateUrl, folderUrl) {
+  try {
+    normalizeBillFormServices(formData);
+
+    var templateId = extractDocIdFromUrl(templateUrl);
+    var folderId = extractFolderIdFromUrl(folderUrl);
+    if (!templateId) {
+      return { success: false, documentUrl: null, error: "Invalid template URL" };
+    }
+    if (!folderId) {
+      return { success: false, documentUrl: null, error: "Invalid Bills storage folder URL (B1)" };
+    }
+
+    var templateFile = DriveApp.getFileById(templateId);
+    var destFolder = DriveApp.getFolderById(folderId);
+    var docName = buildBillDocumentFileName(formData);
+    var copiedFile = templateFile.makeCopy(docName, destFolder);
+    var copiedDocId = copiedFile.getId();
+
+    var doc = DocumentApp.openById(copiedDocId);
+    var body = doc.getBody();
+
+    updateBillTable(body, formData);
+
+    var phMap = buildBillDocumentPlaceholderMap(formData);
+
+    var keys = Object.keys(phMap).sort(function (a, b) {
+      return b.length - a.length;
+    });
+    keys.forEach(function (placeholder) {
+      var value = phMap[placeholder];
+      if (value === null || value === undefined) value = "";
+      var pattern = placeholder.replace(/[{}]/g, "\\$&");
+      body.replaceText(pattern, escapeGoogleDocReplacementValue(String(value)));
+    });
+
+    doc.saveAndClose();
+
+    var documentUrl = "https://docs.google.com/document/d/" + copiedDocId + "/edit";
+    return {
+      success: true,
+      documentUrl: documentUrl,
+      documentId: copiedDocId,
+    };
+  } catch (error) {
+    return {
+      success: false,
+      documentUrl: null,
+      error: error.toString(),
+    };
+  }
+}
+
+/**
+ * google.script.run may deserialize arrays as objects with numeric keys; normalize to Array.
+ */
+function normalizeBillFormServices(formData) {
+  if (!formData) return;
+  var s = formData.services;
+  if (s == null) {
+    formData.services = [];
+    return;
+  }
+  if (Array.isArray(s)) return;
+  if (typeof s === "object") {
+    var nums = [];
+    for (var k in s) {
+      if (Object.prototype.hasOwnProperty.call(s, k) && /^\d+$/.test(k)) {
+        nums.push(Number(k));
+      }
+    }
+    nums.sort(function (a, b) {
+      return a - b;
+    });
+    var out = [];
+    for (var i = 0; i < nums.length; i++) {
+      out.push(s[String(nums[i])]);
+    }
+    formData.services = out.length ? out : [];
+    return;
+  }
+  formData.services = [];
+}
+
+/**
+ * Save a new bill to the Bills sheet.
+ * Uses header-based column mapping (like contracts).
+ * @param {Object} formData - { pe, contractorName, ..., services: [{services, period, hours, rate, amount}, ...] }
+ * @returns {Object} { success, id, message, docUrl?, docError? }
+ */
+function saveBillToData(formData) {
+  try {
+    normalizeBillFormServices(formData);
+
+    var spreadsheet = SpreadsheetApp.openById(CONFIG.BILLS_SPREADSHEET_ID);
+    var sheet = spreadsheet.getSheetByName(CONFIG.SHEETS.BILLS);
+    if (!sheet) throw new Error("Bills sheet not found");
+
+    var headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
+
+    var columnMap = {};
+    headers.forEach(function (header, index) {
+      if (header) columnMap[header.toString().trim()] = index;
+    });
+
+    var billId = Utilities.getUuid();
+    var rowData = new Array(headers.length).fill("");
+
+    // Column A = ID
+    rowData[0] = billId;
+
+    // Map simple fields
+    Object.keys(formData).forEach(function (fieldId) {
+      if (fieldId === "services") return;
+      var columnName = BILL_FIELD_MAPPING[fieldId];
+      if (columnName && columnMap.hasOwnProperty(columnName)) {
+        var value = formData[fieldId] || "";
+        if (BILL_DATE_FIELDS.indexOf(fieldId) !== -1 && value) {
+          value = formatDateForBill(value);
+        }
+        rowData[columnMap[columnName]] = value;
+      }
+    });
+
+    // Map services rows (up to 10)
+    if (formData.services && Array.isArray(formData.services)) {
+      formData.services.forEach(function (svc, idx) {
+        var num = idx + 1;
+        var cols = {
+          services: "Вид услуг" + num,
+          period: "Период работы" + num,
+          hours: "Часы" + num,
+          rate: "Рейт" + num,
+          amount: "Сумма" + num,
+        };
+        Object.keys(cols).forEach(function (key) {
+          if (columnMap.hasOwnProperty(cols[key])) {
+            rowData[columnMap[cols[key]]] = svc[key] || "";
+          }
+        });
+      });
+    }
+
+    sheet.appendRow(rowData);
+    var newRowIndex = sheet.getLastRow();
+
+    var docUrl = "";
+    var docError = "";
+    try {
+      var folderUrl = getBillStorageFolderUrlFromData();
+      var isEU =
+        (formData.isContractorEU || "").toString().trim().toLowerCase() ===
+        "yes";
+      var templateUrl = getBillTemplateUrlForEUFromData(isEU);
+      if (!folderUrl) {
+        docError = "Bills storage B1 is empty (folder URL missing).";
+      } else if (!templateUrl) {
+        docError =
+          "No template URL for EU=" +
+          (isEU ? "yes" : "no") +
+          " on Templates sheet.";
+      } else {
+        var docResult = createBillDocument(
+          formData,
+          templateUrl,
+          folderUrl
+        );
+        if (docResult.success) {
+          docUrl = docResult.documentUrl;
+        } else {
+          docError = docResult.error || "Document creation failed.";
+        }
+      }
+    } catch (docEx) {
+      docError = docEx.toString();
+    }
+
+    var docColIdx = getBillDocUrlColumnIndex_(columnMap);
+    if (docUrl && docColIdx >= 0) {
+      sheet.getRange(newRowIndex, docColIdx + 1).setValue(docUrl);
+    }
+
+    var message = "Bill saved successfully";
+    if (docUrl) {
+      message += ". Document created.";
+    } else if (docError) {
+      message += " Document was not created: " + docError;
+    }
+
+    return {
+      success: true,
+      id: billId,
+      message: message,
+      docUrl: docUrl || "",
+      docError: docError || "",
+    };
+  } catch (error) {
+    console.error("Error saving bill:", error);
+    return {
+      success: false,
+      id: null,
+      message: "Error saving bill: " + error.toString(),
+    };
+  }
+}
+
+/**
+ * Format date from YYYY-MM-DD (HTML input) to DD/MM/YYYY for storage
+ */
+function formatDateForBill(dateStr) {
+  if (!dateStr) return "";
+  var parts = dateStr.split("-");
+  if (parts.length === 3) {
+    return parts[2] + "/" + parts[1] + "/" + parts[0];
+  }
+  return dateStr;
+}

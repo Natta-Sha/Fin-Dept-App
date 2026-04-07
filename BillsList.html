@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <base target="_top" />
+    <meta charset="UTF-8" />
+    <title>List of Bills</title>
+
+    <!-- Styles -->
+    <link
+      rel="stylesheet"
+      href="https://cdn.datatables.net/1.13.4/css/jquery.dataTables.min.css"
+    />
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdn.datatables.net/fixedheader/3.4.0/css/fixedHeader.dataTables.min.css"
+    />
+
+    <!-- Scripts -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.4/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.4/moment.min.js"></script>
+    <script src="https://cdn.datatables.net/plug-ins/1.13.4/sorting/datetime-moment.js"></script>
+    <script src="https://cdn.datatables.net/fixedheader/3.4.0/js/dataTables.fixedHeader.min.js"></script>
+
+    <style>
+      body {
+        font-size: 0.875rem;
+        margin: 0;
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+      }
+
+      .main-content {
+        flex-grow: 1;
+        padding: 20px;
+      }
+
+      /* Universal button styles */
+      .btn {
+        font-weight: 600 !important;
+        border-radius: 25px !important;
+        padding: 0.75rem 2rem !important;
+        font-size: 1.1rem !important;
+        transition: all 0.3s ease !important;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1) !important;
+        border: none !important;
+      }
+
+      .btn:hover {
+        transform: translateY(-1px) !important;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2) !important;
+      }
+
+      .btn:focus,
+      .btn:active {
+        transform: translateY(-1px) !important;
+      }
+
+      .btn-sm {
+        padding: 0.25rem 0.75rem !important;
+        font-size: 0.8rem !important;
+        border-radius: 15px !important;
+      }
+
+      .btn-primary,
+      .btn-nav {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+        color: white !important;
+      }
+
+      .btn-primary:hover,
+      .btn-nav:hover {
+        background: linear-gradient(135deg, #5a6fd8 0%, #6b4190 100%) !important;
+        color: white !important;
+      }
+
+      .btn-outline-primary {
+        background: linear-gradient(135deg, rgba(102,126,234,0.1) 0%, rgba(118,75,162,0.1) 100%) !important;
+        color: #667eea !important;
+        border: 2px solid #667eea !important;
+      }
+
+      .btn-outline-primary:hover {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+        color: white !important;
+        border-color: #667eea !important;
+      }
+
+      th, td {
+        padding: 4px 8px !important;
+      }
+
+      table.dataTable {
+        width: 100% !important;
+      }
+
+      thead input {
+        width: 100%;
+        box-sizing: border-box;
+        padding: 4px;
+      }
+
+      #billsTable thead th {
+        text-align: center !important;
+        white-space: normal !important;
+        word-wrap: break-word;
+        font-size: 0.85rem;
+        padding: 8px 4px !important;
+      }
+
+      #billsTable td {
+        white-space: normal;
+        word-wrap: break-word;
+        font-size: 0.85rem;
+        padding: 6px 4px !important;
+      }
+
+      #billsTable thead input {
+        font-size: 0.75rem;
+        padding: 2px 4px;
+      }
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  </head>
+
+  <body>
+    <!-- Top Navigation -->
+    <?!= getNavigation(activePage) ?>
+
+    <!-- Main Content -->
+    <div class="main-content container-xl">
+      <div class="mb-3 d-flex justify-content-start">
+        <a
+          href="<?= baseUrl ?>?page=BillGenerator"
+          class="btn btn-nav"
+        >
+          Create new
+        </a>
+      </div>
+
+      <h2 class="mb-4">List of Bills</h2>
+
+      <table
+        id="billsTable"
+        class="display table table-bordered"
+        style="width: 100%; display: none"
+      >
+        <thead class="table-light">
+          <tr>
+            <th>Contractor's name</th>
+            <th>Contract's number</th>
+            <th>Invoice number</th>
+            <th>Invoice date</th>
+            <th>Total amount</th>
+            <th>Currency</th>
+            <th>EU</th>
+            <th>Actions</th>
+          </tr>
+          <tr>
+            <th><input type="text" placeholder="Search Contractor" /></th>
+            <th><input type="text" placeholder="Search Contract" /></th>
+            <th><input type="text" placeholder="Search #" /></th>
+            <th><input type="text" placeholder="Search Date" /></th>
+            <th><input type="text" placeholder="Search Amount" /></th>
+            <th><input type="text" placeholder="Search Currency" /></th>
+            <th><input type="text" placeholder="Search EU" /></th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+
+      <script>
+        $(document).ready(function () {
+          $.fn.dataTable.moment("DD/MM/YYYY");
+          const table = $("#billsTable").DataTable({
+            dom: "lrtip",
+            orderCellsTop: true,
+            columnDefs: [
+              {
+                targets: [0, 1, 2, 5],
+                className: "dt-body-left dt-head-center",
+              },
+              {
+                targets: [3, 6],
+                className: "dt-body-center dt-head-center",
+              },
+              {
+                targets: 4,
+                className: "dt-body-right dt-head-center",
+              },
+              {
+                targets: 7,
+                className: "dt-body-center dt-head-center",
+                orderable: false,
+              },
+            ],
+          });
+
+          new $.fn.dataTable.FixedHeader(table);
+
+          // Column search
+          $("#billsTable thead tr:eq(1) th").each(function (i) {
+            $("input", this).on("keyup change", function () {
+              if (table.column(i).search() !== this.value) {
+                table.column(i).search(this.value).draw();
+              }
+            });
+          });
+
+          // Load bills data
+          google.script.run
+            .withSuccessHandler(function (data) {
+              if (!Array.isArray(data) || data.length === 0) {
+                table.clear().draw();
+                document.getElementById("billsTable").style.display = "";
+                return;
+              }
+
+              var baseUrl = "<?= baseUrl ?>";
+              data.forEach(function (row) {
+                table.row.add([
+                  row.contractorName || "",
+                  row.agreementNumber || "",
+                  row.invoiceNumber || "",
+                  row.invoiceDate || "",
+                  row.totalAmount || "",
+                  row.currency || "",
+                  row.isContractorEU || "",
+                  '<a href="' + baseUrl + '?page=BillGenerator&id=' + encodeURIComponent(row.id) + '&mode=view" class="btn btn-sm btn-outline-primary" style="white-space: nowrap;">Open details</a>',
+                ]);
+              });
+
+              table.draw();
+              document.getElementById("billsTable").style.display = "";
+            })
+            .withFailureHandler(function (error) {
+              console.error("Error loading bills list:", error);
+              document.getElementById("billsTable").style.display = "";
+            })
+            .getBillList();
+        });
+      </script>
+    </div>
+
+    <script>
+      document.addEventListener("DOMContentLoaded", function () {
+        var tooltipTriggerList = [].slice.call(
+          document.querySelectorAll('[data-bs-toggle="tooltip"]')
+        );
+        var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+          return new bootstrap.Tooltip(tooltipTriggerEl);
+        });
+      });
+    </script>
+  </body>
+</html>
