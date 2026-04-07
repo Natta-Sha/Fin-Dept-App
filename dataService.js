@@ -2541,6 +2541,12 @@ function readBillDocUrlFromRow_(row, indexMap) {
  */
 function getBillListFromData() {
   try {
+    var cache = CacheService.getScriptCache();
+    var cached = cache.get("billList");
+    if (cached) {
+      return JSON.parse(cached);
+    }
+
     var spreadsheet = SpreadsheetApp.openById(CONFIG.BILLS_SPREADSHEET_ID);
     var sheet = spreadsheet.getSheetByName(CONFIG.SHEETS.BILLS);
 
@@ -2620,6 +2626,7 @@ function getBillListFromData() {
       });
     }
 
+    cache.put("billList", JSON.stringify(result), 300);
     return result;
   } catch (error) {
     console.error("Error in getBillListFromData:", error);
@@ -2906,6 +2913,7 @@ function deleteBillByIdFromData(id) {
     }
 
     sheet.deleteRow(rowToDelete);
+    CacheService.getScriptCache().remove("billList");
 
     return {
       success: true,
@@ -3054,6 +3062,7 @@ function updateBillByIdFromData(formData) {
 
     // Single batch write for the entire row
     sheet.getRange(rowIndex, 1, 1, rowArr.length).setValues([rowArr]);
+    CacheService.getScriptCache().remove("billList");
 
     var message = "Bill updated successfully";
     if (docUrl) {
@@ -3412,6 +3421,7 @@ function saveBillToData(formData) {
     if (docUrl && docColIdx >= 0) {
       sheet.getRange(newRowIndex, docColIdx + 1).setValue(docUrl);
     }
+    CacheService.getScriptCache().remove("billList");
 
     var message = "Bill saved successfully";
     if (docUrl) {
