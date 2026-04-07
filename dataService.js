@@ -2617,7 +2617,6 @@ function getBillListFromData() {
       result.push({
         id: row[0] || "",
         contractorName: row[indexMap["Название контрактора"]] || "",
-        agreementNumber: indexMap["№ договора"] !== undefined ? (row[indexMap["№ договора"]] || "").toString() : "",
         invoiceNumber: row[indexMap["Номер инвойса"]] || "",
         invoiceDate: formattedDate,
         totalAmount: formattedAmount,
@@ -2703,7 +2702,6 @@ var BILL_FIELD_MAPPING = {
   accountType: "Тип счета",
   bankCode: "Код банка",
   invoiceNumber: "Номер инвойса",
-  agreementNumber: "№ договора",
   invoiceDate: "Дата инвойса",
   yesNoDueDate: "Необходимость срока оплаты",
   dueDate: "Срок оплаты",
@@ -2822,7 +2820,6 @@ function getBillDataByIdFromData(id) {
       accountType: getColValue("Тип счета"),
       bankCode: getColValue("Код банка"),
       invoiceNumber: getColValue("Номер инвойса"),
-      agreementNumber: getColValue("№ договора"),
       invoiceDate: getColDateValue("Дата инвойса"),
       yesNoDueDate: getColValue("Необходимость срока оплаты"),
       dueDate: getColDateValue("Срок оплаты"),
@@ -3196,12 +3193,8 @@ function buildBillDocumentFileName(formData) {
   var inv = (formData.invoiceNumber || "")
     .replace(/[\\/:*?"<>|]/g, "")
     .trim();
-  var agr = (formData.agreementNumber || "")
-    .replace(/[\\/:*?"<>|]/g, "")
-    .trim();
   var datePart = formatBillDateForDocument(formData.invoiceDate);
-  var numPart = inv + "\uFF0F" + agr;
-  return contractor + "_Invoice_" + numPart + "_" + datePart;
+  return contractor + "_Invoice_" + inv + "_" + datePart;
 }
 
 /**
@@ -3221,7 +3214,6 @@ function buildBillDocumentPlaceholderMap(formData) {
   map["{Тип счета}"] = (formData.accountType || "").toString();
   map["{Код банка}"] = (formData.bankCode || "").toString();
   map["{Номер инвойса}"] = (formData.invoiceNumber || "").toString();
-  map["{Номер договора}"] = (formData.agreementNumber || "").toString();
   map["{Дата инвойса}"] = formatBillDateForDocument(formData.invoiceDate);
   var dueNeeded =
     (formData.yesNoDueDate || "").toString().trim().toLowerCase() === "yes";

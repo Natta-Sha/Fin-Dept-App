@@ -256,12 +256,7 @@
             <div class="col-md-4">
               <label class="form-label">Invoice number <span class="text-danger">*</span> <span class="field-required">Required</span></label>
               <input type="text" id="invoiceNumber" class="form-control" required />
-            </div>
-          </div>
-          <div class="row mb-3">
-            <div class="col-md-4">
-              <label class="form-label">Agreement number <span class="text-danger">*</span> <span class="field-required">Required</span></label>
-              <input type="text" id="agreementNumber" class="form-control" required />
+              <small class="form-text text-muted">Standard format: sequential number / contract number, e.g. 2/256</small>
             </div>
           </div>
           <div class="row mb-3">
@@ -844,7 +839,6 @@
           { id: "bankAccountNumber", label: "Bank account number" },
           { id: "bankName", label: "Bank name" },
           { id: "invoiceNumber", label: "Invoice number" },
-          { id: "agreementNumber", label: "Agreement number" },
           { id: "invoiceDate", label: "Invoice date" },
           { id: "yesNoDueDate", label: "Is due date necessary?" },
         ];
@@ -900,7 +894,6 @@
           accountType: document.getElementById("accountType").value,
           bankCode: document.getElementById("bankCode").value.trim(),
           invoiceNumber: document.getElementById("invoiceNumber").value.trim(),
-          agreementNumber: document.getElementById("agreementNumber").value.trim(),
           invoiceDate: document.getElementById("invoiceDate").value,
           yesNoDueDate: document.getElementById("yesNoDueDate").value,
           dueDate: document.getElementById("dueDate").value,
@@ -1046,7 +1039,6 @@
         document.getElementById("bankName").value = data.bankName || "";
         document.getElementById("bankCode").value = data.bankCode || "";
         document.getElementById("invoiceNumber").value = data.invoiceNumber || "";
-        document.getElementById("agreementNumber").value = data.agreementNumber || "";
         document.getElementById("invoiceDate").value = data.invoiceDate || "";
         document.getElementById("dueDate").value = data.dueDate || "";
 
@@ -1125,7 +1117,6 @@
         document.getElementById("bankName").value = data.bankName || "";
         document.getElementById("bankCode").value = data.bankCode || "";
         document.getElementById("invoiceNumber").value = data.invoiceNumber || "";
-        document.getElementById("agreementNumber").value = data.agreementNumber || "";
         document.getElementById("invoiceDate").value = data.invoiceDate || "";
         document.getElementById("dueDate").value = data.dueDate || "";
 
