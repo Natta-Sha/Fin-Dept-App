@@ -2541,6 +2541,12 @@ function readBillDocUrlFromRow_(row, indexMap) {
  */
 function getBillListFromData() {
   try {
+    var cache = CacheService.getScriptCache();
+    var cached = cache.get("billList");
+    if (cached) {
+      return JSON.parse(cached);
+    }
+
     var spreadsheet = SpreadsheetApp.openById(CONFIG.BILLS_SPREADSHEET_ID);
     var sheet = spreadsheet.getSheetByName(CONFIG.SHEETS.BILLS);
 
@@ -2620,6 +2626,7 @@ function getBillListFromData() {
       });
     }
 
+    cache.put("billList", JSON.stringify(result), 300);
     return result;
   } catch (error) {
     console.error("Error in getBillListFromData:", error);
@@ -2633,6 +2640,12 @@ function getBillListFromData() {
  */
 function getBillDropdownOptionsFromData() {
   try {
+    var cache = CacheService.getScriptCache();
+    var cached = cache.get("billDropdownOptions");
+    if (cached) {
+      return JSON.parse(cached);
+    }
+
     var spreadsheet = SpreadsheetApp.openById(CONFIG.BILLS_SPREADSHEET_ID);
     var listsSheet = spreadsheet.getSheetByName("Lists");
     if (!listsSheet) {
@@ -2660,11 +2673,14 @@ function getBillDropdownOptionsFromData() {
       }
     }
 
-    return {
+    var result = {
       choices: choices,
       currencies: currencies,
       accountTypes: accountTypes,
     };
+
+    cache.put("billDropdownOptions", JSON.stringify(result), 1800);
+    return result;
   } catch (error) {
     console.error("Error in getBillDropdownOptionsFromData:", error);
     return { choices: [], currencies: [], accountTypes: [] };
@@ -2719,7 +2735,6 @@ function getBillDataByIdFromData(id) {
 
     var dataRange = sheet.getDataRange();
     var data = dataRange.getValues();
-    var displayData = dataRange.getDisplayValues();
     var headers = data[0];
     var indexMap = {};
     headers.forEach(function (header, index) {
@@ -2728,12 +2743,12 @@ function getBillDataByIdFromData(id) {
 
     // Find row by ID — same pattern as contracts
     var row = null;
-    var displayRow = null;
+    var foundRowIndex = -1;
     for (var i = 1; i < data.length; i++) {
       var rowId = data[i][0];
       if (rowId == id || rowId === id || (rowId && rowId.toString() === id.toString())) {
         row = data[i];
-        displayRow = displayData[i];
+        foundRowIndex = i;
         break;
       }
     }
@@ -2762,10 +2777,13 @@ function getBillDataByIdFromData(id) {
     function getDisplayColValue(columnName) {
       var colIndex = indexMap[columnName];
       if (colIndex === undefined) return "";
-      if (displayRow) return displayRow[colIndex] || "";
-      var val = row[colIndex];
-      if (val === null || val === undefined || val === "") return "";
-      return String(val);
+      try {
+        return sheet.getRange(foundRowIndex + 1, colIndex + 1).getDisplayValue() || "";
+      } catch (e) {
+        var val = row[colIndex];
+        if (val === null || val === undefined || val === "") return "";
+        return String(val);
+      }
     }
 
     function formatDateForInput(dateVal) {
@@ -2904,6 +2922,7 @@ function deleteBillByIdFromData(id) {
     }
 
     sheet.deleteRow(rowToDelete);
+    CacheService.getScriptCache().remove("billList");
 
     return {
       success: true,
@@ -2972,7 +2991,9 @@ function updateBillByIdFromData(formData) {
       }
     }
 
-    // --- Overwrite row (keep ID in column A, update everything else) ---
+    // --- Build updated row in memory, then write once ---
+    var rowArr = data[rowIndex - 1].slice();
+
     Object.keys(formData).forEach(function (fieldId) {
       if (fieldId === "services" || fieldId === "id") return;
       var colName = BILL_FIELD_MAPPING[fieldId];
@@ -2981,11 +3002,11 @@ function updateBillByIdFromData(formData) {
         if (BILL_DATE_FIELDS.indexOf(fieldId) !== -1 && value) {
           value = formatDateForBill(value);
         }
-        sheet.getRange(rowIndex, columnMap[colName] + 1).setValue(value);
+        rowArr[columnMap[colName]] = value;
       }
     });
 
-    // Clear old service columns, then write new
+    // Clear all service columns, then set new values
     for (var n = 1; n <= 10; n++) {
       var svcCols = {
         services: "Вид услуг" + n,
@@ -2996,7 +3017,7 @@ function updateBillByIdFromData(formData) {
       };
       Object.keys(svcCols).forEach(function (key) {
         if (columnMap.hasOwnProperty(svcCols[key])) {
-          sheet.getRange(rowIndex, columnMap[svcCols[key]] + 1).setValue("");
+          rowArr[columnMap[svcCols[key]]] = "";
         }
       });
     }
@@ -3012,7 +3033,7 @@ function updateBillByIdFromData(formData) {
         };
         Object.keys(cols).forEach(function (key) {
           if (columnMap.hasOwnProperty(cols[key])) {
-            sheet.getRange(rowIndex, columnMap[cols[key]] + 1).setValue(svc[key] || "");
+            rowArr[columnMap[cols[key]]] = svc[key] || "";
           }
         });
       });
@@ -3022,10 +3043,10 @@ function updateBillByIdFromData(formData) {
     var docUrl = "";
     var docError = "";
     try {
-      var folderUrl = getBillStorageFolderUrlFromData();
+      var folderUrl = getBillStorageFolderUrlFromData(spreadsheet);
       var isEU =
         (formData.isContractorEU || "").toString().trim().toLowerCase() === "yes";
-      var templateUrl = getBillTemplateUrlForEUFromData(isEU);
+      var templateUrl = getBillTemplateUrlForEUFromData(isEU, spreadsheet);
       if (!folderUrl) {
         docError = "Bills storage B1 is empty.";
       } else if (!templateUrl) {
@@ -3042,11 +3063,15 @@ function updateBillByIdFromData(formData) {
       docError = docEx.toString();
     }
 
-    // Write new doc URL
+    // Set doc URL in row array
     var docColIdx = getBillDocUrlColumnIndex_(columnMap);
     if (docColIdx >= 0) {
-      sheet.getRange(rowIndex, docColIdx + 1).setValue(docUrl || "");
+      rowArr[docColIdx] = docUrl || "";
     }
+
+    // Single batch write for the entire row
+    sheet.getRange(rowIndex, 1, 1, rowArr.length).setValues([rowArr]);
+    CacheService.getScriptCache().remove("billList");
 
     var message = "Bill updated successfully";
     if (docUrl) {
@@ -3070,9 +3095,10 @@ function updateBillByIdFromData(formData) {
 
 /**
  * Folder URL from Bills spreadsheet, sheet "Bills storage", cell B1.
+ * @param {Spreadsheet} [ss] - Optional pre-opened spreadsheet to avoid extra openById
  */
-function getBillStorageFolderUrlFromData() {
-  var spreadsheet = SpreadsheetApp.openById(CONFIG.BILLS_SPREADSHEET_ID);
+function getBillStorageFolderUrlFromData(ss) {
+  var spreadsheet = ss || SpreadsheetApp.openById(CONFIG.BILLS_SPREADSHEET_ID);
   var sh = spreadsheet.getSheetByName(CONFIG.SHEETS.BILLS_STORAGE);
   if (!sh) {
     throw new Error('Sheet "' + CONFIG.SHEETS.BILLS_STORAGE + '" not found');
@@ -3082,9 +3108,11 @@ function getBillStorageFolderUrlFromData() {
 
 /**
  * Google Doc template URL from Templates sheet: column A yes/no (EU), column B link.
+ * @param {boolean} isContractorEUYes
+ * @param {Spreadsheet} [ss] - Optional pre-opened spreadsheet to avoid extra openById
  */
-function getBillTemplateUrlForEUFromData(isContractorEUYes) {
-  var spreadsheet = SpreadsheetApp.openById(CONFIG.BILLS_SPREADSHEET_ID);
+function getBillTemplateUrlForEUFromData(isContractorEUYes, ss) {
+  var spreadsheet = ss || SpreadsheetApp.openById(CONFIG.BILLS_SPREADSHEET_ID);
   var sh = spreadsheet.getSheetByName(CONFIG.SHEETS.BILLS_TEMPLATES);
   if (!sh) {
     throw new Error('Sheet "' + CONFIG.SHEETS.BILLS_TEMPLATES + '" not found');
@@ -3223,8 +3251,6 @@ function buildBillDocumentPlaceholderMap(formData) {
  */
 function createBillDocument(formData, templateUrl, folderUrl) {
   try {
-    normalizeBillFormServices(formData);
-
     var templateId = extractDocIdFromUrl(templateUrl);
     var folderId = extractFolderIdFromUrl(folderUrl);
     if (!templateId) {
@@ -3370,11 +3396,11 @@ function saveBillToData(formData) {
     var docUrl = "";
     var docError = "";
     try {
-      var folderUrl = getBillStorageFolderUrlFromData();
+      var folderUrl = getBillStorageFolderUrlFromData(spreadsheet);
       var isEU =
         (formData.isContractorEU || "").toString().trim().toLowerCase() ===
         "yes";
-      var templateUrl = getBillTemplateUrlForEUFromData(isEU);
+      var templateUrl = getBillTemplateUrlForEUFromData(isEU, spreadsheet);
       if (!folderUrl) {
         docError = "Bills storage B1 is empty (folder URL missing).";
       } else if (!templateUrl) {
@@ -3402,6 +3428,7 @@ function saveBillToData(formData) {
     if (docUrl && docColIdx >= 0) {
       sheet.getRange(newRowIndex, docColIdx + 1).setValue(docUrl);
     }
+    CacheService.getScriptCache().remove("billList");
 
     var message = "Bill saved successfully";
     if (docUrl) {

@@ -47,6 +47,7 @@ clasp pull
 code .
 
 Если смерджила бранч в гитхабе и сюда нужно подтянуть:
+git checkout main
 git pull origin main
 
 Файл с правами доступов к приложению (имейлы): https://docs.google.com/spreadsheets/d/1xBB9PdNKdu8hBCAAe-iEW5cTW4_oQWOZjDzwFn8bH_U/edit?gid=0#gid=0

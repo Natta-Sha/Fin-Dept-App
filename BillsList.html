@@ -244,6 +244,9 @@
               document.getElementById("billsTable").style.display = "";
             })
             .getBillList();
+
+          // Prefetch dropdown options into server cache while user browses the list
+          google.script.run.getBillDropdownOptions();
         });
       </script>
     </div>
