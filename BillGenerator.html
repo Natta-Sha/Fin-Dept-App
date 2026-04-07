@@ -1109,7 +1109,7 @@
         updateUIForMode();
       }
 
-      function fillBillFormEditMode(data) {
+      function fillBillFormEditMode(data, dropdownData) {
         if (!data || data._error) {
           var msg = "Bill not found (ID: " + billId + ").";
           if (data && data._message) msg += "<br><small><b>Error:</b> " + data._message + "</small>";
@@ -1188,8 +1188,17 @@
         updateRemoveButtons();
         updateAddRowButton();
 
-        // Now load real dropdown options (replaces the single-value selects with full lists)
-        loadDropdownOptionsForEdit();
+        // Apply dropdown options (already loaded in parallel, or fall back to separate call)
+        if (dropdownData) {
+          var choices = dropdownData.choices || [];
+          fillDropdownKeepValue("pe", choices);
+          fillDropdownKeepValue("isContractorEU", choices);
+          fillDropdownKeepValue("currency", dropdownData.currencies || []);
+          fillDropdownKeepValue("accountType", dropdownData.accountTypes || []);
+          fillDropdownKeepValue("yesNoDueDate", choices);
+        } else {
+          loadDropdownOptionsForEdit();
+        }
 
         updateUIForMode();
       }
@@ -1321,27 +1330,67 @@
         // Set UI for mode immediately (hide/show correct buttons)
         updateUIForMode();
 
-        // View / Edit / Copy mode: load data, then fill form
+        // View / Edit / Copy mode: load data (and dropdowns in parallel for edit/copy)
         if ((mode === "view" || mode === "edit" || mode === "copy") && billId) {
           document.getElementById("bill-form").style.display = "none";
           document.getElementById("loading-spinner").style.display = "";
+
+          var isEditOrCopy = (mode === "edit" || mode === "copy");
+          var parallelState = { billData: null, dropdownData: null, billError: null, billDone: false, dropdownDone: false };
+
+          function tryFinishParallel() {
+            if (!isEditOrCopy) return;
+            if (!parallelState.billDone || !parallelState.dropdownDone) return;
+            document.getElementById("loading-spinner").style.display = "none";
+            document.getElementById("bill-form").style.display = "";
+            if (parallelState.billError) {
+              document.getElementById("result").innerHTML =
+                '<div class="alert alert-danger">Error loading bill: ' + parallelState.billError + '</div>';
+              return;
+            }
+            fillBillFormEditMode(parallelState.billData, parallelState.dropdownData);
+          }
+
           google.script.run
             .withSuccessHandler(function (data) {
-              document.getElementById("loading-spinner").style.display = "none";
-              document.getElementById("bill-form").style.display = "";
-              if (mode === "edit" || mode === "copy") {
-                fillBillFormEditMode(data);
+              if (isEditOrCopy) {
+                parallelState.billData = data;
+                parallelState.billDone = true;
+                tryFinishParallel();
               } else {
+                document.getElementById("loading-spinner").style.display = "none";
+                document.getElementById("bill-form").style.display = "";
                 fillBillFormViewMode(data);
               }
             })
             .withFailureHandler(function (err) {
-              document.getElementById("loading-spinner").style.display = "none";
-              document.getElementById("bill-form").style.display = "";
-              document.getElementById("result").innerHTML =
-                '<div class="alert alert-danger">Error loading bill: ' + err + '</div>';
+              if (isEditOrCopy) {
+                parallelState.billError = err;
+                parallelState.billDone = true;
+                tryFinishParallel();
+              } else {
+                document.getElementById("loading-spinner").style.display = "none";
+                document.getElementById("bill-form").style.display = "";
+                document.getElementById("result").innerHTML =
+                  '<div class="alert alert-danger">Error loading bill: ' + err + '</div>';
+              }
             })
             .getBillDataById(billId);
+
+          if (isEditOrCopy) {
+            google.script.run
+              .withSuccessHandler(function (data) {
+                parallelState.dropdownData = data;
+                parallelState.dropdownDone = true;
+                tryFinishParallel();
+              })
+              .withFailureHandler(function () {
+                parallelState.dropdownData = null;
+                parallelState.dropdownDone = true;
+                tryFinishParallel();
+              })
+              .getBillDropdownOptions();
+          }
           return;
         }
 
