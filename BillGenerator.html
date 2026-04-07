@@ -147,14 +147,14 @@
       <h2 id="page-title" class="mb-4">Create Bill</h2>
 
       <!-- Loading spinner (shown in view mode while data loads) -->
-      <div id="loading-spinner" class="text-center py-5" style="display: <?= (mode === 'view' || mode === 'edit') ? '' : 'none' ?>">
+      <div id="loading-spinner" class="text-center py-5" style="display: <?= (mode === 'view' || mode === 'edit' || mode === 'copy') ? '' : 'none' ?>">
         <div class="spinner-border text-primary" role="status" style="width: 3rem; height: 3rem;">
           <span class="visually-hidden">Loading...</span>
         </div>
         <p class="mt-3 text-muted">Loading bill data...</p>
       </div>
 
-      <div id="bill-form" style="<?= (mode === 'view' || mode === 'edit') ? 'display:none' : '' ?>">
+      <div id="bill-form" style="<?= (mode === 'view' || mode === 'edit' || mode === 'copy') ? 'display:none' : '' ?>">
         <!-- Section 1: Contractor Information -->
         <h5 class="section-title"><i class="bi bi-person-badge"></i> Contractor Information</h5>
         <div class="form-section">
@@ -452,7 +452,7 @@
       }
 
       function copyBill() {
-        alert("Copy functionality is not yet implemented.");
+        switchToBillMode("copy");
       }
 
       function editBill() {
@@ -1265,6 +1265,11 @@
             if (editBtns) editBtns.style.display = "block";
             setFormReadonly(false);
             break;
+          case "copy":
+            title.textContent = "Copy Bill";
+            createBtns.style.display = "block";
+            setFormReadonly(false);
+            break;
           default:
             title.textContent = "Create Bill";
             createBtns.style.display = "block";
@@ -1306,15 +1311,15 @@
         // Set UI for mode immediately (hide/show correct buttons)
         updateUIForMode();
 
-        // View / Edit mode: load data, then fill form
-        if ((mode === "view" || mode === "edit") && billId) {
+        // View / Edit / Copy mode: load data, then fill form
+        if ((mode === "view" || mode === "edit" || mode === "copy") && billId) {
           document.getElementById("bill-form").style.display = "none";
           document.getElementById("loading-spinner").style.display = "";
           google.script.run
             .withSuccessHandler(function (data) {
               document.getElementById("loading-spinner").style.display = "none";
               document.getElementById("bill-form").style.display = "";
-              if (mode === "edit") {
+              if (mode === "edit" || mode === "copy") {
                 fillBillFormEditMode(data);
               } else {
                 fillBillFormViewMode(data);
