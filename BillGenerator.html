@@ -147,14 +147,14 @@
       <h2 id="page-title" class="mb-4">Create Bill</h2>
 
       <!-- Loading spinner (shown in view mode while data loads) -->
-      <div id="loading-spinner" class="text-center py-5" style="display: <?= mode === 'view' ? '' : 'none' ?>">
+      <div id="loading-spinner" class="text-center py-5" style="display: <?= (mode === 'view' || mode === 'edit') ? '' : 'none' ?>">
         <div class="spinner-border text-primary" role="status" style="width: 3rem; height: 3rem;">
           <span class="visually-hidden">Loading...</span>
         </div>
         <p class="mt-3 text-muted">Loading bill data...</p>
       </div>
 
-      <div id="bill-form" style="<?= mode === 'view' ? 'display:none' : '' ?>">
+      <div id="bill-form" style="<?= (mode === 'view' || mode === 'edit') ? 'display:none' : '' ?>">
         <!-- Section 1: Contractor Information -->
         <h5 class="section-title"><i class="bi bi-person-badge"></i> Contractor Information</h5>
         <div class="form-section">
@@ -382,6 +382,19 @@
           </div>
         </div>
 
+        <!-- Edit mode buttons -->
+        <div id="edit-buttons" class="mt-4 mb-4" style="display: none">
+          <div class="d-flex justify-content-end gap-2">
+            <button id="edit-confirm-btn" class="btn btn-success" onclick="submitBillUpdate()">
+              Confirm
+              <span id="edit-spinner" class="spinner-border spinner-border-sm ms-2" role="status" style="display: none"></span>
+            </button>
+            <button id="edit-cancel-btn" class="btn btn-outline-secondary" onclick="goToBillsList()">
+              Cancel
+            </button>
+          </div>
+        </div>
+
       </div>
     </div>
 
@@ -443,7 +456,7 @@
       }
 
       function editBill() {
-        alert("Edit functionality is not yet implemented.");
+        switchToBillMode("edit");
       }
 
       function confirmDeleteBill() {
@@ -726,7 +739,7 @@
         });
       }
 
-      function loadDropdownOptions() {
+      function loadDropdownOptions(callback) {
         google.script.run
           .withSuccessHandler(function (data) {
             var choices = data.choices || [];
@@ -743,9 +756,50 @@
               opt.textContent = val;
               dueDateSel.appendChild(opt);
             });
+            if (callback) callback();
           })
           .withFailureHandler(function (err) {
             console.error("Failed to load dropdown options:", err);
+            if (callback) callback();
+          })
+          .getBillDropdownOptions();
+      }
+
+      function fillDropdownKeepValue(id, options) {
+        var sel = document.getElementById(id);
+        if (!sel) return;
+        var current = sel.value;
+        sel.innerHTML = '<option value="">Select...</option>';
+        if (options && options.length) {
+          options.forEach(function (val) {
+            var opt = document.createElement("option");
+            opt.value = val;
+            opt.textContent = val;
+            if (val === current) opt.selected = true;
+            sel.appendChild(opt);
+          });
+        }
+        if (current && !Array.from(sel.options).some(function (o) { return o.value === current; })) {
+          var extra = document.createElement("option");
+          extra.value = current;
+          extra.textContent = current;
+          extra.selected = true;
+          sel.appendChild(extra);
+        }
+      }
+
+      function loadDropdownOptionsForEdit() {
+        google.script.run
+          .withSuccessHandler(function (data) {
+            var choices = data.choices || [];
+            fillDropdownKeepValue("pe", choices);
+            fillDropdownKeepValue("isContractorEU", choices);
+            fillDropdownKeepValue("currency", data.currencies || []);
+            fillDropdownKeepValue("accountType", data.accountTypes || []);
+            fillDropdownKeepValue("yesNoDueDate", choices);
+          })
+          .withFailureHandler(function (err) {
+            console.error("Failed to load dropdown options for edit:", err);
           })
           .getBillDropdownOptions();
       }
@@ -1045,19 +1099,171 @@
         updateUIForMode();
       }
 
+      function fillBillFormEditMode(data) {
+        if (!data || data._error) {
+          var msg = "Bill not found (ID: " + billId + ").";
+          if (data && data._message) msg += "<br><small><b>Error:</b> " + data._message + "</small>";
+          document.getElementById("result").innerHTML =
+            '<div class="alert alert-danger">' + msg + '</div>';
+          updateUIForMode();
+          return;
+        }
+
+        // Simple text fields
+        document.getElementById("contractorName").value = data.contractorName || "";
+        document.getElementById("contractorId").value = data.contractorId || "";
+        document.getElementById("contractorAddress").value = data.contractorAddress || "";
+        document.getElementById("contractorVatId").value = data.contractorVatId || "";
+        document.getElementById("bankAccountNumber").value = data.bankAccountNumber || "";
+        document.getElementById("bankName").value = data.bankName || "";
+        document.getElementById("bankCode").value = data.bankCode || "";
+        document.getElementById("invoiceNumber").value = data.invoiceNumber || "";
+        document.getElementById("agreementNumber").value = data.agreementNumber || "";
+        document.getElementById("invoiceDate").value = data.invoiceDate || "";
+        document.getElementById("dueDate").value = data.dueDate || "";
+
+        // Selects: set temporary value, then load real dropdown options while keeping it
+        setSelectValueViewMode("pe", data.pe);
+        setSelectValueViewMode("isContractorEU", data.isContractorEU);
+        setSelectValueViewMode("currency", data.currency);
+        setSelectValueViewMode("accountType", data.accountType);
+        setSelectValueViewMode("yesNoDueDate", data.yesNoDueDate);
+
+        // Conditional fields visibility
+        isEU = (data.isContractorEU || "").toLowerCase() === "yes";
+        document.getElementById("vatIdRow").style.display = isEU ? "" : "none";
+        document.getElementById("vatRateRow").style.display = isEU ? "" : "none";
+        document.getElementById("vatAmountRow").style.display = isEU ? "" : "none";
+        document.getElementById("dueDateRow").style.display =
+          (data.yesNoDueDate || "").toLowerCase() === "yes" ? "" : "none";
+        document.getElementById("bankCodeRow").style.display =
+          data.accountType ? "" : "none";
+
+        // Totals
+        document.getElementById("vatRate").value = fmtViewInt(data.vatRate);
+        document.getElementById("vatAmount").value = fmtView2(data.vatAmount);
+        document.getElementById("totalAmount").value = fmtView2(data.totalAmount);
+
+        // Services table
+        var tbody = document.getElementById("servicesBody");
+        tbody.innerHTML = "";
+        var services = data.services && data.services.length > 0 ? data.services : [{}];
+        currentRows = 0;
+        services.forEach(function (svc, idx) {
+          currentRows++;
+          var num = idx + 1;
+          var tr = document.createElement("tr");
+          tr.setAttribute("data-row", num);
+          tr.innerHTML =
+            '<td class="text-center align-middle">' + num + '</td>' +
+            '<td><input type="text" class="form-control svc-services" name="services_' + num + '" value="' + (svc.services || "") + '" /></td>' +
+            '<td><input type="text" class="form-control svc-period" name="period_' + num + '" value="' + (svc.period || "") + '" /></td>' +
+            '<td><input type="text" class="form-control svc-hours svc-num" name="hours_' + num + '" value="' + fmtViewHours(svc.hours) + '" inputmode="decimal" /></td>' +
+            '<td><input type="text" class="form-control svc-rate svc-num" name="rate_' + num + '" value="' + fmtView2(svc.rate) + '" inputmode="decimal" /></td>' +
+            '<td><input type="text" class="form-control svc-amount svc-num" name="amount_' + num + '" value="' + fmtView2(svc.amount) + '" /></td>' +
+            '<td class="text-center align-middle"><button type="button" class="icon-button remove-svc-row" title="Remove"><i class="bi bi-trash text-danger"></i></button></td>';
+          tbody.appendChild(tr);
+          attachRowListeners(tr);
+          attachBlurFormat(tr);
+          syncRowAmountState(tr);
+        });
+
+        // Subtotal
+        var subtotal = 0;
+        document.querySelectorAll("#servicesBody .svc-amount").forEach(function (el) {
+          subtotal += parseNum(el.value);
+        });
+        document.getElementById("subtotal").value = fmt2(subtotal);
+
+        updateRemoveButtons();
+        updateAddRowButton();
+
+        // Now load real dropdown options (replaces the single-value selects with full lists)
+        loadDropdownOptionsForEdit();
+
+        updateUIForMode();
+      }
+
+      function submitBillUpdate() {
+        if (!validateForm()) return;
+
+        var formData = collectFormData();
+        formData.id = billId;
+        if (Array.isArray(formData.services)) {
+          formData.services = formData.services.slice(0);
+        }
+
+        var confirmBtn = document.getElementById("edit-confirm-btn");
+        var cancelBtn = document.getElementById("edit-cancel-btn");
+        var spinner = document.getElementById("edit-spinner");
+        if (confirmBtn) confirmBtn.disabled = true;
+        if (cancelBtn) cancelBtn.disabled = true;
+        if (spinner) spinner.style.display = "inline-block";
+        setFormDisabled(true);
+
+        google.script.run
+          .withSuccessHandler(function (result) {
+            if (spinner) spinner.style.display = "none";
+            if (result && result.success) {
+              var mainContent = document.querySelector(".main-content");
+              var html =
+                '<div class="text-center py-5">' +
+                '<div class="alert alert-success d-inline-block" role="alert">' +
+                '<i class="bi bi-check-circle-fill me-2"></i>' +
+                'Bill updated successfully!</div>';
+              if (result.docUrl) {
+                html +=
+                  '<div class="mt-3">' +
+                  '<a href="' + result.docUrl + '" target="_blank" rel="noopener" class="btn btn-success px-4 fw-bold">' +
+                  '<i class="bi bi-file-earmark-text me-2"></i>Open Document</a></div>';
+              }
+              if (result.docError) {
+                html +=
+                  '<p class="small text-warning mt-2">' +
+                  String(result.docError).replace(/</g, "&lt;").replace(/>/g, "&gt;") + '</p>';
+              }
+              html +=
+                '<div class="mt-3">' +
+                '<button type="button" class="btn btn-outline-primary px-4 fw-bold" onclick="safeNavigateToBillsList()">' +
+                '<i class="bi bi-arrow-left me-2"></i>Back to the list</button></div></div>';
+              mainContent.innerHTML = html;
+            } else {
+              alert("Error: " + ((result && result.message) || "Unknown error"));
+              if (confirmBtn) confirmBtn.disabled = false;
+              if (cancelBtn) cancelBtn.disabled = false;
+              setFormDisabled(false);
+            }
+          })
+          .withFailureHandler(function (err) {
+            if (spinner) spinner.style.display = "none";
+            alert("Error updating bill: " + err);
+            if (confirmBtn) confirmBtn.disabled = false;
+            if (cancelBtn) cancelBtn.disabled = false;
+            setFormDisabled(false);
+          })
+          .updateBill(formData);
+      }
+
       function updateUIForMode() {
         var title = document.getElementById("page-title");
         var createBtns = document.getElementById("create-buttons");
         var viewBtns = document.getElementById("view-buttons");
+        var editBtns = document.getElementById("edit-buttons");
 
         createBtns.style.display = "none";
         viewBtns.style.display = "none";
+        if (editBtns) editBtns.style.display = "none";
 
         switch (mode) {
           case "view":
             title.textContent = "Bill - View";
             viewBtns.style.display = "block";
             setFormReadonly(true);
+            break;
+          case "edit":
+            title.textContent = "Bill - Edit";
+            if (editBtns) editBtns.style.display = "block";
+            setFormReadonly(false);
             break;
           default:
             title.textContent = "Create Bill";
@@ -1100,15 +1306,19 @@
         // Set UI for mode immediately (hide/show correct buttons)
         updateUIForMode();
 
-        // View mode: load data directly, skip dropdown loading
-        if (mode === "view" && billId) {
+        // View / Edit mode: load data, then fill form
+        if ((mode === "view" || mode === "edit") && billId) {
           document.getElementById("bill-form").style.display = "none";
           document.getElementById("loading-spinner").style.display = "";
           google.script.run
             .withSuccessHandler(function (data) {
               document.getElementById("loading-spinner").style.display = "none";
               document.getElementById("bill-form").style.display = "";
-              fillBillFormViewMode(data);
+              if (mode === "edit") {
+                fillBillFormEditMode(data);
+              } else {
+                fillBillFormViewMode(data);
+              }
             })
             .withFailureHandler(function (err) {
               document.getElementById("loading-spinner").style.display = "none";

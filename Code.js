@@ -424,6 +424,15 @@ function deleteBillById(id) {
   return deleteBillByIdFromData(id);
 }
 
+/**
+ * Update existing bill (overwrite row + recreate doc)
+ * @param {Object} formData - Bill form data including id
+ * @returns {Object} { success, docUrl?, docError?, message }
+ */
+function updateBill(formData) {
+  return updateBillByIdFromData(formData);
+}
+
 // Error handling and performance monitoring removed for cleaner code
 
 // Performance monitoring removed for cleaner code

@@ -2901,6 +2901,159 @@ function deleteBillByIdFromData(id) {
 }
 
 /**
+ * Update existing bill: overwrite row data, trash old doc, recreate doc from template.
+ * @param {Object} formData - { id, pe, contractorName, ... services: [...] }
+ * @returns {Object} { success, docUrl?, docError?, message }
+ */
+function updateBillByIdFromData(formData) {
+  try {
+    var billId = (formData.id || "").toString().trim();
+    if (!billId) {
+      return { success: false, message: "Invalid bill ID." };
+    }
+
+    normalizeBillFormServices(formData);
+
+    var spreadsheet = SpreadsheetApp.openById(CONFIG.BILLS_SPREADSHEET_ID);
+    var sheet = spreadsheet.getSheetByName(CONFIG.SHEETS.BILLS);
+    if (!sheet) {
+      return { success: false, message: "Bills sheet not found." };
+    }
+
+    var data = sheet.getDataRange().getValues();
+    var headers = data[0];
+    var columnMap = {};
+    headers.forEach(function (header, index) {
+      if (header) columnMap[header.toString().trim()] = index;
+    });
+
+    var rowIndex = -1;
+    var oldDocUrl = "";
+    for (var i = 1; i < data.length; i++) {
+      var rowId = data[i][0];
+      if (
+        rowId == billId ||
+        rowId === billId ||
+        (rowId !== null && rowId !== undefined && rowId.toString() === billId)
+      ) {
+        rowIndex = i + 1;
+        oldDocUrl = readBillDocUrlFromRow_(data[i], columnMap);
+        break;
+      }
+    }
+    if (rowIndex === -1) {
+      return { success: false, message: "Bill not found." };
+    }
+
+    // --- Trash old document ---
+    if (oldDocUrl) {
+      var oldDocId = extractDocIdFromUrl(oldDocUrl);
+      if (oldDocId) {
+        try {
+          DriveApp.getFileById(oldDocId).setTrashed(true);
+        } catch (err) {
+          Logger.log("Could not trash old bill doc: " + err);
+        }
+      }
+    }
+
+    // --- Overwrite row (keep ID in column A, update everything else) ---
+    Object.keys(formData).forEach(function (fieldId) {
+      if (fieldId === "services" || fieldId === "id") return;
+      var colName = BILL_FIELD_MAPPING[fieldId];
+      if (colName && columnMap.hasOwnProperty(colName)) {
+        var value = formData[fieldId] || "";
+        if (BILL_DATE_FIELDS.indexOf(fieldId) !== -1 && value) {
+          value = formatDateForBill(value);
+        }
+        sheet.getRange(rowIndex, columnMap[colName] + 1).setValue(value);
+      }
+    });
+
+    // Clear old service columns, then write new
+    for (var n = 1; n <= 10; n++) {
+      var svcCols = {
+        services: "Вид услуг" + n,
+        period: "Период работы" + n,
+        hours: "Часы" + n,
+        rate: "Рейт" + n,
+        amount: "Сумма" + n,
+      };
+      Object.keys(svcCols).forEach(function (key) {
+        if (columnMap.hasOwnProperty(svcCols[key])) {
+          sheet.getRange(rowIndex, columnMap[svcCols[key]] + 1).setValue("");
+        }
+      });
+    }
+    if (formData.services && Array.isArray(formData.services)) {
+      formData.services.forEach(function (svc, idx) {
+        var num = idx + 1;
+        var cols = {
+          services: "Вид услуг" + num,
+          period: "Период работы" + num,
+          hours: "Часы" + num,
+          rate: "Рейт" + num,
+          amount: "Сумма" + num,
+        };
+        Object.keys(cols).forEach(function (key) {
+          if (columnMap.hasOwnProperty(cols[key])) {
+            sheet.getRange(rowIndex, columnMap[cols[key]] + 1).setValue(svc[key] || "");
+          }
+        });
+      });
+    }
+
+    // --- Create new document ---
+    var docUrl = "";
+    var docError = "";
+    try {
+      var folderUrl = getBillStorageFolderUrlFromData();
+      var isEU =
+        (formData.isContractorEU || "").toString().trim().toLowerCase() === "yes";
+      var templateUrl = getBillTemplateUrlForEUFromData(isEU);
+      if (!folderUrl) {
+        docError = "Bills storage B1 is empty.";
+      } else if (!templateUrl) {
+        docError = "No template URL for EU=" + (isEU ? "yes" : "no") + ".";
+      } else {
+        var docResult = createBillDocument(formData, templateUrl, folderUrl);
+        if (docResult.success) {
+          docUrl = docResult.documentUrl;
+        } else {
+          docError = docResult.error || "Document creation failed.";
+        }
+      }
+    } catch (docEx) {
+      docError = docEx.toString();
+    }
+
+    // Write new doc URL
+    var docColIdx = getBillDocUrlColumnIndex_(columnMap);
+    if (docColIdx >= 0) {
+      sheet.getRange(rowIndex, docColIdx + 1).setValue(docUrl || "");
+    }
+
+    var message = "Bill updated successfully";
+    if (docUrl) {
+      message += ". Document recreated.";
+    } else if (docError) {
+      message += ". Document was not created: " + docError;
+    }
+
+    return {
+      success: true,
+      id: billId,
+      message: message,
+      docUrl: docUrl || "",
+      docError: docError || "",
+    };
+  } catch (error) {
+    console.error("Error updating bill:", error);
+    return { success: false, message: "Error updating bill: " + error.toString() };
+  }
+}
+
+/**
  * Folder URL from Bills spreadsheet, sheet "Bills storage", cell B1.
  */
 function getBillStorageFolderUrlFromData() {
