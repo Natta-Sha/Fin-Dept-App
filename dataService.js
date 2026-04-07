@@ -3150,14 +3150,15 @@ function billFormatTwoDecimals(val) {
   return n.toFixed(2);
 }
 
-/** Hours in bill Google Doc: whole numbers without ".00", decimals trimmed (e.g. 2, 2.25). */
+/** Hours in bill Google Doc: whole numbers without ".00", decimals max 2 places (e.g. 2, 2.25). */
 function formatBillHoursForDoc(val) {
   var n = billParseNum(val);
   if (isNaN(n)) return "";
-  if (Math.abs(n - Math.round(n)) < 1e-9) {
-    return String(Math.round(n));
+  var rounded = Math.round(n * 100) / 100;
+  if (Math.abs(rounded - Math.round(rounded)) < 1e-9) {
+    return String(Math.round(rounded));
   }
-  return n.toFixed(10).replace(/\.?0+$/, "");
+  return rounded.toFixed(2).replace(/0+$/, "");
 }
 
 function billCurrencySymbol(currency) {
