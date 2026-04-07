@@ -3026,10 +3026,10 @@ function updateBillByIdFromData(formData) {
     var docUrl = "";
     var docError = "";
     try {
-      var folderUrl = getBillStorageFolderUrlFromData();
+      var folderUrl = getBillStorageFolderUrlFromData(spreadsheet);
       var isEU =
         (formData.isContractorEU || "").toString().trim().toLowerCase() === "yes";
-      var templateUrl = getBillTemplateUrlForEUFromData(isEU);
+      var templateUrl = getBillTemplateUrlForEUFromData(isEU, spreadsheet);
       if (!folderUrl) {
         docError = "Bills storage B1 is empty.";
       } else if (!templateUrl) {
@@ -3077,9 +3077,10 @@ function updateBillByIdFromData(formData) {
 
 /**
  * Folder URL from Bills spreadsheet, sheet "Bills storage", cell B1.
+ * @param {Spreadsheet} [ss] - Optional pre-opened spreadsheet to avoid extra openById
  */
-function getBillStorageFolderUrlFromData() {
-  var spreadsheet = SpreadsheetApp.openById(CONFIG.BILLS_SPREADSHEET_ID);
+function getBillStorageFolderUrlFromData(ss) {
+  var spreadsheet = ss || SpreadsheetApp.openById(CONFIG.BILLS_SPREADSHEET_ID);
   var sh = spreadsheet.getSheetByName(CONFIG.SHEETS.BILLS_STORAGE);
   if (!sh) {
     throw new Error('Sheet "' + CONFIG.SHEETS.BILLS_STORAGE + '" not found');
@@ -3089,9 +3090,11 @@ function getBillStorageFolderUrlFromData() {
 
 /**
  * Google Doc template URL from Templates sheet: column A yes/no (EU), column B link.
+ * @param {boolean} isContractorEUYes
+ * @param {Spreadsheet} [ss] - Optional pre-opened spreadsheet to avoid extra openById
  */
-function getBillTemplateUrlForEUFromData(isContractorEUYes) {
-  var spreadsheet = SpreadsheetApp.openById(CONFIG.BILLS_SPREADSHEET_ID);
+function getBillTemplateUrlForEUFromData(isContractorEUYes, ss) {
+  var spreadsheet = ss || SpreadsheetApp.openById(CONFIG.BILLS_SPREADSHEET_ID);
   var sh = spreadsheet.getSheetByName(CONFIG.SHEETS.BILLS_TEMPLATES);
   if (!sh) {
     throw new Error('Sheet "' + CONFIG.SHEETS.BILLS_TEMPLATES + '" not found');
@@ -3377,11 +3380,11 @@ function saveBillToData(formData) {
     var docUrl = "";
     var docError = "";
     try {
-      var folderUrl = getBillStorageFolderUrlFromData();
+      var folderUrl = getBillStorageFolderUrlFromData(spreadsheet);
       var isEU =
         (formData.isContractorEU || "").toString().trim().toLowerCase() ===
         "yes";
-      var templateUrl = getBillTemplateUrlForEUFromData(isEU);
+      var templateUrl = getBillTemplateUrlForEUFromData(isEU, spreadsheet);
       if (!folderUrl) {
         docError = "Bills storage B1 is empty (folder URL missing).";
       } else if (!templateUrl) {
