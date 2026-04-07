@@ -2715,7 +2715,9 @@ function getBillDataByIdFromData(id) {
       return null;
     }
 
-    var data = sheet.getDataRange().getValues();
+    var dataRange = sheet.getDataRange();
+    var data = dataRange.getValues();
+    var displayData = dataRange.getDisplayValues();
     var headers = data[0];
     var indexMap = {};
     headers.forEach(function (header, index) {
@@ -2724,10 +2726,12 @@ function getBillDataByIdFromData(id) {
 
     // Find row by ID — same pattern as contracts
     var row = null;
+    var displayRow = null;
     for (var i = 1; i < data.length; i++) {
       var rowId = data[i][0];
       if (rowId == id || rowId === id || (rowId && rowId.toString() === id.toString())) {
         row = data[i];
+        displayRow = displayData[i];
         break;
       }
     }
@@ -2750,6 +2754,15 @@ function getBillDataByIdFromData(id) {
       if (val instanceof Date) {
         return Utilities.formatDate(val, Session.getScriptTimeZone(), "dd/MM/yyyy");
       }
+      return String(val);
+    }
+
+    function getDisplayColValue(columnName) {
+      var colIndex = indexMap[columnName];
+      if (colIndex === undefined) return "";
+      if (displayRow) return displayRow[colIndex] || "";
+      var val = row[colIndex];
+      if (val === null || val === undefined || val === "") return "";
       return String(val);
     }
 
@@ -2808,7 +2821,7 @@ function getBillDataByIdFromData(id) {
       if (!svc && !hrs && !rt && !amt) continue;
       result.services.push({
         services: svc,
-        period: getColValue("Период работы" + n),
+        period: getDisplayColValue("Период работы" + n),
         hours: hrs,
         rate: rt,
         amount: amt,
