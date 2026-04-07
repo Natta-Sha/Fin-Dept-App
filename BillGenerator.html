@@ -659,10 +659,7 @@
         var amt = row.querySelector(".svc-amount");
         if (!amt) return;
         if (rowHasHoursAndRateForCalc(row)) {
-          amt.readOnly = true;
           calcRowAmount(row);
-        } else {
-          amt.readOnly = false;
         }
       }
 
