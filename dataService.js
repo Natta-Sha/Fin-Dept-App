@@ -3182,7 +3182,7 @@ function buildBillDocumentFileName(formData) {
 function buildBillDocumentPlaceholderMap(formData) {
   var map = {};
   var peYes = (formData.pe || "").toString().trim().toLowerCase() === "yes";
-  map["{ФОП}"] = peYes ? "PE" : "";
+  map["{ФОП}"] = peYes ? "PE " : "";
   map["{Название контрактора}"] = (formData.contractorName || "").toString();
   map["{Номер контрактора}"] = (formData.contractorId || "").toString();
   map["{Адрес контрактора}"] = (formData.contractorAddress || "").toString();
