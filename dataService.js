@@ -2611,10 +2611,12 @@ function getBillListFromData() {
       result.push({
         id: row[0] || "",
         contractorName: row[indexMap["Название контрактора"]] || "",
+        agreementNumber: indexMap["№ договора"] !== undefined ? (row[indexMap["№ договора"]] || "").toString() : "",
         invoiceNumber: row[indexMap["Номер инвойса"]] || "",
         invoiceDate: formattedDate,
         totalAmount: formattedAmount,
         currency: row[indexMap["Валюта"]] || "",
+        isContractorEU: indexMap["Контрактор из ЕС"] !== undefined ? (row[indexMap["Контрактор из ЕС"]] || "").toString() : "",
       });
     }
 

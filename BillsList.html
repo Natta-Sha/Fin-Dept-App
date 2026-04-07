@@ -153,18 +153,22 @@
         <thead class="table-light">
           <tr>
             <th>Contractor's name</th>
+            <th>Contract's number</th>
             <th>Invoice number</th>
             <th>Invoice date</th>
             <th>Total amount</th>
             <th>Currency</th>
+            <th>EU</th>
             <th>Actions</th>
           </tr>
           <tr>
             <th><input type="text" placeholder="Search Contractor" /></th>
+            <th><input type="text" placeholder="Search Contract" /></th>
             <th><input type="text" placeholder="Search #" /></th>
             <th><input type="text" placeholder="Search Date" /></th>
             <th><input type="text" placeholder="Search Amount" /></th>
             <th><input type="text" placeholder="Search Currency" /></th>
+            <th><input type="text" placeholder="Search EU" /></th>
             <th></th>
           </tr>
         </thead>
@@ -179,19 +183,19 @@
             orderCellsTop: true,
             columnDefs: [
               {
-                targets: [0, 1, 4],
+                targets: [0, 1, 2, 5],
                 className: "dt-body-left dt-head-center",
               },
               {
-                targets: 2,
+                targets: [3, 6],
                 className: "dt-body-center dt-head-center",
               },
               {
-                targets: 3,
+                targets: 4,
                 className: "dt-body-right dt-head-center",
               },
               {
-                targets: 5,
+                targets: 7,
                 className: "dt-body-center dt-head-center",
                 orderable: false,
               },
@@ -222,10 +226,12 @@
               data.forEach(function (row) {
                 table.row.add([
                   row.contractorName || "",
+                  row.agreementNumber || "",
                   row.invoiceNumber || "",
                   row.invoiceDate || "",
                   row.totalAmount || "",
                   row.currency || "",
+                  row.isContractorEU || "",
                   '<a href="' + baseUrl + '?page=BillGenerator&id=' + encodeURIComponent(row.id) + '&mode=view" class="btn btn-sm btn-outline-primary" style="white-space: nowrap;">Open details</a>',
                 ]);
               });
