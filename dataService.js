@@ -2640,6 +2640,12 @@ function getBillListFromData() {
  */
 function getBillDropdownOptionsFromData() {
   try {
+    var cache = CacheService.getScriptCache();
+    var cached = cache.get("billDropdownOptions");
+    if (cached) {
+      return JSON.parse(cached);
+    }
+
     var spreadsheet = SpreadsheetApp.openById(CONFIG.BILLS_SPREADSHEET_ID);
     var listsSheet = spreadsheet.getSheetByName("Lists");
     if (!listsSheet) {
@@ -2667,11 +2673,14 @@ function getBillDropdownOptionsFromData() {
       }
     }
 
-    return {
+    var result = {
       choices: choices,
       currencies: currencies,
       accountTypes: accountTypes,
     };
+
+    cache.put("billDropdownOptions", JSON.stringify(result), 1800);
+    return result;
   } catch (error) {
     console.error("Error in getBillDropdownOptionsFromData:", error);
     return { choices: [], currencies: [], accountTypes: [] };
