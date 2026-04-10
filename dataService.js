@@ -2007,6 +2007,7 @@ const DATE_FIELDS = [
   "terminationDate",
   "registrationDate",
   "sowStartDate",
+  "probationPeriod",
 ];
 
 /**
