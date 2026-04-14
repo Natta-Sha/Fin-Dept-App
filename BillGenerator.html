@@ -146,6 +146,39 @@
       .svc-num {
         text-align: right;
       }
+
+      .mode-toggle {
+        display: inline-flex;
+        border-radius: 6px;
+        overflow: hidden;
+        border: 1px solid #ced4da;
+      }
+      .mode-toggle input[type="radio"] {
+        display: none;
+      }
+      .mode-toggle label {
+        padding: 2px 7px;
+        font-size: 0.7rem;
+        cursor: pointer;
+        background: #f8f9fa;
+        color: #495057;
+        border-right: 1px solid #ced4da;
+        margin: 0;
+        white-space: nowrap;
+        line-height: 1.4;
+        user-select: none;
+      }
+      .mode-toggle label:last-child {
+        border-right: none;
+      }
+      .mode-toggle input[type="radio"]:checked + label {
+        background: #667eea;
+        color: white;
+      }
+      .svc-field-disabled {
+        background-color: #e9ecef !important;
+        color: #6c757d !important;
+      }
     </style>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
   </head>
@@ -290,6 +323,7 @@
                 <th style="width: 40px">#</th>
                 <th>Services</th>
                 <th>Period</th>
+                <th style="width: 100px">Mode</th>
                 <th style="width: 130px">Hours</th>
                 <th style="width: 130px">Rate</th>
                 <th style="width: 140px">Amount</th>
@@ -297,17 +331,6 @@
               </tr>
             </thead>
             <tbody id="servicesBody">
-              <tr data-row="1">
-                <td class="text-center align-middle">1</td>
-                <td><input type="text" class="form-control svc-services" name="services_1" /></td>
-                <td><input type="text" class="form-control svc-period" name="period_1" /></td>
-                <td><input type="text" class="form-control svc-hours svc-num" name="hours_1" inputmode="decimal" placeholder="0.00" /></td>
-                <td><input type="text" class="form-control svc-rate svc-num" name="rate_1" inputmode="decimal" placeholder="0.00" /></td>
-                <td><input type="text" class="form-control svc-amount svc-num" name="amount_1" placeholder="0.00" /></td>
-                <td class="text-center align-middle">
-                  <button type="button" class="icon-button remove-svc-row" title="Remove" disabled><i class="bi bi-trash text-danger"></i></button>
-                </td>
-              </tr>
             </tbody>
           </table>
           <button type="button" class="btn btn-outline-primary btn-sm" id="add-row-btn">
@@ -589,25 +612,124 @@
         btn.disabled = currentRows >= MAX_ROWS;
       }
 
-      function addServiceRow() {
-        if (currentRows >= MAX_ROWS) return;
+      function buildModeSelectorHtml(rowNum, selectedMode) {
+        var modes = [
+          { value: "ar", label: "A÷R" },
+          { value: "hr", label: "H×R" },
+          { value: "amt", label: "Amt" },
+        ];
+        var html = '<div class="mode-toggle">';
+        modes.forEach(function (m) {
+          var checked = m.value === selectedMode ? " checked" : "";
+          html +=
+            '<input type="radio" name="mode_' + rowNum + '" id="mode_' + rowNum + '_' + m.value + '" value="' + m.value + '"' + checked + '>' +
+            '<label for="mode_' + rowNum + '_' + m.value + '">' + m.label + '</label>';
+        });
+        html += '</div>';
+        return html;
+      }
+
+      function buildServiceRowHtml(num, svc, rowMode) {
+        svc = svc || {};
+        var mode = rowMode || "ar";
+        return (
+          '<td class="text-center align-middle">' + num + '</td>' +
+          '<td><input type="text" class="form-control svc-services" name="services_' + num + '" value="' + (svc.services || "") + '" /></td>' +
+          '<td><input type="text" class="form-control svc-period" name="period_' + num + '" value="' + (svc.period || "") + '" /></td>' +
+          '<td class="text-center align-middle">' + buildModeSelectorHtml(num, mode) + '</td>' +
+          '<td><input type="text" class="form-control svc-hours svc-num" name="hours_' + num + '" value="' + (svc.hours || "") + '" inputmode="decimal" placeholder="0.00" /></td>' +
+          '<td><input type="text" class="form-control svc-rate svc-num" name="rate_' + num + '" value="' + (svc.rate || "") + '" inputmode="decimal" placeholder="0.00" /></td>' +
+          '<td><input type="text" class="form-control svc-amount svc-num" name="amount_' + num + '" value="' + (svc.amount || "") + '" placeholder="0.00" /></td>' +
+          '<td class="text-center align-middle"><button type="button" class="icon-button remove-svc-row" title="Remove"><i class="bi bi-trash text-danger"></i></button></td>'
+        );
+      }
+
+      function getRowMode(row) {
+        var checked = row.querySelector('.mode-toggle input[type="radio"]:checked');
+        return checked ? checked.value : "ar";
+      }
+
+      function detectModeFromData(svc) {
+        var hasHours = svc.hours !== undefined && svc.hours !== null && String(svc.hours).trim() !== "";
+        var hasRate = svc.rate !== undefined && svc.rate !== null && String(svc.rate).trim() !== "";
+        var hasAmount = svc.amount !== undefined && svc.amount !== null && String(svc.amount).trim() !== "";
+        if (hasHours && hasRate) return "hr";
+        if (hasAmount && hasRate) return "ar";
+        if (hasAmount) return "amt";
+        return "ar";
+      }
+
+      function setFieldState(input, enabled) {
+        if (!input) return;
+        input.readOnly = !enabled;
+        if (enabled) {
+          input.classList.remove("svc-field-disabled");
+        } else {
+          input.classList.add("svc-field-disabled");
+        }
+      }
+
+      function applyRowMode(row) {
+        var mode = getRowMode(row);
+        var hours = row.querySelector(".svc-hours");
+        var rate = row.querySelector(".svc-rate");
+        var amount = row.querySelector(".svc-amount");
+
+        if (mode === "hr") {
+          setFieldState(hours, true);
+          setFieldState(rate, true);
+          setFieldState(amount, false);
+          var h = parseNum(hours.value);
+          var r = parseNum(rate.value);
+          if (hours.value.trim() !== "" && rate.value.trim() !== "") {
+            amount.value = fmt2(h * r);
+          }
+        } else if (mode === "ar") {
+          setFieldState(hours, false);
+          setFieldState(rate, true);
+          setFieldState(amount, true);
+          var a = parseNum(amount.value);
+          var r2 = parseNum(rate.value);
+          if (amount.value.trim() !== "" && rate.value.trim() !== "" && r2 !== 0) {
+            hours.value = fmtHoursCalc(a / r2);
+          }
+        } else {
+          setFieldState(hours, false);
+          setFieldState(rate, false);
+          setFieldState(amount, true);
+          hours.value = "";
+          rate.value = "";
+        }
+        recalcTotals();
+      }
+
+      function fmtHoursCalc(n) {
+        if (isNaN(n)) return "";
+        var rounded = Math.round(n * 100) / 100;
+        if (Math.abs(rounded - Math.round(rounded)) < 1e-9) {
+          return String(Math.round(rounded));
+        }
+        return rounded.toFixed(2).replace(/0+$/, "");
+      }
+
+      function createServiceRow(svc, rowMode) {
         currentRows++;
-        var tbody = document.getElementById("servicesBody");
+        var num = currentRows;
         var tr = document.createElement("tr");
-        tr.setAttribute("data-row", currentRows);
-        tr.innerHTML =
-          '<td class="text-center align-middle">' + currentRows + '</td>' +
-          '<td><input type="text" class="form-control svc-services" name="services_' + currentRows + '" /></td>' +
-          '<td><input type="text" class="form-control svc-period" name="period_' + currentRows + '" /></td>' +
-          '<td><input type="text" class="form-control svc-hours svc-num" name="hours_' + currentRows + '" inputmode="decimal" placeholder="0.00" /></td>' +
-          '<td><input type="text" class="form-control svc-rate svc-num" name="rate_' + currentRows + '" inputmode="decimal" placeholder="0.00" /></td>' +
-          '<td><input type="text" class="form-control svc-amount svc-num" name="amount_' + currentRows + '" placeholder="0.00" /></td>' +
-          '<td class="text-center align-middle"><button type="button" class="icon-button remove-svc-row" title="Remove"><i class="bi bi-trash text-danger"></i></button></td>';
-        tbody.appendChild(tr);
+        tr.setAttribute("data-row", num);
+        tr.innerHTML = buildServiceRowHtml(num, svc, rowMode);
+        document.getElementById("servicesBody").appendChild(tr);
+        attachRowListeners(tr);
+        attachBlurFormat(tr);
+        applyRowMode(tr);
         updateRemoveButtons();
         updateAddRowButton();
-        attachRowListeners(tr);
-        syncRowAmountState(tr);
+        return tr;
+      }
+
+      function addServiceRow() {
+        if (currentRows >= MAX_ROWS) return;
+        createServiceRow(null, "ar");
       }
 
       function removeServiceRow(btn) {
@@ -633,6 +755,13 @@
           row.querySelector(".svc-hours").name = "hours_" + num;
           row.querySelector(".svc-rate").name = "rate_" + num;
           row.querySelector(".svc-amount").name = "amount_" + num;
+          row.querySelectorAll('.mode-toggle input[type="radio"]').forEach(function (r) {
+            r.name = "mode_" + num;
+            r.id = r.id.replace(/mode_\d+/, "mode_" + num);
+          });
+          row.querySelectorAll('.mode-toggle label').forEach(function (lbl) {
+            lbl.setAttribute("for", lbl.getAttribute("for").replace(/mode_\d+/, "mode_" + num));
+          });
         });
       }
 
@@ -642,27 +771,6 @@
           var btn = row.querySelector(".remove-svc-row");
           if (btn) btn.disabled = rows.length <= 1;
         });
-      }
-
-      function rowHasHoursAndRateForCalc(row) {
-        var h = row.querySelector(".svc-hours");
-        var r = row.querySelector(".svc-rate");
-        return h && r && h.value.trim() !== "" && r.value.trim() !== "";
-      }
-
-      function syncRowAmountState(row) {
-        var amt = row.querySelector(".svc-amount");
-        if (!amt) return;
-        if (rowHasHoursAndRateForCalc(row)) {
-          calcRowAmount(row);
-        }
-      }
-
-      function calcRowAmount(row) {
-        if (!rowHasHoursAndRateForCalc(row)) return;
-        var hours = parseNum(row.querySelector(".svc-hours").value);
-        var rate = parseNum(row.querySelector(".svc-rate").value);
-        row.querySelector(".svc-amount").value = fmt2(hours * rate);
       }
 
       function recalcTotals() {
@@ -684,24 +792,26 @@
         var amount = row.querySelector(".svc-amount");
         if (hours) {
           hours.addEventListener("input", function () {
-            syncRowAmountState(row);
-            recalcTotals();
+            applyRowMode(row);
           });
         }
         if (rate) {
           rate.addEventListener("input", function () {
-            syncRowAmountState(row);
-            recalcTotals();
+            applyRowMode(row);
           });
         }
         if (amount) {
           amount.addEventListener("input", function () {
-            recalcTotals();
+            applyRowMode(row);
           });
         }
+        row.querySelectorAll('.mode-toggle input[type="radio"]').forEach(function (radio) {
+          radio.addEventListener("change", function () {
+            applyRowMode(row);
+          });
+        });
       }
 
-      // Format on blur: ensure 2 decimal places
       function formatOnBlur(input) {
         var v = parseNum(input.value);
         if (input.value.trim() !== "") {
@@ -811,7 +921,12 @@
       function setFormDisabled(disabled) {
         var inputs = document.querySelectorAll("#bill-form input, #bill-form select, #bill-form button");
         inputs.forEach(function (el) { el.disabled = disabled; });
-        if (!disabled) updateRemoveButtons();
+        if (!disabled) {
+          updateRemoveButtons();
+          document.querySelectorAll("#servicesBody tr").forEach(function (row) {
+            applyRowMode(row);
+          });
+        }
       }
 
       function showValidationError(messages) {
@@ -1071,20 +1186,16 @@
         tbody.innerHTML = "";
         var services = data.services && data.services.length > 0 ? data.services : [{}];
         currentRows = 0;
-        services.forEach(function (svc, idx) {
-          currentRows++;
-          var num = idx + 1;
-          var tr = document.createElement("tr");
-          tr.setAttribute("data-row", num);
-          tr.innerHTML =
-            '<td class="text-center align-middle">' + num + '</td>' +
-            '<td><input type="text" class="form-control svc-services" name="services_' + num + '" value="' + (svc.services || "") + '" /></td>' +
-            '<td><input type="text" class="form-control svc-period" name="period_' + num + '" value="' + (svc.period || "") + '" /></td>' +
-            '<td><input type="text" class="form-control svc-hours svc-num" name="hours_' + num + '" value="' + fmtViewHours(svc.hours) + '" /></td>' +
-            '<td><input type="text" class="form-control svc-rate svc-num" name="rate_' + num + '" value="' + fmtView2(svc.rate) + '" /></td>' +
-            '<td><input type="text" class="form-control svc-amount svc-num" name="amount_' + num + '" value="' + fmtView2(svc.amount) + '" readonly /></td>' +
-            '<td class="text-center align-middle"><button type="button" class="icon-button remove-svc-row" title="Remove"><i class="bi bi-trash text-danger"></i></button></td>';
-          tbody.appendChild(tr);
+        services.forEach(function (svc) {
+          var fmtSvc = {
+            services: svc.services || "",
+            period: svc.period || "",
+            hours: fmtViewHours(svc.hours),
+            rate: fmtView2(svc.rate),
+            amount: fmtView2(svc.amount),
+          };
+          var detectedMode = detectModeFromData(svc);
+          createServiceRow(fmtSvc, detectedMode);
         });
 
         // Subtotal
@@ -1147,23 +1258,16 @@
         tbody.innerHTML = "";
         var services = data.services && data.services.length > 0 ? data.services : [{}];
         currentRows = 0;
-        services.forEach(function (svc, idx) {
-          currentRows++;
-          var num = idx + 1;
-          var tr = document.createElement("tr");
-          tr.setAttribute("data-row", num);
-          tr.innerHTML =
-            '<td class="text-center align-middle">' + num + '</td>' +
-            '<td><input type="text" class="form-control svc-services" name="services_' + num + '" value="' + (svc.services || "") + '" /></td>' +
-            '<td><input type="text" class="form-control svc-period" name="period_' + num + '" value="' + (svc.period || "") + '" /></td>' +
-            '<td><input type="text" class="form-control svc-hours svc-num" name="hours_' + num + '" value="' + fmtViewHours(svc.hours) + '" inputmode="decimal" /></td>' +
-            '<td><input type="text" class="form-control svc-rate svc-num" name="rate_' + num + '" value="' + fmtView2(svc.rate) + '" inputmode="decimal" /></td>' +
-            '<td><input type="text" class="form-control svc-amount svc-num" name="amount_' + num + '" value="' + fmtView2(svc.amount) + '" /></td>' +
-            '<td class="text-center align-middle"><button type="button" class="icon-button remove-svc-row" title="Remove"><i class="bi bi-trash text-danger"></i></button></td>';
-          tbody.appendChild(tr);
-          attachRowListeners(tr);
-          attachBlurFormat(tr);
-          syncRowAmountState(tr);
+        services.forEach(function (svc) {
+          var fmtSvc = {
+            services: svc.services || "",
+            period: svc.period || "",
+            hours: fmtViewHours(svc.hours),
+            rate: fmtView2(svc.rate),
+            amount: fmtView2(svc.amount),
+          };
+          var detectedMode = detectModeFromData(svc);
+          createServiceRow(fmtSvc, detectedMode);
         });
 
         // Subtotal
@@ -1382,22 +1486,9 @@
           return;
         }
 
-        // Create mode: load dropdowns
+        // Create mode: load dropdowns and create first row
         loadDropdownOptions();
-
-        var firstRow = document.querySelector("#servicesBody tr");
-        if (firstRow) {
-          attachRowListeners(firstRow);
-          attachBlurFormat(firstRow);
-          syncRowAmountState(firstRow);
-        }
-
-        var origAdd = addServiceRow;
-        addServiceRow = function () {
-          origAdd();
-          var rows = document.querySelectorAll("#servicesBody tr");
-          attachBlurFormat(rows[rows.length - 1]);
-        };
+        createServiceRow(null, "ar");
       });
     </script>
   </body>
