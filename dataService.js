@@ -731,6 +731,10 @@ function processFormFromData(data) {
 
     sheet.getRange(newRowIndex, 20).setValue(doc.getUrl());
     sheet.getRange(newRowIndex, 21).setValue(pdfFile.getUrl());
+
+    var invHeaders = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
+    writeAuditColumns(sheet, newRowIndex, buildColumnMap(invHeaders));
+
     SpreadsheetApp.flush();
     Logger.log(
       `processFormFromData: Wrote Doc and PDF URLs to sheet at row ${newRowIndex}.`

@@ -655,6 +655,13 @@
         <div class="row mt-4">
           <div class="col-md-12 d-flex justify-content-end gap-2">
             <button
+              id="view-delete-btn"
+              class="btn btn-outline-danger px-4 fw-bold"
+              onclick="confirmDeleteInvoice()"
+            >
+              Delete
+            </button>
+            <button
               id="view-back-btn"
               class="btn btn-outline-primary px-5 fw-bold"
             >
@@ -711,6 +718,59 @@
           ) {
             google.script.host.close();
           }
+        }
+
+        function confirmDeleteInvoice() {
+          if (!invoiceId) {
+            alert("Invoice ID not found.");
+            return;
+          }
+          var mainContent = document.querySelector(".main-content");
+          if (!mainContent) return;
+
+          mainContent.innerHTML =
+            '<div class="col-12 text-center py-5">' +
+            '<div class="spinner-border text-primary" role="status">' +
+            '<span class="visually-hidden">Deleting...</span></div>' +
+            '<p class="mt-3">Deleting invoice...</p></div>';
+
+          google.script.run
+            .withSuccessHandler(function (result) {
+              if (result && result.success) {
+                mainContent.innerHTML =
+                  '<div class="text-center py-5">' +
+                  '<div class="alert alert-success d-inline-block" role="alert">' +
+                  '<i class="bi bi-check-circle-fill me-2"></i>' +
+                  "Invoice deleted successfully!" +
+                  "</div>" +
+                  '<div class="mt-4">' +
+                  '<button type="button" class="btn btn-primary px-4 fw-bold" onclick="safeNavigateToInvoicesList()">' +
+                  '<i class="bi bi-arrow-left me-2"></i>Back to the list</button>' +
+                  "</div></div>";
+              } else {
+                mainContent.innerHTML =
+                  '<div class="text-center py-5">' +
+                  '<div class="alert alert-danger d-inline-block">' +
+                  "Error: " + ((result && result.message) || "Unknown error") +
+                  "</div>" +
+                  '<div class="mt-4">' +
+                  '<button type="button" class="btn btn-primary px-4 fw-bold" onclick="safeNavigateToInvoicesList()">' +
+                  '<i class="bi bi-arrow-left me-2"></i>Back to the list</button>' +
+                  "</div></div>";
+              }
+            })
+            .withFailureHandler(function (err) {
+              mainContent.innerHTML =
+                '<div class="text-center py-5">' +
+                '<div class="alert alert-danger d-inline-block">' +
+                "Error deleting invoice: " + err +
+                "</div>" +
+                '<div class="mt-4">' +
+                '<button type="button" class="btn btn-primary px-4 fw-bold" onclick="safeNavigateToInvoicesList()">' +
+                '<i class="bi bi-arrow-left me-2"></i>Back to the list</button>' +
+                "</div></div>";
+            })
+            .deleteInvoiceById(invoiceId);
         }
 
         // Disable/enable all form fields (inputs, textareas, row controls)
