@@ -1289,6 +1289,8 @@
             return;
           }
 
+          document.getElementById("generate-btn").disabled = true;
+
           // Check if project details are loaded
           if (
             !window.currentProjectDetails ||
