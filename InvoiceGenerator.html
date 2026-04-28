@@ -1523,11 +1523,6 @@
           document.getElementById("delete-bottom-btn-container").style.display =
             "none";
 
-          if (invoiceId && mode === "delete") {
-            confirmDeleteInvoice();
-            return;
-          }
-
           if (invoiceId) {
             google.script.run
               .withSuccessHandler(function (data) {
@@ -1648,7 +1643,7 @@
               .getInvoiceDataById(invoiceId);
 
             // Set up the page based on mode
-            if (mode === "view") {
+            if (mode === "view" || mode === "delete") {
               document.getElementById("page-title").textContent =
                 "Invoice - View";
               document.getElementById(
