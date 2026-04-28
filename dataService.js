@@ -1,6 +1,34 @@
 // Data access layer for spreadsheet operations
 
 /**
+ * Write "Modified by" and "Modified at" into the given row using header-based column mapping.
+ * @param {Sheet} sheet - The sheet to write to
+ * @param {number} rowIndex - 1-based row index
+ * @param {Object} columnMap - { headerName: 0-based column index }
+ */
+function writeAuditColumns(sheet, rowIndex, columnMap) {
+  var email = Session.getActiveUser().getEmail() || "";
+  var now = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), "dd/MM/yyyy HH:mm");
+  if (columnMap["Modified by"] !== undefined) {
+    sheet.getRange(rowIndex, columnMap["Modified by"] + 1).setValue(email);
+  }
+  if (columnMap["Modified at"] !== undefined) {
+    sheet.getRange(rowIndex, columnMap["Modified at"] + 1).setValue(now);
+  }
+}
+
+/**
+ * Build a column map from headers array: { headerName: 0-based index }
+ */
+function buildColumnMap(headers) {
+  var map = {};
+  headers.forEach(function (h, i) {
+    if (h) map[h.toString().trim()] = i;
+  });
+  return map;
+}
+
+/**
  * Get project names from the Lists sheet
  * @returns {Array} Array of unique project names
  */
@@ -335,10 +363,18 @@ function getInvoiceDataByIdFromData(id) {
     }
 
     const items = [];
-    for (let i = 0; i < CONFIG.INVOICE_TABLE.MAX_ROWS; i++) {
-      const base = 21 + i * CONFIG.INVOICE_TABLE.COLUMNS_PER_ROW;
-      const item = row.slice(base, base + CONFIG.INVOICE_TABLE.COLUMNS_PER_ROW);
-      if (item.some((cell) => cell && cell.toString().trim() !== "")) {
+    for (var n = 1; n <= CONFIG.INVOICE_TABLE.MAX_ROWS; n++) {
+      var numKey = "Row " + n + " #";
+      if (indexMap[numKey] === undefined) continue;
+      var item = [
+        row[indexMap[numKey]] || "",
+        row[indexMap["Row " + n + " Service"]] || "",
+        row[indexMap["Row " + n + " Period"]] || "",
+        row[indexMap["Row " + n + " Quantity"]] || "",
+        row[indexMap["Row " + n + " Rate/hour"]] || "",
+        row[indexMap["Row " + n + " Amount"]] || ""
+      ];
+      if (item.some(function (cell) { return cell && cell.toString().trim() !== ""; })) {
         items.push(item);
       }
     }
@@ -478,118 +514,18 @@ function getCreditNoteDataByIdFromData(id) {
  * @param {Object} data - Invoice data to save
  * @returns {Object} Result with doc and PDF URLs
  */
-function saveInvoiceData(data) {
-  try {
-    const spreadsheet = getSpreadsheet(CONFIG.SPREADSHEET_ID);
-    const sheet = getSheet(spreadsheet, CONFIG.SHEETS.INVOICES);
-    const uniqueId = Utilities.getUuid();
-
-    // Parse DD/MM/YYYY date
-    const [day, month, year] = data.dueDate.split("/");
-    const dueDateObject = new Date(year, month - 1, day);
-
-    const newRow = [
-      uniqueId,
-      data.projectName,
-      data.invoiceNumber,
-      data.clientName,
-      data.clientAddress,
-      data.clientNumber,
-      new Date(data.invoiceDate), // YYYY-MM-DD is fine
-      dueDateObject,
-      data.tax,
-      data.subtotal,
-      calculateTaxAmountFromUtils(data.subtotal, data.tax),
-      calculateTotalAmountFromUtils(
-        data.subtotal,
-        calculateTaxAmountFromUtils(data.subtotal, data.tax)
-      ),
-      data.currency === "$" ? data.exchangeRate : "",
-      data.currency,
-      data.currency === "$" ? data.amountInEUR : "",
-      data.ourCompany || "",
-      data.comment || "",
-      "", // Placeholder for Doc URL
-      "", // Placeholder for PDF URL
-    ];
-
-    // Process items to force Period field to be saved as text
-    const itemCells = [];
-    data.items.forEach((row, i) => {
-      const newRow = [...row];
-      // Force Period field (index 2) to be saved as text to prevent Google Sheets from converting it to date
-      if (newRow[2]) {
-        newRow[2] = `'${newRow[2].toString()}`; // Add single quote prefix to force text format
-      }
-      itemCells.push(...newRow);
-    });
-    const fullRow = newRow.concat(itemCells);
-
-    const newRowIndex = sheet.getLastRow() + 1;
-    sheet.getRange(newRowIndex, 1, 1, fullRow.length).setValues([fullRow]);
-    CacheService.getScriptCache().remove("invoiceList");
-
-    return { newRowIndex, uniqueId };
-  } catch (error) {
-    console.error("Error saving invoice data:", error);
-    throw error;
-  }
-}
-
 function processFormFromData(data) {
   try {
     Logger.log("processFormFromData: Starting invoice creation.");
-    Logger.log(
-      `processFormFromData: Received data for project: ${data.projectName}, invoice: ${data.invoiceNumber}`
-    );
 
     const spreadsheet = getSpreadsheet(CONFIG.SPREADSHEET_ID);
     const sheet = getSheet(spreadsheet, CONFIG.SHEETS.INVOICES);
     const uniqueId = Utilities.getUuid();
-    Logger.log(`processFormFromData: Generated new unique ID: ${uniqueId}`);
 
-    if (sheet.getLastRow() === 0) {
-      const baseHeaders = [
-        "ID",
-        "Project Name",
-        "Invoice Number",
-        "Client Name",
-        "Client Address",
-        "Client Number",
-        "Invoice Date",
-        "Due Date",
-        "Tax Rate (%)",
-        "Subtotal",
-        "Tax Amount",
-        "Total",
-        "Exchange Rate",
-        "Currency",
-        "Amount in EUR",
-        "Bank Details 1",
-        "Bank Details 2",
-        "Our Company",
-        "Comment",
-        "Google Doc Link",
-        "PDF Link",
-      ];
-
-      const itemHeaders = [];
-      for (let i = 1; i <= CONFIG.INVOICE_TABLE.MAX_ROWS; i++) {
-        itemHeaders.push(
-          `Row ${i} #`,
-          `Row ${i} Service`,
-          `Row ${i} Period`,
-          `Row ${i} Quantity`,
-          `Row ${i} Rate/hour`,
-          `Row ${i} Amount`
-        );
-      }
-      sheet.appendRow([...baseHeaders, ...itemHeaders]);
-      Logger.log("processFormFromData: Sheet was empty, headers created.");
-    }
+    const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
+    const colMap = buildColumnMap(headers);
 
     const formattedDate = formatDate(data.invoiceDate);
-
     const [day, month, year] = data.dueDate.split("/");
     const dueDateObject = new Date(year, month - 1, day);
     const formattedDueDate = formatDate(dueDateObject);
@@ -599,50 +535,48 @@ function processFormFromData(data) {
     const taxAmount = (subtotalNum * taxRate) / 100;
     const totalAmount = subtotalNum + taxAmount;
 
-    const itemCells = [];
-    data.items.forEach((row, i) => {
-      const newRow = [...row];
-      newRow[0] = (i + 1).toString();
-      // Force Period field (index 2) to be saved as text to prevent Google Sheets from converting it to date
-      if (newRow[2]) {
-        newRow[2] = `'${newRow[2].toString()}`; // Add single quote prefix to force text format
-      }
-      itemCells.push(...newRow);
-    });
+    // Build row by header names
+    const rowData = new Array(headers.length).fill("");
+    rowData[colMap["ID"]] = uniqueId;
+    rowData[colMap["Project Name"]] = data.projectName;
+    rowData[colMap["Invoice Number"]] = data.invoiceNumber;
+    rowData[colMap["Client Name"]] = data.clientName;
+    rowData[colMap["Client Address"]] = data.clientAddress;
+    rowData[colMap["Client Number"]] = data.clientNumber;
+    rowData[colMap["Invoice Date"]] = new Date(data.invoiceDate);
+    rowData[colMap["Due Date"]] = dueDateObject;
+    rowData[colMap["Tax Rate (%)"]] = taxRate.toFixed(0);
+    rowData[colMap["Subtotal"]] = subtotalNum.toFixed(2);
+    rowData[colMap["Tax Amount"]] = taxAmount.toFixed(2);
+    rowData[colMap["Total"]] = totalAmount.toFixed(2);
+    rowData[colMap["Exchange Rate"]] = data.currency === "$" ? parseFloat(data.exchangeRate).toFixed(4) : "";
+    rowData[colMap["Currency"]] = data.currency;
+    rowData[colMap["Amount in EUR"]] = data.currency === "$" ? parseFloat(data.amountInEUR).toFixed(2) : "";
+    rowData[colMap["Bank Details 1"]] = data.bankDetails1 || "";
+    rowData[colMap["Bank Details 2"]] = data.bankDetails2 || "";
+    rowData[colMap["Our Company"]] = data.ourCompany || "";
+    rowData[colMap["Comment"]] = data.comment || "";
 
-    const row = [
-      uniqueId,
-      data.projectName,
-      data.invoiceNumber,
-      data.clientName,
-      data.clientAddress,
-      data.clientNumber,
-      new Date(data.invoiceDate),
-      dueDateObject,
-      taxRate.toFixed(0),
-      subtotalNum.toFixed(2),
-      taxAmount.toFixed(2),
-      totalAmount.toFixed(2),
-      data.currency === "$" ? parseFloat(data.exchangeRate).toFixed(4) : "",
-      data.currency,
-      data.currency === "$" ? parseFloat(data.amountInEUR).toFixed(2) : "",
-      data.bankDetails1 || "",
-      data.bankDetails2 || "",
-      data.ourCompany || "",
-      data.comment || "",
-      "",
-      "", // placeholders for doc & pdf
-    ].concat(itemCells);
+    // Service rows
+    if (data.items && data.items.length > 0) {
+      data.items.forEach(function (item, i) {
+        var num = i + 1;
+        if (colMap["Row " + num + " #"] !== undefined) {
+          rowData[colMap["Row " + num + " #"]] = (i + 1).toString();
+          rowData[colMap["Row " + num + " Service"]] = item[1] || "";
+          rowData[colMap["Row " + num + " Period"]] = item[2] ? "'" + item[2].toString() : "";
+          rowData[colMap["Row " + num + " Quantity"]] = item[3] || "";
+          rowData[colMap["Row " + num + " Rate/hour"]] = item[4] || "";
+          rowData[colMap["Row " + num + " Amount"]] = item[5] || "";
+        }
+      });
+    }
 
     const newRowIndex = sheet.getLastRow() + 1;
-    sheet.getRange(newRowIndex, 1, 1, row.length).setValues([row]);
-    Logger.log(
-      `processFormFromData: Wrote main data to sheet '${CONFIG.SHEETS.INVOICES}' at row ${newRowIndex}.`
-    );
+    sheet.getRange(newRowIndex, 1, 1, rowData.length).setValues([rowData]);
 
+    // Create documents
     const folderId = getProjectFolderId(data.projectName);
-    Logger.log(">>> Resolved folderId: " + folderId);
-
     const doc = createInvoiceDoc(
       data,
       formattedDate,
@@ -655,70 +589,43 @@ function processFormFromData(data) {
       folderId
     );
     if (!doc) {
-      Logger.log(
-        "processFormFromData: ERROR - createInvoiceDoc returned null or undefined."
-      );
-      throw new Error(
-        "Failed to create the Google Doc. The returned document object was empty."
-      );
+      throw new Error("Failed to create the Google Doc.");
     }
-    Logger.log(
-      `processFormFromData: createInvoiceDoc successful. Doc ID: ${doc.getId()}, URL: ${doc.getUrl()}`
-    );
 
     Utilities.sleep(1000);
-    Logger.log("processFormFromData: Woke up from 1-second sleep.");
 
     const pdf = doc.getAs("application/pdf");
     if (!pdf) {
-      Logger.log(
-        "processFormFromData: ERROR - doc.getAs('application/pdf') returned a null blob."
-      );
       throw new Error("Failed to generate PDF content from the document.");
     }
-    Logger.log(
-      `processFormFromData: Got PDF blob. Name: ${pdf.getName()}, Type: ${pdf.getContentType()}, Size: ${
-        pdf.getBytes().length
-      } bytes.`
-    );
 
     const folder = DriveApp.getFolderById(CONFIG.FOLDER_ID);
-
-    const cleanCompany = (data.ourCompany || "")
-      .replace(/[\\/:*?"<>|]/g, "")
-      .trim();
-    const cleanClient = (data.clientName || "")
-      .replace(/[\\/:*?"<>|]/g, "")
-      .trim();
+    const cleanCompany = (data.ourCompany || "").replace(/[\\/:*?"<>|]/g, "").trim();
+    const cleanClient = (data.clientName || "").replace(/[\\/:*?"<>|]/g, "").trim();
     const filename = `${data.invoiceDate}_Invoice${data.invoiceNumber}_${cleanCompany}-${cleanClient}`;
-
     const pdfFile = folder.createFile(pdf).setName(`${filename}.pdf`);
-    Logger.log(
-      `processFormFromData: Created PDF file. ID: ${pdfFile.getId()}, URL: ${pdfFile.getUrl()}`
-    );
 
-    sheet.getRange(newRowIndex, 20).setValue(doc.getUrl());
-    sheet.getRange(newRowIndex, 21).setValue(pdfFile.getUrl());
+    // Write Doc/PDF URLs and audit columns
+    if (colMap["Google Doc Link"] !== undefined) rowData[colMap["Google Doc Link"]] = doc.getUrl();
+    if (colMap["PDF Link"] !== undefined) rowData[colMap["PDF Link"]] = pdfFile.getUrl();
+
+    var auditEmail = Session.getActiveUser().getEmail() || "";
+    var auditNow = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), "dd/MM/yyyy HH:mm");
+    if (colMap["Modified by"] !== undefined) rowData[colMap["Modified by"]] = auditEmail;
+    if (colMap["Modified at"] !== undefined) rowData[colMap["Modified at"]] = auditNow;
+
+    sheet.getRange(newRowIndex, 1, 1, rowData.length).setValues([rowData]);
     SpreadsheetApp.flush();
-    Logger.log(
-      `processFormFromData: Wrote Doc and PDF URLs to sheet at row ${newRowIndex}.`
-    );
-
-    const result = {
-      docUrl: doc.getUrl(),
-      pdfUrl: pdfFile.getUrl(),
-    };
-    Logger.log(
-      "processFormFromData: Successfully completed. Returning URLs to client."
-    );
 
     CacheService.getScriptCache().remove("invoiceList");
 
-    return result;
+    return {
+      docUrl: doc.getUrl(),
+      pdfUrl: pdfFile.getUrl(),
+    };
   } catch (e) {
     Logger.log(`processFormFromData: CRITICAL ERROR - ${e.toString()}`);
     Logger.log(`Stack Trace: ${e.stack}`);
-    // Re-throw the error so the client-side `.withFailureHandler` can catch it if one is added.
     throw e;
   }
 }
@@ -945,26 +852,37 @@ function updateInvoiceByIdFromData(id, data) {
     fullRow[indexMap["Google Doc Link"]] = doc.getUrl();
     fullRow[indexMap["PDF Link"]] = pdfFile.getUrl();
 
-    // Items: start from 'Row 1 #' header
-    const firstItemIdx = headers.indexOf("Row 1 #");
-    const itemsCapacity =
-      CONFIG.INVOICE_TABLE.MAX_ROWS * CONFIG.INVOICE_TABLE.COLUMNS_PER_ROW;
-    let flatItems = [];
-    (data.items || []).forEach((row, i) => {
-      const r = [...row];
-      r[0] = (i + 1).toString();
-      if (r[2]) r[2] = `'${r[2].toString()}`; // force Period as text
-      flatItems.push(...r);
-    });
-    if (flatItems.length > itemsCapacity)
-      flatItems = flatItems.slice(0, itemsCapacity);
-    while (flatItems.length < itemsCapacity) flatItems.push("");
-    if (firstItemIdx !== -1) {
-      for (let j = 0; j < itemsCapacity; j++) {
-        const target = firstItemIdx + j;
-        if (target < headers.length) fullRow[target] = flatItems[j];
+    // Service rows by header names
+    for (var n = 1; n <= CONFIG.INVOICE_TABLE.MAX_ROWS; n++) {
+      var numKey = "Row " + n + " #";
+      if (indexMap[numKey] !== undefined) {
+        fullRow[indexMap[numKey]] = "";
+        fullRow[indexMap["Row " + n + " Service"]] = "";
+        fullRow[indexMap["Row " + n + " Period"]] = "";
+        fullRow[indexMap["Row " + n + " Quantity"]] = "";
+        fullRow[indexMap["Row " + n + " Rate/hour"]] = "";
+        fullRow[indexMap["Row " + n + " Amount"]] = "";
       }
     }
+    if (data.items && data.items.length > 0) {
+      data.items.forEach(function (item, i) {
+        var num = i + 1;
+        if (indexMap["Row " + num + " #"] !== undefined) {
+          fullRow[indexMap["Row " + num + " #"]] = (i + 1).toString();
+          fullRow[indexMap["Row " + num + " Service"]] = item[1] || "";
+          fullRow[indexMap["Row " + num + " Period"]] = item[2] ? "'" + item[2].toString() : "";
+          fullRow[indexMap["Row " + num + " Quantity"]] = item[3] || "";
+          fullRow[indexMap["Row " + num + " Rate/hour"]] = item[4] || "";
+          fullRow[indexMap["Row " + num + " Amount"]] = item[5] || "";
+        }
+      });
+    }
+
+    // Audit columns
+    var auditEmail = Session.getActiveUser().getEmail() || "";
+    var auditNow = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), "dd/MM/yyyy HH:mm");
+    if (indexMap["Modified by"] !== undefined) fullRow[indexMap["Modified by"]] = auditEmail;
+    if (indexMap["Modified at"] !== undefined) fullRow[indexMap["Modified at"]] = auditNow;
 
     // Write back row (1-based)
     const sheetRow = rowIndex + 1;
@@ -1142,6 +1060,10 @@ function processCreditNoteFormFromData(data) {
     // Update the row with Doc and PDF URLs (columns 17 and 18)
     sheet.getRange(newRowIndex, 17).setValue(doc.getUrl());
     sheet.getRange(newRowIndex, 18).setValue(pdfFile.getUrl());
+
+    var cnHeaders = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
+    writeAuditColumns(sheet, newRowIndex, buildColumnMap(cnHeaders));
+
     SpreadsheetApp.flush();
     Logger.log(
       `processCreditNoteFormFromData: Wrote Doc and PDF URLs to sheet at row ${newRowIndex}.`
@@ -1395,6 +1317,13 @@ function updateCreditNoteByIdFromData(data) {
     // Update the row with new document URLs
     row[headers.indexOf("Google Doc Link")] = doc.getUrl();
     row[headers.indexOf("PDF Link")] = pdfFile.getUrl();
+
+    // Audit columns
+    var cnColMap = buildColumnMap(headers);
+    var cnAuditEmail = Session.getActiveUser().getEmail() || "";
+    var cnAuditNow = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), "dd/MM/yyyy HH:mm");
+    if (cnColMap["Modified by"] !== undefined) row[cnColMap["Modified by"]] = cnAuditEmail;
+    if (cnColMap["Modified at"] !== undefined) row[cnColMap["Modified at"]] = cnAuditNow;
 
     // Update the row
     sheet.getRange(rowToUpdate, 1, 1, headers.length).setValues([row]);
@@ -2248,6 +2177,12 @@ function saveContractToData(formData) {
       });
     }
 
+    // Audit columns
+    var auditEmail = Session.getActiveUser().getEmail() || "";
+    var auditNow = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), "dd/MM/yyyy HH:mm");
+    if (columnMap["Modified by"] !== undefined) rowData[columnMap["Modified by"]] = auditEmail;
+    if (columnMap["Modified at"] !== undefined) rowData[columnMap["Modified at"]] = auditNow;
+
     // Append the row to the sheet
     sheet.appendRow(rowData);
 
@@ -2486,6 +2421,8 @@ function updateContractToData(formData) {
         }
       });
     }
+
+    writeAuditColumns(sheet, rowIndex, columnMap);
 
     console.log("Contract updated successfully, ID:", contractId);
 
@@ -3067,6 +3004,12 @@ function updateBillByIdFromData(formData) {
       rowArr[docColIdx] = docUrl || "";
     }
 
+    // Audit columns
+    var auditEmail = Session.getActiveUser().getEmail() || "";
+    var auditNow = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), "dd/MM/yyyy HH:mm");
+    if (columnMap["Modified by"] !== undefined) rowArr[columnMap["Modified by"]] = auditEmail;
+    if (columnMap["Modified at"] !== undefined) rowArr[columnMap["Modified at"]] = auditNow;
+
     // Single batch write for the entire row
     sheet.getRange(rowIndex, 1, 1, rowArr.length).setValues([rowArr]);
     CacheService.getScriptCache().remove("billList");
@@ -3422,6 +3365,7 @@ function saveBillToData(formData) {
     if (docUrl && docColIdx >= 0) {
       sheet.getRange(newRowIndex, docColIdx + 1).setValue(docUrl);
     }
+    writeAuditColumns(sheet, newRowIndex, columnMap);
     CacheService.getScriptCache().remove("billList");
 
     var message = "Bill saved successfully";
