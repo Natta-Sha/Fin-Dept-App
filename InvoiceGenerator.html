@@ -1523,6 +1523,11 @@
           document.getElementById("delete-bottom-btn-container").style.display =
             "none";
 
+          if (invoiceId && mode === "delete") {
+            confirmDeleteInvoice();
+            return;
+          }
+
           if (invoiceId) {
             google.script.run
               .withSuccessHandler(function (data) {
@@ -1643,105 +1648,7 @@
               .getInvoiceDataById(invoiceId);
 
             // Set up the page based on mode
-            if (mode === "delete") {
-              document.getElementById("page-title").textContent =
-                "Invoice - Delete";
-              document.getElementById(
-                "delete-bottom-btn-container"
-              ).style.display = "block";
-              const editBtns = document.getElementById(
-                "edit-bottom-btn-container"
-              );
-              if (editBtns) editBtns.style.display = "none";
-              const viewBtns = document.getElementById(
-                "view-bottom-btn-container"
-              );
-              if (viewBtns) viewBtns.style.display = "none";
-              document.getElementById("generate-btn").style.display = "none";
-              document.getElementById("cancel-create-btn").style.display =
-                "none";
-
-              // Add event handler for delete button
-              document
-                .getElementById("delete-bottom-btn")
-                .addEventListener("click", function () {
-                  // Show single spinner (consistent with edit/create)
-                  const bottomSpin = document.getElementById(
-                    "delete-bottom-spinner"
-                  );
-                  if (bottomSpin) bottomSpin.style.display = "inline-block";
-
-                  // Disable button
-                  this.disabled = true;
-
-                  // Call delete function
-                  google.script.run
-                    .withSuccessHandler(function (result) {
-                      if (result.success) {
-                        // Show success modal and stop spinner
-                        const bottomSpinDone = document.getElementById(
-                          "delete-bottom-spinner"
-                        );
-                        if (bottomSpinDone)
-                          bottomSpinDone.style.display = "none";
-                        const spinnerTopDone =
-                          document.getElementById("delete-spinner");
-                        if (spinnerTopDone)
-                          spinnerTopDone.style.display = "none";
-                        // Show success modal
-                        const modal = new bootstrap.Modal(
-                          document.getElementById("deleteSuccessModal")
-                        );
-                        modal.show();
-
-                        // Redirect when modal is closed
-                        document
-                          .getElementById("deleteSuccessModal")
-                          .addEventListener(
-                            "hidden.bs.modal",
-                            function () {
-                              safeNavigateToInvoicesList();
-                            },
-                            { once: true }
-                          );
-                      } else {
-                        alert(
-                          "Error deleting invoice: " +
-                            (result.message || "Unknown error")
-                        );
-                        // Re-enable button
-                        document.getElementById(
-                          "delete-bottom-btn"
-                        ).disabled = false;
-                        const bottomSpin2 = document.getElementById(
-                          "delete-bottom-spinner"
-                        );
-                        if (bottomSpin2) bottomSpin2.style.display = "none";
-                      }
-                    })
-                    .withFailureHandler(function (error) {
-                      alert("Error deleting invoice: " + error.message);
-                      // Re-enable button
-                      document.getElementById(
-                        "delete-bottom-btn"
-                      ).disabled = false;
-                      const bottomSpin3 = document.getElementById(
-                        "delete-bottom-spinner"
-                      );
-                      if (bottomSpin3) bottomSpin3.style.display = "none";
-                    })
-                    .deleteInvoiceById(invoiceId);
-                });
-
-              // Add Cancel button handler for delete mode
-              const deleteCancelBtn =
-                document.getElementById("delete-cancel-btn");
-              if (deleteCancelBtn) {
-                deleteCancelBtn.addEventListener("click", function () {
-                  safeNavigateToInvoicesList();
-                });
-              }
-            } else if (mode === "view") {
+            if (mode === "view") {
               document.getElementById("page-title").textContent =
                 "Invoice - View";
               document.getElementById(
