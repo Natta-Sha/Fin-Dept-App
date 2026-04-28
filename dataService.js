@@ -1,6 +1,34 @@
 // Data access layer for spreadsheet operations
 
 /**
+ * Write "Modified by" and "Modified at" into the given row using header-based column mapping.
+ * @param {Sheet} sheet - The sheet to write to
+ * @param {number} rowIndex - 1-based row index
+ * @param {Object} columnMap - { headerName: 0-based column index }
+ */
+function writeAuditColumns(sheet, rowIndex, columnMap) {
+  var email = Session.getActiveUser().getEmail() || "";
+  var now = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), "dd/MM/yyyy HH:mm");
+  if (columnMap["Modified by"] !== undefined) {
+    sheet.getRange(rowIndex, columnMap["Modified by"] + 1).setValue(email);
+  }
+  if (columnMap["Modified at"] !== undefined) {
+    sheet.getRange(rowIndex, columnMap["Modified at"] + 1).setValue(now);
+  }
+}
+
+/**
+ * Build a column map from headers array: { headerName: 0-based index }
+ */
+function buildColumnMap(headers) {
+  var map = {};
+  headers.forEach(function (h, i) {
+    if (h) map[h.toString().trim()] = i;
+  });
+  return map;
+}
+
+/**
  * Get project names from the Lists sheet
  * @returns {Array} Array of unique project names
  */
@@ -527,6 +555,10 @@ function saveInvoiceData(data) {
 
     const newRowIndex = sheet.getLastRow() + 1;
     sheet.getRange(newRowIndex, 1, 1, fullRow.length).setValues([fullRow]);
+
+    var headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
+    writeAuditColumns(sheet, newRowIndex, buildColumnMap(headers));
+
     CacheService.getScriptCache().remove("invoiceList");
 
     return { newRowIndex, uniqueId };
@@ -966,6 +998,12 @@ function updateInvoiceByIdFromData(id, data) {
       }
     }
 
+    // Audit columns
+    var auditEmail = Session.getActiveUser().getEmail() || "";
+    var auditNow = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), "dd/MM/yyyy HH:mm");
+    if (indexMap["Modified by"] !== undefined) fullRow[indexMap["Modified by"]] = auditEmail;
+    if (indexMap["Modified at"] !== undefined) fullRow[indexMap["Modified at"]] = auditNow;
+
     // Write back row (1-based)
     const sheetRow = rowIndex + 1;
     sheet.getRange(sheetRow, 1, 1, fullRow.length).setValues([fullRow]);
@@ -1142,6 +1180,10 @@ function processCreditNoteFormFromData(data) {
     // Update the row with Doc and PDF URLs (columns 17 and 18)
     sheet.getRange(newRowIndex, 17).setValue(doc.getUrl());
     sheet.getRange(newRowIndex, 18).setValue(pdfFile.getUrl());
+
+    var cnHeaders = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
+    writeAuditColumns(sheet, newRowIndex, buildColumnMap(cnHeaders));
+
     SpreadsheetApp.flush();
     Logger.log(
       `processCreditNoteFormFromData: Wrote Doc and PDF URLs to sheet at row ${newRowIndex}.`
@@ -1395,6 +1437,13 @@ function updateCreditNoteByIdFromData(data) {
     // Update the row with new document URLs
     row[headers.indexOf("Google Doc Link")] = doc.getUrl();
     row[headers.indexOf("PDF Link")] = pdfFile.getUrl();
+
+    // Audit columns
+    var cnColMap = buildColumnMap(headers);
+    var cnAuditEmail = Session.getActiveUser().getEmail() || "";
+    var cnAuditNow = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), "dd/MM/yyyy HH:mm");
+    if (cnColMap["Modified by"] !== undefined) row[cnColMap["Modified by"]] = cnAuditEmail;
+    if (cnColMap["Modified at"] !== undefined) row[cnColMap["Modified at"]] = cnAuditNow;
 
     // Update the row
     sheet.getRange(rowToUpdate, 1, 1, headers.length).setValues([row]);
@@ -2248,6 +2297,12 @@ function saveContractToData(formData) {
       });
     }
 
+    // Audit columns
+    var auditEmail = Session.getActiveUser().getEmail() || "";
+    var auditNow = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), "dd/MM/yyyy HH:mm");
+    if (columnMap["Modified by"] !== undefined) rowData[columnMap["Modified by"]] = auditEmail;
+    if (columnMap["Modified at"] !== undefined) rowData[columnMap["Modified at"]] = auditNow;
+
     // Append the row to the sheet
     sheet.appendRow(rowData);
 
@@ -2486,6 +2541,8 @@ function updateContractToData(formData) {
         }
       });
     }
+
+    writeAuditColumns(sheet, rowIndex, columnMap);
 
     console.log("Contract updated successfully, ID:", contractId);
 
@@ -3067,6 +3124,12 @@ function updateBillByIdFromData(formData) {
       rowArr[docColIdx] = docUrl || "";
     }
 
+    // Audit columns
+    var auditEmail = Session.getActiveUser().getEmail() || "";
+    var auditNow = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), "dd/MM/yyyy HH:mm");
+    if (columnMap["Modified by"] !== undefined) rowArr[columnMap["Modified by"]] = auditEmail;
+    if (columnMap["Modified at"] !== undefined) rowArr[columnMap["Modified at"]] = auditNow;
+
     // Single batch write for the entire row
     sheet.getRange(rowIndex, 1, 1, rowArr.length).setValues([rowArr]);
     CacheService.getScriptCache().remove("billList");
@@ -3422,6 +3485,7 @@ function saveBillToData(formData) {
     if (docUrl && docColIdx >= 0) {
       sheet.getRange(newRowIndex, docColIdx + 1).setValue(docUrl);
     }
+    writeAuditColumns(sheet, newRowIndex, columnMap);
     CacheService.getScriptCache().remove("billList");
 
     var message = "Bill saved successfully";
