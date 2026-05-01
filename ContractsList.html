@@ -305,10 +305,10 @@
       /* Column widths */
       #contractsTable th:nth-child(1),
       #contractsTable td:nth-child(1) { width: 35px; min-width: 35px; } /* Folder */
+      #contractsTable th:nth-child(2),
+      #contractsTable td:nth-child(2) { min-width: 180px; } /* Contractor Name */
       #contractsTable th:nth-child(3),
-      #contractsTable td:nth-child(3) { min-width: 120px; } /* Our Company */
-      #contractsTable th:nth-child(10),
-      #contractsTable td:nth-child(10) { width: 90px; min-width: 90px; } /* Actions */
+      #contractsTable td:nth-child(3) { min-width: 180px; } /* Our Company */
       
       /* Smaller search inputs */
       #contractsTable thead input {
@@ -383,6 +383,7 @@
           $.fn.dataTable.moment("DD/MM/YYYY");
           const table = $("#contractsTable").DataTable({
             dom: "lrtip",
+            autoWidth: false,
             orderCellsTop: true,
             columnDefs: [
               {
