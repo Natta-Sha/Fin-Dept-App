@@ -362,7 +362,6 @@
             <th>Contract Date</th>
             <th>Document Type</th>
             <th>Attachment #</th>
-            <th>Actions</th>
           </tr>
           <tr>
             <th></th>
@@ -374,7 +373,6 @@
             <th><input type="text" placeholder="Search Date" /></th>
             <th><input type="text" placeholder="Search Doc Type" /></th>
             <th><input type="text" placeholder="Search Attach #" /></th>
-            <th></th>
           </tr>
         </thead>
         <tbody></tbody>
@@ -396,11 +394,6 @@
               {
                 targets: [1, 2, 3, 4, 5, 6, 7, 8],
                 className: "dt-body-left dt-head-center",
-              },
-              {
-                targets: 9, // Actions column
-                className: "dt-body-center dt-head-center",
-                orderable: false,
               },
             ],
           });
@@ -431,9 +424,12 @@
                   ? `<a href="${row.folderLink}" target="_blank" class="table-link" title="Open folder"><i class="bi bi-folder2-open"></i></a>`
                   : "";
 
+                const nameLink = row.contractorName
+                  ? `<a href="<?= baseUrl ?>?page=ContractGenerator&id=${row.id}&mode=view" class="table-link">${row.contractorName}</a>`
+                  : "";
                 table.row.add([
                   folderCell,
-                  row.contractorName || "",
+                  nameLink,
                   row.ourCompany || "",
                   row.serviceType || "",
                   row.cooperationType || "",
@@ -441,7 +437,6 @@
                   row.contractDate || "",
                   row.documentType || "",
                   row.attachmentNumber || "",
-                  `<a href="<?= baseUrl ?>?page=ContractGenerator&id=${row.id}&mode=view" class="btn btn-sm btn-outline-primary" style="white-space: nowrap;">Open details</a>`,
                 ]);
               });
 
