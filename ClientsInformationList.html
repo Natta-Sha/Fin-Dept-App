@@ -93,12 +93,17 @@
         font-size: 0.78rem;
         width: auto !important;
         min-width: 100%;
+        table-layout: fixed;
       }
       table.dataTable th, table.dataTable td {
         padding: 4px 7px !important;
         vertical-align: middle !important;
+        width: 170px;
         min-width: 140px;
         max-width: 180px;
+        white-space: normal !important;
+        overflow-wrap: anywhere;
+        word-break: normal;
       }
       table.dataTable thead th {
         text-align: center !important;
@@ -128,7 +133,6 @@
       table.dataTable td:first-child {
         position: sticky;
         left: 0;
-        background: #fff;
         z-index: 1;
         box-shadow: 2px 0 4px rgba(0, 0, 0, 0.06);
         width: 180px !important;
@@ -137,12 +141,17 @@
         white-space: normal !important;
         overflow-wrap: anywhere;
       }
+      table.dataTable tbody td:first-child {
+        background: #fff;
+        z-index: 2;
+      }
       table.dataTable thead th:first-child {
         background: #f1f3f5;
-        z-index: 5;
+        z-index: 20;
       }
       table.dataTable thead tr:nth-child(2) th:first-child {
-        z-index: 4;
+        background: #f1f3f5;
+        z-index: 19;
       }
       thead input {
         width: 100%;
@@ -153,14 +162,8 @@
         border-radius: 4px;
       }
 
-      table.dataTable tbody td {
-        white-space: nowrap;
-      }
-      table.dataTable tbody td:first-child {
-        white-space: normal !important;
-      }
-
       table.dataTable tbody tr:hover { background: #f0f4ff !important; }
+      table.dataTable tbody tr:hover td:first-child { background: #f0f4ff !important; }
 
       .table-link {
         color: #667eea;
