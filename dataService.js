@@ -3403,3 +3403,356 @@ function formatDateForBill(dateStr) {
   }
   return dateStr;
 }
+
+// ── Clients Information ──────────────────────────────────────────────────────
+
+var CLIENTS_INFO_SPREADSHEET_ID = "18SuIRqPwenrgAn5RB3ecMzBr8wS1G5PFnEsZg-Wn3Gc";
+var CLIENTS_INFO_SHEET = "Information";
+var CLIENTS_INFO_LISTS_SHEET = "Lists";
+
+/**
+ * Column names in the Information sheet (must match headers exactly).
+ */
+var CLIENTS_INFO_COLUMNS = {
+  id:                "ID",
+  projectName:       "Project name *",
+  linkFinFolder:     "Link to Fin folder",
+  linkSalesFolder:   "Link to Sales folder",
+  linkRates:         "Link to file with rates",
+  currency:          "Currency for accounting",
+  typeOfDays:        "Type of days for payment",
+  daysForPayment:    "Days for payment",
+  pmAm:              "Project manager / account manager",
+  companyName:       "Company name",
+  companyNumberVat:  "Company number / VAT ID",
+  number:            "Number",
+  companyAddress:    "Company address",
+  vatRate:           "VAT rate",
+  bankChoice1:       "Sloboda bank choice1",
+  bankChoice2:       "Sloboda bank choice2",
+  invoiceTemplate:   "Invoice template",
+  ourCompany:        "Our company",
+  mailTo:            "Mail to",
+  mailAddressTo:     "Mail address to",
+  copyMailClient:    "Copy mail (client)",
+  copyMailSloboda:   "Copy mail (Sloboda)",
+  comments:          "Comments for mails",
+};
+
+/**
+ * Build a column index map from the Information sheet headers.
+ */
+function buildClientsInfoColumnMap_(headers) {
+  var map = {};
+  headers.forEach(function (h, i) {
+    if (h) map[h.toString().trim()] = i;
+  });
+  return map;
+}
+
+/**
+ * Get dropdown options for the Clients Information form from the Lists sheet.
+ * Lists sheet columns (0-based):
+ *   A(0) = Currency, B(1) = Type of days, C(2) = PM/AM (raw),
+ *   D(3) = Project (raw), E(4) = PM-List-A-Z, F(5) = Project-List-A-Z,
+ *   G(6) = (unused here), H(7) = Sloboda bank details,
+ *   I(8) = (bank cont.), J(9)=(unused), K(10) = Our company,
+ *   L(11) = VAT rate, M(12) = Company number / VAT ID, ..., O(14) = Invoice template
+ */
+function getClientsInformationDropdownsFromData() {
+  try {
+    var ss = SpreadsheetApp.openById(CLIENTS_INFO_SPREADSHEET_ID);
+    var sheet = ss.getSheetByName(CLIENTS_INFO_LISTS_SHEET);
+    if (!sheet) return {};
+
+    var data = sheet.getDataRange().getValues();
+
+    var currencies      = [];
+    var typeOfDays      = [];
+    var pmAmList        = [];
+    var projectList     = [];
+    var bankOptions     = [];
+    var ourCompanies    = [];
+    var vatRates        = [];
+    var companyNumbers  = [];
+    var invoiceTemplates = [];
+
+    function addUnique(arr, val) {
+      var v = (val || "").toString().trim();
+      if (v && arr.indexOf(v) === -1) arr.push(v);
+    }
+
+    for (var i = 1; i < data.length; i++) {
+      var row = data[i];
+      addUnique(currencies,       row[0]);
+      addUnique(typeOfDays,       row[1]);
+      addUnique(pmAmList,         row[4]);  // col E — PM-List-A-Z
+      addUnique(projectList,      row[5]);  // col F — Project-List-A-Z
+      addUnique(bankOptions,      row[7]);  // col H — Sloboda bank details
+      addUnique(ourCompanies,     row[10]); // col K
+      addUnique(vatRates,         row[11]); // col L
+      addUnique(companyNumbers,   row[12]); // col M
+      addUnique(invoiceTemplates, row[14]); // col O
+    }
+
+    return {
+      currencies:       currencies,
+      typeOfDays:       typeOfDays,
+      pmAmList:         pmAmList,
+      projectList:      projectList,
+      bankOptions:      bankOptions,
+      ourCompanies:     ourCompanies,
+      vatRates:         vatRates,
+      companyNumbers:   companyNumbers,
+      invoiceTemplates: invoiceTemplates,
+    };
+  } catch (e) {
+    console.error("getClientsInformationDropdownsFromData error:", e);
+    return {};
+  }
+}
+
+/**
+ * Get all clients for the list view.
+ * @returns {Array} Array of client objects
+ */
+function getClientsInformationListFromData() {
+  try {
+    var cache = CacheService.getScriptCache();
+    var cached = cache.get("clientsInfoList");
+    if (cached) return JSON.parse(cached);
+
+    var ss = SpreadsheetApp.openById(CLIENTS_INFO_SPREADSHEET_ID);
+    var sheet = ss.getSheetByName(CLIENTS_INFO_SHEET);
+    if (!sheet) return [];
+
+    var data = sheet.getDataRange().getValues();
+    if (data.length < 2) return [];
+
+    var headers = data[0];
+    var colMap = buildClientsInfoColumnMap_(headers);
+
+    function col(row, key) {
+      var idx = colMap[CLIENTS_INFO_COLUMNS[key]];
+      if (idx === undefined) return "";
+      var v = row[idx];
+      return (v === null || v === undefined) ? "" : String(v);
+    }
+
+    var result = [];
+    for (var i = 1; i < data.length; i++) {
+      var row = data[i];
+      var id = col(row, "id");
+      if (!id) continue;
+      result.push({
+        id:               id,
+        projectName:      col(row, "projectName"),
+        linkFinFolder:    col(row, "linkFinFolder"),
+        linkSalesFolder:  col(row, "linkSalesFolder"),
+        linkRates:        col(row, "linkRates"),
+        currency:         col(row, "currency"),
+        typeOfDays:       col(row, "typeOfDays"),
+        daysForPayment:   col(row, "daysForPayment"),
+        pmAm:             col(row, "pmAm"),
+        companyName:      col(row, "companyName"),
+        companyNumberVat: col(row, "companyNumberVat"),
+        number:           col(row, "number"),
+        companyAddress:   col(row, "companyAddress"),
+        vatRate:          col(row, "vatRate"),
+        bankChoice1:      col(row, "bankChoice1"),
+        bankChoice2:      col(row, "bankChoice2"),
+        invoiceTemplate:  col(row, "invoiceTemplate"),
+        ourCompany:       col(row, "ourCompany"),
+        mailTo:           col(row, "mailTo"),
+        mailAddressTo:    col(row, "mailAddressTo"),
+        copyMailClient:   col(row, "copyMailClient"),
+        copyMailSloboda:  col(row, "copyMailSloboda"),
+        comments:         col(row, "comments"),
+      });
+    }
+
+    try { cache.put("clientsInfoList", JSON.stringify(result), 300); } catch (e) {}
+    return result;
+  } catch (e) {
+    console.error("getClientsInformationListFromData error:", e);
+    return [];
+  }
+}
+
+/**
+ * Get a single client card by ID.
+ * @param {string} id
+ * @returns {Object} client data or { _error: true, _message: string }
+ */
+function getClientCardByIdFromData(id) {
+  try {
+    if (!id || String(id).trim() === "") return { _error: true, _message: "No ID provided" };
+
+    var ss = SpreadsheetApp.openById(CLIENTS_INFO_SPREADSHEET_ID);
+    var sheet = ss.getSheetByName(CLIENTS_INFO_SHEET);
+    if (!sheet) return { _error: true, _message: "Information sheet not found" };
+
+    var data = sheet.getDataRange().getValues();
+    var headers = data[0];
+    var colMap = buildClientsInfoColumnMap_(headers);
+
+    var row = null;
+    for (var i = 1; i < data.length; i++) {
+      if (String(data[i][0] || "").trim() === String(id).trim()) {
+        row = data[i];
+        break;
+      }
+    }
+    if (!row) return { _error: true, _message: "Client not found (ID: " + id + ")" };
+
+    function col(key) {
+      var idx = colMap[CLIENTS_INFO_COLUMNS[key]];
+      if (idx === undefined) return "";
+      var v = row[idx];
+      return (v === null || v === undefined) ? "" : String(v);
+    }
+
+    return {
+      id:               col("id"),
+      projectName:      col("projectName"),
+      linkFinFolder:    col("linkFinFolder"),
+      linkSalesFolder:  col("linkSalesFolder"),
+      linkRates:        col("linkRates"),
+      currency:         col("currency"),
+      typeOfDays:       col("typeOfDays"),
+      daysForPayment:   col("daysForPayment"),
+      pmAm:             col("pmAm"),
+      companyName:      col("companyName"),
+      companyNumberVat: col("companyNumberVat"),
+      number:           col("number"),
+      companyAddress:   col("companyAddress"),
+      vatRate:          col("vatRate"),
+      bankChoice1:      col("bankChoice1"),
+      bankChoice2:      col("bankChoice2"),
+      invoiceTemplate:  col("invoiceTemplate"),
+      ourCompany:       col("ourCompany"),
+      mailTo:           col("mailTo"),
+      mailAddressTo:    col("mailAddressTo"),
+      copyMailClient:   col("copyMailClient"),
+      copyMailSloboda:  col("copyMailSloboda"),
+      comments:         col("comments"),
+    };
+  } catch (e) {
+    console.error("getClientCardByIdFromData error:", e);
+    return { _error: true, _message: String(e) };
+  }
+}
+
+/**
+ * Save a new client card to the Information sheet.
+ * @param {Object} formData
+ * @returns {Object} { success, id, message }
+ */
+function saveClientCardToData(formData) {
+  try {
+    var ss = SpreadsheetApp.openById(CLIENTS_INFO_SPREADSHEET_ID);
+    var sheet = ss.getSheetByName(CLIENTS_INFO_SHEET);
+    if (!sheet) return { success: false, message: "Information sheet not found" };
+
+    var headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
+    var colMap = buildClientsInfoColumnMap_(headers);
+
+    var newId = Utilities.getUuid();
+    var rowArr = new Array(headers.length).fill("");
+
+    var idIdx = colMap[CLIENTS_INFO_COLUMNS.id];
+    if (idIdx !== undefined) rowArr[idIdx] = newId;
+
+    Object.keys(CLIENTS_INFO_COLUMNS).forEach(function (key) {
+      if (key === "id") return;
+      var colName = CLIENTS_INFO_COLUMNS[key];
+      var idx = colMap[colName];
+      if (idx !== undefined) rowArr[idx] = formData[key] || "";
+    });
+
+    sheet.appendRow(rowArr);
+    var newRowIndex = sheet.getLastRow();
+    writeAuditColumns(sheet, newRowIndex, colMap);
+
+    CacheService.getScriptCache().remove("clientsInfoList");
+    return { success: true, id: newId };
+  } catch (e) {
+    console.error("saveClientCardToData error:", e);
+    return { success: false, message: String(e) };
+  }
+}
+
+/**
+ * Update an existing client card in the Information sheet.
+ * @param {Object} formData — must include formData.id
+ * @returns {Object} { success, message }
+ */
+function updateClientCardByIdFromData(formData) {
+  try {
+    var clientId = formData.id;
+    if (!clientId) return { success: false, message: "No ID provided" };
+
+    var ss = SpreadsheetApp.openById(CLIENTS_INFO_SPREADSHEET_ID);
+    var sheet = ss.getSheetByName(CLIENTS_INFO_SHEET);
+    if (!sheet) return { success: false, message: "Information sheet not found" };
+
+    var data = sheet.getDataRange().getValues();
+    var headers = data[0];
+    var colMap = buildClientsInfoColumnMap_(headers);
+
+    var rowIndex = -1;
+    for (var i = 1; i < data.length; i++) {
+      if (String(data[i][0] || "").trim() === String(clientId).trim()) {
+        rowIndex = i + 1; // 1-based
+        break;
+      }
+    }
+    if (rowIndex === -1) return { success: false, message: "Client not found" };
+
+    var rowArr = data[rowIndex - 1].slice();
+
+    Object.keys(CLIENTS_INFO_COLUMNS).forEach(function (key) {
+      if (key === "id") return;
+      var colName = CLIENTS_INFO_COLUMNS[key];
+      var idx = colMap[colName];
+      if (idx !== undefined) rowArr[idx] = formData[key] || "";
+    });
+
+    sheet.getRange(rowIndex, 1, 1, rowArr.length).setValues([rowArr]);
+    writeAuditColumns(sheet, rowIndex, colMap);
+
+    CacheService.getScriptCache().remove("clientsInfoList");
+    return { success: true };
+  } catch (e) {
+    console.error("updateClientCardByIdFromData error:", e);
+    return { success: false, message: String(e) };
+  }
+}
+
+/**
+ * Delete a client card row by ID.
+ * @param {string} id
+ * @returns {Object} { success, message }
+ */
+function deleteClientCardByIdFromData(id) {
+  try {
+    if (!id) return { success: false, message: "No ID provided" };
+
+    var ss = SpreadsheetApp.openById(CLIENTS_INFO_SPREADSHEET_ID);
+    var sheet = ss.getSheetByName(CLIENTS_INFO_SHEET);
+    if (!sheet) return { success: false, message: "Information sheet not found" };
+
+    var data = sheet.getDataRange().getValues();
+    for (var i = 1; i < data.length; i++) {
+      if (String(data[i][0] || "").trim() === String(id).trim()) {
+        sheet.deleteRow(i + 1);
+        CacheService.getScriptCache().remove("clientsInfoList");
+        return { success: true };
+      }
+    }
+    return { success: false, message: "Client not found" };
+  } catch (e) {
+    console.error("deleteClientCardByIdFromData error:", e);
+    return { success: false, message: String(e) };
+  }
+}

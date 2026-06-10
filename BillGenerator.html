@@ -669,7 +669,7 @@
         }
       }
 
-      function applyRowMode(row) {
+      function applyRowMode(row, preserveValues) {
         var mode = getRowMode(row);
         var hours = row.querySelector(".svc-hours");
         var rate = row.querySelector(".svc-rate");
@@ -679,28 +679,36 @@
           setFieldState(hours, true);
           setFieldState(rate, true);
           setFieldState(amount, false);
-          var h = parseNum(hours.value);
-          var r = parseNum(rate.value);
-          if (hours.value.trim() !== "" && rate.value.trim() !== "") {
-            amount.value = fmt2(h * r);
+          if (!preserveValues) {
+            var h = parseNum(hours.value);
+            var r = parseNum(rate.value);
+            if (hours.value.trim() !== "" && rate.value.trim() !== "") {
+              amount.value = fmt2(h * r);
+            }
           }
         } else if (mode === "ar") {
           setFieldState(hours, false);
           setFieldState(rate, true);
           setFieldState(amount, true);
-          var a = parseNum(amount.value);
-          var r2 = parseNum(rate.value);
-          if (amount.value.trim() !== "" && rate.value.trim() !== "" && r2 !== 0) {
-            hours.value = fmtHoursCalc(a / r2);
+          if (!preserveValues) {
+            var a = parseNum(amount.value);
+            var r2 = parseNum(rate.value);
+            if (amount.value.trim() !== "" && rate.value.trim() !== "" && r2 !== 0) {
+              hours.value = fmtHoursCalc(a / r2);
+            }
           }
         } else {
           setFieldState(hours, false);
           setFieldState(rate, false);
           setFieldState(amount, true);
-          hours.value = "";
-          rate.value = "";
+          if (!preserveValues) {
+            hours.value = "";
+            rate.value = "";
+          }
         }
-        recalcTotals();
+        if (!preserveValues) {
+          recalcTotals();
+        }
       }
 
       function fmtHoursCalc(n) {
@@ -712,7 +720,7 @@
         return rounded.toFixed(2).replace(/0+$/, "");
       }
 
-      function createServiceRow(svc, rowMode) {
+      function createServiceRow(svc, rowMode, preserveValues) {
         currentRows++;
         var num = currentRows;
         var tr = document.createElement("tr");
@@ -721,7 +729,7 @@
         document.getElementById("servicesBody").appendChild(tr);
         attachRowListeners(tr);
         attachBlurFormat(tr);
-        applyRowMode(tr);
+        applyRowMode(tr, preserveValues);
         updateRemoveButtons();
         updateAddRowButton();
         return tr;
@@ -1267,7 +1275,7 @@
             amount: fmtView2(svc.amount),
           };
           var detectedMode = detectModeFromData(svc);
-          createServiceRow(fmtSvc, detectedMode);
+          createServiceRow(fmtSvc, detectedMode, true);
         });
 
         // Subtotal

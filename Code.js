@@ -11,6 +11,9 @@ function getCurrentUserEmail() {
 }
 
 function getPageSection(page) {
+  if (page === "ClientsInformationList" || page === "ClientsInformationCard") {
+    return "clientsinfo";
+  }
   return CONFIG.ACCESS_CONTROL.PAGE_TO_SECTION[page] || null;
 }
 
@@ -70,6 +73,9 @@ function buildUserAccessMap(email) {
     var sectionEmails = getEmailsFromAccessSheet(ac.SPREADSHEET_ID, sheetName);
     access[section] = sectionEmails.indexOf(normalizedEmail) !== -1;
   });
+
+  // Clients Information is full-access only — not tied to a separate sheet
+  access["clientsinfo"] = isFullAccess;
 
   return access;
 }
@@ -191,6 +197,7 @@ function doGet(e) {
     template.creditNoteId = e.parameter.invoiceId || e.parameter.id || "";
     template.contractId = e.parameter.contractId || e.parameter.id || "";
     template.billId = e.parameter.billId || e.parameter.id || "";
+    template.clientId = e.parameter.clientId || e.parameter.id || "";
     template.mode = e.parameter.mode || "";
 
     // Set active page for navigation
@@ -547,7 +554,37 @@ function getActivePageForNavigation(page, params = {}) {
       return "bills";
     case "BillGenerator":
       return "bills";
+    case "ClientsInformationList":
+      return "clientsinfo";
+    case "ClientsInformationCard":
+      return "clientsinfo";
     default:
       return "";
   }
+}
+
+// ── Clients Information wrappers ─────────────────────────────────────────────
+
+function getClientsInformationList() {
+  return getClientsInformationListFromData();
+}
+
+function getClientsInformationDropdowns() {
+  return getClientsInformationDropdownsFromData();
+}
+
+function getClientCardById(id) {
+  return getClientCardByIdFromData(id);
+}
+
+function saveClientCard(formData) {
+  return saveClientCardToData(formData);
+}
+
+function updateClientCard(formData) {
+  return updateClientCardByIdFromData(formData);
+}
+
+function deleteClientCard(id) {
+  return deleteClientCardByIdFromData(id);
 }
