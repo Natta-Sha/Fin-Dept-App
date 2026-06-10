@@ -94,6 +94,8 @@
         width: auto !important;
         min-width: 100%;
         table-layout: fixed;
+        border-collapse: separate !important;
+        border-spacing: 0;
       }
       table.dataTable th, table.dataTable td {
         padding: 4px 7px !important;
@@ -174,15 +176,19 @@
       }
       table.dataTable tbody td.col-sticky {
         background: #fff;
-        z-index: 2;
+        z-index: 10;
       }
       table.dataTable thead th.col-sticky {
         background: #f1f3f5;
-        z-index: 32;
+        position: sticky;
+        left: 0 !important;
+        z-index: 40;
       }
       table.dataTable thead tr:nth-child(2) th.col-sticky {
         background: #f1f3f5;
-        z-index: 31;
+        position: sticky;
+        left: 0 !important;
+        z-index: 39;
       }
       thead input {
         width: 100%;
@@ -209,7 +215,17 @@
       }
       .icon-link:hover { color: #764ba2; }
 
-      .actions-cell { white-space: nowrap; }
+      table.dataTable th.actions-cell,
+      table.dataTable td.actions-cell {
+        width: 230px !important;
+        min-width: 230px;
+        max-width: 230px;
+        white-space: nowrap !important;
+      }
+      .actions-cell .btn {
+        display: inline-block;
+        margin-bottom: 0 !important;
+      }
 
       /* Loading spinner */
       #loading-row td { text-align: center; padding: 2rem !important; }
@@ -293,6 +309,20 @@
           return classes.join(" ");
         }
 
+        function formatDisplayValue(header, value) {
+          if (header !== "VAT rate") return value;
+          if (value === "" || value === null || value === undefined) return "";
+          var raw = String(value).trim();
+          if (raw.indexOf("%") !== -1) return raw;
+          var num = parseFloat(raw.replace(",", "."));
+          if (isNaN(num)) return raw;
+          var percent = Math.abs(num) <= 1 ? num * 100 : num;
+          var rounded = Math.round(percent * 100) / 100;
+          return (Math.abs(rounded - Math.round(rounded)) < 1e-9
+            ? String(Math.round(rounded))
+            : rounded.toFixed(2).replace(/\.?0+$/, "")) + "%";
+        }
+
         $(document).ready(function () {
           google.script.run
             .withSuccessHandler(function (resp) {
@@ -319,7 +349,7 @@
           headers.forEach(function (h) {
             headRow.append($("<th></th>").addClass(columnClassForHeader(h)).text(h));
           });
-          headRow.append($("<th></th>").text("Actions"));
+          headRow.append($("<th></th>").addClass("actions-cell").text("Actions"));
           thead.append(headRow);
 
           // Filter row (one input per data column; none for Actions)
@@ -331,14 +361,14 @@
                 .append('<input type="text" placeholder="Search" />')
             );
           });
-          filterRow.append("<th></th>");
+          filterRow.append('<th class="actions-cell"></th>');
           thead.append(filterRow);
 
           // Body rows
           rows.forEach(function (row) {
             var tr = $("<tr></tr>");
             headers.forEach(function (h, idx) {
-              var value = row.cells[idx] || "";
+              var value = formatDisplayValue(h, row.cells[idx] || "");
               var html;
               if (h === PROJECT_HEADER) {
                 html = value
@@ -368,7 +398,7 @@
             paging: true,
             autoWidth: false,
             columnDefs: [
-              { targets: actionsIdx, orderable: false, className: "dt-body-center dt-head-center actions-cell", width: "170px" },
+              { targets: actionsIdx, orderable: false, className: "dt-body-center dt-head-center actions-cell", width: "230px" },
               { targets: "_all", className: "dt-body-left dt-head-center" },
             ],
           });
