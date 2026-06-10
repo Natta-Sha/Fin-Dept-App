@@ -78,9 +78,16 @@
       /* Table: scroll container gives both horizontal + vertical scroll;
          the header stays visible via position: sticky. */
       .table-scroll {
+        clear: both;
         overflow: auto;
         max-height: 65vh;
+        width: 100%;
+        margin-top: 0.75rem;
         border: 1px solid #dee2e6;
+      }
+      .dataTables_length {
+        float: none !important;
+        margin-bottom: 0.25rem;
       }
       table.dataTable {
         font-size: 0.78rem;
