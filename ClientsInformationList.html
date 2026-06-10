@@ -147,15 +147,6 @@
       }
       .icon-link:hover { color: #764ba2; }
 
-      table.dataTable th.actions-cell,
-      table.dataTable td.actions-cell {
-        white-space: nowrap !important;
-      }
-      .actions-cell .btn {
-        display: inline-block;
-        margin-bottom: 0 !important;
-      }
-
       /* Loading spinner */
       #loading-row td { text-align: center; padding: 2rem !important; }
     </style>
@@ -211,15 +202,6 @@
           return baseUrl + "?page=ClientsInformationCard&id=" + encodeURIComponent(id) + "&mode=view";
         }
 
-        function buildActions(id) {
-          var eid = encodeURIComponent(id);
-          return (
-            '<a href="' + baseUrl + '?page=ClientsInformationCard&id=' + eid + '&mode=edit"   class="btn btn-sm btn-outline-secondary me-1">Edit</a>' +
-            '<a href="' + baseUrl + '?page=ClientsInformationCard&id=' + eid + '&mode=delete" class="btn btn-sm btn-outline-danger me-1">Delete</a>' +
-            '<a href="' + baseUrl + '?page=ClientsInformationCard&id=' + eid + '&mode=copy"   class="btn btn-sm btn-outline-success">Copy</a>'
-          );
-        }
-
         function columnClassForHeader(header) {
           var classes = [];
           if (header === PROJECT_HEADER) classes.push("col-sticky");
@@ -267,12 +249,6 @@
             };
           });
 
-          columns.push({
-            width: "230px",
-            orderable: false,
-            className: "actions-cell dt-body-center dt-head-center",
-          });
-
           return columns;
         }
 
@@ -280,7 +256,7 @@
           var total = headers.reduce(function (sum, header) {
             return sum + columnWidthPxForHeader(header);
           }, 0);
-          return (total + 230) + "px"; // + Actions
+          return total + "px";
         }
 
         function formatDisplayValue(header, value) {
@@ -318,15 +294,14 @@
           thead.empty();
           tbody.empty();
 
-          // Header row + Actions column at the end
+          // Header row
           var headRow = $("<tr></tr>");
           headers.forEach(function (h) {
             headRow.append($("<th></th>").addClass(columnClassForHeader(h)).text(h));
           });
-          headRow.append($("<th></th>").addClass("actions-cell").text("Actions"));
           thead.append(headRow);
 
-          // Filter row (one input per data column; none for Actions)
+          // Filter row (one input per data column)
           var filterRow = $("<tr></tr>");
           headers.forEach(function (h, idx) {
             filterRow.append(
@@ -335,7 +310,6 @@
                 .append('<input type="text" placeholder="Search" data-col-index="' + idx + '" />')
             );
           });
-          filterRow.append('<th class="actions-cell"></th>');
           thead.append(filterRow);
 
           // Body rows
@@ -355,7 +329,6 @@
               }
               tr.append($("<td></td>").addClass(columnClassForHeader(h)).html(html));
             });
-            tr.append($("<td></td>").addClass("actions-cell").html(buildActions(row.id)));
             tbody.append(tr);
           });
 
