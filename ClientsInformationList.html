@@ -85,6 +85,17 @@
         clear: both;
         margin-top: 0.75rem;
       }
+      .dataTables_scrollHead,
+      .dataTables_scrollHeadInner {
+        overflow: hidden !important;
+      }
+      .dataTables_scrollHeadInner {
+        padding-right: 0 !important;
+        box-sizing: border-box;
+      }
+      .dataTables_scrollHeadInner table {
+        margin-right: 0 !important;
+      }
       table.dataTable {
         font-size: 0.78rem;
         width: auto !important;
@@ -150,8 +161,8 @@
         padding-bottom: 6px !important;
       }
       thead input {
-        width: 100%;
-        max-width: 100%;
+        width: calc(100% - 6px);
+        max-width: calc(100% - 6px);
         display: block;
         box-sizing: border-box;
         padding: 2px 4px;
@@ -161,9 +172,6 @@
       }
       table.dataTable thead th {
         overflow: hidden;
-      }
-      .dataTables_scrollHead {
-        overflow: hidden !important;
       }
 
       table.dataTable tbody tr:hover { background: #f0f4ff !important; }
@@ -186,6 +194,15 @@
       table.dataTable thead th.dtfc-fixed-left,
       table.dataTable thead th.dtfc-fixed-start {
         background: #f1f3f5 !important;
+      }
+      /* Fallback for the filter row inside DataTables' scroll header:
+         keep the first filter aligned with the fixed Project column. */
+      .dataTables_scrollHead table.dataTable thead tr:nth-child(2) th.col-sticky {
+        position: sticky !important;
+        left: 0 !important;
+        z-index: 30 !important;
+        background: #f1f3f5 !important;
+        box-shadow: 2px 0 4px rgba(0, 0, 0, 0.06);
       }
 
       .table-link {
@@ -387,7 +404,8 @@
             paging: true,
             autoWidth: false,
             fixedColumns: {
-              left: 1
+              left: 1,
+              leftColumns: 1
             },
             columnDefs: [
               { targets: actionsIdx, orderable: false, className: "dt-body-center dt-head-center actions-cell", width: "230px" },
@@ -430,6 +448,12 @@
               table.fixedColumns().relayout();
             }
           }, 0);
+
+          table.on("draw.dt column-sizing.dt", function () {
+            if (table.fixedColumns && table.fixedColumns().relayout) {
+              table.fixedColumns().relayout();
+            }
+          });
         }
       </script>
 
