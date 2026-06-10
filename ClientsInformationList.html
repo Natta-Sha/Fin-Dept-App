@@ -139,154 +139,21 @@
 
       <div id="table-wrapper">
         <table id="clientsInfoTable" class="display table table-bordered" style="width:100%; display:none;">
-          <thead class="table-light">
-            <tr>
-              <th>Project Name</th>
-              <th>Company Name</th>
-              <th>PM / AM</th>
-              <th>Currency</th>
-              <th>Our Company</th>
-              <th>Invoice Template</th>
-              <th>Type of Days</th>
-              <th>Days for Payment</th>
-              <th>Company No / VAT</th>
-              <th>Number</th>
-              <th>Company Address</th>
-              <th>VAT Rate</th>
-              <th>Bank Choice 1</th>
-              <th>Bank Choice 2</th>
-              <th>Mail To</th>
-              <th>Mail Address To</th>
-              <th>Copy Mail (Client)</th>
-              <th>Copy Mail (Sloboda)</th>
-              <th>Comments</th>
-              <th>Fin Folder</th>
-              <th>Sales Folder</th>
-              <th>Rates File</th>
-              <th>Actions</th>
-            </tr>
-            <tr>
-              <th><input type="text" placeholder="Search Project" /></th>
-              <th><input type="text" placeholder="Search Company" /></th>
-              <th><input type="text" placeholder="Search PM/AM" /></th>
-              <th><input type="text" placeholder="Search Currency" /></th>
-              <th><input type="text" placeholder="Search Our Co." /></th>
-              <th><input type="text" placeholder="Search Template" /></th>
-              <th><input type="text" placeholder="Search Type" /></th>
-              <th><input type="text" placeholder="Search Days" /></th>
-              <th><input type="text" placeholder="Search No/VAT" /></th>
-              <th><input type="text" placeholder="Search Number" /></th>
-              <th><input type="text" placeholder="Search Address" /></th>
-              <th><input type="text" placeholder="Search VAT%" /></th>
-              <th><input type="text" placeholder="Search Bank 1" /></th>
-              <th><input type="text" placeholder="Search Bank 2" /></th>
-              <th><input type="text" placeholder="Search Mail" /></th>
-              <th><input type="text" placeholder="Search Mail Addr" /></th>
-              <th><input type="text" placeholder="Search Copy (Cl)" /></th>
-              <th><input type="text" placeholder="Search Copy (Sl)" /></th>
-              <th><input type="text" placeholder="Search Comments" /></th>
-              <th></th>
-              <th></th>
-              <th></th>
-              <th></th>
-            </tr>
-          </thead>
+          <thead class="table-light"></thead>
           <tbody></tbody>
         </table>
       </div>
 
       <script>
-        $(document).ready(function () {
-          var table = $("#clientsInfoTable").DataTable({
-            dom: "lrtip",
-            orderCellsTop: true,
-            scrollX: true,
-            autoWidth: false,
-            columnDefs: [
-              { targets: [19, 20, 21], orderable: false, className: "dt-body-center dt-head-center", width: "36px" },
-              { targets: 22, orderable: false, className: "dt-body-center dt-head-center actions-cell", width: "170px" },
-              { targets: [0, 1], className: "dt-body-left dt-head-center", width: "160px" },
-              { targets: [2, 4, 5], className: "dt-body-left dt-head-center", width: "130px" },
-              { targets: [3, 6, 7, 11], className: "dt-body-center dt-head-center", width: "80px" },
-              { targets: [8, 9, 12, 13], className: "dt-body-left dt-head-center", width: "120px" },
-              { targets: [10, 14, 15, 16, 17, 18], className: "dt-body-left dt-head-center", width: "150px" },
-            ],
-          });
+        var baseUrl = "<?= baseUrl ?>";
 
-          $("#clientsInfoTable thead tr:eq(1) th").each(function (i) {
-            $("input", this).on("keyup change", function () {
-              if (table.column(i).search() !== this.value) {
-                table.column(i).search(this.value).draw();
-              }
-            });
-          });
-
-          var baseUrl = "<?= baseUrl ?>";
-
-          function iconLink(url, iconClass, title) {
-            if (!url) return "";
-            return '<a href="' + url + '" target="_blank" class="icon-link" title="' + title + '"><i class="bi ' + iconClass + '"></i></a>';
-          }
-
-          google.script.run
-            .withSuccessHandler(function (data) {
-              if (!Array.isArray(data) || data.length === 0) {
-                table.clear().draw();
-                document.getElementById("clientsInfoTable").style.display = "";
-                table.columns.adjust();
-                return;
-              }
-
-              data.forEach(function (row) {
-                var projectCell = row.projectName
-                  ? '<a href="' + baseUrl + '?page=ClientsInformationCard&id=' + row.id + '&mode=view" class="table-link">' + escHtml(row.projectName) + '</a>'
-                  : "";
-
-                var actions =
-                  '<a href="' + baseUrl + '?page=ClientsInformationCard&id=' + row.id + '&mode=view"   class="btn btn-sm btn-outline-primary me-1">View</a>' +
-                  '<a href="' + baseUrl + '?page=ClientsInformationCard&id=' + row.id + '&mode=edit"   class="btn btn-sm btn-outline-secondary me-1">Edit</a>' +
-                  '<a href="' + baseUrl + '?page=ClientsInformationCard&id=' + row.id + '&mode=delete" class="btn btn-sm btn-outline-danger me-1">Delete</a>' +
-                  '<a href="' + baseUrl + '?page=ClientsInformationCard&id=' + row.id + '&mode=copy"   class="btn btn-sm btn-outline-success">Copy</a>';
-
-                table.row.add([
-                  projectCell,
-                  escHtml(row.companyName),
-                  escHtml(row.pmAm),
-                  escHtml(row.currency),
-                  escHtml(row.ourCompany),
-                  escHtml(row.invoiceTemplate),
-                  escHtml(row.typeOfDays),
-                  escHtml(row.daysForPayment),
-                  escHtml(row.companyNumberVat),
-                  escHtml(row.number),
-                  escHtml(row.companyAddress),
-                  escHtml(row.vatRate),
-                  escHtml(row.bankChoice1),
-                  escHtml(row.bankChoice2),
-                  escHtml(row.mailTo),
-                  escHtml(row.mailAddressTo),
-                  escHtml(row.copyMailClient),
-                  escHtml(row.copyMailSloboda),
-                  escHtml(row.comments),
-                  iconLink(row.linkFinFolder,   "bi-folder2-open", "Fin Folder"),
-                  iconLink(row.linkSalesFolder, "bi-folder",       "Sales Folder"),
-                  iconLink(row.linkRates,       "bi-file-earmark-text", "Rates File"),
-                  actions,
-                ]);
-              });
-
-              table.draw();
-              // Must show the table BEFORE columns.adjust() so scrollX can measure header widths
-              document.getElementById("clientsInfoTable").style.display = "";
-              table.columns.adjust();
-            })
-            .withFailureHandler(function (err) {
-              console.error("Error loading clients information list:", err);
-              document.getElementById("clientsInfoTable").style.display = "";
-              table.columns.adjust();
-            })
-            .getClientsInformationList();
-        });
+        // Header names (as they appear in the Information sheet) that need special rendering
+        var PROJECT_HEADER = "Project name *";
+        var LINK_HEADERS = {
+          "Link to Fin folder":      { icon: "bi-folder2-open",       title: "Fin Folder" },
+          "Link to Sales folder":    { icon: "bi-folder",             title: "Sales Folder" },
+          "Link to file with rates": { icon: "bi-file-earmark-text",  title: "Rates File" }
+        };
 
         function escHtml(str) {
           if (!str) return "";
@@ -295,6 +162,108 @@
             .replace(/</g, "&lt;")
             .replace(/>/g, "&gt;")
             .replace(/"/g, "&quot;");
+        }
+
+        function iconLink(url, iconClass, title) {
+          if (!url) return "";
+          return '<a href="' + escHtml(url) + '" target="_blank" class="icon-link" title="' + title + '"><i class="bi ' + iconClass + '"></i></a>';
+        }
+
+        function viewUrl(id) {
+          return baseUrl + "?page=ClientsInformationCard&id=" + encodeURIComponent(id) + "&mode=view";
+        }
+
+        function buildActions(id) {
+          var eid = encodeURIComponent(id);
+          return (
+            '<a href="' + baseUrl + '?page=ClientsInformationCard&id=' + eid + '&mode=edit"   class="btn btn-sm btn-outline-secondary me-1">Edit</a>' +
+            '<a href="' + baseUrl + '?page=ClientsInformationCard&id=' + eid + '&mode=delete" class="btn btn-sm btn-outline-danger me-1">Delete</a>' +
+            '<a href="' + baseUrl + '?page=ClientsInformationCard&id=' + eid + '&mode=copy"   class="btn btn-sm btn-outline-success">Copy</a>'
+          );
+        }
+
+        $(document).ready(function () {
+          google.script.run
+            .withSuccessHandler(function (resp) {
+              var headers = (resp && resp.headers) || [];
+              var rows = (resp && resp.rows) || [];
+
+              buildTable(headers, rows);
+            })
+            .withFailureHandler(function (err) {
+              console.error("Error loading clients information list:", err);
+              document.getElementById("clientsInfoTable").style.display = "";
+            })
+            .getClientsInformationList();
+        });
+
+        function buildTable(headers, rows) {
+          var thead = $("#clientsInfoTable thead");
+          var tbody = $("#clientsInfoTable tbody");
+          thead.empty();
+          tbody.empty();
+
+          // Header row + Actions column at the end
+          var headRow = $("<tr></tr>");
+          headers.forEach(function (h) {
+            headRow.append($("<th></th>").text(h));
+          });
+          headRow.append($("<th></th>").text("Actions"));
+          thead.append(headRow);
+
+          // Filter row (one input per data column; none for Actions)
+          var filterRow = $("<tr></tr>");
+          headers.forEach(function () {
+            filterRow.append('<th><input type="text" placeholder="Search" /></th>');
+          });
+          filterRow.append("<th></th>");
+          thead.append(filterRow);
+
+          // Body rows
+          rows.forEach(function (row) {
+            var tr = $("<tr></tr>");
+            headers.forEach(function (h, idx) {
+              var value = row.cells[idx] || "";
+              var html;
+              if (h === PROJECT_HEADER) {
+                html = value
+                  ? '<a href="' + viewUrl(row.id) + '" class="table-link">' + escHtml(value) + "</a>"
+                  : "";
+              } else if (LINK_HEADERS[h]) {
+                html = iconLink(value, LINK_HEADERS[h].icon, LINK_HEADERS[h].title);
+              } else {
+                html = escHtml(value);
+              }
+              tr.append($("<td></td>").html(html));
+            });
+            tr.append($("<td></td>").addClass("actions-cell").html(buildActions(row.id)));
+            tbody.append(tr);
+          });
+
+          var actionsIdx = headers.length; // last column
+
+          var table = $("#clientsInfoTable").DataTable({
+            dom: "lrtip",
+            orderCellsTop: true,
+            scrollX: true,
+            autoWidth: false,
+            columnDefs: [
+              { targets: actionsIdx, orderable: false, className: "dt-body-center dt-head-center actions-cell", width: "170px" },
+              { targets: "_all", className: "dt-body-left dt-head-center" },
+            ],
+          });
+
+          // Wire per-column search inputs (filter row = second thead row)
+          $("#clientsInfoTable thead tr:eq(1) th").each(function (i) {
+            $("input", this).on("keyup change", function () {
+              if (table.column(i).search() !== this.value) {
+                table.column(i).search(this.value).draw();
+              }
+            });
+          });
+
+          document.getElementById("clientsInfoTable").style.display = "";
+          table.columns.adjust();
         }
       </script>
 

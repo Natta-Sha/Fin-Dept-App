@@ -279,6 +279,15 @@
           .replace(/>/g, "&gt;").replace(/"/g, "&quot;");
       }
 
+      // Robust navigation that works inside the Apps Script iframe sandbox.
+      // Relative URLs navigate the inner sandbox frame (blank page), so we
+      // target the top window with the absolute web-app URL (like Invoices).
+      function navigateTo(query) {
+        var target = baseUrl + query;
+        try { window.top.location.href = target; return; } catch (e) {}
+        try { window.location.href = target; return; } catch (e2) {}
+      }
+
       function setFormDisabled(disabled) {
         document.querySelectorAll("#card-form input, #card-form select, #card-form textarea")
           .forEach(function (el) {
@@ -431,30 +440,30 @@
 
         if (m === "create") {
           btn("Save", "btn-success", submitCreate, "save-btn");
-          btn("Cancel", "btn-outline-secondary", function () { window.location.href = "?page=ClientsInformationList"; });
+          btn("Cancel", "btn-outline-secondary", function () { navigateTo("?page=ClientsInformationList"); });
         } else if (m === "edit") {
           btn("Confirm", "btn-success", submitUpdate, "confirm-btn");
-          btn("Cancel", "btn-outline-secondary", function () { window.location.href = "?page=ClientsInformationList"; }, "cancel-btn");
+          btn("Cancel", "btn-outline-secondary", function () { navigateTo("?page=ClientsInformationList"); }, "cancel-btn");
         } else if (m === "view") {
           btn("Edit", "btn-primary", function () {
-            window.location.href = "?page=ClientsInformationCard&id=" + clientId + "&mode=edit";
+            navigateTo("?page=ClientsInformationCard&id=" + clientId + "&mode=edit");
           });
           btn("Copy", "btn-outline-secondary", function () {
-            window.location.href = "?page=ClientsInformationCard&id=" + clientId + "&mode=copy";
+            navigateTo("?page=ClientsInformationCard&id=" + clientId + "&mode=copy");
           });
           btn("Delete", "btn-outline-danger", function () {
-            window.location.href = "?page=ClientsInformationCard&id=" + clientId + "&mode=delete";
+            navigateTo("?page=ClientsInformationCard&id=" + clientId + "&mode=delete");
           });
           btn("Back to list", "btn-outline-secondary", function () {
-            window.location.href = "?page=ClientsInformationList";
+            navigateTo("?page=ClientsInformationList");
           });
         } else if (m === "copy") {
           btn("Save as new", "btn-success", submitCreate, "save-btn");
-          btn("Cancel", "btn-outline-secondary", function () { window.location.href = "?page=ClientsInformationList"; });
+          btn("Cancel", "btn-outline-secondary", function () { navigateTo("?page=ClientsInformationList"); });
         } else if (m === "delete") {
           btn("Confirm Delete", "btn-danger", submitDelete, "delete-btn");
           btn("Cancel", "btn-outline-secondary", function () {
-            window.location.href = "?page=ClientsInformationCard&id=" + clientId + "&mode=view";
+            navigateTo("?page=ClientsInformationCard&id=" + clientId + "&mode=view");
           });
         }
       }
@@ -474,7 +483,7 @@
             if (result && result.success) {
               document.getElementById("result").innerHTML =
                 '<div class="alert alert-success"><i class="bi bi-check-circle-fill me-2"></i>Client card saved successfully!</div>' +
-                '<a href="?page=ClientsInformationList" class="btn btn-primary">Back to list</a>';
+                '<a href="' + baseUrl + '?page=ClientsInformationList" target="_top" class="btn btn-primary">Back to list</a>';
               document.getElementById("action-buttons").innerHTML = "";
             } else {
               document.getElementById("result").innerHTML =
@@ -500,8 +509,8 @@
             if (result && result.success) {
               document.getElementById("result").innerHTML =
                 '<div class="alert alert-success"><i class="bi bi-check-circle-fill me-2"></i>Client card updated successfully!</div>' +
-                '<a href="?page=ClientsInformationList" class="btn btn-primary me-2">Back to list</a>' +
-                '<a href="?page=ClientsInformationCard&id=' + clientId + '&mode=view" class="btn btn-outline-secondary">View card</a>';
+                '<a href="' + baseUrl + '?page=ClientsInformationList" target="_top" class="btn btn-primary me-2">Back to list</a>' +
+                '<a href="' + baseUrl + '?page=ClientsInformationCard&id=' + clientId + '&mode=view" target="_top" class="btn btn-outline-secondary">View card</a>';
               document.getElementById("action-buttons").innerHTML = "";
             } else {
               document.getElementById("result").innerHTML =
@@ -522,7 +531,7 @@
         google.script.run
           .withSuccessHandler(function (result) {
             if (result && result.success) {
-              window.location.href = baseUrl + "?page=ClientsInformationList&deleted=1";
+              navigateTo("?page=ClientsInformationList&deleted=1");
             } else {
               document.getElementById("result").innerHTML =
                 '<div class="alert alert-danger">Error: ' + esc((result && result.message) || "Unknown error") + '</div>';

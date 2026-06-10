@@ -3514,7 +3514,10 @@ function getClientsInformationDropdownsFromData() {
 
 /**
  * Get all clients for the list view.
- * @returns {Array} Array of client objects
+ * Columns and headers are derived directly from the Information sheet so the
+ * table always matches the DB. The technical "ID" column is hidden (returned
+ * separately per row for action links); all other columns are shown as-is.
+ * @returns {Object} { headers: string[], rows: [{ id, cells: string[] }] }
  */
 function getClientsInformationListFromData() {
   try {
@@ -3524,58 +3527,48 @@ function getClientsInformationListFromData() {
 
     var ss = SpreadsheetApp.openById(CLIENTS_INFO_SPREADSHEET_ID);
     var sheet = ss.getSheetByName(CLIENTS_INFO_SHEET);
-    if (!sheet) return [];
+    if (!sheet) return { headers: [], rows: [] };
 
     var data = sheet.getDataRange().getValues();
-    if (data.length < 2) return [];
+    if (data.length < 1) return { headers: [], rows: [] };
 
-    var headers = data[0];
-    var colMap = buildClientsInfoColumnMap_(headers);
+    var rawHeaders = data[0];
+    var idColName = CLIENTS_INFO_COLUMNS.id;
 
-    function col(row, key) {
-      var idx = colMap[CLIENTS_INFO_COLUMNS[key]];
-      if (idx === undefined) return "";
-      var v = row[idx];
-      return (v === null || v === undefined) ? "" : String(v);
+    // Find ID column and build the list of visible columns (skip ID and blanks)
+    var idColIndex = -1;
+    var visibleCols = [];
+    var headers = [];
+    for (var c = 0; c < rawHeaders.length; c++) {
+      var h = String(rawHeaders[c] || "").trim();
+      if (h === idColName) { idColIndex = c; continue; } // hide ID only
+      if (h === "") continue; // skip blank header columns
+      visibleCols.push(c);
+      headers.push(h);
     }
 
-    var result = [];
+    var tz = Session.getScriptTimeZone();
+    function fmtCell(v) {
+      if (v === null || v === undefined) return "";
+      if (v instanceof Date) return Utilities.formatDate(v, tz, "dd/MM/yyyy");
+      return String(v);
+    }
+
+    var rows = [];
     for (var i = 1; i < data.length; i++) {
       var row = data[i];
-      var id = col(row, "id");
+      var id = idColIndex >= 0 ? String(row[idColIndex] || "").trim() : "";
       if (!id) continue;
-      result.push({
-        id:               id,
-        projectName:      col(row, "projectName"),
-        linkFinFolder:    col(row, "linkFinFolder"),
-        linkSalesFolder:  col(row, "linkSalesFolder"),
-        linkRates:        col(row, "linkRates"),
-        currency:         col(row, "currency"),
-        typeOfDays:       col(row, "typeOfDays"),
-        daysForPayment:   col(row, "daysForPayment"),
-        pmAm:             col(row, "pmAm"),
-        companyName:      col(row, "companyName"),
-        companyNumberVat: col(row, "companyNumberVat"),
-        number:           col(row, "number"),
-        companyAddress:   col(row, "companyAddress"),
-        vatRate:          col(row, "vatRate"),
-        bankChoice1:      col(row, "bankChoice1"),
-        bankChoice2:      col(row, "bankChoice2"),
-        invoiceTemplate:  col(row, "invoiceTemplate"),
-        ourCompany:       col(row, "ourCompany"),
-        mailTo:           col(row, "mailTo"),
-        mailAddressTo:    col(row, "mailAddressTo"),
-        copyMailClient:   col(row, "copyMailClient"),
-        copyMailSloboda:  col(row, "copyMailSloboda"),
-        comments:         col(row, "comments"),
-      });
+      var cells = visibleCols.map(function (cidx) { return fmtCell(row[cidx]); });
+      rows.push({ id: id, cells: cells });
     }
 
+    var result = { headers: headers, rows: rows };
     try { cache.put("clientsInfoList", JSON.stringify(result), 300); } catch (e) {}
     return result;
   } catch (e) {
     console.error("getClientsInformationListFromData error:", e);
-    return [];
+    return { headers: [], rows: [] };
   }
 }
 
