@@ -151,11 +151,19 @@
       }
       thead input {
         width: 100%;
+        max-width: 100%;
+        display: block;
         box-sizing: border-box;
         padding: 2px 4px;
         font-size: 0.72rem;
         border: 1px solid #dee2e6;
         border-radius: 4px;
+      }
+      table.dataTable thead th {
+        overflow: hidden;
+      }
+      .dataTables_scrollHead {
+        overflow: hidden !important;
       }
 
       table.dataTable tbody tr:hover { background: #f0f4ff !important; }
@@ -332,11 +340,11 @@
 
           // Filter row (one input per data column; none for Actions)
           var filterRow = $("<tr></tr>");
-          headers.forEach(function (h) {
+          headers.forEach(function (h, idx) {
             filterRow.append(
               $("<th></th>")
                 .addClass(columnClassForHeader(h))
-                .append('<input type="text" placeholder="Search" />')
+                .append('<input type="text" placeholder="Search" data-col-index="' + idx + '" />')
             );
           });
           filterRow.append('<th class="actions-cell"></th>');
@@ -385,15 +393,35 @@
               { targets: actionsIdx, orderable: false, className: "dt-body-center dt-head-center actions-cell", width: "230px" },
               { targets: "_all", className: "dt-body-left dt-head-center" },
             ],
-          });
+            initComplete: function () {
+              var api = this.api();
+              var container = $(api.table().container());
 
-          // In scroll/fixed-column mode DataTables clones headers. Bind filters
-          // through the wrapper so both the main and fixed cloned inputs work.
-          $(table.table().container()).on("keyup change", "thead tr:eq(1) input", function () {
-              var i = $(this).closest("th").index();
-              if (table.column(i).search() !== this.value) {
-                table.column(i).search(this.value).draw();
+              // DataTables + FixedColumns creates cloned headers. The cloned
+              // filter inputs keep data-col-index, so every input can address
+              // the same real DataTables column and stay visually in sync.
+              container
+                .off("keyup.dtClientFilters change.dtClientFilters", "thead tr:eq(1) input")
+                .on("keyup.dtClientFilters change.dtClientFilters", "thead tr:eq(1) input", function () {
+                  var input = this;
+                  var i = Number(input.getAttribute("data-col-index"));
+                  if (isNaN(i)) return;
+
+                  container
+                    .find('thead tr:eq(1) input[data-col-index="' + i + '"]')
+                    .not(input)
+                    .val(input.value);
+
+                  if (api.column(i).search() !== input.value) {
+                    api.column(i).search(input.value).draw();
+                  }
+                });
+
+              api.columns.adjust();
+              if (api.fixedColumns && api.fixedColumns().relayout) {
+                api.fixedColumns().relayout();
               }
+            }
           });
 
           setTimeout(function () {
