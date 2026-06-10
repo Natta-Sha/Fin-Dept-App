@@ -233,6 +233,7 @@
               if (!Array.isArray(data) || data.length === 0) {
                 table.clear().draw();
                 document.getElementById("clientsInfoTable").style.display = "";
+                table.columns.adjust();
                 return;
               }
 
@@ -275,11 +276,14 @@
               });
 
               table.draw();
+              // Must show the table BEFORE columns.adjust() so scrollX can measure header widths
               document.getElementById("clientsInfoTable").style.display = "";
+              table.columns.adjust();
             })
             .withFailureHandler(function (err) {
               console.error("Error loading clients information list:", err);
               document.getElementById("clientsInfoTable").style.display = "";
+              table.columns.adjust();
             })
             .getClientsInformationList();
         });
