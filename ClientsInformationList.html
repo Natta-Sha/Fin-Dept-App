@@ -83,7 +83,6 @@
         border: 1px solid #dee2e6;
       }
       table.dataTable {
-        white-space: nowrap;
         font-size: 0.78rem;
         width: auto !important;
         min-width: 100%;
@@ -91,6 +90,8 @@
       table.dataTable th, table.dataTable td {
         padding: 4px 7px !important;
         vertical-align: middle !important;
+        min-width: 140px;
+        max-width: 180px;
       }
       table.dataTable thead th {
         text-align: center !important;
@@ -98,11 +99,22 @@
         position: sticky;
         top: 0;
         z-index: 3;
+        white-space: normal !important;
+        overflow-wrap: anywhere;
+        line-height: 1.15;
+        padding-top: 8px !important;
+        padding-bottom: 8px !important;
+      }
+      table.dataTable thead tr:first-child th {
+        height: 48px;
+        padding-right: 18px !important; /* room for DataTables sorting icons */
       }
       /* Second header row (filters) sticks just below the first */
       table.dataTable thead tr:nth-child(2) th {
-        top: 33px;
+        top: 48px;
         z-index: 2;
+        padding-top: 6px !important;
+        padding-bottom: 6px !important;
       }
       /* Freeze the first visible column during horizontal scroll. */
       table.dataTable th:first-child,
@@ -112,6 +124,11 @@
         background: #fff;
         z-index: 1;
         box-shadow: 2px 0 4px rgba(0, 0, 0, 0.06);
+        width: 180px !important;
+        min-width: 180px;
+        max-width: 180px;
+        white-space: normal !important;
+        overflow-wrap: anywhere;
       }
       table.dataTable thead th:first-child {
         background: #f1f3f5;
@@ -127,6 +144,13 @@
         font-size: 0.72rem;
         border: 1px solid #dee2e6;
         border-radius: 4px;
+      }
+
+      table.dataTable tbody td {
+        white-space: nowrap;
+      }
+      table.dataTable tbody td:first-child {
+        white-space: normal !important;
       }
 
       table.dataTable tbody tr:hover { background: #f0f4ff !important; }
