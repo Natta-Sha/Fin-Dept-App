@@ -105,6 +105,31 @@
         overflow-wrap: anywhere;
         word-break: normal;
       }
+      table.dataTable th.col-link,
+      table.dataTable td.col-link {
+        width: 105px !important;
+        min-width: 105px;
+        max-width: 105px;
+        text-align: center !important;
+      }
+      table.dataTable th.col-currency,
+      table.dataTable td.col-currency {
+        width: 95px !important;
+        min-width: 95px;
+        max-width: 95px;
+      }
+      table.dataTable th.col-days-type,
+      table.dataTable td.col-days-type {
+        width: 115px !important;
+        min-width: 115px;
+        max-width: 115px;
+      }
+      table.dataTable th.col-days-payment,
+      table.dataTable td.col-days-payment {
+        width: 90px !important;
+        min-width: 90px;
+        max-width: 90px;
+      }
       table.dataTable thead th {
         text-align: center !important;
         background: #f1f3f5;
@@ -244,6 +269,14 @@
           );
         }
 
+        function columnClassForHeader(header) {
+          if (LINK_HEADERS[header]) return "col-link";
+          if (header === "Currency for accounting *") return "col-currency";
+          if (header === "Type of days for payment *") return "col-days-type";
+          if (header === "Days for payment *") return "col-days-payment";
+          return "";
+        }
+
         $(document).ready(function () {
           google.script.run
             .withSuccessHandler(function (resp) {
@@ -268,15 +301,19 @@
           // Header row + Actions column at the end
           var headRow = $("<tr></tr>");
           headers.forEach(function (h) {
-            headRow.append($("<th></th>").text(h));
+            headRow.append($("<th></th>").addClass(columnClassForHeader(h)).text(h));
           });
           headRow.append($("<th></th>").text("Actions"));
           thead.append(headRow);
 
           // Filter row (one input per data column; none for Actions)
           var filterRow = $("<tr></tr>");
-          headers.forEach(function () {
-            filterRow.append('<th><input type="text" placeholder="Search" /></th>');
+          headers.forEach(function (h) {
+            filterRow.append(
+              $("<th></th>")
+                .addClass(columnClassForHeader(h))
+                .append('<input type="text" placeholder="Search" />')
+            );
           });
           filterRow.append("<th></th>");
           thead.append(filterRow);
@@ -296,7 +333,7 @@
               } else {
                 html = escHtml(value);
               }
-              tr.append($("<td></td>").html(html));
+              tr.append($("<td></td>").addClass(columnClassForHeader(h)).html(html));
             });
             tr.append($("<td></td>").addClass("actions-cell").html(buildActions(row.id)));
             tbody.append(tr);
