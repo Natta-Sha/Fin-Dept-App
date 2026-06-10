@@ -238,40 +238,49 @@
           return classes.join(" ");
         }
 
-        function columnWidthForHeader(header) {
-          if (header === PROJECT_HEADER) return "180px";
-          if (LINK_HEADERS[header]) return "105px";
-          if (header === "Currency for accounting *") return "95px";
-          if (header === "Type of days for payment *") return "115px";
-          if (header === "Days for payment *") return "90px";
+        function columnWidthPxForHeader(header) {
+          if (header === PROJECT_HEADER) return 180;
+          if (LINK_HEADERS[header]) return 105;
+          if (header === "Currency for accounting *") return 95;
+          if (header === "Type of days for payment *") return 115;
+          if (header === "Days for payment *") return 90;
           if (
             header === "Company address" ||
             header === "Mail to" ||
             header === "Copy mail (client)" ||
             header === "Copy mail (Sloboda)"
           ) {
-            return "510px";
+            return 510;
           }
-          return "170px";
+          return 170;
         }
 
-        function buildDataTableColumnDefs(headers, actionsIdx) {
-          var defs = headers.map(function (header, idx) {
+        function columnWidthForHeader(header) {
+          return columnWidthPxForHeader(header) + "px";
+        }
+
+        function buildDataTableColumns(headers) {
+          var columns = headers.map(function (header) {
             return {
-              targets: idx,
               width: columnWidthForHeader(header),
               className: columnClassForHeader(header) + " dt-body-left dt-head-center",
             };
           });
 
-          defs.push({
-            targets: actionsIdx,
+          columns.push({
             width: "230px",
             orderable: false,
             className: "actions-cell dt-body-center dt-head-center",
           });
 
-          return defs;
+          return columns;
+        }
+
+        function dataTableScrollWidth(headers) {
+          var total = headers.reduce(function (sum, header) {
+            return sum + columnWidthPxForHeader(header);
+          }, 0);
+          return (total + 230) + "px"; // + Actions
         }
 
         function formatDisplayValue(header, value) {
@@ -350,8 +359,6 @@
             tbody.append(tr);
           });
 
-          var actionsIdx = headers.length; // last column
-
           document.getElementById("clientsInfoTable").style.display = "";
 
           // Native DataTables scrolling + FixedColumns:
@@ -361,6 +368,7 @@
             dom: "lrtip",
             orderCellsTop: true,
             scrollX: true,
+            sScrollXInner: dataTableScrollWidth(headers),
             scrollY: "65vh",
             scrollCollapse: true,
             paging: true,
@@ -370,7 +378,7 @@
               leftColumns: 1,
               start: 1
             },
-            columnDefs: buildDataTableColumnDefs(headers, actionsIdx),
+            columns: buildDataTableColumns(headers),
             initComplete: function () {
               var api = this.api();
               var container = $(api.table().container());
