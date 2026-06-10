@@ -100,8 +100,13 @@
         border-radius: 4px;
       }
 
-      /* Fixed first two columns */
       table.dataTable tbody tr:hover { background: #f0f4ff !important; }
+
+      /* Keep header background opaque while it stays fixed during vertical scroll */
+      .dataTables_scrollHead, .dataTables_scrollHead table thead th {
+        background: #f8f9fa !important;
+      }
+      .dataTables_scrollBody { border-bottom: 1px solid #dee2e6; }
 
       .table-link {
         color: #667eea;
@@ -242,10 +247,18 @@
 
           var actionsIdx = headers.length; // last column
 
+          // IMPORTANT: the table must be visible BEFORE initializing DataTable,
+          // otherwise scrollX/scrollY measure zero widths and the (cloned) header
+          // renders blank.
+          document.getElementById("clientsInfoTable").style.display = "";
+
           var table = $("#clientsInfoTable").DataTable({
             dom: "lrtip",
             orderCellsTop: true,
-            scrollX: true,
+            scrollX: true,          // horizontal scroll for many columns
+            scrollY: "60vh",        // vertical scroll keeps the header fixed
+            scrollCollapse: true,
+            paging: true,
             autoWidth: false,
             columnDefs: [
               { targets: actionsIdx, orderable: false, className: "dt-body-center dt-head-center actions-cell", width: "170px" },
@@ -253,8 +266,10 @@
             ],
           });
 
-          // Wire per-column search inputs (filter row = second thead row)
-          $("#clientsInfoTable thead tr:eq(1) th").each(function (i) {
+          // Wire per-column search inputs (filter row = second header row).
+          // In scroll mode DataTables clones the header into a separate container,
+          // so bind to the API's header element (the visible clone), not the original.
+          $(table.table().header()).find("tr:eq(1) th").each(function (i) {
             $("input", this).on("keyup change", function () {
               if (table.column(i).search() !== this.value) {
                 table.column(i).search(this.value).draw();
@@ -262,8 +277,9 @@
             });
           });
 
-          document.getElementById("clientsInfoTable").style.display = "";
-          table.columns.adjust();
+          // Recalculate column/header widths after layout settles and on resize
+          setTimeout(function () { table.columns.adjust(); }, 0);
+          $(window).on("resize", function () { table.columns.adjust(); });
         }
       </script>
 
