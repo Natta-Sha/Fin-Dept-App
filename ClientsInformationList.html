@@ -139,6 +139,85 @@
         text-decoration: none;
       }
       .table-link:hover { text-decoration: underline; }
+      .preview-btn {
+        background: transparent;
+        border: none;
+        color: #667eea;
+        padding: 0 0.25rem;
+        margin-left: 0.25rem;
+        cursor: pointer;
+        line-height: 1;
+      }
+      .preview-btn:hover { color: #764ba2; }
+      .client-preview-card {
+        position: fixed;
+        display: none;
+        width: min(720px, calc(100vw - 40px));
+        max-height: min(70vh, 620px);
+        overflow: auto;
+        z-index: 3000;
+        background: #fff;
+        border: 1px solid #dee2e6;
+        border-radius: 12px;
+        box-shadow: 0 12px 35px rgba(0, 0, 0, 0.18);
+      }
+      .client-preview-card .preview-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1rem;
+        padding: 0.85rem 1rem;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: #fff;
+        position: sticky;
+        top: 0;
+        z-index: 1;
+      }
+      .client-preview-card .preview-title {
+        font-size: 1rem;
+        font-weight: 700;
+        margin: 0;
+      }
+      .client-preview-card .preview-close {
+        background: rgba(255, 255, 255, 0.16);
+        border: none;
+        color: #fff;
+        border-radius: 50%;
+        width: 28px;
+        height: 28px;
+        line-height: 28px;
+        text-align: center;
+        cursor: pointer;
+      }
+      .client-preview-card .preview-body {
+        padding: 1rem;
+      }
+      .preview-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 0.65rem 1rem;
+      }
+      .preview-field {
+        border-bottom: 1px solid #edf0f2;
+        padding-bottom: 0.45rem;
+      }
+      .preview-label {
+        display: block;
+        color: #6c757d;
+        font-size: 0.72rem;
+        font-weight: 700;
+        margin-bottom: 0.15rem;
+      }
+      .preview-value {
+        color: #212529;
+        overflow-wrap: anywhere;
+      }
+      .preview-actions {
+        padding-top: 1rem;
+      }
+      @media (max-width: 700px) {
+        .preview-grid { grid-template-columns: 1fr; }
+      }
 
       .icon-link {
         color: #667eea;
@@ -173,8 +252,11 @@
         </table>
       </div>
 
+      <div id="clientPreviewCard" class="client-preview-card" aria-hidden="true"></div>
+
       <script>
         var baseUrl = "<?= baseUrl ?>";
+        var previewRowsById = {};
 
         // Header names (as they appear in the Information sheet) that need special rendering
         var PROJECT_HEADER = "Project name *";
@@ -198,8 +280,80 @@
           return '<a href="' + escHtml(url) + '" target="_blank" class="icon-link" title="' + title + '"><i class="bi ' + iconClass + '"></i></a>';
         }
 
+        function formatPreviewValue(header, value) {
+          if (!value) return '<span class="text-muted">no data</span>';
+          if (LINK_HEADERS[header]) {
+            return '<a href="' + escHtml(value) + '" target="_blank" rel="noopener">' + escHtml(value) + '</a>';
+          }
+          return escHtml(value);
+        }
+
         function viewUrl(id) {
           return baseUrl + "?page=ClientsInformationCard&id=" + encodeURIComponent(id) + "&mode=view";
+        }
+
+        function getRowFieldValue(row, header) {
+          var idx = row.headers.indexOf(header);
+          return idx >= 0 ? row.cells[idx] || "" : "";
+        }
+
+        function buildPreviewHtml(row) {
+          var projectName = getRowFieldValue(row, PROJECT_HEADER) || "Client preview";
+          var fields = row.headers.map(function (header, idx) {
+            var value = formatDisplayValue(header, row.cells[idx] || "");
+            return (
+              '<div class="preview-field">' +
+                '<span class="preview-label">' + escHtml(header) + '</span>' +
+                '<div class="preview-value">' + formatPreviewValue(header, value) + '</div>' +
+              '</div>'
+            );
+          }).join("");
+
+          return (
+            '<div class="preview-header">' +
+              '<h3 class="preview-title">' + escHtml(projectName) + '</h3>' +
+              '<button type="button" class="preview-close" aria-label="Close preview">&times;</button>' +
+            '</div>' +
+            '<div class="preview-body">' +
+              '<div class="preview-grid">' + fields + '</div>' +
+              '<div class="preview-actions">' +
+                '<a href="' + viewUrl(row.id) + '" class="btn btn-sm btn-outline-primary" target="_top">Open full card</a>' +
+              '</div>' +
+            '</div>'
+          );
+        }
+
+        function positionPreviewCard(card, trigger) {
+          var rect = trigger.getBoundingClientRect();
+          var cardWidth = Math.min(720, window.innerWidth - 40);
+          var left = Math.min(Math.max(20, rect.left), window.innerWidth - cardWidth - 20);
+          var top = rect.bottom + 8;
+
+          card.style.width = cardWidth + "px";
+          card.style.left = left + "px";
+          card.style.top = top + "px";
+          card.style.display = "block";
+
+          var cardRect = card.getBoundingClientRect();
+          if (cardRect.bottom > window.innerHeight - 20) {
+            card.style.top = Math.max(20, rect.top - cardRect.height - 8) + "px";
+          }
+        }
+
+        function showClientPreview(id, trigger) {
+          var row = previewRowsById[id];
+          if (!row) return;
+          var card = document.getElementById("clientPreviewCard");
+          card.innerHTML = buildPreviewHtml(row);
+          card.setAttribute("aria-hidden", "false");
+          positionPreviewCard(card, trigger);
+        }
+
+        function hideClientPreview() {
+          var card = document.getElementById("clientPreviewCard");
+          card.style.display = "none";
+          card.setAttribute("aria-hidden", "true");
+          card.innerHTML = "";
         }
 
         function columnClassForHeader(header) {
@@ -293,6 +447,7 @@
           var tbody = $("#clientsInfoTable tbody");
           thead.empty();
           tbody.empty();
+          previewRowsById = {};
 
           // Header row
           var headRow = $("<tr></tr>");
@@ -314,13 +469,17 @@
 
           // Body rows
           rows.forEach(function (row) {
+            previewRowsById[row.id] = { id: row.id, headers: headers, cells: row.cells };
             var tr = $("<tr></tr>");
             headers.forEach(function (h, idx) {
               var value = formatDisplayValue(h, row.cells[idx] || "");
               var html;
               if (h === PROJECT_HEADER) {
                 html = value
-                  ? '<a href="' + viewUrl(row.id) + '" class="table-link">' + escHtml(value) + "</a>"
+                  ? '<a href="' + viewUrl(row.id) + '" class="table-link">' + escHtml(value) + '</a>' +
+                    '<button type="button" class="preview-btn" data-client-id="' + escHtml(row.id) + '" title="Preview">' +
+                      '<i class="bi bi-eye"></i>' +
+                    '</button>'
                   : "";
               } else if (LINK_HEADERS[h]) {
                 html = iconLink(value, LINK_HEADERS[h].icon, LINK_HEADERS[h].title);
@@ -395,7 +554,37 @@
               table.fixedColumns().relayout();
             }
           });
+
+          $(table.table().container()).on("click", ".preview-btn", function (event) {
+            event.preventDefault();
+            event.stopPropagation();
+            var id = this.getAttribute("data-client-id");
+            var card = document.getElementById("clientPreviewCard");
+            if (card.style.display === "block" && card.getAttribute("data-client-id") === id) {
+              hideClientPreview();
+              return;
+            }
+            card.setAttribute("data-client-id", id);
+            showClientPreview(id, this);
+          });
         }
+
+        document.addEventListener("click", function (event) {
+          var card = document.getElementById("clientPreviewCard");
+          if (!card || card.style.display !== "block") return;
+          if (card.contains(event.target) || event.target.closest(".preview-btn")) return;
+          hideClientPreview();
+        });
+
+        document.addEventListener("keydown", function (event) {
+          if (event.key === "Escape") hideClientPreview();
+        });
+
+        document.addEventListener("click", function (event) {
+          if (event.target.closest(".preview-close")) {
+            hideClientPreview();
+          }
+        });
       </script>
 
       <!-- Deleted success modal -->
