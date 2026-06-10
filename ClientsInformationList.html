@@ -75,13 +75,18 @@
       }
       .btn-outline-success:hover { background: linear-gradient(135deg,#28a745,#20692b) !important; color: white !important; }
 
-      /* Table */
-      .dataTables_wrapper {
-        overflow-x: auto;
+      /* Table: scroll container gives both horizontal + vertical scroll;
+         the header stays visible via position: sticky. */
+      .table-scroll {
+        overflow: auto;
+        max-height: 65vh;
+        border: 1px solid #dee2e6;
       }
       table.dataTable {
         white-space: nowrap;
         font-size: 0.78rem;
+        width: auto !important;
+        min-width: 100%;
       }
       table.dataTable th, table.dataTable td {
         padding: 4px 7px !important;
@@ -89,7 +94,15 @@
       }
       table.dataTable thead th {
         text-align: center !important;
-        background: #f8f9fa;
+        background: #f1f3f5;
+        position: sticky;
+        top: 0;
+        z-index: 3;
+      }
+      /* Second header row (filters) sticks just below the first */
+      table.dataTable thead tr:nth-child(2) th {
+        top: 33px;
+        z-index: 2;
       }
       thead input {
         width: 100%;
@@ -101,12 +114,6 @@
       }
 
       table.dataTable tbody tr:hover { background: #f0f4ff !important; }
-
-      /* Keep header background opaque while it stays fixed during vertical scroll */
-      .dataTables_scrollHead, .dataTables_scrollHead table thead th {
-        background: #f8f9fa !important;
-      }
-      .dataTables_scrollBody { border-bottom: 1px solid #dee2e6; }
 
       .table-link {
         color: #667eea;
@@ -247,17 +254,14 @@
 
           var actionsIdx = headers.length; // last column
 
-          // IMPORTANT: the table must be visible BEFORE initializing DataTable,
-          // otherwise scrollX/scrollY measure zero widths and the (cloned) header
-          // renders blank.
           document.getElementById("clientsInfoTable").style.display = "";
 
+          // Plain DataTable (no scrollX/scrollY) so the real <thead> always renders.
+          // Horizontal + vertical scrolling and the sticky header are handled by CSS
+          // on a wrapper div around the table (see .table-scroll).
           var table = $("#clientsInfoTable").DataTable({
             dom: "lrtip",
             orderCellsTop: true,
-            scrollX: true,          // horizontal scroll for many columns
-            scrollY: "60vh",        // vertical scroll keeps the header fixed
-            scrollCollapse: true,
             paging: true,
             autoWidth: false,
             columnDefs: [
@@ -266,20 +270,19 @@
             ],
           });
 
-          // Wire per-column search inputs (filter row = second header row).
-          // In scroll mode DataTables clones the header into a separate container,
-          // so bind to the API's header element (the visible clone), not the original.
-          $(table.table().header()).find("tr:eq(1) th").each(function (i) {
+          // Wrap only the table in a scroll container (controls stay outside)
+          if (!$("#clientsInfoTable").parent().hasClass("table-scroll")) {
+            $("#clientsInfoTable").wrap('<div class="table-scroll"></div>');
+          }
+
+          // Wire per-column search inputs (filter row = second header row)
+          $("#clientsInfoTable thead tr:eq(1) th").each(function (i) {
             $("input", this).on("keyup change", function () {
               if (table.column(i).search() !== this.value) {
                 table.column(i).search(this.value).draw();
               }
             });
           });
-
-          // Recalculate column/header widths after layout settles and on resize
-          setTimeout(function () { table.columns.adjust(); }, 0);
-          $(window).on("resize", function () { table.columns.adjust(); });
         }
       </script>
 
