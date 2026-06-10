@@ -112,7 +112,15 @@ function hasAccessToPage(email, page) {
     var access = getUserNavAccess(email);
     return Object.keys(access).some(function (k) { return access[k]; });
   }
-  return hasAccessToSection(email, section);
+  var access = getUserNavAccess(email);
+  // If section is missing from cached map (e.g. cached before this section was added),
+  // force a rebuild so new sections are picked up without waiting for cache expiry.
+  if (!access.hasOwnProperty(section)) {
+    _userAccessMap = null;
+    CacheService.getScriptCache().remove("access_user_" + email.toLowerCase());
+    access = getUserNavAccess(email);
+  }
+  return access[section] === true;
 }
 
 /**

@@ -150,13 +150,13 @@
                 <option value="">Select...</option>
               </select>
             </div>
-            <div class="col-md-3">
+            <div class="col-md-2">
               <label for="daysForPayment" class="form-label">
                 Days for payment <span class="field-required">Required</span>
               </label>
               <input type="number" id="daysForPayment" class="form-control" min="0" step="1" required />
             </div>
-            <div class="col-md-3">
+            <div class="col-md-4">
               <label for="pmAm" class="form-label">
                 Project manager / account manager <span class="field-required">Required</span>
               </label>
@@ -431,30 +431,30 @@
 
         if (m === "create") {
           btn("Save", "btn-success", submitCreate, "save-btn");
-          btn("Cancel", "btn-outline-secondary", function () { window.location.href = baseUrl + "?page=ClientsInformationList"; });
+          btn("Cancel", "btn-outline-secondary", function () { window.location.href = "?page=ClientsInformationList"; });
         } else if (m === "edit") {
           btn("Confirm", "btn-success", submitUpdate, "confirm-btn");
-          btn("Cancel", "btn-outline-secondary", function () { window.location.href = baseUrl + "?page=ClientsInformationList"; }, "cancel-btn");
+          btn("Cancel", "btn-outline-secondary", function () { window.location.href = "?page=ClientsInformationList"; }, "cancel-btn");
         } else if (m === "view") {
           btn("Edit", "btn-primary", function () {
-            window.location.href = baseUrl + "?page=ClientsInformationCard&id=" + clientId + "&mode=edit";
+            window.location.href = "?page=ClientsInformationCard&id=" + clientId + "&mode=edit";
           });
           btn("Copy", "btn-outline-secondary", function () {
-            window.location.href = baseUrl + "?page=ClientsInformationCard&id=" + clientId + "&mode=copy";
+            window.location.href = "?page=ClientsInformationCard&id=" + clientId + "&mode=copy";
           });
           btn("Delete", "btn-outline-danger", function () {
-            window.location.href = baseUrl + "?page=ClientsInformationCard&id=" + clientId + "&mode=delete";
+            window.location.href = "?page=ClientsInformationCard&id=" + clientId + "&mode=delete";
           });
           btn("Back to list", "btn-outline-secondary", function () {
-            window.location.href = baseUrl + "?page=ClientsInformationList";
+            window.location.href = "?page=ClientsInformationList";
           });
         } else if (m === "copy") {
           btn("Save as new", "btn-success", submitCreate, "save-btn");
-          btn("Cancel", "btn-outline-secondary", function () { window.location.href = baseUrl + "?page=ClientsInformationList"; });
+          btn("Cancel", "btn-outline-secondary", function () { window.location.href = "?page=ClientsInformationList"; });
         } else if (m === "delete") {
           btn("Confirm Delete", "btn-danger", submitDelete, "delete-btn");
           btn("Cancel", "btn-outline-secondary", function () {
-            window.location.href = baseUrl + "?page=ClientsInformationCard&id=" + clientId + "&mode=view";
+            window.location.href = "?page=ClientsInformationCard&id=" + clientId + "&mode=view";
           });
         }
       }
@@ -474,7 +474,7 @@
             if (result && result.success) {
               document.getElementById("result").innerHTML =
                 '<div class="alert alert-success"><i class="bi bi-check-circle-fill me-2"></i>Client card saved successfully!</div>' +
-                '<a href="' + baseUrl + '?page=ClientsInformationList" class="btn btn-primary">Back to list</a>';
+                '<a href="?page=ClientsInformationList" class="btn btn-primary">Back to list</a>';
               document.getElementById("action-buttons").innerHTML = "";
             } else {
               document.getElementById("result").innerHTML =
@@ -500,8 +500,8 @@
             if (result && result.success) {
               document.getElementById("result").innerHTML =
                 '<div class="alert alert-success"><i class="bi bi-check-circle-fill me-2"></i>Client card updated successfully!</div>' +
-                '<a href="' + baseUrl + '?page=ClientsInformationList" class="btn btn-primary me-2">Back to list</a>' +
-                '<a href="' + baseUrl + '?page=ClientsInformationCard&id=' + clientId + '&mode=view" class="btn btn-outline-secondary">View card</a>';
+                '<a href="?page=ClientsInformationList" class="btn btn-primary me-2">Back to list</a>' +
+                '<a href="?page=ClientsInformationCard&id=' + clientId + '&mode=view" class="btn btn-outline-secondary">View card</a>';
               document.getElementById("action-buttons").innerHTML = "";
             } else {
               document.getElementById("result").innerHTML =
