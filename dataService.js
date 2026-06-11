@@ -3403,3 +3403,432 @@ function formatDateForBill(dateStr) {
   }
   return dateStr;
 }
+
+// ── Clients Information ──────────────────────────────────────────────────────
+
+var CLIENTS_INFO_SPREADSHEET_ID = "18SuIRqPwenrgAn5RB3ecMzBr8wS1G5PFnEsZg-Wn3Gc";
+var CLIENTS_INFO_SHEET = "Information";
+var CLIENTS_INFO_LISTS_SHEET = "Lists";
+
+/**
+ * Column names in the Information sheet (must match headers exactly).
+ */
+var CLIENTS_INFO_COLUMNS = {
+  id:                "ID",
+  projectName:       "Project name *",
+  linkFinFolder:     "Link to Fin folder",
+  linkSalesFolder:   "Link to Sales folder",
+  linkRates:         "Link to file with rates",
+  currency:          "Currency for accounting *",
+  typeOfDays:        "Type of days for payment *",
+  daysForPayment:    "Days for payment *",
+  pmAm:              "Project manager / account manager *",
+  companyName:       "Company name *",
+  companyNumberVat:  "Company number / VAT ID",
+  number:            "Number",
+  companyAddress:    "Company address",
+  vatRate:           "VAT rate",
+  bankChoice1:       "Sloboda bank choice1",
+  bankChoice2:       "Sloboda bank choice2",
+  invoiceTemplate:   "Invoice template *",
+  ourCompany:        "Our company *",
+  mailTo:            "Mail to",
+  mailAddressTo:     "Mail address to",
+  copyMailClient:    "Copy mail (client)",
+  copyMailSloboda:   "Copy mail (Sloboda)",
+  comments:          "Comments for mails",
+};
+
+/**
+ * Build a column index map from the Information sheet headers.
+ */
+function buildClientsInfoColumnMap_(headers) {
+  var map = {};
+  headers.forEach(function (h, i) {
+    if (h) map[h.toString().trim()] = i;
+  });
+  return map;
+}
+
+function normalizeClientProjectName_(value) {
+  return String(value || "").trim().replace(/\s+/g, " ").toLowerCase();
+}
+
+function findDuplicateClientProject_(data, colMap, projectName, allowedId) {
+  var projectIdx = colMap[CLIENTS_INFO_COLUMNS.projectName];
+  var idIdx = colMap[CLIENTS_INFO_COLUMNS.id];
+  var normalizedName = normalizeClientProjectName_(projectName);
+  var normalizedAllowedId = String(allowedId || "").trim();
+  if (!normalizedName || projectIdx === undefined) return null;
+
+  for (var i = 1; i < data.length; i++) {
+    var existingName = normalizeClientProjectName_(data[i][projectIdx]);
+    if (existingName !== normalizedName) continue;
+
+    var existingId = idIdx !== undefined ? String(data[i][idIdx] || "").trim() : "";
+    if (normalizedAllowedId && existingId === normalizedAllowedId) continue;
+
+    return {
+      id: existingId,
+      projectName: String(data[i][projectIdx] || "").trim(),
+    };
+  }
+
+  return null;
+}
+
+function checkClientProjectNameDuplicateFromData(projectName, allowedId) {
+  try {
+    var ss = SpreadsheetApp.openById(CLIENTS_INFO_SPREADSHEET_ID);
+    var sheet = ss.getSheetByName(CLIENTS_INFO_SHEET);
+    if (!sheet) return { duplicate: false };
+
+    var data = sheet.getDataRange().getValues();
+    if (data.length < 1) return { duplicate: false };
+
+    var colMap = buildClientsInfoColumnMap_(data[0]);
+    var duplicate = findDuplicateClientProject_(data, colMap, projectName, allowedId);
+    if (!duplicate) return { duplicate: false };
+
+    return {
+      duplicate: true,
+      id: duplicate.id,
+      projectName: duplicate.projectName,
+      message: 'Project "' + duplicate.projectName + '" already exists. Please use a unique project name.',
+    };
+  } catch (e) {
+    console.error("checkClientProjectNameDuplicateFromData error:", e);
+    return { duplicate: false, message: String(e) };
+  }
+}
+
+/**
+ * Get dropdown options for the Clients Information form from the Lists sheet.
+ * Lists sheet columns (0-based):
+ *   A(0) = Currency, B(1) = Type of days, C(2) = PM/AM (raw),
+ *   D(3) = Project (raw), E(4) = PM-List-A-Z, F(5) = Project-List-A-Z,
+ *   G(6) = (unused here), H(7) = Sloboda bank details,
+ *   I(8) = (bank cont.), J(9)=(unused), K(10) = Our company,
+ *   L(11) = VAT rate, M(12) = Company number / VAT ID, ..., O(14) = Invoice template
+ */
+function getClientsInformationDropdownsFromData() {
+  try {
+    var ss = SpreadsheetApp.openById(CLIENTS_INFO_SPREADSHEET_ID);
+    var sheet = ss.getSheetByName(CLIENTS_INFO_LISTS_SHEET);
+    if (!sheet) return {};
+
+    var data = sheet.getDataRange().getValues();
+    var displayData = sheet.getDataRange().getDisplayValues();
+
+    var currencies      = [];
+    var typeOfDays      = [];
+    var pmAmList        = [];
+    var projectList     = [];
+    var bankOptions     = [];
+    var ourCompanies    = [];
+    var vatRates        = [];
+    var companyNumbers  = [];
+    var invoiceTemplates = [];
+
+    function addUnique(arr, val) {
+      var v = (val || "").toString().trim();
+      if (v && arr.indexOf(v) === -1) arr.push(v);
+    }
+
+    for (var i = 1; i < data.length; i++) {
+      var row = data[i];
+      addUnique(currencies,       row[0]);
+      addUnique(typeOfDays,       row[1]);
+      addUnique(pmAmList,         row[4]);  // col E — PM-List-A-Z
+      addUnique(projectList,      row[5]);  // col F — Project-List-A-Z
+      addUnique(bankOptions,      row[7]);  // col H — Sloboda bank details
+      addUnique(ourCompanies,     row[10]); // col K
+      addUnique(vatRates,         displayData[i][11]); // col L — keep percent display (0%, 19%)
+      addUnique(companyNumbers,   row[12]); // col M
+      addUnique(invoiceTemplates, row[14]); // col O
+    }
+
+    return {
+      currencies:       currencies,
+      typeOfDays:       typeOfDays,
+      pmAmList:         pmAmList,
+      projectList:      projectList,
+      bankOptions:      bankOptions,
+      ourCompanies:     ourCompanies,
+      vatRates:         vatRates,
+      companyNumbers:   companyNumbers,
+      invoiceTemplates: invoiceTemplates,
+    };
+  } catch (e) {
+    console.error("getClientsInformationDropdownsFromData error:", e);
+    return {};
+  }
+}
+
+/**
+ * Get all clients for the list view.
+ * Columns and headers are derived directly from the Information sheet so the
+ * table always matches the DB. The technical "ID" column is hidden (returned
+ * separately per row for action links); all other columns are shown as-is.
+ * @returns {Object} { headers: string[], rows: [{ id, cells: string[] }] }
+ */
+function getClientsInformationListFromData() {
+  try {
+    var ss = SpreadsheetApp.openById(CLIENTS_INFO_SPREADSHEET_ID);
+    var sheet = ss.getSheetByName(CLIENTS_INFO_SHEET);
+    if (!sheet) return { headers: [], rows: [] };
+
+    var data = sheet.getDataRange().getValues();
+    if (data.length < 1) return { headers: [], rows: [] };
+
+    var rawHeaders = data[0];
+    var idColName = CLIENTS_INFO_COLUMNS.id;
+
+    // Find ID column and build the list of visible columns (skip ID and blanks)
+    var idColIndex = -1;
+    var visibleCols = [];
+    var headers = [];
+    for (var c = 0; c < rawHeaders.length; c++) {
+      var h = String(rawHeaders[c] || "").trim();
+      if (h === idColName) { idColIndex = c; continue; } // hide ID only
+      if (h === "") continue; // skip blank header columns
+      visibleCols.push(c);
+      headers.push(h);
+    }
+
+    var tz = Session.getScriptTimeZone();
+    function fmtCell(v) {
+      if (v === null || v === undefined) return "";
+      if (v instanceof Date) return Utilities.formatDate(v, tz, "dd/MM/yyyy");
+      return String(v);
+    }
+
+    var rows = [];
+    for (var i = 1; i < data.length; i++) {
+      var row = data[i];
+      var id = idColIndex >= 0 ? String(row[idColIndex] || "").trim() : "";
+      if (!id) continue;
+      var cells = visibleCols.map(function (cidx) { return fmtCell(row[cidx]); });
+      rows.push({ id: id, cells: cells });
+    }
+
+    return { headers: headers, rows: rows };
+  } catch (e) {
+    console.error("getClientsInformationListFromData error:", e);
+    return { headers: [], rows: [] };
+  }
+}
+
+/**
+ * Get a single client card by ID.
+ * @param {string} id
+ * @returns {Object} client data or { _error: true, _message: string }
+ */
+function getClientCardByIdFromData(id) {
+  try {
+    if (!id || String(id).trim() === "") return { _error: true, _message: "No ID provided" };
+
+    var ss = SpreadsheetApp.openById(CLIENTS_INFO_SPREADSHEET_ID);
+    var sheet = ss.getSheetByName(CLIENTS_INFO_SHEET);
+    if (!sheet) return { _error: true, _message: "Information sheet not found" };
+
+    var range = sheet.getDataRange();
+    var data = range.getValues();
+    var displayData = range.getDisplayValues();
+    var headers = data[0];
+    var colMap = buildClientsInfoColumnMap_(headers);
+
+    var row = null;
+    var displayRow = null;
+    for (var i = 1; i < data.length; i++) {
+      if (String(data[i][0] || "").trim() === String(id).trim()) {
+        row = data[i];
+        displayRow = displayData[i];
+        break;
+      }
+    }
+    if (!row) return { _error: true, _message: "Client not found (ID: " + id + ")" };
+
+    function col(key) {
+      var idx = colMap[CLIENTS_INFO_COLUMNS[key]];
+      if (idx === undefined) return "";
+      var v = key === "vatRate" && displayRow ? displayRow[idx] : row[idx];
+      return (v === null || v === undefined) ? "" : String(v);
+    }
+
+    return {
+      id:               col("id"),
+      projectName:      col("projectName"),
+      linkFinFolder:    col("linkFinFolder"),
+      linkSalesFolder:  col("linkSalesFolder"),
+      linkRates:        col("linkRates"),
+      currency:         col("currency"),
+      typeOfDays:       col("typeOfDays"),
+      daysForPayment:   col("daysForPayment"),
+      pmAm:             col("pmAm"),
+      companyName:      col("companyName"),
+      companyNumberVat: col("companyNumberVat"),
+      number:           col("number"),
+      companyAddress:   col("companyAddress"),
+      vatRate:          col("vatRate"),
+      bankChoice1:      col("bankChoice1"),
+      bankChoice2:      col("bankChoice2"),
+      invoiceTemplate:  col("invoiceTemplate"),
+      ourCompany:       col("ourCompany"),
+      mailTo:           col("mailTo"),
+      mailAddressTo:    col("mailAddressTo"),
+      copyMailClient:   col("copyMailClient"),
+      copyMailSloboda:  col("copyMailSloboda"),
+      comments:         col("comments"),
+    };
+  } catch (e) {
+    console.error("getClientCardByIdFromData error:", e);
+    return { _error: true, _message: String(e) };
+  }
+}
+
+/**
+ * Save a new client card to the Information sheet.
+ * @param {Object} formData
+ * @returns {Object} { success, id, message }
+ */
+function saveClientCardToData(formData) {
+  var lock = LockService.getScriptLock();
+  try {
+    if (!lock.tryLock(30000)) {
+      return { success: false, message: "Another client card is being saved. Please try again in a moment." };
+    }
+
+    var ss = SpreadsheetApp.openById(CLIENTS_INFO_SPREADSHEET_ID);
+    var sheet = ss.getSheetByName(CLIENTS_INFO_SHEET);
+    if (!sheet) return { success: false, message: "Information sheet not found" };
+
+    var headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
+    var colMap = buildClientsInfoColumnMap_(headers);
+    var data = sheet.getDataRange().getValues();
+    var duplicate = findDuplicateClientProject_(data, colMap, formData.projectName, null);
+    if (duplicate) {
+      return {
+        success: false,
+        message: 'Project "' + duplicate.projectName + '" already exists. Please use a unique project name.',
+      };
+    }
+
+    var newId = Utilities.getUuid();
+    var rowArr = new Array(headers.length).fill("");
+
+    var idIdx = colMap[CLIENTS_INFO_COLUMNS.id];
+    if (idIdx !== undefined) rowArr[idIdx] = newId;
+
+    Object.keys(CLIENTS_INFO_COLUMNS).forEach(function (key) {
+      if (key === "id") return;
+      var colName = CLIENTS_INFO_COLUMNS[key];
+      var idx = colMap[colName];
+      if (idx !== undefined) rowArr[idx] = formData[key] || "";
+    });
+
+    sheet.appendRow(rowArr);
+    var newRowIndex = sheet.getLastRow();
+    writeAuditColumns(sheet, newRowIndex, colMap);
+    SpreadsheetApp.flush();
+
+    CacheService.getScriptCache().remove("clientsInfoList");
+    return { success: true, id: newId };
+  } catch (e) {
+    console.error("saveClientCardToData error:", e);
+    return { success: false, message: String(e) };
+  } finally {
+    try { lock.releaseLock(); } catch (e) {}
+  }
+}
+
+/**
+ * Update an existing client card in the Information sheet.
+ * @param {Object} formData — must include formData.id
+ * @returns {Object} { success, message }
+ */
+function updateClientCardByIdFromData(formData) {
+  var lock = LockService.getScriptLock();
+  try {
+    if (!lock.tryLock(30000)) {
+      return { success: false, message: "Another client card is being saved. Please try again in a moment." };
+    }
+
+    var clientId = formData.id;
+    if (!clientId) return { success: false, message: "No ID provided" };
+
+    var ss = SpreadsheetApp.openById(CLIENTS_INFO_SPREADSHEET_ID);
+    var sheet = ss.getSheetByName(CLIENTS_INFO_SHEET);
+    if (!sheet) return { success: false, message: "Information sheet not found" };
+
+    var data = sheet.getDataRange().getValues();
+    var headers = data[0];
+    var colMap = buildClientsInfoColumnMap_(headers);
+    var duplicate = findDuplicateClientProject_(data, colMap, formData.projectName, clientId);
+    if (duplicate) {
+      return {
+        success: false,
+        message: 'Project "' + duplicate.projectName + '" already exists. Please use a unique project name.',
+      };
+    }
+
+    var rowIndex = -1;
+    for (var i = 1; i < data.length; i++) {
+      if (String(data[i][0] || "").trim() === String(clientId).trim()) {
+        rowIndex = i + 1; // 1-based
+        break;
+      }
+    }
+    if (rowIndex === -1) return { success: false, message: "Client not found" };
+
+    var rowArr = data[rowIndex - 1].slice();
+
+    Object.keys(CLIENTS_INFO_COLUMNS).forEach(function (key) {
+      if (key === "id") return;
+      var colName = CLIENTS_INFO_COLUMNS[key];
+      var idx = colMap[colName];
+      if (idx !== undefined) rowArr[idx] = formData[key] || "";
+    });
+
+    sheet.getRange(rowIndex, 1, 1, rowArr.length).setValues([rowArr]);
+    writeAuditColumns(sheet, rowIndex, colMap);
+    SpreadsheetApp.flush();
+
+    CacheService.getScriptCache().remove("clientsInfoList");
+    return { success: true };
+  } catch (e) {
+    console.error("updateClientCardByIdFromData error:", e);
+    return { success: false, message: String(e) };
+  } finally {
+    try { lock.releaseLock(); } catch (e) {}
+  }
+}
+
+/**
+ * Delete a client card row by ID.
+ * @param {string} id
+ * @returns {Object} { success, message }
+ */
+function deleteClientCardByIdFromData(id) {
+  try {
+    if (!id) return { success: false, message: "No ID provided" };
+
+    var ss = SpreadsheetApp.openById(CLIENTS_INFO_SPREADSHEET_ID);
+    var sheet = ss.getSheetByName(CLIENTS_INFO_SHEET);
+    if (!sheet) return { success: false, message: "Information sheet not found" };
+
+    var data = sheet.getDataRange().getValues();
+    for (var i = 1; i < data.length; i++) {
+      if (String(data[i][0] || "").trim() === String(id).trim()) {
+        sheet.deleteRow(i + 1);
+        SpreadsheetApp.flush();
+        CacheService.getScriptCache().remove("clientsInfoList");
+        return { success: true };
+      }
+    }
+    return { success: false, message: "Client not found" };
+  } catch (e) {
+    console.error("deleteClientCardByIdFromData error:", e);
+    return { success: false, message: String(e) };
+  }
+}

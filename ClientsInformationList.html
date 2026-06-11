@@ -1,0 +1,637 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <base target="_top" />
+    <meta charset="UTF-8" />
+    <title>Clients Information</title>
+
+    <link rel="stylesheet" href="https://cdn.datatables.net/1.13.4/css/jquery.dataTables.min.css" />
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet" />
+    <link rel="stylesheet" href="https://cdn.datatables.net/fixedcolumns/4.3.0/css/fixedColumns.dataTables.min.css" />
+
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.4/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdn.datatables.net/fixedcolumns/4.3.0/js/dataTables.fixedColumns.min.js"></script>
+
+    <style>
+      body {
+        font-size: 0.8rem;
+        margin: 0;
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+      }
+
+      .main-content {
+        flex-grow: 1;
+        padding: 20px;
+      }
+
+      .btn {
+        font-weight: 600 !important;
+        border-radius: 25px !important;
+        padding: 0.75rem 2rem !important;
+        font-size: 1.1rem !important;
+        transition: all 0.3s ease !important;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1) !important;
+        border: none !important;
+      }
+      .btn:hover { transform: translateY(-1px) !important; box-shadow: 0 4px 15px rgba(0,0,0,0.2) !important; }
+      .btn:focus, .btn:active { transform: translateY(-1px) !important; }
+      .btn-sm {
+        padding: 0.2rem 0.55rem !important;
+        font-size: 0.72rem !important;
+        border-radius: 12px !important;
+      }
+      .btn-primary, .btn-nav {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+        color: white !important;
+      }
+      .btn-primary:hover, .btn-nav:hover {
+        background: linear-gradient(135deg, #5a6fd8 0%, #6b4190 100%) !important;
+        color: white !important;
+      }
+      .btn-outline-primary {
+        background: rgba(102,126,234,0.08) !important;
+        color: #667eea !important;
+        border: 1.5px solid #667eea !important;
+      }
+      .btn-outline-primary:hover { background: linear-gradient(135deg,#667eea,#764ba2) !important; color: white !important; border-color: #667eea !important; }
+      .btn-outline-secondary {
+        background: rgba(108,117,125,0.08) !important;
+        color: #6c757d !important;
+        border: 1.5px solid #6c757d !important;
+      }
+      .btn-outline-secondary:hover { background: linear-gradient(135deg,#6c757d,#495057) !important; color: white !important; }
+      .btn-outline-danger {
+        background: rgba(220,53,69,0.08) !important;
+        color: #dc3545 !important;
+        border: 1.5px solid #dc3545 !important;
+      }
+      .btn-outline-danger:hover { background: linear-gradient(135deg,#dc3545,#b02a37) !important; color: white !important; }
+      .btn-outline-success {
+        background: rgba(40,167,69,0.08) !important;
+        color: #28a745 !important;
+        border: 1.5px solid #28a745 !important;
+      }
+      .btn-outline-success:hover { background: linear-gradient(135deg,#28a745,#20692b) !important; color: white !important; }
+
+      .dataTables_length {
+        float: none !important;
+        margin-bottom: 0.25rem;
+      }
+      .dataTables_scroll {
+        clear: both;
+        margin-top: 0.75rem;
+      }
+      table.dataTable {
+        font-size: 0.78rem;
+      }
+      table.dataTable th, table.dataTable td {
+        padding: 4px 7px !important;
+        vertical-align: middle !important;
+        white-space: normal !important;
+        overflow-wrap: anywhere;
+        word-break: normal;
+      }
+      table.dataTable th.col-link,
+      table.dataTable td.col-link {
+        text-align: center !important;
+      }
+      table.dataTable thead th {
+        text-align: center !important;
+        background: #f1f3f5;
+        white-space: normal !important;
+        overflow-wrap: anywhere;
+        line-height: 1.15;
+        padding-top: 8px !important;
+        padding-bottom: 8px !important;
+      }
+      table.dataTable thead tr:first-child th {
+        height: 48px;
+        padding-right: 18px !important; /* room for DataTables sorting icons */
+      }
+      table.dataTable thead tr:nth-child(2) th {
+        padding-top: 6px !important;
+        padding-bottom: 6px !important;
+      }
+      /* DataTables keeps a technical header inside the scroll body for sizing.
+         Hide it so it doesn't appear as an empty row between filters and data. */
+      .dataTables_scrollBody thead {
+        visibility: collapse;
+      }
+      .dataTables_scrollBody thead th {
+        height: 0 !important;
+        padding-top: 0 !important;
+        padding-bottom: 0 !important;
+        border-top: 0 !important;
+        border-bottom: 0 !important;
+        line-height: 0 !important;
+      }
+      .dataTables_scrollBody thead input {
+        display: none !important;
+      }
+      thead input {
+        width: 100%;
+        max-width: 100%;
+        display: block;
+        box-sizing: border-box;
+        padding: 2px 4px;
+        font-size: 0.72rem;
+        border: 1px solid #dee2e6;
+        border-radius: 4px;
+      }
+
+      table.dataTable tbody tr:hover { background: #f0f4ff !important; }
+      table.dataTable th.col-sticky,
+      table.dataTable td.col-sticky {
+        white-space: normal !important;
+        overflow-wrap: anywhere;
+      }
+
+      .table-link {
+        color: #667eea;
+        text-decoration: none;
+      }
+      .table-link:hover { text-decoration: underline; }
+      .preview-btn {
+        background: transparent;
+        border: none;
+        color: #667eea;
+        padding: 0 0.25rem;
+        margin-left: 0.25rem;
+        cursor: pointer;
+        line-height: 1;
+      }
+      .preview-btn:hover { color: #764ba2; }
+      .client-preview-card {
+        position: fixed;
+        display: none;
+        width: min(720px, calc(100vw - 40px));
+        max-height: min(70vh, 620px);
+        overflow: auto;
+        z-index: 3000;
+        background: #fff;
+        border: 1px solid #dee2e6;
+        border-radius: 12px;
+        box-shadow: 0 12px 35px rgba(0, 0, 0, 0.18);
+      }
+      .client-preview-card .preview-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1rem;
+        padding: 0.85rem 1rem;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: #fff;
+        position: sticky;
+        top: 0;
+        z-index: 1;
+      }
+      .client-preview-card .preview-title {
+        font-size: 1rem;
+        font-weight: 700;
+        margin: 0;
+      }
+      .client-preview-card .preview-close {
+        background: rgba(255, 255, 255, 0.16);
+        border: none;
+        color: #fff;
+        border-radius: 50%;
+        width: 28px;
+        height: 28px;
+        line-height: 28px;
+        text-align: center;
+        cursor: pointer;
+      }
+      .client-preview-card .preview-body {
+        padding: 1rem;
+      }
+      .preview-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 0.65rem 1rem;
+      }
+      .preview-field {
+        border-bottom: 1px solid #edf0f2;
+        padding-bottom: 0.45rem;
+      }
+      .preview-label {
+        display: block;
+        color: #6c757d;
+        font-size: 0.72rem;
+        font-weight: 700;
+        margin-bottom: 0.15rem;
+      }
+      .preview-value {
+        color: #212529;
+        overflow-wrap: anywhere;
+      }
+      .preview-actions {
+        padding-top: 1rem;
+      }
+      @media (max-width: 700px) {
+        .preview-grid { grid-template-columns: 1fr; }
+      }
+
+      .icon-link {
+        color: #667eea;
+        font-size: 1rem;
+        text-decoration: none;
+      }
+      .icon-link:hover { color: #764ba2; }
+
+      /* Loading spinner */
+      #loading-row td { text-align: center; padding: 2rem !important; }
+    </style>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  </head>
+
+  <body>
+    <?!= getNavigation(activePage) ?>
+
+    <div class="main-content container-xl">
+      <div class="mb-3 d-flex justify-content-start">
+        <a href="<?= baseUrl ?>?page=ClientsInformationCard&mode=create" class="btn btn-nav">
+          Create new
+        </a>
+      </div>
+
+      <h2 class="mb-3">Clients Information</h2>
+
+      <div id="table-wrapper">
+        <table id="clientsInfoTable" class="display table table-bordered" style="width:100%; display:none;">
+          <thead class="table-light"></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+
+      <div id="clientPreviewCard" class="client-preview-card" aria-hidden="true"></div>
+
+      <script>
+        var baseUrl = "<?= baseUrl ?>";
+        var previewRowsById = {};
+
+        // Header names (as they appear in the Information sheet) that need special rendering
+        var PROJECT_HEADER = "Project name *";
+        var LINK_HEADERS = {
+          "Link to Fin folder":      { icon: "bi-folder2-open",       title: "Fin Folder" },
+          "Link to Sales folder":    { icon: "bi-folder",             title: "Sales Folder" },
+          "Link to file with rates": { icon: "bi-file-earmark-text",  title: "Rates File" }
+        };
+
+        function escHtml(str) {
+          if (!str) return "";
+          return String(str)
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;");
+        }
+
+        function iconLink(url, iconClass, title) {
+          if (!url) return "";
+          return '<a href="' + escHtml(url) + '" target="_blank" class="icon-link" title="' + title + '"><i class="bi ' + iconClass + '"></i></a>';
+        }
+
+        function formatPreviewValue(header, value) {
+          if (!value) return '<span class="text-muted">no data</span>';
+          if (LINK_HEADERS[header]) {
+            return '<a href="' + escHtml(value) + '" target="_blank" rel="noopener">' + escHtml(value) + '</a>';
+          }
+          return escHtml(value);
+        }
+
+        function viewUrl(id) {
+          return baseUrl + "?page=ClientsInformationCard&id=" + encodeURIComponent(id) + "&mode=view";
+        }
+
+        function getRowFieldValue(row, header) {
+          var idx = row.headers.indexOf(header);
+          return idx >= 0 ? row.cells[idx] || "" : "";
+        }
+
+        function buildPreviewHtml(row) {
+          var projectName = getRowFieldValue(row, PROJECT_HEADER) || "Client preview";
+          var fields = row.headers.map(function (header, idx) {
+            var value = formatDisplayValue(header, row.cells[idx] || "");
+            return (
+              '<div class="preview-field">' +
+                '<span class="preview-label">' + escHtml(header) + '</span>' +
+                '<div class="preview-value">' + formatPreviewValue(header, value) + '</div>' +
+              '</div>'
+            );
+          }).join("");
+
+          return (
+            '<div class="preview-header">' +
+              '<h3 class="preview-title">' + escHtml(projectName) + '</h3>' +
+              '<button type="button" class="preview-close" aria-label="Close preview">&times;</button>' +
+            '</div>' +
+            '<div class="preview-body">' +
+              '<div class="preview-grid">' + fields + '</div>' +
+              '<div class="preview-actions">' +
+                '<a href="' + viewUrl(row.id) + '" class="btn btn-sm btn-outline-primary" target="_top">Open full card</a>' +
+              '</div>' +
+            '</div>'
+          );
+        }
+
+        function positionPreviewCard(card, trigger) {
+          var rect = trigger.getBoundingClientRect();
+          var cardWidth = Math.min(720, window.innerWidth - 40);
+          var left = Math.min(Math.max(20, rect.left), window.innerWidth - cardWidth - 20);
+          var top = rect.bottom + 8;
+
+          card.style.width = cardWidth + "px";
+          card.style.left = left + "px";
+          card.style.top = top + "px";
+          card.style.display = "block";
+
+          var cardRect = card.getBoundingClientRect();
+          if (cardRect.bottom > window.innerHeight - 20) {
+            card.style.top = Math.max(20, rect.top - cardRect.height - 8) + "px";
+          }
+        }
+
+        function showClientPreview(id, trigger) {
+          var row = previewRowsById[id];
+          if (!row) return;
+          var card = document.getElementById("clientPreviewCard");
+          card.innerHTML = buildPreviewHtml(row);
+          card.setAttribute("aria-hidden", "false");
+          positionPreviewCard(card, trigger);
+        }
+
+        function hideClientPreview() {
+          var card = document.getElementById("clientPreviewCard");
+          card.style.display = "none";
+          card.setAttribute("aria-hidden", "true");
+          card.innerHTML = "";
+        }
+
+        function columnClassForHeader(header) {
+          var classes = [];
+          if (header === PROJECT_HEADER) classes.push("col-sticky");
+          if (LINK_HEADERS[header]) return "col-link";
+          if (header === "Currency for accounting *") classes.push("col-currency");
+          if (header === "Type of days for payment *") classes.push("col-days-type");
+          if (header === "Days for payment *") classes.push("col-days-payment");
+          if (
+            header === "Company address" ||
+            header === "Mail to" ||
+            header === "Copy mail (client)" ||
+            header === "Copy mail (Sloboda)"
+          ) {
+            classes.push("col-wide-text");
+          }
+          return classes.join(" ");
+        }
+
+        function columnWidthPxForHeader(header) {
+          if (header === PROJECT_HEADER) return 180;
+          if (LINK_HEADERS[header]) return 105;
+          if (header === "Currency for accounting *") return 95;
+          if (header === "Type of days for payment *") return 115;
+          if (header === "Days for payment *") return 90;
+          if (
+            header === "Company address" ||
+            header === "Mail to" ||
+            header === "Copy mail (client)" ||
+            header === "Copy mail (Sloboda)"
+          ) {
+            return 510;
+          }
+          return 170;
+        }
+
+        function columnWidthForHeader(header) {
+          return columnWidthPxForHeader(header) + "px";
+        }
+
+        function buildDataTableColumns(headers) {
+          var columns = headers.map(function (header) {
+            return {
+              width: columnWidthForHeader(header),
+              className: columnClassForHeader(header) + " dt-body-left dt-head-center",
+            };
+          });
+
+          return columns;
+        }
+
+        function dataTableScrollWidth(headers) {
+          var total = headers.reduce(function (sum, header) {
+            return sum + columnWidthPxForHeader(header);
+          }, 0);
+          return total + "px";
+        }
+
+        function formatDisplayValue(header, value) {
+          if (header !== "VAT rate") return value;
+          if (value === "" || value === null || value === undefined) return "";
+          var raw = String(value).trim();
+          if (raw.indexOf("%") !== -1) return raw;
+          var num = parseFloat(raw.replace(",", "."));
+          if (isNaN(num)) return raw;
+          var percent = Math.abs(num) <= 1 ? num * 100 : num;
+          var rounded = Math.round(percent * 100) / 100;
+          return (Math.abs(rounded - Math.round(rounded)) < 1e-9
+            ? String(Math.round(rounded))
+            : rounded.toFixed(2).replace(/\.?0+$/, "")) + "%";
+        }
+
+        $(document).ready(function () {
+          google.script.run
+            .withSuccessHandler(function (resp) {
+              var headers = (resp && resp.headers) || [];
+              var rows = (resp && resp.rows) || [];
+
+              buildTable(headers, rows);
+            })
+            .withFailureHandler(function (err) {
+              console.error("Error loading clients information list:", err);
+              document.getElementById("clientsInfoTable").style.display = "";
+            })
+            .getClientsInformationList();
+        });
+
+        function buildTable(headers, rows) {
+          var thead = $("#clientsInfoTable thead");
+          var tbody = $("#clientsInfoTable tbody");
+          thead.empty();
+          tbody.empty();
+          previewRowsById = {};
+
+          // Header row
+          var headRow = $("<tr></tr>");
+          headers.forEach(function (h) {
+            headRow.append($("<th></th>").addClass(columnClassForHeader(h)).text(h));
+          });
+          thead.append(headRow);
+
+          // Filter row (one input per data column)
+          var filterRow = $("<tr></tr>");
+          headers.forEach(function (h, idx) {
+            filterRow.append(
+              $("<th></th>")
+                .addClass(columnClassForHeader(h))
+                .append('<input type="text" placeholder="Search" data-col-index="' + idx + '" />')
+            );
+          });
+          thead.append(filterRow);
+
+          // Body rows
+          rows.forEach(function (row) {
+            previewRowsById[row.id] = { id: row.id, headers: headers, cells: row.cells };
+            var tr = $("<tr></tr>");
+            headers.forEach(function (h, idx) {
+              var value = formatDisplayValue(h, row.cells[idx] || "");
+              var html;
+              if (h === PROJECT_HEADER) {
+                html = value
+                  ? '<a href="' + viewUrl(row.id) + '" class="table-link">' + escHtml(value) + '</a>' +
+                    '<button type="button" class="preview-btn" data-client-id="' + escHtml(row.id) + '" title="Preview">' +
+                      '<i class="bi bi-eye"></i>' +
+                    '</button>'
+                  : "";
+              } else if (LINK_HEADERS[h]) {
+                html = iconLink(value, LINK_HEADERS[h].icon, LINK_HEADERS[h].title);
+              } else {
+                html = escHtml(value);
+              }
+              tr.append($("<td></td>").addClass(columnClassForHeader(h)).html(html));
+            });
+            tbody.append(tr);
+          });
+
+          document.getElementById("clientsInfoTable").style.display = "";
+
+          // Native DataTables scrolling + FixedColumns:
+          // scrollX/scrollY keeps the header aligned with the body, and
+          // FixedColumns freezes Project name * (the first visible column).
+          var table = $("#clientsInfoTable").DataTable({
+            dom: "lrtip",
+            orderCellsTop: true,
+            scrollX: true,
+            sScrollXInner: dataTableScrollWidth(headers),
+            scrollY: "65vh",
+            scrollCollapse: true,
+            paging: true,
+            autoWidth: false,
+            fixedColumns: {
+              left: 1,
+              leftColumns: 1,
+              start: 1
+            },
+            columns: buildDataTableColumns(headers),
+            initComplete: function () {
+              var api = this.api();
+              var container = $(api.table().container());
+
+              // DataTables + FixedColumns creates cloned headers. The cloned
+              // filter inputs keep data-col-index, so every input can address
+              // the same real DataTables column and stay visually in sync.
+              container
+                .off("keyup.dtClientFilters change.dtClientFilters", "thead tr:eq(1) input")
+                .on("keyup.dtClientFilters change.dtClientFilters", "thead tr:eq(1) input", function () {
+                  var input = this;
+                  var i = Number(input.getAttribute("data-col-index"));
+                  if (isNaN(i)) return;
+
+                  container
+                    .find('thead tr:eq(1) input[data-col-index="' + i + '"]')
+                    .not(input)
+                    .val(input.value);
+
+                  if (api.column(i).search() !== input.value) {
+                    api.column(i).search(input.value).draw();
+                  }
+                });
+
+              api.columns.adjust();
+              if (api.fixedColumns && api.fixedColumns().relayout) {
+                api.fixedColumns().relayout();
+              }
+            }
+          });
+
+          setTimeout(function () {
+            table.columns.adjust();
+            if (table.fixedColumns && table.fixedColumns().relayout) {
+              table.fixedColumns().relayout();
+            }
+          }, 0);
+
+          table.on("draw.dt column-sizing.dt", function () {
+            if (table.fixedColumns && table.fixedColumns().relayout) {
+              table.fixedColumns().relayout();
+            }
+          });
+
+          $(table.table().container()).on("click", ".preview-btn", function (event) {
+            event.preventDefault();
+            event.stopPropagation();
+            var id = this.getAttribute("data-client-id");
+            var card = document.getElementById("clientPreviewCard");
+            if (card.style.display === "block" && card.getAttribute("data-client-id") === id) {
+              hideClientPreview();
+              return;
+            }
+            card.setAttribute("data-client-id", id);
+            showClientPreview(id, this);
+          });
+        }
+
+        document.addEventListener("click", function (event) {
+          var card = document.getElementById("clientPreviewCard");
+          if (!card || card.style.display !== "block") return;
+          if (card.contains(event.target) || event.target.closest(".preview-btn")) return;
+          hideClientPreview();
+        });
+
+        document.addEventListener("keydown", function (event) {
+          if (event.key === "Escape") hideClientPreview();
+        });
+
+        document.addEventListener("click", function (event) {
+          if (event.target.closest(".preview-close")) {
+            hideClientPreview();
+          }
+        });
+      </script>
+
+      <!-- Deleted success modal -->
+      <div class="modal fade" id="deletedModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+          <div class="modal-content">
+            <div class="modal-header">
+              <h5 class="modal-title">Record Deleted</h5>
+              <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">The client record was deleted successfully.</div>
+          </div>
+        </div>
+      </div>
+
+      <script>
+        $(function () {
+          var params = new URLSearchParams(window.location.search);
+          if (params.get("deleted") === "1") {
+            var modal = new bootstrap.Modal(document.getElementById("deletedModal"));
+            modal.show();
+          }
+        });
+      </script>
+    </div>
+
+    <script>
+      document.addEventListener("DOMContentLoaded", function () {
+        var tooltips = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+        tooltips.map(function (el) { return new bootstrap.Tooltip(el); });
+      });
+    </script>
+  </body>
+</html>

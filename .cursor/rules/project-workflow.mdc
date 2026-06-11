@@ -1,0 +1,14 @@
+---
+description: Core workflow rules for the Fin Dept App project
+alwaysApply: true
+---
+
+# Project Workflow
+
+- Keep changes narrowly scoped to the user's request and existing project patterns.
+- Do not commit unless the user explicitly asks.
+- Before committing, review `git status`, staged/unstaged diff, and recent commit message style.
+- Never revert user changes unless explicitly requested.
+- Prefer `ApplyPatch` for small single-file edits.
+- After substantive edits, check lints for touched files.
+- For user-facing explanations, keep answers concise and mention verification performed.

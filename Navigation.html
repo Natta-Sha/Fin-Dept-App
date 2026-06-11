@@ -98,8 +98,9 @@
   var contractsOk   = ha.contracts === true;
   var billsOk       = ha.bills === true;
 
-  var clientsOk     = invoicesOk || creditnotesOk;
-  var contractorsOk = contractsOk || billsOk;
+  var clientsOk      = invoicesOk || creditnotesOk;
+  var contractorsOk  = contractsOk || billsOk;
+  var clientsInfoOk  = ha.clientsinfo === true;
 ?>
 
 <nav class="top-nav">
@@ -128,24 +129,29 @@
 
           <!-- Clients Dropdown -->
           <div class="nav-item dropdown mx-3">
-            <? if (clientsOk) { ?>
+            <? if (clientsOk || clientsInfoOk) { ?>
               <a
                 href="#"
-                class="nav-link dropdown-toggle <?= activePage === 'invoices' || activePage === 'creditnotes' ? 'active' : '' ?>"
+                class="nav-link dropdown-toggle <?= activePage === 'invoices' || activePage === 'creditnotes' || activePage === 'clientsinfo' ? 'active' : '' ?>"
                 role="button"
                 data-bs-toggle="dropdown"
               >Clients</a>
 
               <ul class="dropdown-menu">
                 <li>
-                  <a
-                    href="#"
-                    class="dropdown-item"
-                    data-bs-toggle="tooltip"
-                    title="Coming soon"
-                    style="cursor: not-allowed; opacity: 0.6"
-                    onclick="return false;"
-                  >Information</a>
+                  <? if (clientsInfoOk) { ?>
+                    <a
+                      href="<?= baseUrl ?>?page=ClientsInformationList"
+                      class="dropdown-item <?= activePage === 'clientsinfo' ? 'active' : '' ?>"
+                    >Information</a>
+                  <? } else { ?>
+                    <a
+                      href="#"
+                      class="dropdown-item disabled-access"
+                      onclick="return false;"
+                      title="No access"
+                    >Information</a>
+                  <? } ?>
                 </li>
                 <li>
                   <a

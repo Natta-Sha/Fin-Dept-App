@@ -1,0 +1,800 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <base target="_top" />
+    <meta charset="UTF-8" />
+    <title>Client Card</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet" />
+
+    <style>
+      body { font-size: 0.875rem; margin: 0; min-height: 100vh; display: flex; flex-direction: column; }
+      .main-content { flex-grow: 1; padding-top: 1rem; }
+
+      .form-label { font-weight: 600; }
+      .field-required {
+        font-size: 0.72rem;
+        color: #dc3545;
+        font-weight: normal;
+        margin-left: 4px;
+      }
+
+      .section-title {
+        color: #667eea;
+        border-bottom: 2px solid #667eea;
+        padding-bottom: 0.4rem;
+        margin-bottom: 1rem;
+        margin-top: 1.5rem;
+        font-size: 1rem;
+        font-weight: 600;
+      }
+
+      .form-section {
+        background: #f8f9fa;
+        padding: 1rem 1.2rem;
+        border-radius: 8px;
+        margin-bottom: 1rem;
+      }
+
+      /* Buttons */
+      .btn {
+        font-weight: 600 !important; border-radius: 25px !important;
+        padding: 0.75rem 2rem !important; font-size: 1.1rem !important;
+        transition: all 0.3s ease !important; box-shadow: 0 2px 10px rgba(0,0,0,0.1) !important;
+        border: none !important;
+      }
+      .btn:hover { transform: translateY(-1px) !important; box-shadow: 0 4px 15px rgba(0,0,0,0.2) !important; }
+      .btn:focus, .btn:active { transform: translateY(-1px) !important; }
+      .btn-sm { padding: 0.25rem 0.75rem !important; font-size: 0.85rem !important; border-radius: 15px !important; }
+      .btn-primary, .btn-nav {
+        background: linear-gradient(135deg,#667eea,#764ba2) !important; color: white !important;
+      }
+      .btn-primary:hover, .btn-nav:hover {
+        background: linear-gradient(135deg,#5a6fd8,#6b4190) !important; color: white !important;
+      }
+      .btn-success { background: linear-gradient(135deg,#28a745,#20692b) !important; color: white !important; }
+      .btn-success:hover { background: linear-gradient(135deg,#218838,#1e5e26) !important; color: white !important; }
+      .btn-danger { background: linear-gradient(135deg,#dc3545,#b02a37) !important; color: white !important; }
+      .btn-danger:hover { background: linear-gradient(135deg,#c82333,#9e2530) !important; color: white !important; }
+      .btn-outline-secondary {
+        background: rgba(108,117,125,0.08) !important; color: #6c757d !important;
+        border: 2px solid #6c757d !important;
+      }
+      .btn-outline-secondary:hover { background: linear-gradient(135deg,#6c757d,#495057) !important; color: white !important; }
+      .btn-outline-danger {
+        background: rgba(220,53,69,0.08) !important; color: #dc3545 !important;
+        border: 2px solid #dc3545 !important;
+      }
+      .btn-outline-danger:hover { background: linear-gradient(135deg,#dc3545,#b02a37) !important; color: white !important; }
+
+      /* View mode: read-only look */
+      .form-control[readonly], .form-select[disabled], .form-control[disabled] {
+        background-color: #fff !important;
+        opacity: 1 !important;
+      }
+      .view-mode-field {
+        background-color: #fff !important;
+        border-color: #dee2e6 !important;
+        color: #212529 !important;
+      }
+      .duplicate-project-field {
+        background-color: #fff0f6 !important;
+        border-color: #ff6b9d !important;
+        box-shadow: 0 0 0 0.2rem rgba(255, 107, 157, 0.18) !important;
+      }
+      .duplicate-project-feedback {
+        display: none;
+        margin-top: 0.45rem;
+        padding: 0.55rem 0.7rem;
+        border: 1px solid rgba(255, 107, 157, 0.38);
+        border-radius: 8px;
+        background: #fff0f6;
+        color: #a61e4d;
+        font-size: 0.82rem;
+        font-weight: 600;
+      }
+      .duplicate-project-feedback.show { display: block; }
+
+      #result { margin-top: 1rem; }
+
+      .spinner-border-sm { width: 1rem; height: 1rem; }
+    </style>
+  </head>
+
+  <body>
+    <?!= getNavigation(activePage) ?>
+
+    <div class="main-content container">
+      <div id="loading-spinner" class="text-center py-5" style="display:none;">
+        <div class="spinner-border text-primary" role="status">
+          <span class="visually-hidden">Loading...</span>
+        </div>
+      </div>
+
+      <div id="card-form" style="display:none;">
+
+        <!-- Page title -->
+        <div class="d-flex align-items-center mb-3 gap-3">
+          <h2 id="page-title" class="mb-0">Client Card</h2>
+        </div>
+
+        <div id="validation-alert" class="alert alert-danger d-none" role="alert"></div>
+
+        <!-- ── General ──────────────────────────────────────── -->
+        <div class="form-section">
+          <div class="section-title">General</div>
+          <div class="row g-3">
+            <div class="col-md-6">
+              <label for="projectName" class="form-label">
+                Project name <span class="field-required">Required</span>
+              </label>
+              <select id="projectName" class="form-select" required>
+                <option value="">Select...</option>
+              </select>
+              <div id="projectNameDuplicateFeedback" class="duplicate-project-feedback" role="alert"></div>
+            </div>
+            <div class="col-md-6">
+              <label for="linkFinFolder" class="form-label">Link to Fin folder</label>
+              <input type="url" id="linkFinFolder" class="form-control" placeholder="https://..." />
+            </div>
+            <div class="col-md-6">
+              <label for="linkSalesFolder" class="form-label">Link to Sales folder</label>
+              <input type="url" id="linkSalesFolder" class="form-control" placeholder="https://..." />
+            </div>
+            <div class="col-md-6">
+              <label for="linkRates" class="form-label">Link to file with rates</label>
+              <input type="url" id="linkRates" class="form-control" placeholder="https://..." />
+            </div>
+          </div>
+        </div>
+
+        <!-- ── For AR ──────────────────────────────────────── -->
+        <div class="form-section">
+          <div class="section-title">For AR</div>
+          <div class="row g-3">
+            <div class="col-md-4">
+              <label for="currency" class="form-label">
+                Currency for accounting <span class="field-required">Required</span>
+              </label>
+              <select id="currency" class="form-select" required>
+                <option value="">Select...</option>
+              </select>
+            </div>
+            <div class="col-md-4">
+              <label for="typeOfDays" class="form-label">
+                Type of days for payment <span class="field-required">Required</span>
+              </label>
+              <select id="typeOfDays" class="form-select" required>
+                <option value="">Select...</option>
+              </select>
+            </div>
+            <div class="col-md-4">
+              <label for="daysForPayment" class="form-label">
+                Days for payment <span class="field-required">Required</span>
+              </label>
+              <input type="number" id="daysForPayment" class="form-control" min="0" step="1" required />
+            </div>
+            <div class="col-md-5">
+              <label for="pmAm" class="form-label">
+                Project manager / account manager <span class="field-required">Required</span>
+              </label>
+              <select id="pmAm" class="form-select" required>
+                <option value="">Select...</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <!-- ── For Invoice ─────────────────────────────────── -->
+        <div class="form-section">
+          <div class="section-title">For Invoice</div>
+          <div class="row g-3">
+            <div class="col-md-6">
+              <label for="companyName" class="form-label">
+                Company name <span class="field-required">Required</span>
+              </label>
+              <input type="text" id="companyName" class="form-control" required />
+            </div>
+            <div class="col-md-6">
+              <label for="companyNumberVat" class="form-label">Company number / VAT ID</label>
+              <select id="companyNumberVat" class="form-select">
+                <option value="">Select or leave blank</option>
+              </select>
+            </div>
+            <div class="col-md-4">
+              <label for="number" class="form-label">Number</label>
+              <input type="text" id="number" class="form-control" />
+            </div>
+            <div class="col-md-8">
+              <label for="companyAddress" class="form-label">Company address</label>
+              <input type="text" id="companyAddress" class="form-control" />
+            </div>
+            <div class="col-md-3">
+              <label for="vatRate" class="form-label">VAT rate</label>
+              <select id="vatRate" class="form-select">
+                <option value="">Select or leave blank</option>
+              </select>
+            </div>
+            <div class="col-md-4">
+              <label for="bankChoice1" class="form-label">Sloboda bank choice 1</label>
+              <select id="bankChoice1" class="form-select">
+                <option value="">Select or leave blank</option>
+              </select>
+            </div>
+            <div class="col-md-4">
+              <label for="bankChoice2" class="form-label">Sloboda bank choice 2</label>
+              <select id="bankChoice2" class="form-select">
+                <option value="">Select or leave blank</option>
+              </select>
+            </div>
+            <div class="col-md-6">
+              <label for="invoiceTemplate" class="form-label">
+                Invoice template <span class="field-required">Required</span>
+              </label>
+              <select id="invoiceTemplate" class="form-select" required>
+                <option value="">Select...</option>
+              </select>
+            </div>
+            <div class="col-md-6">
+              <label for="ourCompany" class="form-label">
+                Our company <span class="field-required">Required</span>
+              </label>
+              <select id="ourCompany" class="form-select" required>
+                <option value="">Select...</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <!-- ── For Correspondence ──────────────────────────── -->
+        <div class="form-section">
+          <div class="section-title">For Correspondence</div>
+          <div class="row g-3">
+            <div class="col-md-6">
+              <label for="mailTo" class="form-label">Mail to</label>
+              <input type="email" id="mailTo" class="form-control" placeholder="email@example.com" />
+            </div>
+            <div class="col-md-6">
+              <label for="mailAddressTo" class="form-label">Mail address to</label>
+              <input type="text" id="mailAddressTo" class="form-control" />
+            </div>
+            <div class="col-md-6">
+              <label for="copyMailClient" class="form-label">Copy mail (client)</label>
+              <input type="email" id="copyMailClient" class="form-control" placeholder="email@example.com" />
+            </div>
+            <div class="col-md-6">
+              <label for="copyMailSloboda" class="form-label">Copy mail (Sloboda)</label>
+              <input type="email" id="copyMailSloboda" class="form-control" placeholder="email@example.com" />
+            </div>
+            <div class="col-12">
+              <label for="comments" class="form-label">Comments for mails</label>
+              <textarea id="comments" class="form-control" rows="3"></textarea>
+            </div>
+          </div>
+        </div>
+
+        <!-- Action buttons -->
+        <div id="action-buttons" class="d-flex gap-2 flex-wrap mt-3 mb-5"></div>
+
+        <div id="result"></div>
+      </div><!-- /#card-form -->
+    </div>
+
+    <script>
+      var mode     = "<?= mode ?>";
+      var clientId = "<?= clientId ?>";
+      var baseUrl  = "<?= baseUrl ?>";
+
+      var REQUIRED_FIELDS = ["projectName", "currency", "typeOfDays", "daysForPayment",
+                             "pmAm", "companyName", "invoiceTemplate", "ourCompany"];
+
+      // ── Helpers ──────────────────────────────────────────────────────────────
+
+      function esc(str) {
+        if (!str) return "";
+        return String(str)
+          .replace(/&/g, "&amp;").replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+      }
+
+      // Robust navigation that works inside the Apps Script iframe sandbox.
+      // Relative URLs navigate the inner sandbox frame (blank page), so we
+      // target the top window with the absolute web-app URL (like Invoices).
+      function navigateTo(query) {
+        var target = baseUrl + query;
+        try { window.top.location.href = target; return; } catch (e) {}
+        try { window.location.href = target; return; } catch (e2) {}
+      }
+
+      function setButtonBusy(button, busyText) {
+        if (!button) return;
+        button.disabled = true;
+        button.classList.add("disabled");
+        button.setAttribute("aria-disabled", "true");
+        button.setAttribute("data-original-html", button.innerHTML);
+        button.innerHTML =
+          '<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>' +
+          esc(busyText || "Loading...");
+      }
+
+      function navigateToListWithSpinner(button) {
+        setButtonBusy(button, "Loading...");
+        navigateTo("?page=ClientsInformationList&_ts=" + Date.now());
+      }
+
+      function setFormDisabled(disabled) {
+        document.querySelectorAll("#card-form input, #card-form select, #card-form textarea")
+          .forEach(function (el) {
+            if (el.id === "projectName" && !disabled) return; // keep selects enabled when editing
+            el.disabled = disabled;
+          });
+      }
+
+      function setViewMode() {
+        document.querySelectorAll("#card-form input, #card-form select, #card-form textarea")
+          .forEach(function (el) {
+            el.setAttribute("readonly", "readonly");
+            el.disabled = true;
+            el.classList.add("view-mode-field");
+          });
+      }
+
+      function populateSelect(id, options, currentValue) {
+        var sel = document.getElementById(id);
+        if (!sel) return;
+        var existing = sel.querySelector('option[value=""]');
+        options.forEach(function (val) {
+          if (!val) return;
+          var opt = document.createElement("option");
+          opt.value = val;
+          opt.textContent = val;
+          if (val === currentValue) opt.selected = true;
+          sel.appendChild(opt);
+        });
+        // if currentValue not in list, add it temporarily
+        if (currentValue && !options.includes(currentValue)) {
+          var opt = document.createElement("option");
+          opt.value = currentValue;
+          opt.textContent = currentValue;
+          opt.selected = true;
+          sel.insertBefore(opt, existing ? existing.nextSibling : sel.firstChild);
+        }
+      }
+
+      function fillField(id, value) {
+        var el = document.getElementById(id);
+        if (!el) return;
+        if (el.tagName === "SELECT") {
+          // try to match option
+          var found = false;
+          for (var i = 0; i < el.options.length; i++) {
+            if (el.options[i].value === value) { el.selectedIndex = i; found = true; break; }
+          }
+          if (!found && value) {
+            var opt = document.createElement("option");
+            opt.value = value; opt.textContent = value; opt.selected = true;
+            el.appendChild(opt);
+          }
+        } else if (el.tagName === "TEXTAREA") {
+          el.value = value || "";
+        } else {
+          el.value = value || "";
+        }
+      }
+
+      function collectFormData() {
+        var data = {};
+        ["projectName","linkFinFolder","linkSalesFolder","linkRates",
+         "currency","typeOfDays","daysForPayment","pmAm",
+         "companyName","companyNumberVat","number","companyAddress",
+         "vatRate","bankChoice1","bankChoice2","invoiceTemplate","ourCompany",
+         "mailTo","mailAddressTo","copyMailClient","copyMailSloboda","comments"
+        ].forEach(function (id) {
+          var el = document.getElementById(id);
+          data[id] = el ? el.value.trim() : "";
+        });
+        return data;
+      }
+
+      function clearProjectDuplicateHighlight() {
+        var projectField = document.getElementById("projectName");
+        var feedback = document.getElementById("projectNameDuplicateFeedback");
+        if (projectField) projectField.classList.remove("duplicate-project-field");
+        if (feedback) {
+          feedback.classList.remove("show");
+          feedback.textContent = "";
+        }
+      }
+
+      function handleSaveError(buttonId, result) {
+        var message = (result && result.message) || "Unknown error";
+        if (message.indexOf("already exists") !== -1) {
+          showProjectDuplicateError(message, true);
+          renderValidationSummary([message]);
+        } else {
+          document.getElementById("result").innerHTML =
+            '<div class="alert alert-danger">Error: ' + esc(message) + '</div>';
+        }
+        clearActionBusy(buttonId);
+      }
+
+      function showProjectDuplicateError(message, scrollToField) {
+        var projectField = document.getElementById("projectName");
+        var feedback = document.getElementById("projectNameDuplicateFeedback");
+        if (!projectField) return;
+
+        projectField.classList.add("duplicate-project-field");
+        if (feedback) {
+          feedback.textContent = message;
+          feedback.classList.add("show");
+        }
+        document.getElementById("result").innerHTML = "";
+        if (scrollToField) {
+          projectField.scrollIntoView({ behavior: "smooth", block: "center" });
+          try { projectField.focus(); } catch (e) {}
+        }
+      }
+
+      function getRequiredFieldErrors() {
+        var errors = [];
+        var fieldLabels = {
+          projectName:   "Project name",
+          currency:      "Currency for accounting",
+          typeOfDays:    "Type of days for payment",
+          daysForPayment:"Days for payment",
+          pmAm:          "Project manager / account manager",
+          companyName:   "Company name",
+          invoiceTemplate: "Invoice template",
+          ourCompany:    "Our company",
+        };
+
+        REQUIRED_FIELDS.forEach(function (id) {
+          var el = document.getElementById(id);
+          if (!el) return;
+          if (!el.value || el.value.trim() === "") {
+            el.classList.add("is-invalid");
+            errors.push((fieldLabels[id] || id) + " is required.");
+          } else {
+            el.classList.remove("is-invalid");
+          }
+        });
+
+        return errors;
+      }
+
+      function renderValidationSummary(errors) {
+        var alert = document.getElementById("validation-alert");
+        if (errors.length > 0) {
+          alert.innerHTML = "<strong>Please fix the following errors:</strong><ul class='mb-0 mt-1'>"
+            + errors.map(function (e) { return "<li>" + esc(e) + "</li>"; }).join("") + "</ul>";
+          alert.classList.remove("d-none");
+          window.scrollTo({ top: 0, behavior: "smooth" });
+          return false;
+        }
+        alert.classList.add("d-none");
+        return true;
+      }
+
+      function validateAndThen(buttonId, formData, allowedId, onValid) {
+        clearProjectDuplicateHighlight();
+        var requiredErrors = getRequiredFieldErrors();
+
+        function finishValidation(duplicateResult) {
+          var errors = requiredErrors.slice();
+          if (duplicateResult && duplicateResult.duplicate) {
+            errors.push(duplicateResult.message);
+            showProjectDuplicateError(duplicateResult.message, false);
+          }
+
+          if (!renderValidationSummary(errors)) {
+            clearActionBusy(buttonId);
+            return;
+          }
+
+          onValid();
+        }
+
+        if (!formData.projectName) {
+          finishValidation(null);
+          return;
+        }
+
+        setActionBusy(buttonId, "Checking...");
+        google.script.run
+          .withSuccessHandler(function (result) {
+            finishValidation(result);
+          })
+          .withFailureHandler(function () {
+            finishValidation(null);
+          })
+          .checkClientProjectNameDuplicate(formData.projectName, allowedId || "");
+      }
+
+      // ── Dropdowns ────────────────────────────────────────────────────────────
+
+      function loadDropdowns(currentData) {
+        google.script.run
+          .withSuccessHandler(function (opts) {
+            var cur = currentData || {};
+            populateSelect("projectName",      opts.projectList     || [], cur.projectName);
+            populateSelect("currency",         opts.currencies      || [], cur.currency);
+            populateSelect("typeOfDays",       opts.typeOfDays      || [], cur.typeOfDays);
+            populateSelect("pmAm",             opts.pmAmList        || [], cur.pmAm);
+            populateSelect("companyNumberVat", opts.companyNumbers  || [], cur.companyNumberVat);
+            populateSelect("vatRate",          opts.vatRates        || [], cur.vatRate);
+            populateSelect("bankChoice1",      opts.bankOptions     || [], cur.bankChoice1);
+            populateSelect("bankChoice2",      opts.bankOptions     || [], cur.bankChoice2);
+            populateSelect("invoiceTemplate",  opts.invoiceTemplates|| [], cur.invoiceTemplate);
+            populateSelect("ourCompany",       opts.ourCompanies    || [], cur.ourCompany);
+          })
+          .withFailureHandler(function (err) {
+            console.error("Failed to load dropdowns:", err);
+          })
+          .getClientsInformationDropdowns();
+      }
+
+      // ── Render buttons ───────────────────────────────────────────────────────
+
+      function renderButtons(m) {
+        var container = document.getElementById("action-buttons");
+        container.innerHTML = "";
+
+        function btn(label, cls, onclick, id) {
+          var b = document.createElement("button");
+          b.type = "button";
+          b.className = "btn " + cls;
+          b.textContent = label;
+          if (id) b.id = id;
+          b.addEventListener("click", onclick);
+          container.appendChild(b);
+          return b;
+        }
+
+        if (m === "create") {
+          btn("Save", "btn-success", submitCreate, "save-btn");
+          btn("Cancel", "btn-outline-secondary", function () { navigateTo("?page=ClientsInformationList"); });
+        } else if (m === "edit") {
+          btn("Confirm", "btn-success", submitUpdate, "confirm-btn");
+          btn("Cancel", "btn-outline-secondary", function () { navigateTo("?page=ClientsInformationList"); }, "cancel-btn");
+        } else if (m === "view") {
+          btn("Edit", "btn-primary", function () {
+            navigateTo("?page=ClientsInformationCard&id=" + clientId + "&mode=edit");
+          });
+          btn("Copy", "btn-outline-secondary", function () {
+            navigateTo("?page=ClientsInformationCard&id=" + clientId + "&mode=copy");
+          });
+          btn("Delete", "btn-outline-danger", function () {
+            navigateTo("?page=ClientsInformationCard&id=" + clientId + "&mode=delete");
+          });
+          btn("Back to list", "btn-outline-secondary", function () {
+            navigateToListWithSpinner(this);
+          }, "back-to-list-btn");
+        } else if (m === "copy") {
+          btn("Save as new", "btn-success", submitCreate, "save-btn");
+          btn("Cancel", "btn-outline-secondary", function () { navigateTo("?page=ClientsInformationList"); });
+        } else if (m === "delete") {
+          btn("Confirm Delete", "btn-danger", submitDelete, "delete-btn");
+          btn("Cancel", "btn-outline-secondary", function () {
+            navigateTo("?page=ClientsInformationCard&id=" + clientId + "&mode=view");
+          });
+        }
+      }
+
+      // ── Submit handlers ──────────────────────────────────────────────────────
+
+      function setActionBusy(activeButtonId, busyText) {
+        document.querySelectorAll("#action-buttons button").forEach(function (b) { b.disabled = true; });
+        var activeButton = document.getElementById(activeButtonId);
+        if (!activeButton) return;
+        if (!activeButton.hasAttribute("data-original-html")) {
+          activeButton.setAttribute("data-original-html", activeButton.innerHTML);
+        }
+        activeButton.innerHTML =
+          '<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>' +
+          esc(busyText || "Processing...");
+      }
+
+      function clearActionBusy(activeButtonId) {
+        var activeButton = document.getElementById(activeButtonId);
+        if (activeButton) {
+          var originalHtml = activeButton.getAttribute("data-original-html");
+          if (originalHtml !== null) {
+            activeButton.innerHTML = originalHtml;
+            activeButton.removeAttribute("data-original-html");
+          }
+        }
+        document.querySelectorAll("#action-buttons button").forEach(function (b) { b.disabled = false; });
+      }
+
+      function submitCreate() {
+        var formData = collectFormData();
+        validateAndThen("save-btn", formData, "", function () {
+          setActionBusy("save-btn", "Saving...");
+          google.script.run
+            .withSuccessHandler(function (result) {
+              if (result && result.success) {
+                document.getElementById("result").innerHTML =
+                  '<div class="alert alert-success"><i class="bi bi-check-circle-fill me-2"></i>Client card saved successfully!</div>' +
+                  '<button type="button" class="btn btn-primary" id="back-to-list-after-save">Back to list</button>';
+                document.getElementById("action-buttons").innerHTML = "";
+                document.getElementById("back-to-list-after-save").addEventListener("click", function () {
+                  navigateToListWithSpinner(this);
+                });
+              } else {
+                handleSaveError("save-btn", result);
+              }
+            })
+            .withFailureHandler(function (err) {
+              document.getElementById("result").innerHTML =
+                '<div class="alert alert-danger">Error: ' + esc(String(err)) + '</div>';
+              clearActionBusy("save-btn");
+            })
+            .saveClientCard(formData);
+        });
+      }
+
+      function submitUpdate() {
+        var formData = collectFormData();
+        formData.id = clientId;
+        validateAndThen("confirm-btn", formData, clientId, function () {
+          setActionBusy("confirm-btn", "Saving...");
+          google.script.run
+            .withSuccessHandler(function (result) {
+              if (result && result.success) {
+                document.getElementById("result").innerHTML =
+                  '<div class="alert alert-success"><i class="bi bi-check-circle-fill me-2"></i>Client card updated successfully!</div>' +
+                  '<button type="button" class="btn btn-primary me-2" id="back-to-list-after-update">Back to list</button>' +
+                  '<a href="' + baseUrl + '?page=ClientsInformationCard&id=' + clientId + '&mode=view" target="_top" class="btn btn-outline-secondary">View card</a>';
+                document.getElementById("action-buttons").innerHTML = "";
+                document.getElementById("back-to-list-after-update").addEventListener("click", function () {
+                  navigateToListWithSpinner(this);
+                });
+              } else {
+                handleSaveError("confirm-btn", result);
+              }
+            })
+            .withFailureHandler(function (err) {
+              document.getElementById("result").innerHTML =
+                '<div class="alert alert-danger">Error: ' + esc(String(err)) + '</div>';
+              clearActionBusy("confirm-btn");
+            })
+            .updateClientCard(formData);
+        });
+      }
+
+      function submitDelete() {
+        setActionBusy("delete-btn", "Deleting...");
+        google.script.run
+          .withSuccessHandler(function (result) {
+            if (result && result.success) {
+              document.querySelectorAll("#card-form .form-section").forEach(function (section) {
+                section.style.display = "none";
+              });
+              document.getElementById("result").innerHTML =
+                '<div class="alert alert-success"><i class="bi bi-check-circle-fill me-2"></i>Client record deleted successfully.</div>' +
+                '<button type="button" class="btn btn-primary" id="back-to-list-after-delete">Back to list</button>';
+              document.getElementById("action-buttons").innerHTML = "";
+              document.getElementById("back-to-list-after-delete").addEventListener("click", function () {
+                navigateToListWithSpinner(this);
+              });
+            } else {
+              document.getElementById("result").innerHTML =
+                '<div class="alert alert-danger">Error: ' + esc((result && result.message) || "Unknown error") + '</div>';
+              clearActionBusy("delete-btn");
+            }
+          })
+          .withFailureHandler(function (err) {
+            document.getElementById("result").innerHTML =
+              '<div class="alert alert-danger">Error: ' + esc(String(err)) + '</div>';
+            clearActionBusy("delete-btn");
+          })
+          .deleteClientCard(clientId);
+      }
+
+      // ── Fill form from data object ────────────────────────────────────────────
+
+      function fillForm(data) {
+        ["projectName","linkFinFolder","linkSalesFolder","linkRates",
+         "currency","typeOfDays","daysForPayment","pmAm",
+         "companyName","companyNumberVat","number","companyAddress",
+         "vatRate","bankChoice1","bankChoice2","invoiceTemplate","ourCompany",
+         "mailTo","mailAddressTo","copyMailClient","copyMailSloboda","comments"
+        ].forEach(function (id) {
+          fillField(id, data[id] || "");
+        });
+      }
+
+      // ── Init ──────────────────────────────────────────────────────────────────
+
+      document.addEventListener("DOMContentLoaded", function () {
+        var projectField = document.getElementById("projectName");
+        if (projectField) {
+          projectField.addEventListener("change", clearProjectDuplicateHighlight);
+          projectField.addEventListener("input", clearProjectDuplicateHighlight);
+        }
+
+        var titles = {
+          create: "New Client Card",
+          view:   "Client Card — View",
+          edit:   "Client Card — Edit",
+          copy:   "Client Card — Copy",
+          delete: "Client Card — Delete",
+        };
+        document.getElementById("page-title").textContent = titles[mode] || "Client Card";
+
+        renderButtons(mode);
+
+        if (mode === "create") {
+          document.getElementById("loading-spinner").style.display = "none";
+          document.getElementById("card-form").style.display = "";
+          loadDropdowns(null);
+          return;
+        }
+
+        // For view / edit / copy / delete — load existing data first
+        if (!clientId) {
+          document.getElementById("card-form").style.display = "";
+          document.getElementById("result").innerHTML =
+            '<div class="alert alert-danger">No client ID provided.</div>';
+          return;
+        }
+
+        document.getElementById("loading-spinner").style.display = "";
+
+        google.script.run
+          .withSuccessHandler(function (data) {
+            document.getElementById("loading-spinner").style.display = "none";
+            document.getElementById("card-form").style.display = "";
+
+            if (!data || data._error) {
+              document.getElementById("result").innerHTML =
+                '<div class="alert alert-danger">' + esc((data && data._message) || "Client not found.") + '</div>';
+              return;
+            }
+
+            // Load dropdowns first, then fill fields so selected values are preserved
+            google.script.run
+              .withSuccessHandler(function (opts) {
+                populateSelect("projectName",      opts.projectList     || [], data.projectName);
+                populateSelect("currency",         opts.currencies      || [], data.currency);
+                populateSelect("typeOfDays",       opts.typeOfDays      || [], data.typeOfDays);
+                populateSelect("pmAm",             opts.pmAmList        || [], data.pmAm);
+                populateSelect("companyNumberVat", opts.companyNumbers  || [], data.companyNumberVat);
+                populateSelect("vatRate",          opts.vatRates        || [], data.vatRate);
+                populateSelect("bankChoice1",      opts.bankOptions     || [], data.bankChoice1);
+                populateSelect("bankChoice2",      opts.bankOptions     || [], data.bankChoice2);
+                populateSelect("invoiceTemplate",  opts.invoiceTemplates|| [], data.invoiceTemplate);
+                populateSelect("ourCompany",       opts.ourCompanies    || [], data.ourCompany);
+
+                // Fill remaining plain-text fields
+                ["linkFinFolder","linkSalesFolder","linkRates",
+                 "daysForPayment","companyName","number","companyAddress",
+                 "mailTo","mailAddressTo","copyMailClient","copyMailSloboda","comments"
+                ].forEach(function (id) { fillField(id, data[id] || ""); });
+
+                if (mode === "view" || mode === "delete") {
+                  setViewMode();
+                }
+                if (mode === "delete") {
+                  document.getElementById("result").innerHTML =
+                    '<div class="alert alert-warning"><i class="bi bi-exclamation-triangle-fill me-2"></i>' +
+                    'You are about to permanently delete this client record. This action cannot be undone.</div>';
+                }
+              })
+              .withFailureHandler(function () {
+                fillForm(data);
+                if (mode === "view" || mode === "delete") setViewMode();
+              })
+              .getClientsInformationDropdowns();
+          })
+          .withFailureHandler(function (err) {
+            document.getElementById("loading-spinner").style.display = "none";
+            document.getElementById("card-form").style.display = "";
+            document.getElementById("result").innerHTML =
+              '<div class="alert alert-danger">Error loading client: ' + esc(String(err)) + '</div>';
+          })
+          .getClientCardById(clientId);
+      });
+    </script>
+  </body>
+</html>
