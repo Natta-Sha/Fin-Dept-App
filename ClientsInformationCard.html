@@ -410,6 +410,7 @@
         var message = (result && result.message) || "Unknown error";
         if (message.indexOf("already exists") !== -1) {
           showProjectDuplicateError(message, true);
+          renderValidationSummary([message]);
         } else {
           document.getElementById("result").innerHTML =
             '<div class="alert alert-danger">Error: ' + esc(message) + '</div>';
@@ -434,25 +435,7 @@
         }
       }
 
-      function checkProjectDuplicateForInvalidForm(buttonId, formData, allowedId) {
-        if (!formData.projectName) return;
-
-        setActionBusy(buttonId, "Checking...");
-        google.script.run
-          .withSuccessHandler(function (result) {
-            if (result && result.duplicate) {
-              showProjectDuplicateError(result.message, false);
-            }
-            clearActionBusy(buttonId);
-          })
-          .withFailureHandler(function () {
-            clearActionBusy(buttonId);
-          })
-          .checkClientProjectNameDuplicate(formData.projectName, allowedId || "");
-      }
-
-      function validateForm() {
-        clearProjectDuplicateHighlight();
+      function getRequiredFieldErrors() {
         var errors = [];
         var fieldLabels = {
           projectName:   "Project name",
@@ -476,9 +459,13 @@
           }
         });
 
+        return errors;
+      }
+
+      function renderValidationSummary(errors) {
         var alert = document.getElementById("validation-alert");
         if (errors.length > 0) {
-          alert.innerHTML = "<strong>Please fill in required fields:</strong><ul class='mb-0 mt-1'>"
+          alert.innerHTML = "<strong>Please fix the following errors:</strong><ul class='mb-0 mt-1'>"
             + errors.map(function (e) { return "<li>" + esc(e) + "</li>"; }).join("") + "</ul>";
           alert.classList.remove("d-none");
           window.scrollTo({ top: 0, behavior: "smooth" });
@@ -486,6 +473,41 @@
         }
         alert.classList.add("d-none");
         return true;
+      }
+
+      function validateAndThen(buttonId, formData, allowedId, onValid) {
+        clearProjectDuplicateHighlight();
+        var requiredErrors = getRequiredFieldErrors();
+
+        function finishValidation(duplicateResult) {
+          var errors = requiredErrors.slice();
+          if (duplicateResult && duplicateResult.duplicate) {
+            errors.push(duplicateResult.message);
+            showProjectDuplicateError(duplicateResult.message, false);
+          }
+
+          if (!renderValidationSummary(errors)) {
+            clearActionBusy(buttonId);
+            return;
+          }
+
+          onValid();
+        }
+
+        if (!formData.projectName) {
+          finishValidation(null);
+          return;
+        }
+
+        setActionBusy(buttonId, "Checking...");
+        google.script.run
+          .withSuccessHandler(function (result) {
+            finishValidation(result);
+          })
+          .withFailureHandler(function () {
+            finishValidation(null);
+          })
+          .checkClientProjectNameDuplicate(formData.projectName, allowedId || "");
       }
 
       // ── Dropdowns ────────────────────────────────────────────────────────────
@@ -564,7 +586,9 @@
         document.querySelectorAll("#action-buttons button").forEach(function (b) { b.disabled = true; });
         var activeButton = document.getElementById(activeButtonId);
         if (!activeButton) return;
-        activeButton.setAttribute("data-original-html", activeButton.innerHTML);
+        if (!activeButton.hasAttribute("data-original-html")) {
+          activeButton.setAttribute("data-original-html", activeButton.innerHTML);
+        }
         activeButton.innerHTML =
           '<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>' +
           esc(busyText || "Processing...");
@@ -584,62 +608,58 @@
 
       function submitCreate() {
         var formData = collectFormData();
-        if (!validateForm()) {
-          checkProjectDuplicateForInvalidForm("save-btn", formData, "");
-          return;
-        }
-        setActionBusy("save-btn", "Saving...");
-        google.script.run
-          .withSuccessHandler(function (result) {
-            if (result && result.success) {
+        validateAndThen("save-btn", formData, "", function () {
+          setActionBusy("save-btn", "Saving...");
+          google.script.run
+            .withSuccessHandler(function (result) {
+              if (result && result.success) {
+                document.getElementById("result").innerHTML =
+                  '<div class="alert alert-success"><i class="bi bi-check-circle-fill me-2"></i>Client card saved successfully!</div>' +
+                  '<button type="button" class="btn btn-primary" id="back-to-list-after-save">Back to list</button>';
+                document.getElementById("action-buttons").innerHTML = "";
+                document.getElementById("back-to-list-after-save").addEventListener("click", function () {
+                  navigateToListWithSpinner(this);
+                });
+              } else {
+                handleSaveError("save-btn", result);
+              }
+            })
+            .withFailureHandler(function (err) {
               document.getElementById("result").innerHTML =
-                '<div class="alert alert-success"><i class="bi bi-check-circle-fill me-2"></i>Client card saved successfully!</div>' +
-                '<button type="button" class="btn btn-primary" id="back-to-list-after-save">Back to list</button>';
-              document.getElementById("action-buttons").innerHTML = "";
-              document.getElementById("back-to-list-after-save").addEventListener("click", function () {
-                navigateToListWithSpinner(this);
-              });
-            } else {
-              handleSaveError("save-btn", result);
-            }
-          })
-          .withFailureHandler(function (err) {
-            document.getElementById("result").innerHTML =
-              '<div class="alert alert-danger">Error: ' + esc(String(err)) + '</div>';
-            clearActionBusy("save-btn");
-          })
-          .saveClientCard(formData);
+                '<div class="alert alert-danger">Error: ' + esc(String(err)) + '</div>';
+              clearActionBusy("save-btn");
+            })
+            .saveClientCard(formData);
+        });
       }
 
       function submitUpdate() {
         var formData = collectFormData();
         formData.id = clientId;
-        if (!validateForm()) {
-          checkProjectDuplicateForInvalidForm("confirm-btn", formData, clientId);
-          return;
-        }
-        setActionBusy("confirm-btn", "Saving...");
-        google.script.run
-          .withSuccessHandler(function (result) {
-            if (result && result.success) {
+        validateAndThen("confirm-btn", formData, clientId, function () {
+          setActionBusy("confirm-btn", "Saving...");
+          google.script.run
+            .withSuccessHandler(function (result) {
+              if (result && result.success) {
+                document.getElementById("result").innerHTML =
+                  '<div class="alert alert-success"><i class="bi bi-check-circle-fill me-2"></i>Client card updated successfully!</div>' +
+                  '<button type="button" class="btn btn-primary me-2" id="back-to-list-after-update">Back to list</button>' +
+                  '<a href="' + baseUrl + '?page=ClientsInformationCard&id=' + clientId + '&mode=view" target="_top" class="btn btn-outline-secondary">View card</a>';
+                document.getElementById("action-buttons").innerHTML = "";
+                document.getElementById("back-to-list-after-update").addEventListener("click", function () {
+                  navigateToListWithSpinner(this);
+                });
+              } else {
+                handleSaveError("confirm-btn", result);
+              }
+            })
+            .withFailureHandler(function (err) {
               document.getElementById("result").innerHTML =
-                '<div class="alert alert-success"><i class="bi bi-check-circle-fill me-2"></i>Client card updated successfully!</div>' +
-                '<button type="button" class="btn btn-primary me-2" id="back-to-list-after-update">Back to list</button>' +
-                '<a href="' + baseUrl + '?page=ClientsInformationCard&id=' + clientId + '&mode=view" target="_top" class="btn btn-outline-secondary">View card</a>';
-              document.getElementById("action-buttons").innerHTML = "";
-              document.getElementById("back-to-list-after-update").addEventListener("click", function () {
-                navigateToListWithSpinner(this);
-              });
-            } else {
-              handleSaveError("confirm-btn", result);
-            }
-          })
-          .withFailureHandler(function (err) {
-            document.getElementById("result").innerHTML =
-              '<div class="alert alert-danger">Error: ' + esc(String(err)) + '</div>';
-            clearActionBusy("confirm-btn");
-          })
-          .updateClientCard(formData);
+                '<div class="alert alert-danger">Error: ' + esc(String(err)) + '</div>';
+              clearActionBusy("confirm-btn");
+            })
+            .updateClientCard(formData);
+        });
       }
 
       function submitDelete() {
