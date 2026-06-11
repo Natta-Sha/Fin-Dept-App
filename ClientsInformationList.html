@@ -116,6 +116,22 @@
         padding-top: 6px !important;
         padding-bottom: 6px !important;
       }
+      /* DataTables keeps a technical header inside the scroll body for sizing.
+         Hide it so it doesn't appear as an empty row between filters and data. */
+      .dataTables_scrollBody thead {
+        visibility: collapse;
+      }
+      .dataTables_scrollBody thead th {
+        height: 0 !important;
+        padding-top: 0 !important;
+        padding-bottom: 0 !important;
+        border-top: 0 !important;
+        border-bottom: 0 !important;
+        line-height: 0 !important;
+      }
+      .dataTables_scrollBody thead input {
+        display: none !important;
+      }
       thead input {
         width: 100%;
         max-width: 100%;
