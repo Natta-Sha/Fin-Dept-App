@@ -17,6 +17,13 @@ function writeAuditColumns(sheet, rowIndex, columnMap) {
   }
 }
 
+function setAuditValues_(rowArr, columnMap) {
+  var email = Session.getActiveUser().getEmail() || "";
+  var now = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), "dd/MM/yyyy HH:mm");
+  if (columnMap["Modified by"] !== undefined) rowArr[columnMap["Modified by"]] = email;
+  if (columnMap["Modified at"] !== undefined) rowArr[columnMap["Modified at"]] = now;
+}
+
 /**
  * Build a column map from headers array: { headerName: 0-based index }
  */
@@ -3578,7 +3585,9 @@ function getClientsInformationListFromData() {
     var sheet = ss.getSheetByName(CLIENTS_INFO_SHEET);
     if (!sheet) return { headers: [], rows: [] };
 
-    var data = sheet.getDataRange().getValues();
+    var range = sheet.getDataRange();
+    var data = range.getValues();
+    var displayData = range.getDisplayValues();
     if (data.length < 1) return { headers: [], rows: [] };
 
     var rawHeaders = data[0];
@@ -3596,19 +3605,13 @@ function getClientsInformationListFromData() {
       headers.push(h);
     }
 
-    var tz = Session.getScriptTimeZone();
-    function fmtCell(v) {
-      if (v === null || v === undefined) return "";
-      if (v instanceof Date) return Utilities.formatDate(v, tz, "dd/MM/yyyy");
-      return String(v);
-    }
-
     var rows = [];
     for (var i = 1; i < data.length; i++) {
       var row = data[i];
+      var displayRow = displayData[i];
       var id = idColIndex >= 0 ? String(row[idColIndex] || "").trim() : "";
       if (!id) continue;
-      var cells = visibleCols.map(function (cidx) { return fmtCell(row[cidx]); });
+      var cells = visibleCols.map(function (cidx) { return displayRow[cidx] || ""; });
       rows.push({ id: id, cells: cells });
     }
 
@@ -3727,9 +3730,9 @@ function saveClientCardToData(formData) {
       if (idx !== undefined) rowArr[idx] = formData[key] || "";
     });
 
+    setAuditValues_(rowArr, colMap);
+
     sheet.appendRow(rowArr);
-    var newRowIndex = sheet.getLastRow();
-    writeAuditColumns(sheet, newRowIndex, colMap);
     SpreadsheetApp.flush();
 
     CacheService.getScriptCache().remove("clientsInfoList");
@@ -3790,8 +3793,8 @@ function updateClientCardByIdFromData(formData) {
       if (idx !== undefined) rowArr[idx] = formData[key] || "";
     });
 
+    setAuditValues_(rowArr, colMap);
     sheet.getRange(rowIndex, 1, 1, rowArr.length).setValues([rowArr]);
-    writeAuditColumns(sheet, rowIndex, colMap);
     SpreadsheetApp.flush();
 
     CacheService.getScriptCache().remove("clientsInfoList");
