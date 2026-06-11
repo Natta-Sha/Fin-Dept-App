@@ -585,6 +585,10 @@ function getClientCardById(id) {
   return getClientCardByIdFromData(id);
 }
 
+function checkClientProjectNameDuplicate(projectName, allowedId) {
+  return checkClientProjectNameDuplicateFromData(projectName, allowedId);
+}
+
 function saveClientCard(formData) {
   return saveClientCardToData(formData);
 }

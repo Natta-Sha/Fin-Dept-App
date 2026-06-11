@@ -3477,6 +3477,31 @@ function findDuplicateClientProject_(data, colMap, projectName, allowedId) {
   return null;
 }
 
+function checkClientProjectNameDuplicateFromData(projectName, allowedId) {
+  try {
+    var ss = SpreadsheetApp.openById(CLIENTS_INFO_SPREADSHEET_ID);
+    var sheet = ss.getSheetByName(CLIENTS_INFO_SHEET);
+    if (!sheet) return { duplicate: false };
+
+    var data = sheet.getDataRange().getValues();
+    if (data.length < 1) return { duplicate: false };
+
+    var colMap = buildClientsInfoColumnMap_(data[0]);
+    var duplicate = findDuplicateClientProject_(data, colMap, projectName, allowedId);
+    if (!duplicate) return { duplicate: false };
+
+    return {
+      duplicate: true,
+      id: duplicate.id,
+      projectName: duplicate.projectName,
+      message: 'Project "' + duplicate.projectName + '" already exists. Please use a unique project name.',
+    };
+  } catch (e) {
+    console.error("checkClientProjectNameDuplicateFromData error:", e);
+    return { duplicate: false, message: String(e) };
+  }
+}
+
 /**
  * Get dropdown options for the Clients Information form from the Lists sheet.
  * Lists sheet columns (0-based):

@@ -409,23 +409,46 @@
       function handleSaveError(buttonId, result) {
         var message = (result && result.message) || "Unknown error";
         if (message.indexOf("already exists") !== -1) {
-          var projectField = document.getElementById("projectName");
-          var feedback = document.getElementById("projectNameDuplicateFeedback");
-          if (projectField) {
-            projectField.classList.add("duplicate-project-field");
-            if (feedback) {
-              feedback.textContent = message;
-              feedback.classList.add("show");
-            }
-            document.getElementById("result").innerHTML = "";
-            projectField.scrollIntoView({ behavior: "smooth", block: "center" });
-            try { projectField.focus(); } catch (e) {}
-          }
+          showProjectDuplicateError(message, true);
         } else {
           document.getElementById("result").innerHTML =
             '<div class="alert alert-danger">Error: ' + esc(message) + '</div>';
         }
         clearActionBusy(buttonId);
+      }
+
+      function showProjectDuplicateError(message, scrollToField) {
+        var projectField = document.getElementById("projectName");
+        var feedback = document.getElementById("projectNameDuplicateFeedback");
+        if (!projectField) return;
+
+        projectField.classList.add("duplicate-project-field");
+        if (feedback) {
+          feedback.textContent = message;
+          feedback.classList.add("show");
+        }
+        document.getElementById("result").innerHTML = "";
+        if (scrollToField) {
+          projectField.scrollIntoView({ behavior: "smooth", block: "center" });
+          try { projectField.focus(); } catch (e) {}
+        }
+      }
+
+      function checkProjectDuplicateForInvalidForm(buttonId, formData, allowedId) {
+        if (!formData.projectName) return;
+
+        setActionBusy(buttonId, "Checking...");
+        google.script.run
+          .withSuccessHandler(function (result) {
+            if (result && result.duplicate) {
+              showProjectDuplicateError(result.message, false);
+            }
+            clearActionBusy(buttonId);
+          })
+          .withFailureHandler(function () {
+            clearActionBusy(buttonId);
+          })
+          .checkClientProjectNameDuplicate(formData.projectName, allowedId || "");
       }
 
       function validateForm() {
@@ -560,9 +583,12 @@
       }
 
       function submitCreate() {
-        if (!validateForm()) return;
-        setActionBusy("save-btn", "Saving...");
         var formData = collectFormData();
+        if (!validateForm()) {
+          checkProjectDuplicateForInvalidForm("save-btn", formData, "");
+          return;
+        }
+        setActionBusy("save-btn", "Saving...");
         google.script.run
           .withSuccessHandler(function (result) {
             if (result && result.success) {
@@ -586,10 +612,13 @@
       }
 
       function submitUpdate() {
-        if (!validateForm()) return;
-        setActionBusy("confirm-btn", "Saving...");
         var formData = collectFormData();
         formData.id = clientId;
+        if (!validateForm()) {
+          checkProjectDuplicateForInvalidForm("confirm-btn", formData, clientId);
+          return;
+        }
+        setActionBusy("confirm-btn", "Saving...");
         google.script.run
           .withSuccessHandler(function (result) {
             if (result && result.success) {
