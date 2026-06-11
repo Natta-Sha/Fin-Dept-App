@@ -3466,6 +3466,7 @@ function getClientsInformationDropdownsFromData() {
     if (!sheet) return {};
 
     var data = sheet.getDataRange().getValues();
+    var displayData = sheet.getDataRange().getDisplayValues();
 
     var currencies      = [];
     var typeOfDays      = [];
@@ -3490,7 +3491,7 @@ function getClientsInformationDropdownsFromData() {
       addUnique(projectList,      row[5]);  // col F — Project-List-A-Z
       addUnique(bankOptions,      row[7]);  // col H — Sloboda bank details
       addUnique(ourCompanies,     row[10]); // col K
-      addUnique(vatRates,         row[11]); // col L
+      addUnique(vatRates,         displayData[i][11]); // col L — keep percent display (0%, 19%)
       addUnique(companyNumbers,   row[12]); // col M
       addUnique(invoiceTemplates, row[14]); // col O
     }
@@ -3585,14 +3586,18 @@ function getClientCardByIdFromData(id) {
     var sheet = ss.getSheetByName(CLIENTS_INFO_SHEET);
     if (!sheet) return { _error: true, _message: "Information sheet not found" };
 
-    var data = sheet.getDataRange().getValues();
+    var range = sheet.getDataRange();
+    var data = range.getValues();
+    var displayData = range.getDisplayValues();
     var headers = data[0];
     var colMap = buildClientsInfoColumnMap_(headers);
 
     var row = null;
+    var displayRow = null;
     for (var i = 1; i < data.length; i++) {
       if (String(data[i][0] || "").trim() === String(id).trim()) {
         row = data[i];
+        displayRow = displayData[i];
         break;
       }
     }
@@ -3601,7 +3606,7 @@ function getClientCardByIdFromData(id) {
     function col(key) {
       var idx = colMap[CLIENTS_INFO_COLUMNS[key]];
       if (idx === undefined) return "";
-      var v = row[idx];
+      var v = key === "vatRate" && displayRow ? displayRow[idx] : row[idx];
       return (v === null || v === undefined) ? "" : String(v);
     }
 
