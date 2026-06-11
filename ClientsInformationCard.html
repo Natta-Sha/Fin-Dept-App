@@ -531,7 +531,14 @@
         google.script.run
           .withSuccessHandler(function (result) {
             if (result && result.success) {
-              navigateTo("?page=ClientsInformationList&deleted=1");
+              document.getElementById("card-form").style.display = "none";
+              document.getElementById("result").innerHTML =
+                '<div class="alert alert-success"><i class="bi bi-check-circle-fill me-2"></i>Client record deleted successfully.</div>' +
+                '<button type="button" class="btn btn-primary" id="back-to-list-after-delete">Back to list</button>';
+              document.getElementById("action-buttons").innerHTML = "";
+              document.getElementById("back-to-list-after-delete").addEventListener("click", function () {
+                navigateTo("?page=ClientsInformationList");
+              });
             } else {
               document.getElementById("result").innerHTML =
                 '<div class="alert alert-danger">Error: ' + esc((result && result.message) || "Unknown error") + '</div>';
