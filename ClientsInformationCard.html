@@ -470,13 +470,31 @@
 
       // ── Submit handlers ──────────────────────────────────────────────────────
 
-      function disableButtons() {
+      function setActionBusy(activeButtonId, busyText) {
         document.querySelectorAll("#action-buttons button").forEach(function (b) { b.disabled = true; });
+        var activeButton = document.getElementById(activeButtonId);
+        if (!activeButton) return;
+        activeButton.setAttribute("data-original-html", activeButton.innerHTML);
+        activeButton.innerHTML =
+          '<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>' +
+          esc(busyText || "Processing...");
+      }
+
+      function clearActionBusy(activeButtonId) {
+        var activeButton = document.getElementById(activeButtonId);
+        if (activeButton) {
+          var originalHtml = activeButton.getAttribute("data-original-html");
+          if (originalHtml !== null) {
+            activeButton.innerHTML = originalHtml;
+            activeButton.removeAttribute("data-original-html");
+          }
+        }
+        document.querySelectorAll("#action-buttons button").forEach(function (b) { b.disabled = false; });
       }
 
       function submitCreate() {
         if (!validateForm()) return;
-        disableButtons();
+        setActionBusy("save-btn", "Saving...");
         var formData = collectFormData();
         google.script.run
           .withSuccessHandler(function (result) {
@@ -488,20 +506,20 @@
             } else {
               document.getElementById("result").innerHTML =
                 '<div class="alert alert-danger">Error: ' + esc((result && result.message) || "Unknown error") + '</div>';
-              document.querySelectorAll("#action-buttons button").forEach(function (b) { b.disabled = false; });
+              clearActionBusy("save-btn");
             }
           })
           .withFailureHandler(function (err) {
             document.getElementById("result").innerHTML =
               '<div class="alert alert-danger">Error: ' + esc(String(err)) + '</div>';
-            document.querySelectorAll("#action-buttons button").forEach(function (b) { b.disabled = false; });
+            clearActionBusy("save-btn");
           })
           .saveClientCard(formData);
       }
 
       function submitUpdate() {
         if (!validateForm()) return;
-        disableButtons();
+        setActionBusy("confirm-btn", "Saving...");
         var formData = collectFormData();
         formData.id = clientId;
         google.script.run
@@ -515,19 +533,19 @@
             } else {
               document.getElementById("result").innerHTML =
                 '<div class="alert alert-danger">Error: ' + esc((result && result.message) || "Unknown error") + '</div>';
-              document.querySelectorAll("#action-buttons button").forEach(function (b) { b.disabled = false; });
+              clearActionBusy("confirm-btn");
             }
           })
           .withFailureHandler(function (err) {
             document.getElementById("result").innerHTML =
               '<div class="alert alert-danger">Error: ' + esc(String(err)) + '</div>';
-            document.querySelectorAll("#action-buttons button").forEach(function (b) { b.disabled = false; });
+            clearActionBusy("confirm-btn");
           })
           .updateClientCard(formData);
       }
 
       function submitDelete() {
-        disableButtons();
+        setActionBusy("delete-btn", "Deleting...");
         google.script.run
           .withSuccessHandler(function (result) {
             if (result && result.success) {
@@ -544,13 +562,13 @@
             } else {
               document.getElementById("result").innerHTML =
                 '<div class="alert alert-danger">Error: ' + esc((result && result.message) || "Unknown error") + '</div>';
-              document.querySelectorAll("#action-buttons button").forEach(function (b) { b.disabled = false; });
+              clearActionBusy("delete-btn");
             }
           })
           .withFailureHandler(function (err) {
             document.getElementById("result").innerHTML =
               '<div class="alert alert-danger">Error: ' + esc(String(err)) + '</div>';
-            document.querySelectorAll("#action-buttons button").forEach(function (b) { b.disabled = false; });
+            clearActionBusy("delete-btn");
           })
           .deleteClientCard(clientId);
       }
