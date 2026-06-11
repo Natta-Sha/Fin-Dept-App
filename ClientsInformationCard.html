@@ -77,6 +77,11 @@
         border-color: #dee2e6 !important;
         color: #212529 !important;
       }
+      .duplicate-project-field {
+        background-color: #fff0f6 !important;
+        border-color: #ff6b9d !important;
+        box-shadow: 0 0 0 0.2rem rgba(255, 107, 157, 0.18) !important;
+      }
 
       #result { margin-top: 1rem; }
 
@@ -378,7 +383,29 @@
         return data;
       }
 
+      function clearProjectDuplicateHighlight() {
+        var projectField = document.getElementById("projectName");
+        if (!projectField) return;
+        projectField.classList.remove("duplicate-project-field");
+      }
+
+      function handleSaveError(buttonId, result) {
+        var message = (result && result.message) || "Unknown error";
+        document.getElementById("result").innerHTML =
+          '<div class="alert alert-danger">Error: ' + esc(message) + '</div>';
+        if (message.indexOf("already exists") !== -1) {
+          var projectField = document.getElementById("projectName");
+          if (projectField) {
+            projectField.classList.add("duplicate-project-field");
+            projectField.scrollIntoView({ behavior: "smooth", block: "center" });
+            try { projectField.focus(); } catch (e) {}
+          }
+        }
+        clearActionBusy(buttonId);
+      }
+
       function validateForm() {
+        clearProjectDuplicateHighlight();
         var errors = [];
         var fieldLabels = {
           projectName:   "Project name",
@@ -523,9 +550,7 @@
                 navigateToListWithSpinner(this);
               });
             } else {
-              document.getElementById("result").innerHTML =
-                '<div class="alert alert-danger">Error: ' + esc((result && result.message) || "Unknown error") + '</div>';
-              clearActionBusy("save-btn");
+              handleSaveError("save-btn", result);
             }
           })
           .withFailureHandler(function (err) {
@@ -553,9 +578,7 @@
                 navigateToListWithSpinner(this);
               });
             } else {
-              document.getElementById("result").innerHTML =
-                '<div class="alert alert-danger">Error: ' + esc((result && result.message) || "Unknown error") + '</div>';
-              clearActionBusy("confirm-btn");
+              handleSaveError("confirm-btn", result);
             }
           })
           .withFailureHandler(function (err) {
@@ -611,6 +634,12 @@
       // ── Init ──────────────────────────────────────────────────────────────────
 
       document.addEventListener("DOMContentLoaded", function () {
+        var projectField = document.getElementById("projectName");
+        if (projectField) {
+          projectField.addEventListener("change", clearProjectDuplicateHighlight);
+          projectField.addEventListener("input", clearProjectDuplicateHighlight);
+        }
+
         var titles = {
           create: "New Client Card",
           view:   "Client Card — View",
