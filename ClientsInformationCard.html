@@ -531,7 +531,9 @@
         google.script.run
           .withSuccessHandler(function (result) {
             if (result && result.success) {
-              document.getElementById("card-form").style.display = "none";
+              document.querySelectorAll("#card-form .form-section").forEach(function (section) {
+                section.style.display = "none";
+              });
               document.getElementById("result").innerHTML =
                 '<div class="alert alert-success"><i class="bi bi-check-circle-fill me-2"></i>Client record deleted successfully.</div>' +
                 '<button type="button" class="btn btn-primary" id="back-to-list-after-delete">Back to list</button>';
