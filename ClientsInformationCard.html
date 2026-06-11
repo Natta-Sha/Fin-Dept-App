@@ -288,6 +288,22 @@
         try { window.location.href = target; return; } catch (e2) {}
       }
 
+      function setButtonBusy(button, busyText) {
+        if (!button) return;
+        button.disabled = true;
+        button.classList.add("disabled");
+        button.setAttribute("aria-disabled", "true");
+        button.setAttribute("data-original-html", button.innerHTML);
+        button.innerHTML =
+          '<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>' +
+          esc(busyText || "Loading...");
+      }
+
+      function navigateToListWithSpinner(button) {
+        setButtonBusy(button, "Loading...");
+        navigateTo("?page=ClientsInformationList");
+      }
+
       function setFormDisabled(disabled) {
         document.querySelectorAll("#card-form input, #card-form select, #card-form textarea")
           .forEach(function (el) {
@@ -455,8 +471,8 @@
             navigateTo("?page=ClientsInformationCard&id=" + clientId + "&mode=delete");
           });
           btn("Back to list", "btn-outline-secondary", function () {
-            navigateTo("?page=ClientsInformationList");
-          });
+            navigateToListWithSpinner(this);
+          }, "back-to-list-btn");
         } else if (m === "copy") {
           btn("Save as new", "btn-success", submitCreate, "save-btn");
           btn("Cancel", "btn-outline-secondary", function () { navigateTo("?page=ClientsInformationList"); });
@@ -501,8 +517,11 @@
             if (result && result.success) {
               document.getElementById("result").innerHTML =
                 '<div class="alert alert-success"><i class="bi bi-check-circle-fill me-2"></i>Client card saved successfully!</div>' +
-                '<a href="' + baseUrl + '?page=ClientsInformationList" target="_top" class="btn btn-primary">Back to list</a>';
+                '<button type="button" class="btn btn-primary" id="back-to-list-after-save">Back to list</button>';
               document.getElementById("action-buttons").innerHTML = "";
+              document.getElementById("back-to-list-after-save").addEventListener("click", function () {
+                navigateToListWithSpinner(this);
+              });
             } else {
               document.getElementById("result").innerHTML =
                 '<div class="alert alert-danger">Error: ' + esc((result && result.message) || "Unknown error") + '</div>';
@@ -527,9 +546,12 @@
             if (result && result.success) {
               document.getElementById("result").innerHTML =
                 '<div class="alert alert-success"><i class="bi bi-check-circle-fill me-2"></i>Client card updated successfully!</div>' +
-                '<a href="' + baseUrl + '?page=ClientsInformationList" target="_top" class="btn btn-primary me-2">Back to list</a>' +
+                '<button type="button" class="btn btn-primary me-2" id="back-to-list-after-update">Back to list</button>' +
                 '<a href="' + baseUrl + '?page=ClientsInformationCard&id=' + clientId + '&mode=view" target="_top" class="btn btn-outline-secondary">View card</a>';
               document.getElementById("action-buttons").innerHTML = "";
+              document.getElementById("back-to-list-after-update").addEventListener("click", function () {
+                navigateToListWithSpinner(this);
+              });
             } else {
               document.getElementById("result").innerHTML =
                 '<div class="alert alert-danger">Error: ' + esc((result && result.message) || "Unknown error") + '</div>';
@@ -557,7 +579,7 @@
                 '<button type="button" class="btn btn-primary" id="back-to-list-after-delete">Back to list</button>';
               document.getElementById("action-buttons").innerHTML = "";
               document.getElementById("back-to-list-after-delete").addEventListener("click", function () {
-                navigateTo("?page=ClientsInformationList");
+                navigateToListWithSpinner(this);
               });
             } else {
               document.getElementById("result").innerHTML =
