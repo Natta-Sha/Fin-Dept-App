@@ -82,6 +82,18 @@
         border-color: #ff6b9d !important;
         box-shadow: 0 0 0 0.2rem rgba(255, 107, 157, 0.18) !important;
       }
+      .duplicate-project-feedback {
+        display: none;
+        margin-top: 0.45rem;
+        padding: 0.55rem 0.7rem;
+        border: 1px solid rgba(255, 107, 157, 0.38);
+        border-radius: 8px;
+        background: #fff0f6;
+        color: #a61e4d;
+        font-size: 0.82rem;
+        font-weight: 600;
+      }
+      .duplicate-project-feedback.show { display: block; }
 
       #result { margin-top: 1rem; }
 
@@ -119,6 +131,7 @@
               <select id="projectName" class="form-select" required>
                 <option value="">Select...</option>
               </select>
+              <div id="projectNameDuplicateFeedback" class="duplicate-project-feedback" role="alert"></div>
             </div>
             <div class="col-md-6">
               <label for="linkFinFolder" class="form-label">Link to Fin folder</label>
@@ -385,21 +398,32 @@
 
       function clearProjectDuplicateHighlight() {
         var projectField = document.getElementById("projectName");
-        if (!projectField) return;
-        projectField.classList.remove("duplicate-project-field");
+        var feedback = document.getElementById("projectNameDuplicateFeedback");
+        if (projectField) projectField.classList.remove("duplicate-project-field");
+        if (feedback) {
+          feedback.classList.remove("show");
+          feedback.textContent = "";
+        }
       }
 
       function handleSaveError(buttonId, result) {
         var message = (result && result.message) || "Unknown error";
-        document.getElementById("result").innerHTML =
-          '<div class="alert alert-danger">Error: ' + esc(message) + '</div>';
         if (message.indexOf("already exists") !== -1) {
           var projectField = document.getElementById("projectName");
+          var feedback = document.getElementById("projectNameDuplicateFeedback");
           if (projectField) {
             projectField.classList.add("duplicate-project-field");
+            if (feedback) {
+              feedback.textContent = message;
+              feedback.classList.add("show");
+            }
+            document.getElementById("result").innerHTML = "";
             projectField.scrollIntoView({ behavior: "smooth", block: "center" });
             try { projectField.focus(); } catch (e) {}
           }
+        } else {
+          document.getElementById("result").innerHTML =
+            '<div class="alert alert-danger">Error: ' + esc(message) + '</div>';
         }
         clearActionBusy(buttonId);
       }
