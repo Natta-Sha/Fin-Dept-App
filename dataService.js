@@ -3450,6 +3450,33 @@ function buildClientsInfoColumnMap_(headers) {
   return map;
 }
 
+function normalizeClientProjectName_(value) {
+  return String(value || "").trim().replace(/\s+/g, " ").toLowerCase();
+}
+
+function findDuplicateClientProject_(data, colMap, projectName, allowedId) {
+  var projectIdx = colMap[CLIENTS_INFO_COLUMNS.projectName];
+  var idIdx = colMap[CLIENTS_INFO_COLUMNS.id];
+  var normalizedName = normalizeClientProjectName_(projectName);
+  var normalizedAllowedId = String(allowedId || "").trim();
+  if (!normalizedName || projectIdx === undefined) return null;
+
+  for (var i = 1; i < data.length; i++) {
+    var existingName = normalizeClientProjectName_(data[i][projectIdx]);
+    if (existingName !== normalizedName) continue;
+
+    var existingId = idIdx !== undefined ? String(data[i][idIdx] || "").trim() : "";
+    if (normalizedAllowedId && existingId === normalizedAllowedId) continue;
+
+    return {
+      id: existingId,
+      projectName: String(data[i][projectIdx] || "").trim(),
+    };
+  }
+
+  return null;
+}
+
 /**
  * Get dropdown options for the Clients Information form from the Lists sheet.
  * Lists sheet columns (0-based):
@@ -3641,13 +3668,26 @@ function getClientCardByIdFromData(id) {
  * @returns {Object} { success, id, message }
  */
 function saveClientCardToData(formData) {
+  var lock = LockService.getScriptLock();
   try {
+    if (!lock.tryLock(30000)) {
+      return { success: false, message: "Another client card is being saved. Please try again in a moment." };
+    }
+
     var ss = SpreadsheetApp.openById(CLIENTS_INFO_SPREADSHEET_ID);
     var sheet = ss.getSheetByName(CLIENTS_INFO_SHEET);
     if (!sheet) return { success: false, message: "Information sheet not found" };
 
     var headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
     var colMap = buildClientsInfoColumnMap_(headers);
+    var data = sheet.getDataRange().getValues();
+    var duplicate = findDuplicateClientProject_(data, colMap, formData.projectName, null);
+    if (duplicate) {
+      return {
+        success: false,
+        message: 'Project "' + duplicate.projectName + '" already exists. Please use a unique project name.',
+      };
+    }
 
     var newId = Utilities.getUuid();
     var rowArr = new Array(headers.length).fill("");
@@ -3672,6 +3712,8 @@ function saveClientCardToData(formData) {
   } catch (e) {
     console.error("saveClientCardToData error:", e);
     return { success: false, message: String(e) };
+  } finally {
+    try { lock.releaseLock(); } catch (e) {}
   }
 }
 
@@ -3681,7 +3723,12 @@ function saveClientCardToData(formData) {
  * @returns {Object} { success, message }
  */
 function updateClientCardByIdFromData(formData) {
+  var lock = LockService.getScriptLock();
   try {
+    if (!lock.tryLock(30000)) {
+      return { success: false, message: "Another client card is being saved. Please try again in a moment." };
+    }
+
     var clientId = formData.id;
     if (!clientId) return { success: false, message: "No ID provided" };
 
@@ -3692,6 +3739,13 @@ function updateClientCardByIdFromData(formData) {
     var data = sheet.getDataRange().getValues();
     var headers = data[0];
     var colMap = buildClientsInfoColumnMap_(headers);
+    var duplicate = findDuplicateClientProject_(data, colMap, formData.projectName, clientId);
+    if (duplicate) {
+      return {
+        success: false,
+        message: 'Project "' + duplicate.projectName + '" already exists. Please use a unique project name.',
+      };
+    }
 
     var rowIndex = -1;
     for (var i = 1; i < data.length; i++) {
@@ -3720,6 +3774,8 @@ function updateClientCardByIdFromData(formData) {
   } catch (e) {
     console.error("updateClientCardByIdFromData error:", e);
     return { success: false, message: String(e) };
+  } finally {
+    try { lock.releaseLock(); } catch (e) {}
   }
 }
 
