@@ -301,7 +301,7 @@
 
       function navigateToListWithSpinner(button) {
         setButtonBusy(button, "Loading...");
-        navigateTo("?page=ClientsInformationList");
+        navigateTo("?page=ClientsInformationList&_ts=" + Date.now());
       }
 
       function setFormDisabled(disabled) {

@@ -3522,10 +3522,6 @@ function getClientsInformationDropdownsFromData() {
  */
 function getClientsInformationListFromData() {
   try {
-    var cache = CacheService.getScriptCache();
-    var cached = cache.get("clientsInfoList");
-    if (cached) return JSON.parse(cached);
-
     var ss = SpreadsheetApp.openById(CLIENTS_INFO_SPREADSHEET_ID);
     var sheet = ss.getSheetByName(CLIENTS_INFO_SHEET);
     if (!sheet) return { headers: [], rows: [] };
@@ -3564,9 +3560,7 @@ function getClientsInformationListFromData() {
       rows.push({ id: id, cells: cells });
     }
 
-    var result = { headers: headers, rows: rows };
-    try { cache.put("clientsInfoList", JSON.stringify(result), 300); } catch (e) {}
-    return result;
+    return { headers: headers, rows: rows };
   } catch (e) {
     console.error("getClientsInformationListFromData error:", e);
     return { headers: [], rows: [] };
@@ -3671,6 +3665,7 @@ function saveClientCardToData(formData) {
     sheet.appendRow(rowArr);
     var newRowIndex = sheet.getLastRow();
     writeAuditColumns(sheet, newRowIndex, colMap);
+    SpreadsheetApp.flush();
 
     CacheService.getScriptCache().remove("clientsInfoList");
     return { success: true, id: newId };
@@ -3718,6 +3713,7 @@ function updateClientCardByIdFromData(formData) {
 
     sheet.getRange(rowIndex, 1, 1, rowArr.length).setValues([rowArr]);
     writeAuditColumns(sheet, rowIndex, colMap);
+    SpreadsheetApp.flush();
 
     CacheService.getScriptCache().remove("clientsInfoList");
     return { success: true };
@@ -3744,6 +3740,7 @@ function deleteClientCardByIdFromData(id) {
     for (var i = 1; i < data.length; i++) {
       if (String(data[i][0] || "").trim() === String(id).trim()) {
         sheet.deleteRow(i + 1);
+        SpreadsheetApp.flush();
         CacheService.getScriptCache().remove("clientsInfoList");
         return { success: true };
       }
