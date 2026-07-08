@@ -372,7 +372,7 @@
         <div class="form-section">
           <div class="row mb-3">
             <div class="col-md-6">
-              <label class="form-label">Bill DOC storage location <span class="text-danger">*</span> <span class="field-required">Required</span></label>
+              <label class="form-label">Storage folder link <span class="text-danger">*</span> <span class="field-required">Required</span></label>
               <input type="url" id="billDocStorageLocation" class="form-control" placeholder="https://drive.google.com/drive/folders/..." required />
               <small class="form-text text-muted">Google Drive folder link where the bill DOC version will be saved.</small>
             </div>
@@ -981,7 +981,7 @@
           { id: "invoiceNumber", label: "Invoice number" },
           { id: "invoiceDate", label: "Invoice date" },
           { id: "yesNoDueDate", label: "Is due date necessary?" },
-          { id: "billDocStorageLocation", label: "Bill DOC storage location" },
+          { id: "billDocStorageLocation", label: "Storage folder link" },
         ];
 
         if (isEU) {
@@ -1010,7 +1010,7 @@
           billDocStorageEl.value.trim() &&
           !isGoogleDriveFolderLink(billDocStorageEl.value)
         ) {
-          errors.push("Bill DOC storage location must be a valid Google Drive folder link.");
+          errors.push("Storage folder link must be a valid Google Drive folder link.");
           billDocStorageEl.classList.add("is-invalid");
         }
 

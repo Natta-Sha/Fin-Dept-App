@@ -2458,6 +2458,7 @@ var BILL_DOC_URL_COLUMN_CANDIDATES = [
   "Google Doc Link",
   "Ссылка на Google Doc",
 ];
+var BILL_PDF_URL_COLUMN = "Место хранения pdf билла";
 
 function getBillDocUrlColumnIndex_(columnMap) {
   for (var i = 0; i < BILL_DOC_URL_COLUMN_CANDIDATES.length; i++) {
@@ -2478,6 +2479,21 @@ function readBillDocUrlFromRow_(row, indexMap) {
     }
   }
   return "";
+}
+
+function getBillPdfUrlColumnIndex_(columnMap) {
+  return columnMap.hasOwnProperty(BILL_PDF_URL_COLUMN)
+    ? columnMap[BILL_PDF_URL_COLUMN]
+    : -1;
+}
+
+function readBillPdfUrlFromRow_(row, indexMap) {
+  var ix = getBillPdfUrlColumnIndex_(indexMap);
+  if (ix < 0) return "";
+  var v = row[ix];
+  return v !== null && v !== undefined && String(v).trim() !== ""
+    ? String(v).trim()
+    : "";
 }
 
 /**
@@ -2567,6 +2583,7 @@ function getBillListFromData() {
         totalAmount: formattedAmount,
         currency: row[indexMap["Валюта"]] || "",
         isContractorEU: indexMap["Контрактор из ЕС"] !== undefined ? (row[indexMap["Контрактор из ЕС"]] || "").toString() : "",
+        billDocStorageLocation: indexMap["Место хранения doc билла"] !== undefined ? (row[indexMap["Место хранения doc билла"]] || "").toString() : "",
       });
     }
 
@@ -2829,6 +2846,7 @@ function deleteBillByIdFromData(id) {
 
     var rowToDelete = -1;
     var docUrl = "";
+    var pdfUrl = "";
     var idStr = id.toString();
 
     for (var i = 1; i < data.length; i++) {
@@ -2842,6 +2860,7 @@ function deleteBillByIdFromData(id) {
       ) {
         rowToDelete = i + 1;
         docUrl = readBillDocUrlFromRow_(data[i], indexMap);
+        pdfUrl = readBillPdfUrlFromRow_(data[i], indexMap);
         break;
       }
     }
@@ -2852,11 +2871,37 @@ function deleteBillByIdFromData(id) {
 
     var deletedNotes = [];
 
+    if (pdfUrl) {
+      try {
+        var pdfId = extractFileIdFromUrl(pdfUrl);
+        if (pdfId) {
+          DriveApp.getFileById(pdfId).setTrashed(true);
+        }
+      } catch (errPdf) {
+        var pdfLinkMsg = "Bill PDF already deleted or not accessible.";
+        Logger.log(pdfLinkMsg + " " + errPdf);
+        deletedNotes.push(pdfLinkMsg);
+      }
+    }
+
     if (docUrl) {
       var docId = extractDocIdFromUrl(docUrl);
       if (docId) {
         try {
-          DriveApp.getFileById(docId).setTrashed(true);
+          var docFile = DriveApp.getFileById(docId);
+          try {
+            if (!pdfUrl) {
+              trashBillPdfByDocumentName_(
+                docFile.getName(),
+                getBillStorageFolderUrlFromData(spreadsheet)
+              );
+            }
+          } catch (pdfErr) {
+            var pdfMsg = "Bill PDF already deleted or not accessible.";
+            Logger.log(pdfMsg + " " + pdfErr);
+            deletedNotes.push(pdfMsg);
+          }
+          docFile.setTrashed(true);
         } catch (err) {
           var msg = "Google Doc already deleted or not accessible.";
           Logger.log(msg + " " + err);
@@ -2907,6 +2952,7 @@ function updateBillByIdFromData(formData) {
 
     var rowIndex = -1;
     var oldDocUrl = "";
+    var oldPdfUrl = "";
     for (var i = 1; i < data.length; i++) {
       var rowId = data[i][0];
       if (
@@ -2916,6 +2962,7 @@ function updateBillByIdFromData(formData) {
       ) {
         rowIndex = i + 1;
         oldDocUrl = readBillDocUrlFromRow_(data[i], columnMap);
+        oldPdfUrl = readBillPdfUrlFromRow_(data[i], columnMap);
         break;
       }
     }
@@ -2924,11 +2971,33 @@ function updateBillByIdFromData(formData) {
     }
 
     // --- Trash old document ---
+    if (oldPdfUrl) {
+      try {
+        var oldPdfId = extractFileIdFromUrl(oldPdfUrl);
+        if (oldPdfId) {
+          DriveApp.getFileById(oldPdfId).setTrashed(true);
+        }
+      } catch (errPdf) {
+        Logger.log("Could not trash old bill PDF: " + errPdf);
+      }
+    }
+
     if (oldDocUrl) {
       var oldDocId = extractDocIdFromUrl(oldDocUrl);
       if (oldDocId) {
         try {
-          DriveApp.getFileById(oldDocId).setTrashed(true);
+          var oldDocFile = DriveApp.getFileById(oldDocId);
+          try {
+            if (!oldPdfUrl) {
+              trashBillPdfByDocumentName_(
+                oldDocFile.getName(),
+                getBillStorageFolderUrlFromData(spreadsheet)
+              );
+            }
+          } catch (pdfErr) {
+            Logger.log("Could not trash old bill PDF: " + pdfErr);
+          }
+          oldDocFile.setTrashed(true);
         } catch (err) {
           Logger.log("Could not trash old bill doc: " + err);
         }
@@ -3027,6 +3096,10 @@ function updateBillByIdFromData(formData) {
     var docColIdx = getBillDocUrlColumnIndex_(columnMap);
     if (docColIdx >= 0) {
       rowArr[docColIdx] = docUrl || "";
+    }
+    var pdfColIdx = getBillPdfUrlColumnIndex_(columnMap);
+    if (pdfColIdx >= 0) {
+      rowArr[pdfColIdx] = pdfUrl || "";
     }
 
     // Audit columns
@@ -3299,6 +3372,19 @@ function createBillPdfFromDocument(documentId, fileName, folderUrl) {
   }
 }
 
+function trashBillPdfByDocumentName_(docName, folderUrl) {
+  var folderId = extractFolderIdFromUrl(folderUrl);
+  if (!docName || !folderId) return 0;
+
+  var files = DriveApp.getFolderById(folderId).getFilesByName(docName + ".pdf");
+  var trashed = 0;
+  while (files.hasNext()) {
+    files.next().setTrashed(true);
+    trashed++;
+  }
+  return trashed;
+}
+
 /**
  * google.script.run may deserialize arrays as objects with numeric keys; normalize to Array.
  */
@@ -3442,6 +3528,10 @@ function saveBillToData(formData) {
     var docColIdx = getBillDocUrlColumnIndex_(columnMap);
     if (docUrl && docColIdx >= 0) {
       sheet.getRange(newRowIndex, docColIdx + 1).setValue(docUrl);
+    }
+    var pdfColIdx = getBillPdfUrlColumnIndex_(columnMap);
+    if (pdfUrl && pdfColIdx >= 0) {
+      sheet.getRange(newRowIndex, pdfColIdx + 1).setValue(pdfUrl);
     }
     writeAuditColumns(sheet, newRowIndex, columnMap);
     CacheService.getScriptCache().remove("billList");

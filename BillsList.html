@@ -158,6 +158,7 @@
             <th>Total amount</th>
             <th>Currency</th>
             <th>EU</th>
+            <th>Storage folder link</th>
             <th>Actions</th>
           </tr>
           <tr>
@@ -167,6 +168,7 @@
             <th><input type="text" placeholder="Search Amount" /></th>
             <th><input type="text" placeholder="Search Currency" /></th>
             <th><input type="text" placeholder="Search EU" /></th>
+            <th><input type="text" placeholder="Search Storage" /></th>
             <th></th>
           </tr>
         </thead>
@@ -181,7 +183,7 @@
             orderCellsTop: true,
             columnDefs: [
               {
-                targets: [0, 1, 4],
+                targets: [0, 1, 4, 6],
                 className: "dt-body-left dt-head-center",
               },
               {
@@ -193,7 +195,7 @@
                 className: "dt-body-right dt-head-center",
               },
               {
-                targets: 6,
+                targets: 7,
                 className: "dt-body-center dt-head-center",
                 orderable: false,
               },
@@ -221,7 +223,16 @@
               }
 
               var baseUrl = "<?= baseUrl ?>";
+              function escapeAttr(value) {
+                return String(value || "")
+                  .replace(/&/g, "&amp;")
+                  .replace(/"/g, "&quot;")
+                  .replace(/</g, "&lt;")
+                  .replace(/>/g, "&gt;");
+              }
+
               data.forEach(function (row) {
+                var storageFolderLink = row.billDocStorageLocation || "";
                 table.row.add([
                   row.contractorName || "",
                   row.invoiceNumber || "",
@@ -229,6 +240,9 @@
                   row.totalAmount || "",
                   row.currency || "",
                   row.isContractorEU || "",
+                  storageFolderLink
+                    ? '<a href="' + escapeAttr(storageFolderLink) + '" target="_blank" rel="noopener" style="white-space: nowrap;">Open folder</a>'
+                    : "",
                   '<a href="' + baseUrl + '?page=BillGenerator&id=' + encodeURIComponent(row.id) + '&mode=view" class="btn btn-sm btn-outline-primary" style="white-space: nowrap;">Open details</a>',
                 ]);
               });
