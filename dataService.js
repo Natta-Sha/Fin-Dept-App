@@ -2653,6 +2653,7 @@ var BILL_FIELD_MAPPING = {
   vatRate: "% НДС",
   vatAmount: "Сумма НДС",
   totalAmount: "Общая сумма",
+  billDocStorageLocation: "Место хранения doc билла",
 };
 
 var BILL_DATE_FIELDS = ["invoiceDate", "dueDate"];
@@ -2771,6 +2772,7 @@ function getBillDataByIdFromData(id) {
       vatRate: getColValue("% НДС"),
       vatAmount: getColValue("Сумма НДС"),
       totalAmount: getColValue("Общая сумма"),
+      billDocStorageLocation: getColValue("Место хранения doc билла"),
       services: [],
     };
 
@@ -2984,19 +2986,35 @@ function updateBillByIdFromData(formData) {
     // --- Create new document ---
     var docUrl = "";
     var docError = "";
+    var pdfUrl = "";
     try {
-      var folderUrl = getBillStorageFolderUrlFromData(spreadsheet);
+      var docFolderUrl = (formData.billDocStorageLocation || "").toString().trim();
       var isEU =
         (formData.isContractorEU || "").toString().trim().toLowerCase() === "yes";
       var templateUrl = getBillTemplateUrlForEUFromData(isEU, spreadsheet);
-      if (!folderUrl) {
-        docError = "Bills storage B1 is empty.";
+      if (!docFolderUrl) {
+        docError = "Bill DOC storage location is empty.";
       } else if (!templateUrl) {
         docError = "No template URL for EU=" + (isEU ? "yes" : "no") + ".";
       } else {
-        var docResult = createBillDocument(formData, templateUrl, folderUrl);
+        var docResult = createBillDocument(formData, templateUrl, docFolderUrl);
         if (docResult.success) {
           docUrl = docResult.documentUrl;
+          var pdfFolderUrl = getBillStorageFolderUrlFromData(spreadsheet);
+          if (!pdfFolderUrl) {
+            docError = "Bills storage B1 is empty. PDF was not created.";
+          } else {
+            var pdfResult = createBillPdfFromDocument(
+              docResult.documentId,
+              buildBillDocumentFileName(formData),
+              pdfFolderUrl
+            );
+            if (pdfResult.success) {
+              pdfUrl = pdfResult.pdfUrl;
+            } else {
+              docError = "PDF was not created: " + (pdfResult.error || "PDF generation failed.");
+            }
+          }
         } else {
           docError = docResult.error || "Document creation failed.";
         }
@@ -3033,6 +3051,7 @@ function updateBillByIdFromData(formData) {
       id: billId,
       message: message,
       docUrl: docUrl || "",
+      pdfUrl: pdfUrl || "",
       docError: docError || "",
     };
   } catch (error) {
@@ -3201,7 +3220,7 @@ function createBillDocument(formData, templateUrl, folderUrl) {
       return { success: false, documentUrl: null, error: "Invalid template URL" };
     }
     if (!folderId) {
-      return { success: false, documentUrl: null, error: "Invalid Bills storage folder URL (B1)" };
+      return { success: false, documentUrl: null, error: "Invalid Bill DOC storage location" };
     }
 
     var templateFile = DriveApp.getFileById(templateId);
@@ -3239,6 +3258,42 @@ function createBillDocument(formData, templateUrl, folderUrl) {
     return {
       success: false,
       documentUrl: null,
+      error: error.toString(),
+    };
+  }
+}
+
+/**
+ * Generate a PDF copy of a bill Google Doc and save it to the configured PDF folder.
+ */
+function createBillPdfFromDocument(documentId, fileName, folderUrl) {
+  try {
+    var folderId = extractFolderIdFromUrl(folderUrl);
+    if (!documentId) {
+      return { success: false, pdfUrl: null, error: "Missing bill document ID" };
+    }
+    if (!folderId) {
+      return { success: false, pdfUrl: null, error: "Invalid Bills storage folder URL (B1)" };
+    }
+
+    Utilities.sleep(1000);
+
+    var pdf = DriveApp.getFileById(documentId).getAs("application/pdf");
+    if (!pdf) {
+      return { success: false, pdfUrl: null, error: "Failed to generate PDF content from the bill document" };
+    }
+
+    var folder = DriveApp.getFolderById(folderId);
+    var pdfFile = folder.createFile(pdf).setName(fileName + ".pdf");
+    return {
+      success: true,
+      pdfUrl: pdfFile.getUrl(),
+      pdfId: pdfFile.getId(),
+    };
+  } catch (error) {
+    return {
+      success: false,
+      pdfUrl: null,
       error: error.toString(),
     };
   }
@@ -3339,14 +3394,15 @@ function saveBillToData(formData) {
 
     var docUrl = "";
     var docError = "";
+    var pdfUrl = "";
     try {
-      var folderUrl = getBillStorageFolderUrlFromData(spreadsheet);
+      var docFolderUrl = (formData.billDocStorageLocation || "").toString().trim();
       var isEU =
         (formData.isContractorEU || "").toString().trim().toLowerCase() ===
         "yes";
       var templateUrl = getBillTemplateUrlForEUFromData(isEU, spreadsheet);
-      if (!folderUrl) {
-        docError = "Bills storage B1 is empty (folder URL missing).";
+      if (!docFolderUrl) {
+        docError = "Bill DOC storage location is empty.";
       } else if (!templateUrl) {
         docError =
           "No template URL for EU=" +
@@ -3356,10 +3412,25 @@ function saveBillToData(formData) {
         var docResult = createBillDocument(
           formData,
           templateUrl,
-          folderUrl
+          docFolderUrl
         );
         if (docResult.success) {
           docUrl = docResult.documentUrl;
+          var pdfFolderUrl = getBillStorageFolderUrlFromData(spreadsheet);
+          if (!pdfFolderUrl) {
+            docError = "Bills storage B1 is empty. PDF was not created.";
+          } else {
+            var pdfResult = createBillPdfFromDocument(
+              docResult.documentId,
+              buildBillDocumentFileName(formData),
+              pdfFolderUrl
+            );
+            if (pdfResult.success) {
+              pdfUrl = pdfResult.pdfUrl;
+            } else {
+              docError = "PDF was not created: " + (pdfResult.error || "PDF generation failed.");
+            }
+          }
         } else {
           docError = docResult.error || "Document creation failed.";
         }
@@ -3387,6 +3458,7 @@ function saveBillToData(formData) {
       id: billId,
       message: message,
       docUrl: docUrl || "",
+      pdfUrl: pdfUrl || "",
       docError: docError || "",
     };
   } catch (error) {

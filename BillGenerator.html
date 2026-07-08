@@ -367,6 +367,18 @@
           </div>
         </div>
 
+        <!-- Section 6: Final Parameters -->
+        <h5 class="section-title"><i class="bi bi-folder2-open"></i> Final Parameters</h5>
+        <div class="form-section">
+          <div class="row mb-3">
+            <div class="col-md-6">
+              <label class="form-label">Bill DOC storage location <span class="text-danger">*</span> <span class="field-required">Required</span></label>
+              <input type="url" id="billDocStorageLocation" class="form-control" placeholder="https://drive.google.com/drive/folders/..." required />
+              <small class="form-text text-muted">Google Drive folder link where the bill DOC version will be saved.</small>
+            </div>
+          </div>
+        </div>
+
         <!-- Result messages -->
         <div id="result" class="mt-4"></div>
 
@@ -951,6 +963,11 @@
         document.getElementById("result").innerHTML = "";
       }
 
+      function isGoogleDriveFolderLink(value) {
+        var url = String(value || "").trim();
+        return /^https:\/\/drive\.google\.com\/drive\/(?:u\/\d+\/)?folders\/[a-zA-Z0-9_-]+(?:[/?#].*)?$/.test(url);
+      }
+
       function validateForm() {
         var required = [
           { id: "pe", label: "PE" },
@@ -964,6 +981,7 @@
           { id: "invoiceNumber", label: "Invoice number" },
           { id: "invoiceDate", label: "Invoice date" },
           { id: "yesNoDueDate", label: "Is due date necessary?" },
+          { id: "billDocStorageLocation", label: "Bill DOC storage location" },
         ];
 
         if (isEU) {
@@ -985,6 +1003,16 @@
             if (el) el.classList.remove("is-invalid");
           }
         });
+
+        var billDocStorageEl = document.getElementById("billDocStorageLocation");
+        if (
+          billDocStorageEl &&
+          billDocStorageEl.value.trim() &&
+          !isGoogleDriveFolderLink(billDocStorageEl.value)
+        ) {
+          errors.push("Bill DOC storage location must be a valid Google Drive folder link.");
+          billDocStorageEl.classList.add("is-invalid");
+        }
 
         // At least one service row must have Services filled
         var hasService = false;
@@ -1023,6 +1051,7 @@
           vatRate: document.getElementById("vatRate").value.trim(),
           vatAmount: document.getElementById("vatAmount").value.trim(),
           totalAmount: document.getElementById("totalAmount").value.trim(),
+          billDocStorageLocation: document.getElementById("billDocStorageLocation").value.trim(),
           services: [],
         };
 
@@ -1164,6 +1193,7 @@
         document.getElementById("invoiceNumber").value = data.invoiceNumber || "";
         document.getElementById("invoiceDate").value = data.invoiceDate || "";
         document.getElementById("dueDate").value = data.dueDate || "";
+        document.getElementById("billDocStorageLocation").value = data.billDocStorageLocation || "";
 
         // Selects
         setSelectValueViewMode("pe", data.pe);
@@ -1238,6 +1268,7 @@
         document.getElementById("invoiceNumber").value = data.invoiceNumber || "";
         document.getElementById("invoiceDate").value = data.invoiceDate || "";
         document.getElementById("dueDate").value = data.dueDate || "";
+        document.getElementById("billDocStorageLocation").value = data.billDocStorageLocation || "";
 
         // Selects: set temporary value, then load real dropdown options while keeping it
         setSelectValueViewMode("pe", data.pe);
