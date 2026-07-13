@@ -163,6 +163,10 @@
     background: #eef1f4;
   }
 
+  .service-action + .service-action {
+    margin-top: 0.5rem;
+  }
+
   .service-action:disabled {
     cursor: wait;
     opacity: 0.65;
@@ -210,6 +214,8 @@
   var showServiceTools = Object.keys(ha).some(function (section) {
     return ha[section] === true;
   });
+  var canRefreshAccess = typeof canRefreshAccessPermissions !== 'undefined'
+    && canRefreshAccessPermissions === true;
 ?>
 
 <nav class="top-nav">
@@ -388,8 +394,8 @@
             type="button"
             id="service-refresh-btn"
             class="service-refresh-btn"
-            title="Refresh reference data"
-            aria-label="Refresh reference data"
+            title="Service tools"
+            aria-label="Service tools"
             aria-controls="service-panel"
             aria-expanded="false"
           >
@@ -403,6 +409,14 @@
                 Reload dropdown values from Google Sheets and update the shared cache.
               </span>
             </button>
+            <? if (canRefreshAccess) { ?>
+              <button type="button" id="refresh-access-action" class="service-action">
+                <span class="service-action-name">Refresh access permissions</span>
+                <span class="service-action-description">
+                  Apply changes from the access spreadsheet for all users.
+                </span>
+              </button>
+            <? } ?>
             <div id="service-refresh-status" class="service-refresh-status" aria-live="polite"></div>
           </div>
         <? } ?>
@@ -416,9 +430,29 @@
     (function () {
       var gearButton = document.getElementById("service-refresh-btn");
       var panel = document.getElementById("service-panel");
-      var actionButton = document.getElementById("refresh-reference-data-action");
+      var referenceAction = document.getElementById("refresh-reference-data-action");
+      var accessAction = document.getElementById("refresh-access-action");
       var status = document.getElementById("service-refresh-status");
-      if (!gearButton || !panel || !actionButton || !status) return;
+      if (!gearButton || !panel || !referenceAction || !status) return;
+
+      function setServiceBusy(busy) {
+        gearButton.disabled = busy;
+        gearButton.classList.toggle("is-loading", busy);
+        referenceAction.disabled = busy;
+        if (accessAction) accessAction.disabled = busy;
+      }
+
+      function finishServiceAction(result) {
+        setServiceBusy(false);
+        status.textContent =
+          result && result.success ? "Updated" : "Refresh failed";
+      }
+
+      function failServiceAction(label, error) {
+        console.error(label + " failed:", error);
+        setServiceBusy(false);
+        status.textContent = "Refresh failed";
+      }
 
       gearButton.addEventListener("click", function () {
         var willOpen = panel.hidden;
@@ -426,29 +460,31 @@
         gearButton.setAttribute("aria-expanded", willOpen ? "true" : "false");
       });
 
-      actionButton.addEventListener("click", function () {
-        gearButton.disabled = true;
-        gearButton.classList.add("is-loading");
-        actionButton.disabled = true;
+      referenceAction.addEventListener("click", function () {
+        setServiceBusy(true);
         status.textContent = "Refreshing...";
 
         google.script.run
-          .withSuccessHandler(function (result) {
-            gearButton.disabled = false;
-            gearButton.classList.remove("is-loading");
-            actionButton.disabled = false;
-            status.textContent =
-              result && result.success ? "Updated" : "Refresh failed";
-          })
+          .withSuccessHandler(finishServiceAction)
           .withFailureHandler(function (error) {
-            console.error("Reference data refresh failed:", error);
-            gearButton.disabled = false;
-            gearButton.classList.remove("is-loading");
-            actionButton.disabled = false;
-            status.textContent = "Refresh failed";
+            failServiceAction("Reference data refresh", error);
           })
           .refreshReferenceDataCaches();
       });
+
+      if (accessAction) {
+        accessAction.addEventListener("click", function () {
+          setServiceBusy(true);
+          status.textContent = "Refreshing...";
+
+          google.script.run
+            .withSuccessHandler(finishServiceAction)
+            .withFailureHandler(function (error) {
+              failServiceAction("Access permissions refresh", error);
+            })
+            .refreshAccessPermissionsCaches();
+        });
+      }
 
       document.addEventListener("click", function (event) {
         if (!panel.hidden && !event.target.closest(".service-tools")) {

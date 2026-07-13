@@ -1,9 +1,10 @@
 // Main application entry point - Optimized version
 // This file contains the web app endpoints and main business logic
 
-// ── Access Control (per-user cache, 30 min TTL) ─────────────────────────────
+// ── Access Control (per-user cache, 20 min TTL) ─────────────────────────────
 
-var ACCESS_CACHE_TTL_SECONDS = 1800; // 30 minutes
+var ACCESS_CACHE_TTL_SECONDS = 1200; // 20 minutes
+var ACCESS_CACHE_VERSION_PROPERTY = "ACCESS_CACHE_VERSION";
 var _userAccessMap = null; // in-memory: avoids repeated CacheService calls within one request
 var _fullAccessByEmail = {};
 
@@ -25,6 +26,41 @@ function isFullAccessUser(email) {
 
 function canManageClientsInformation(email) {
   return isFullAccessUser(email);
+}
+
+function getAccessCacheVersion() {
+  return (
+    PropertiesService.getScriptProperties().getProperty(
+      ACCESS_CACHE_VERSION_PROPERTY
+    ) || "1"
+  );
+}
+
+function getAccessCacheKey(email) {
+  return (
+    "access_v" +
+    getAccessCacheVersion() +
+    "_user_" +
+    email.toLowerCase()
+  );
+}
+
+function invalidateAllAccessCaches() {
+  var lock = LockService.getScriptLock();
+  lock.waitLock(10000);
+  try {
+    var properties = PropertiesService.getScriptProperties();
+    var currentVersion =
+      parseInt(properties.getProperty(ACCESS_CACHE_VERSION_PROPERTY), 10) || 1;
+    properties.setProperty(
+      ACCESS_CACHE_VERSION_PROPERTY,
+      String(currentVersion + 1)
+    );
+    _userAccessMap = null;
+    _fullAccessByEmail = {};
+  } finally {
+    lock.releaseLock();
+  }
 }
 
 function getPageSection(page) {
@@ -62,7 +98,7 @@ function getEmailsFromAccessSheet(spreadsheetId, sheetName) {
 
 /**
  * Build full access map for a user by reading all access sheets.
- * Called only on cache miss (once per 30 min per user).
+ * Called only on cache miss (once per 20 min per user).
  */
 function buildUserAccessMap(email) {
   var ac = CONFIG.ACCESS_CONTROL;
@@ -107,7 +143,7 @@ function buildUserAccessMap(email) {
 function getUserNavAccess(email) {
   if (_userAccessMap) return _userAccessMap;
 
-  var cacheKey = "access_user_" + email.toLowerCase();
+  var cacheKey = getAccessCacheKey(email);
   var cache = CacheService.getScriptCache();
   var cached = cache.get(cacheKey);
 
@@ -137,7 +173,7 @@ function hasAccessToPage(email, page) {
   // force a rebuild so new sections are picked up without waiting for cache expiry.
   if (!access.hasOwnProperty(section)) {
     _userAccessMap = null;
-    CacheService.getScriptCache().remove("access_user_" + email.toLowerCase());
+    CacheService.getScriptCache().remove(getAccessCacheKey(email));
     access = getUserNavAccess(email);
   }
   return access[section] === true;
@@ -148,30 +184,10 @@ function hasAccessToPage(email, page) {
  * Can be run from Apps Script editor or attached to a button in the spreadsheet.
  */
 function clearAccessCache() {
-  var cache = CacheService.getScriptCache();
-  cache.remove("access_user_" + getCurrentUserEmail());
-
-  var ac = CONFIG.ACCESS_CONTROL;
-  var allSheets = [ac.SHEETS.FULL_ACCESS, "limited_information-clients"];
-  Object.keys(ac.SECTION_SHEETS).forEach(function (section) {
-    allSheets.push(ac.SECTION_SHEETS[section]);
-  });
-
-  var spreadsheet = getSpreadsheet(ac.SPREADSHEET_ID);
-  allSheets.forEach(function (sheetName) {
-    var sheet = getSheet(spreadsheet, sheetName);
-    var lastRow = sheet.getLastRow();
-    if (lastRow < 1) return;
-    var values = sheet.getRange(1, 1, lastRow, 1).getValues();
-    for (var i = 0; i < values.length; i++) {
-      var s = String(values[i][0] || "").trim().toLowerCase();
-      if (s === "" || s === "email" || s === "e-mail") continue;
-      cache.remove("access_user_" + s);
-    }
-  });
-
-  _userAccessMap = null;
-  _fullAccessByEmail = {};
+  if (!isFullAccessUser(getCurrentUserEmail())) {
+    return { success: false, message: "No permission to clear access cache" };
+  }
+  invalidateAllAccessCaches();
   return { success: true, message: "Access cache cleared" };
 }
 
@@ -586,6 +602,7 @@ function getNavigation(activePage) {
   template.baseUrl = ScriptApp.getService().getUrl();
   var email = getCurrentUserEmail();
   template.navAccess = getUserNavAccess(email);
+  template.canRefreshAccessPermissions = isFullAccessUser(email);
   return template.evaluate().getContent();
 }
 
@@ -613,6 +630,22 @@ function refreshReferenceDataCaches() {
   return {
     success: true,
     message: "Reference data refreshed.",
+  };
+}
+
+function refreshAccessPermissionsCaches() {
+  var email = getCurrentUserEmail();
+  if (!isFullAccessUser(email)) {
+    return {
+      success: false,
+      message: "No permission to refresh access permissions.",
+    };
+  }
+
+  invalidateAllAccessCaches();
+  return {
+    success: true,
+    message: "Access permissions refreshed.",
   };
 }
 
