@@ -253,11 +253,13 @@
     <?!= getNavigation(activePage) ?>
 
     <div class="main-content container-xl">
-      <div class="mb-3 d-flex justify-content-start">
-        <a href="<?= baseUrl ?>?page=ClientsInformationCard&mode=create" class="btn btn-nav">
-          Create new
-        </a>
-      </div>
+      <? if (clientsInfoCanEdit) { ?>
+        <div class="mb-3 d-flex justify-content-start">
+          <a href="<?= baseUrl ?>?page=ClientsInformationCard&mode=create" class="btn btn-nav">
+            Create new
+          </a>
+        </div>
+      <? } ?>
 
       <h2 class="mb-3">Clients Information</h2>
 
@@ -272,6 +274,7 @@
 
       <script>
         var baseUrl = "<?= baseUrl ?>";
+        var clientsInfoCanEdit = <?!= clientsInfoCanEdit ? "true" : "false" ?>;
         var previewRowsById = {};
 
         // Header names (as they appear in the Information sheet) that need special rendering
@@ -332,9 +335,11 @@
             '</div>' +
             '<div class="preview-body">' +
               '<div class="preview-grid">' + fields + '</div>' +
-              '<div class="preview-actions">' +
-                '<a href="' + viewUrl(row.id) + '" class="btn btn-sm btn-outline-primary" target="_top">Open full card</a>' +
-              '</div>' +
+              (clientsInfoCanEdit ? (
+                '<div class="preview-actions">' +
+                  '<a href="' + viewUrl(row.id) + '" class="btn btn-sm btn-outline-primary" target="_top">Open full card</a>' +
+                '</div>'
+              ) : '') +
             '</div>'
           );
         }
@@ -492,7 +497,9 @@
               var html;
               if (h === PROJECT_HEADER) {
                 html = value
-                  ? '<a href="' + viewUrl(row.id) + '" class="table-link">' + escHtml(value) + '</a>' +
+                  ? (clientsInfoCanEdit
+                    ? '<a href="' + viewUrl(row.id) + '" class="table-link">' + escHtml(value) + '</a>'
+                    : '<span>' + escHtml(value) + '</span>') +
                     '<button type="button" class="preview-btn" data-client-id="' + escHtml(row.id) + '" title="Preview">' +
                       '<i class="bi bi-eye"></i>' +
                     '</button>'

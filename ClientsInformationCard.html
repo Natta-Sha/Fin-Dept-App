@@ -284,6 +284,7 @@
       var mode     = "<?= mode ?>";
       var clientId = "<?= clientId ?>";
       var baseUrl  = "<?= baseUrl ?>";
+      var clientsInfoCanEdit = <?!= clientsInfoCanEdit ? "true" : "false" ?>;
 
       var REQUIRED_FIELDS = ["projectName", "currency", "typeOfDays", "daysForPayment",
                              "pmAm", "companyName", "invoiceTemplate", "ourCompany"];
@@ -548,6 +549,13 @@
           b.addEventListener("click", onclick);
           container.appendChild(b);
           return b;
+        }
+
+        if (!clientsInfoCanEdit) {
+          btn("Back to list", "btn-outline-secondary", function () {
+            navigateToListWithSpinner(this);
+          }, "back-to-list-btn");
+          return;
         }
 
         if (m === "create") {

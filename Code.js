@@ -10,6 +10,17 @@ function getCurrentUserEmail() {
   return Session.getActiveUser().getEmail().toLowerCase();
 }
 
+function isFullAccessUser(email) {
+  var ac = CONFIG.ACCESS_CONTROL;
+  var normalizedEmail = email.toLowerCase();
+  var fullAccessEmails = getEmailsFromAccessSheet(ac.SPREADSHEET_ID, ac.SHEETS.FULL_ACCESS);
+  return fullAccessEmails.indexOf(normalizedEmail) !== -1;
+}
+
+function canManageClientsInformation(email) {
+  return isFullAccessUser(email);
+}
+
 function getPageSection(page) {
   if (page === "ClientsInformationList" || page === "ClientsInformationCard") {
     return "clientsinfo";
@@ -51,8 +62,7 @@ function buildUserAccessMap(email) {
   var ac = CONFIG.ACCESS_CONTROL;
   var normalizedEmail = email.toLowerCase();
 
-  var fullAccessEmails = getEmailsFromAccessSheet(ac.SPREADSHEET_ID, ac.SHEETS.FULL_ACCESS);
-  var isFullAccess = fullAccessEmails.indexOf(normalizedEmail) !== -1;
+  var isFullAccess = isFullAccessUser(normalizedEmail);
 
   var allSections = {};
   Object.keys(ac.PAGE_TO_SECTION).forEach(function (page) {
@@ -74,8 +84,12 @@ function buildUserAccessMap(email) {
     access[section] = sectionEmails.indexOf(normalizedEmail) !== -1;
   });
 
-  // Clients Information is full-access only — not tied to a separate sheet
-  access["clientsinfo"] = isFullAccess;
+  var clientsInfoEmails = getEmailsFromAccessSheet(
+    ac.SPREADSHEET_ID,
+    "limited_information-clients"
+  );
+  access["clientsinfo"] =
+    isFullAccess || clientsInfoEmails.indexOf(normalizedEmail) !== -1;
 
   return access;
 }
@@ -132,7 +146,7 @@ function clearAccessCache() {
   cache.remove("access_user_" + getCurrentUserEmail());
 
   var ac = CONFIG.ACCESS_CONTROL;
-  var allSheets = [ac.SHEETS.FULL_ACCESS];
+  var allSheets = [ac.SHEETS.FULL_ACCESS, "limited_information-clients"];
   Object.keys(ac.SECTION_SHEETS).forEach(function (section) {
     allSheets.push(ac.SECTION_SHEETS[section]);
   });
@@ -199,6 +213,17 @@ function doGet(e) {
       return denied.evaluate().setTitle("No Access");
     }
 
+    var pageMode = e.parameter.mode || "";
+    if (page === "ClientsInformationCard" && !canManageClientsInformation(email)) {
+      if (pageMode && pageMode !== "view") {
+        var clientsDenied = HtmlService.createTemplateFromFile("AccessDenied");
+        clientsDenied.baseUrl = ScriptApp.getService().getUrl();
+        clientsDenied.activePage = "";
+        return clientsDenied.evaluate().setTitle("No Access");
+      }
+      pageMode = "view";
+    }
+
     var template = HtmlService.createTemplateFromFile(page);
     template.baseUrl = ScriptApp.getService().getUrl();
     template.invoiceId = e.parameter.invoiceId || e.parameter.id || "";
@@ -206,7 +231,8 @@ function doGet(e) {
     template.contractId = e.parameter.contractId || e.parameter.id || "";
     template.billId = e.parameter.billId || e.parameter.id || "";
     template.clientId = e.parameter.clientId || e.parameter.id || "";
-    template.mode = e.parameter.mode || "";
+    template.mode = pageMode;
+    template.clientsInfoCanEdit = canManageClientsInformation(email);
 
     // Set active page for navigation
     template.activePage = getActivePageForNavigation(page, e.parameter);
@@ -223,8 +249,8 @@ function doGet(e) {
     if (e.parameter.contractId || e.parameter.id) {
       template.contractId = e.parameter.contractId || e.parameter.id;
     }
-    if (e.parameter.mode) {
-      template.mode = e.parameter.mode;
+    if (pageMode) {
+      template.mode = pageMode;
     }
 
     return template.evaluate().setTitle(page);
@@ -590,13 +616,22 @@ function checkClientProjectNameDuplicate(projectName, allowedId) {
 }
 
 function saveClientCard(formData) {
+  if (!canManageClientsInformation(getCurrentUserEmail())) {
+    return { success: false, message: "No permission to edit client information." };
+  }
   return saveClientCardToData(formData);
 }
 
 function updateClientCard(formData) {
+  if (!canManageClientsInformation(getCurrentUserEmail())) {
+    return { success: false, message: "No permission to edit client information." };
+  }
   return updateClientCardByIdFromData(formData);
 }
 
 function deleteClientCard(id) {
+  if (!canManageClientsInformation(getCurrentUserEmail())) {
+    return { success: false, message: "No permission to edit client information." };
+  }
   return deleteClientCardByIdFromData(id);
 }
