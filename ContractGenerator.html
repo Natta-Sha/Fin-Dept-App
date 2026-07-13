@@ -1310,7 +1310,6 @@
             titleEl.textContent = "Contract - Edit";
             document.getElementById("edit-buttons").style.display = "flex";
             setFormReadonly(false, true); // Keep initial data fields locked
-            loadDropdownOptionsForEdit();
             break;
           case "delete":
             titleEl.textContent = "Contract - Delete";
@@ -1325,31 +1324,22 @@
       }
 
       // Populate dropdown lists from Lists sheet
+      function applyContractDropdownOptions(options) {
+        options = options || {};
+        fillDropdown("pe", options.peOptions);
+        fillDropdown("ourCompany", options.ourCompanies);
+        fillDropdown("serviceType", options.serviceTypes);
+        fillDropdown("cooperationType", options.cooperationTypes);
+        fillDropdown("accountType", options.accountTypes);
+        fillDropdown("currencyOfRate", options.currencies);
+        fillDropdown("documentType", options.documentTypes);
+        fillDropdown("sowStartDateRequired", ["Yes", "No"]);
+      }
+
       function populateDropdowns(callback) {
         google.script.run
           .withSuccessHandler(function (options) {
-            // PE dropdown (column D)
-            fillDropdown("pe", options.peOptions);
-
-            // Our company dropdown (column B)
-            fillDropdown("ourCompany", options.ourCompanies);
-
-            // Type of services dropdown (column C)
-            fillDropdown("serviceType", options.serviceTypes);
-
-            // Type of cooperation dropdown (column A)
-            fillDropdown("cooperationType", options.cooperationTypes);
-
-            // Account type dropdown (column E)
-            fillDropdown("accountType", options.accountTypes);
-
-            // Currency dropdown (column F)
-            fillDropdown("currencyOfRate", options.currencies);
-
-            // Document type dropdown (column G)
-            fillDropdown("documentType", options.documentTypes);
-
-            // Call callback after dropdowns are populated
+            applyContractDropdownOptions(options);
             if (callback) callback();
           })
           .withFailureHandler(function (error) {
@@ -2071,19 +2061,19 @@
               alert("Failed to load contract data");
             })
             .getContractDataById(contractId);
+        } else if (contractId && mode !== "create") {
+          google.script.run
+            .withSuccessHandler(function (initialData) {
+              applyContractDropdownOptions(initialData.dropdowns);
+              fillContractForm(initialData.contract);
+            })
+            .withFailureHandler(function (error) {
+              console.error("Error loading contract:", error);
+              alert("Failed to load contract data");
+            })
+            .getContractFormInitialData(contractId);
         } else {
-          // For create/edit/copy - load dropdown options first
-          populateDropdowns(function () {
-            if (contractId && mode !== "create") {
-              google.script.run
-                .withSuccessHandler(fillContractForm)
-                .withFailureHandler(function (error) {
-                  console.error("Error loading contract:", error);
-                  alert("Failed to load contract data");
-                })
-                .getContractDataById(contractId);
-            }
-          });
+          populateDropdowns();
         }
 
         updateUIForMode();

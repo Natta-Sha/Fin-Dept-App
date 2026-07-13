@@ -513,20 +513,25 @@
 
       // ── Dropdowns ────────────────────────────────────────────────────────────
 
+      function populateClientDropdowns(opts, currentData) {
+        var cur = currentData || {};
+        opts = opts || {};
+        populateSelect("projectName",      opts.projectList      || [], cur.projectName);
+        populateSelect("currency",         opts.currencies       || [], cur.currency);
+        populateSelect("typeOfDays",       opts.typeOfDays       || [], cur.typeOfDays);
+        populateSelect("pmAm",             opts.pmAmList         || [], cur.pmAm);
+        populateSelect("companyNumberVat", opts.companyNumbers   || [], cur.companyNumberVat);
+        populateSelect("vatRate",          opts.vatRates         || [], cur.vatRate);
+        populateSelect("bankChoice1",      opts.bankOptions      || [], cur.bankChoice1);
+        populateSelect("bankChoice2",      opts.bankOptions      || [], cur.bankChoice2);
+        populateSelect("invoiceTemplate",  opts.invoiceTemplates || [], cur.invoiceTemplate);
+        populateSelect("ourCompany",       opts.ourCompanies     || [], cur.ourCompany);
+      }
+
       function loadDropdowns(currentData) {
         google.script.run
           .withSuccessHandler(function (opts) {
-            var cur = currentData || {};
-            populateSelect("projectName",      opts.projectList     || [], cur.projectName);
-            populateSelect("currency",         opts.currencies      || [], cur.currency);
-            populateSelect("typeOfDays",       opts.typeOfDays      || [], cur.typeOfDays);
-            populateSelect("pmAm",             opts.pmAmList        || [], cur.pmAm);
-            populateSelect("companyNumberVat", opts.companyNumbers  || [], cur.companyNumberVat);
-            populateSelect("vatRate",          opts.vatRates        || [], cur.vatRate);
-            populateSelect("bankChoice1",      opts.bankOptions     || [], cur.bankChoice1);
-            populateSelect("bankChoice2",      opts.bankOptions     || [], cur.bankChoice2);
-            populateSelect("invoiceTemplate",  opts.invoiceTemplates|| [], cur.invoiceTemplate);
-            populateSelect("ourCompany",       opts.ourCompanies    || [], cur.ourCompany);
+            populateClientDropdowns(opts, currentData);
           })
           .withFailureHandler(function (err) {
             console.error("Failed to load dropdowns:", err);
@@ -750,9 +755,11 @@
         document.getElementById("loading-spinner").style.display = "";
 
         google.script.run
-          .withSuccessHandler(function (data) {
+          .withSuccessHandler(function (initialData) {
             document.getElementById("loading-spinner").style.display = "none";
             document.getElementById("card-form").style.display = "";
+            var data = initialData && initialData.card;
+            var opts = (initialData && initialData.dropdowns) || {};
 
             if (!data || data._error) {
               document.getElementById("result").innerHTML =
@@ -760,40 +767,20 @@
               return;
             }
 
-            // Load dropdowns first, then fill fields so selected values are preserved
-            google.script.run
-              .withSuccessHandler(function (opts) {
-                populateSelect("projectName",      opts.projectList     || [], data.projectName);
-                populateSelect("currency",         opts.currencies      || [], data.currency);
-                populateSelect("typeOfDays",       opts.typeOfDays      || [], data.typeOfDays);
-                populateSelect("pmAm",             opts.pmAmList        || [], data.pmAm);
-                populateSelect("companyNumberVat", opts.companyNumbers  || [], data.companyNumberVat);
-                populateSelect("vatRate",          opts.vatRates        || [], data.vatRate);
-                populateSelect("bankChoice1",      opts.bankOptions     || [], data.bankChoice1);
-                populateSelect("bankChoice2",      opts.bankOptions     || [], data.bankChoice2);
-                populateSelect("invoiceTemplate",  opts.invoiceTemplates|| [], data.invoiceTemplate);
-                populateSelect("ourCompany",       opts.ourCompanies    || [], data.ourCompany);
+            populateClientDropdowns(opts, data);
+            ["linkFinFolder","linkSalesFolder","linkRates",
+             "daysForPayment","companyName","number","companyAddress",
+             "mailTo","mailAddressTo","copyMailClient","copyMailSloboda","comments"
+            ].forEach(function (id) { fillField(id, data[id] || ""); });
 
-                // Fill remaining plain-text fields
-                ["linkFinFolder","linkSalesFolder","linkRates",
-                 "daysForPayment","companyName","number","companyAddress",
-                 "mailTo","mailAddressTo","copyMailClient","copyMailSloboda","comments"
-                ].forEach(function (id) { fillField(id, data[id] || ""); });
-
-                if (mode === "view" || mode === "delete") {
-                  setViewMode();
-                }
-                if (mode === "delete") {
-                  document.getElementById("result").innerHTML =
-                    '<div class="alert alert-warning"><i class="bi bi-exclamation-triangle-fill me-2"></i>' +
-                    'You are about to permanently delete this client record. This action cannot be undone.</div>';
-                }
-              })
-              .withFailureHandler(function () {
-                fillForm(data);
-                if (mode === "view" || mode === "delete") setViewMode();
-              })
-              .getClientsInformationDropdowns();
+            if (mode === "view" || mode === "delete") {
+              setViewMode();
+            }
+            if (mode === "delete") {
+              document.getElementById("result").innerHTML =
+                '<div class="alert alert-warning"><i class="bi bi-exclamation-triangle-fill me-2"></i>' +
+                'You are about to permanently delete this client record. This action cannot be undone.</div>';
+            }
           })
           .withFailureHandler(function (err) {
             document.getElementById("loading-spinner").style.display = "none";
@@ -801,7 +788,10 @@
             document.getElementById("result").innerHTML =
               '<div class="alert alert-danger">Error loading client: ' + esc(String(err)) + '</div>';
           })
-          .getClientCardById(clientId);
+          .getClientCardInitialData(
+            clientId,
+            mode !== "view" && mode !== "delete"
+          );
       });
     </script>
   </body>

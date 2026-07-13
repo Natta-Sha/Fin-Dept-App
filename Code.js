@@ -5,6 +5,7 @@
 
 var ACCESS_CACHE_TTL_SECONDS = 1800; // 30 minutes
 var _userAccessMap = null; // in-memory: avoids repeated CacheService calls within one request
+var _fullAccessByEmail = {};
 
 function getCurrentUserEmail() {
   return Session.getActiveUser().getEmail().toLowerCase();
@@ -13,8 +14,13 @@ function getCurrentUserEmail() {
 function isFullAccessUser(email) {
   var ac = CONFIG.ACCESS_CONTROL;
   var normalizedEmail = email.toLowerCase();
+  if (_fullAccessByEmail.hasOwnProperty(normalizedEmail)) {
+    return _fullAccessByEmail[normalizedEmail];
+  }
   var fullAccessEmails = getEmailsFromAccessSheet(ac.SPREADSHEET_ID, ac.SHEETS.FULL_ACCESS);
-  return fullAccessEmails.indexOf(normalizedEmail) !== -1;
+  _fullAccessByEmail[normalizedEmail] =
+    fullAccessEmails.indexOf(normalizedEmail) !== -1;
+  return _fullAccessByEmail[normalizedEmail];
 }
 
 function canManageClientsInformation(email) {
@@ -165,6 +171,7 @@ function clearAccessCache() {
   });
 
   _userAccessMap = null;
+  _fullAccessByEmail = {};
   return { success: true, message: "Access cache cleared" };
 }
 
@@ -316,7 +323,10 @@ function getProjectDetails(projectName) {
  * Get list of all invoices
  * @returns {Array} Array of invoice objects
  */
-function getInvoiceList() {
+function getInvoiceList(forceRefresh) {
+  if (forceRefresh === true) {
+    CacheService.getScriptCache().remove("invoiceList");
+  }
   return getInvoiceListFromData();
 }
 
@@ -353,7 +363,10 @@ function getCreditNoteList() {
  * Get list of all contracts
  * @returns {Array} Array of contract objects
  */
-function getContractList() {
+function getContractList(forceRefresh) {
+  if (forceRefresh === true) {
+    removeCachedJson_("contractList");
+  }
   return getContractListFromData();
 }
 
@@ -372,6 +385,13 @@ function getContractDataById(id) {
  */
 function getContractDropdownOptions() {
   return getContractDropdownOptionsFromData();
+}
+
+function getContractFormInitialData(id) {
+  return {
+    contract: id ? getContractDataByIdFromData(id) : null,
+    dropdowns: getContractDropdownOptionsFromData(),
+  };
 }
 
 /**
@@ -426,7 +446,10 @@ function updateContract(formData) {
  * Get list of all bills
  * @returns {Array} Array of bill objects
  */
-function getBillList() {
+function getBillList(forceRefresh) {
+  if (forceRefresh === true) {
+    CacheService.getScriptCache().remove("billList");
+  }
   return getBillListFromData();
 }
 
@@ -454,6 +477,13 @@ function saveBill(formData) {
  */
 function getBillDataById(id) {
   return getBillDataByIdFromData(id);
+}
+
+function getBillFormInitialData(id) {
+  return {
+    bill: id ? getBillDataByIdFromData(id) : null,
+    dropdowns: getBillDropdownOptionsFromData(),
+  };
 }
 
 /**
@@ -556,7 +586,31 @@ function getNavigation(activePage) {
   template.baseUrl = ScriptApp.getService().getUrl();
   var email = getCurrentUserEmail();
   template.navAccess = getUserNavAccess(email);
+  template.canRefreshReferenceData = isFullAccessUser(email);
   return template.evaluate().getContent();
+}
+
+function refreshReferenceDataCaches() {
+  var email = getCurrentUserEmail();
+  if (!isFullAccessUser(email)) {
+    return {
+      success: false,
+      message: "No permission to refresh reference data.",
+    };
+  }
+
+  removeCachedJson_("clientsInfoDropdownOptions");
+  removeCachedJson_("contractDropdownOptions");
+  CacheService.getScriptCache().remove("billDropdownOptions");
+
+  getClientsInformationDropdownsFromData();
+  getContractDropdownOptionsFromData();
+  getBillDropdownOptionsFromData();
+
+  return {
+    success: true,
+    message: "Reference data refreshed.",
+  };
 }
 
 /**
@@ -599,7 +653,10 @@ function getActivePageForNavigation(page, params = {}) {
 
 // ── Clients Information wrappers ─────────────────────────────────────────────
 
-function getClientsInformationList() {
+function getClientsInformationList(forceRefresh) {
+  if (forceRefresh === true) {
+    removeCachedJson_("clientsInfoList");
+  }
   return getClientsInformationListFromData();
 }
 
@@ -609,6 +666,15 @@ function getClientsInformationDropdowns() {
 
 function getClientCardById(id) {
   return getClientCardByIdFromData(id);
+}
+
+function getClientCardInitialData(id, includeDropdowns) {
+  return {
+    card: id ? getClientCardByIdFromData(id) : null,
+    dropdowns: includeDropdowns === false
+      ? {}
+      : getClientsInformationDropdownsFromData(),
+  };
 }
 
 function checkClientProjectNameDuplicate(projectName, allowedId) {

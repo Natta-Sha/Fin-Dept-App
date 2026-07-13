@@ -85,6 +85,52 @@
     cursor: not-allowed !important;
     pointer-events: none;
   }
+
+  .service-tools {
+    width: 150px;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 0.5rem;
+  }
+
+  .service-refresh-btn {
+    width: 34px;
+    height: 34px;
+    padding: 0;
+    border: 1px solid rgba(255, 255, 255, 0.35);
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.1);
+    color: white;
+    font-size: 1rem;
+    line-height: 32px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+
+  .service-refresh-btn:hover {
+    background: rgba(255, 255, 255, 0.22);
+  }
+
+  .service-refresh-btn:disabled {
+    cursor: wait;
+    opacity: 0.65;
+  }
+
+  .service-refresh-btn.is-loading .service-refresh-icon {
+    display: inline-block;
+    animation: service-gear-spin 1s linear infinite;
+  }
+
+  .service-refresh-status {
+    color: rgba(255, 255, 255, 0.9);
+    font-size: 0.75rem;
+    white-space: nowrap;
+  }
+
+  @keyframes service-gear-spin {
+    to { transform: rotate(360deg); }
+  }
 </style>
 
 <?
@@ -101,6 +147,8 @@
   var clientsOk      = invoicesOk || creditnotesOk;
   var contractorsOk  = contractsOk || billsOk;
   var clientsInfoOk  = ha.clientsinfo === true;
+  var canRefreshRefs = typeof canRefreshReferenceData !== 'undefined'
+    && canRefreshReferenceData === true;
 ?>
 
 <nav class="top-nav">
@@ -273,8 +321,54 @@
         </div>
       </div>
 
-      <!-- Right spacer -->
-      <div style="width: 150px"></div>
+      <div class="service-tools">
+        <? if (canRefreshRefs) { ?>
+          <span id="service-refresh-status" class="service-refresh-status" aria-live="polite"></span>
+          <button
+            type="button"
+            id="service-refresh-btn"
+            class="service-refresh-btn"
+            title="Refresh reference data"
+            aria-label="Refresh reference data"
+          >
+            <span class="service-refresh-icon" aria-hidden="true">⚙</span>
+          </button>
+        <? } ?>
+      </div>
     </div>
   </div>
 </nav>
+
+<? if (canRefreshRefs) { ?>
+  <script>
+    (function () {
+      var button = document.getElementById("service-refresh-btn");
+      var status = document.getElementById("service-refresh-status");
+      if (!button || !status) return;
+
+      button.addEventListener("click", function () {
+        button.disabled = true;
+        button.classList.add("is-loading");
+        status.textContent = "Refreshing...";
+
+        google.script.run
+          .withSuccessHandler(function (result) {
+            button.disabled = false;
+            button.classList.remove("is-loading");
+            status.textContent =
+              result && result.success ? "Updated" : "Refresh failed";
+            window.setTimeout(function () {
+              status.textContent = "";
+            }, 3000);
+          })
+          .withFailureHandler(function (error) {
+            console.error("Reference data refresh failed:", error);
+            button.disabled = false;
+            button.classList.remove("is-loading");
+            status.textContent = "Refresh failed";
+          })
+          .refreshReferenceDataCaches();
+      });
+    })();
+  </script>
+<? } ?>

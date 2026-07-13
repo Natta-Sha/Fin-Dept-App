@@ -302,13 +302,16 @@
 
     <!-- Main Content -->
     <div class="main-content container">
-      <div class="mb-3 d-flex justify-content-start">
+      <div class="mb-3 d-flex justify-content-start gap-2">
         <a
           href="<?= baseUrl ?>?page=InvoiceGenerator&mode=create"
           class="btn btn-nav"
         >
           Create new
         </a>
+        <button type="button" id="refresh-invoices-btn" class="btn btn-outline-secondary">
+          <i class="bi bi-arrow-clockwise me-1"></i>Update
+        </button>
       </div>
 
       <script>
@@ -393,11 +396,21 @@
             });
           });
 
-          google.script.run
-            .withSuccessHandler(function (data) {
+          function loadInvoices(forceRefresh) {
+            const refreshButton = document.getElementById("refresh-invoices-btn");
+            if (forceRefresh) {
+              refreshButton.disabled = true;
+              refreshButton.querySelector("i").classList.add("spinner-border", "spinner-border-sm");
+              refreshButton.querySelector("i").classList.remove("bi", "bi-arrow-clockwise");
+            }
+
+            google.script.run
+              .withSuccessHandler(function (data) {
+              table.clear();
               if (!Array.isArray(data) || data.length === 0) {
-                table.clear().draw();
+                table.draw();
                 document.getElementById("invoiceTable").style.display = "";
+                resetRefreshButton();
                 return;
               }
 
@@ -420,12 +433,27 @@
 
               table.draw();
               document.getElementById("invoiceTable").style.display = "";
+              resetRefreshButton();
             })
             .withFailureHandler(function (error) {
               console.error("Error loading invoice list:", error);
               alert("Failed to load invoice list.");
+              resetRefreshButton();
             })
-            .getInvoiceList();
+            .getInvoiceList(forceRefresh === true);
+          }
+
+          function resetRefreshButton() {
+            const refreshButton = document.getElementById("refresh-invoices-btn");
+            const icon = refreshButton.querySelector("i");
+            refreshButton.disabled = false;
+            icon.className = "bi bi-arrow-clockwise me-1";
+          }
+
+          document.getElementById("refresh-invoices-btn").addEventListener("click", function () {
+            loadInvoices(true);
+          });
+          loadInvoices(false);
         });
       </script>
 

@@ -1461,66 +1461,33 @@
         // Set UI for mode immediately (hide/show correct buttons)
         updateUIForMode();
 
-        // View / Edit / Copy mode: load data (and dropdowns in parallel for edit/copy)
+        // View / Edit / Copy mode
         if ((mode === "view" || mode === "edit" || mode === "copy") && billId) {
           document.getElementById("bill-form").style.display = "none";
           document.getElementById("loading-spinner").style.display = "";
 
           var isEditOrCopy = (mode === "edit" || mode === "copy");
-          var parallelState = { billData: null, dropdownData: null, billError: null, billDone: false, dropdownDone: false };
 
-          function tryFinishParallel() {
-            if (!isEditOrCopy) return;
-            if (!parallelState.billDone || !parallelState.dropdownDone) return;
-            document.getElementById("loading-spinner").style.display = "none";
-            document.getElementById("bill-form").style.display = "";
-            if (parallelState.billError) {
-              document.getElementById("result").innerHTML =
-                '<div class="alert alert-danger">Error loading bill: ' + parallelState.billError + '</div>';
-              return;
-            }
-            fillBillFormEditMode(parallelState.billData, parallelState.dropdownData);
-          }
-
-          google.script.run
+          var billRequest = google.script.run
             .withSuccessHandler(function (data) {
+              document.getElementById("loading-spinner").style.display = "none";
+              document.getElementById("bill-form").style.display = "";
               if (isEditOrCopy) {
-                parallelState.billData = data;
-                parallelState.billDone = true;
-                tryFinishParallel();
+                fillBillFormEditMode(data.bill, data.dropdowns);
               } else {
-                document.getElementById("loading-spinner").style.display = "none";
-                document.getElementById("bill-form").style.display = "";
                 fillBillFormViewMode(data);
               }
             })
             .withFailureHandler(function (err) {
-              if (isEditOrCopy) {
-                parallelState.billError = err;
-                parallelState.billDone = true;
-                tryFinishParallel();
-              } else {
-                document.getElementById("loading-spinner").style.display = "none";
-                document.getElementById("bill-form").style.display = "";
-                document.getElementById("result").innerHTML =
-                  '<div class="alert alert-danger">Error loading bill: ' + err + '</div>';
-              }
-            })
-            .getBillDataById(billId);
-
+              document.getElementById("loading-spinner").style.display = "none";
+              document.getElementById("bill-form").style.display = "";
+              document.getElementById("result").innerHTML =
+                '<div class="alert alert-danger">Error loading bill: ' + err + '</div>';
+            });
           if (isEditOrCopy) {
-            google.script.run
-              .withSuccessHandler(function (data) {
-                parallelState.dropdownData = data;
-                parallelState.dropdownDone = true;
-                tryFinishParallel();
-              })
-              .withFailureHandler(function () {
-                parallelState.dropdownData = null;
-                parallelState.dropdownDone = true;
-                tryFinishParallel();
-              })
-              .getBillDropdownOptions();
+            billRequest.getBillFormInitialData(billId);
+          } else {
+            billRequest.getBillDataById(billId);
           }
           return;
         }

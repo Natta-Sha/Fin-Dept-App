@@ -1,5 +1,83 @@
 // Data access layer for spreadsheet operations
 
+var DATA_LIST_CACHE_TTL_SECONDS = 300;
+var DROPDOWN_CACHE_TTL_SECONDS = 1800;
+var CACHE_CHUNK_SIZE = 20000;
+
+function getCachedJson_(key) {
+  try {
+    var cache = CacheService.getScriptCache();
+    var raw = cache.get(key);
+    if (!raw) return null;
+
+    var parsed = JSON.parse(raw);
+    if (!parsed || parsed.__chunkedJson !== true) return parsed;
+
+    var chunkKeys = [];
+    for (var i = 0; i < parsed.count; i++) {
+      chunkKeys.push(key + "_chunk_" + i);
+    }
+    var chunks = cache.getAll(chunkKeys);
+    var json = "";
+    for (var j = 0; j < chunkKeys.length; j++) {
+      if (!chunks[chunkKeys[j]]) return null;
+      json += chunks[chunkKeys[j]];
+    }
+    return JSON.parse(json);
+  } catch (e) {
+    console.warn("Cache read failed for " + key + ":", e);
+    return null;
+  }
+}
+
+function putCachedJson_(key, value, ttlSeconds) {
+  try {
+    var cache = CacheService.getScriptCache();
+    var json = JSON.stringify(value);
+    if (json.length <= CACHE_CHUNK_SIZE) {
+      cache.put(key, json, ttlSeconds);
+      return;
+    }
+
+    var chunkValues = {};
+    var count = Math.ceil(json.length / CACHE_CHUNK_SIZE);
+    for (var i = 0; i < count; i++) {
+      chunkValues[key + "_chunk_" + i] = json.substring(
+        i * CACHE_CHUNK_SIZE,
+        (i + 1) * CACHE_CHUNK_SIZE
+      );
+    }
+    cache.putAll(chunkValues, ttlSeconds);
+    cache.put(
+      key,
+      JSON.stringify({ __chunkedJson: true, count: count }),
+      ttlSeconds
+    );
+  } catch (e) {
+    console.warn("Cache write failed for " + key + ":", e);
+  }
+}
+
+function removeCachedJson_(key) {
+  var cache = CacheService.getScriptCache();
+  var raw = cache.get(key);
+  if (raw) {
+    try {
+      var parsed = JSON.parse(raw);
+      if (parsed && parsed.__chunkedJson === true) {
+        var chunkKeys = [];
+        for (var i = 0; i < parsed.count; i++) {
+          chunkKeys.push(key + "_chunk_" + i);
+        }
+        cache.removeAll(chunkKeys);
+      }
+    } catch (e) {
+      console.warn("Could not parse cache metadata for " + key + ":", e);
+    }
+  }
+  cache.remove(key);
+}
+
 /**
  * Write "Modified by" and "Modified at" into the given row using header-based column mapping.
  * @param {Sheet} sheet - The sheet to write to
@@ -1355,6 +1433,9 @@ function updateCreditNoteByIdFromData(data) {
  */
 function getContractDropdownOptionsFromData() {
   try {
+    var cached = getCachedJson_("contractDropdownOptions");
+    if (cached) return cached;
+
     const spreadsheet = SpreadsheetApp.openById(
       CONFIG.CONTRACTORS_SPREADSHEET_ID
     );
@@ -1417,7 +1498,7 @@ function getContractDropdownOptionsFromData() {
       }
     }
 
-    return {
+    var result = {
       cooperationTypes: cooperationTypes.sort(),
       ourCompanies: ourCompanies.sort(),
       serviceTypes: serviceTypes.sort(),
@@ -1426,6 +1507,12 @@ function getContractDropdownOptionsFromData() {
       currencies: currencies.sort(),
       documentTypes: documentTypes.sort(),
     };
+    putCachedJson_(
+      "contractDropdownOptions",
+      result,
+      DROPDOWN_CACHE_TTL_SECONDS
+    );
+    return result;
   } catch (error) {
     console.error("Error getting contract dropdown options:", error);
     return {
@@ -1514,6 +1601,9 @@ function getContractTemplatesFromData(
  */
 function getContractListFromData() {
   try {
+    var cached = getCachedJson_("contractList");
+    if (cached) return cached;
+
     const spreadsheet = SpreadsheetApp.openById(
       CONFIG.CONTRACTORS_SPREADSHEET_ID
     );
@@ -1578,6 +1668,7 @@ function getContractListFromData() {
     }
 
     console.log("Loaded " + contracts.length + " contracts");
+    putCachedJson_("contractList", contracts, DATA_LIST_CACHE_TTL_SECONDS);
     return contracts;
   } catch (error) {
     console.error("Error getting contracts list:", error);
@@ -2192,6 +2283,7 @@ function saveContractToData(formData) {
 
     // Append the row to the sheet
     sheet.appendRow(rowData);
+    removeCachedJson_("contractList");
 
     console.log("Contract saved successfully with ID:", contractId);
 
@@ -2273,6 +2365,7 @@ function deleteContractFromData(id) {
 
     // Delete the row from the sheet
     sheet.deleteRow(rowIndex);
+    removeCachedJson_("contractList");
 
     console.log("Contract deleted successfully, ID:", id);
 
@@ -2430,6 +2523,7 @@ function updateContractToData(formData) {
     }
 
     writeAuditColumns(sheet, rowIndex, columnMap);
+    removeCachedJson_("contractList");
 
     console.log("Contract updated successfully, ID:", contractId);
 
@@ -3682,12 +3776,16 @@ function checkClientProjectNameDuplicateFromData(projectName, allowedId) {
  */
 function getClientsInformationDropdownsFromData() {
   try {
+    var cached = getCachedJson_("clientsInfoDropdownOptions");
+    if (cached) return cached;
+
     var ss = SpreadsheetApp.openById(CLIENTS_INFO_SPREADSHEET_ID);
     var sheet = ss.getSheetByName(CLIENTS_INFO_LISTS_SHEET);
     if (!sheet) return {};
 
-    var data = sheet.getDataRange().getValues();
-    var displayData = sheet.getDataRange().getDisplayValues();
+    var range = sheet.getDataRange();
+    var data = range.getValues();
+    var displayData = range.getDisplayValues();
 
     var currencies      = [];
     var typeOfDays      = [];
@@ -3717,7 +3815,7 @@ function getClientsInformationDropdownsFromData() {
       addUnique(invoiceTemplates, row[14]); // col O
     }
 
-    return {
+    var result = {
       currencies:       currencies,
       typeOfDays:       typeOfDays,
       pmAmList:         pmAmList,
@@ -3728,6 +3826,12 @@ function getClientsInformationDropdownsFromData() {
       companyNumbers:   companyNumbers,
       invoiceTemplates: invoiceTemplates,
     };
+    putCachedJson_(
+      "clientsInfoDropdownOptions",
+      result,
+      DROPDOWN_CACHE_TTL_SECONDS
+    );
+    return result;
   } catch (e) {
     console.error("getClientsInformationDropdownsFromData error:", e);
     return {};
@@ -3743,6 +3847,9 @@ function getClientsInformationDropdownsFromData() {
  */
 function getClientsInformationListFromData() {
   try {
+    var cached = getCachedJson_("clientsInfoList");
+    if (cached) return cached;
+
     var ss = SpreadsheetApp.openById(CLIENTS_INFO_SPREADSHEET_ID);
     var sheet = ss.getSheetByName(CLIENTS_INFO_SHEET);
     if (!sheet) return { headers: [], rows: [] };
@@ -3777,7 +3884,9 @@ function getClientsInformationListFromData() {
       rows.push({ id: id, cells: cells });
     }
 
-    return { headers: headers, rows: rows };
+    var result = { headers: headers, rows: rows };
+    putCachedJson_("clientsInfoList", result, DATA_LIST_CACHE_TTL_SECONDS);
+    return result;
   } catch (e) {
     console.error("getClientsInformationListFromData error:", e);
     return { headers: [], rows: [] };
@@ -3897,7 +4006,7 @@ function saveClientCardToData(formData) {
     sheet.appendRow(rowArr);
     SpreadsheetApp.flush();
 
-    CacheService.getScriptCache().remove("clientsInfoList");
+    removeCachedJson_("clientsInfoList");
     return { success: true, id: newId };
   } catch (e) {
     console.error("saveClientCardToData error:", e);
@@ -3959,7 +4068,7 @@ function updateClientCardByIdFromData(formData) {
     sheet.getRange(rowIndex, 1, 1, rowArr.length).setValues([rowArr]);
     SpreadsheetApp.flush();
 
-    CacheService.getScriptCache().remove("clientsInfoList");
+    removeCachedJson_("clientsInfoList");
     return { success: true };
   } catch (e) {
     console.error("updateClientCardByIdFromData error:", e);
@@ -3987,7 +4096,7 @@ function deleteClientCardByIdFromData(id) {
       if (String(data[i][0] || "").trim() === String(id).trim()) {
         sheet.deleteRow(i + 1);
         SpreadsheetApp.flush();
-        CacheService.getScriptCache().remove("clientsInfoList");
+        removeCachedJson_("clientsInfoList");
         return { success: true };
       }
     }

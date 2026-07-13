@@ -253,13 +253,16 @@
     <?!= getNavigation(activePage) ?>
 
     <div class="main-content container-xl">
-      <? if (clientsInfoCanEdit) { ?>
-        <div class="mb-3 d-flex justify-content-start">
+      <div class="mb-3 d-flex justify-content-start gap-2">
+        <? if (clientsInfoCanEdit) { ?>
           <a href="<?= baseUrl ?>?page=ClientsInformationCard&mode=create" class="btn btn-nav">
             Create new
           </a>
-        </div>
-      <? } ?>
+        <? } ?>
+        <button type="button" id="refresh-clients-btn" class="btn btn-outline-secondary">
+          <i class="bi bi-arrow-clockwise me-1"></i>Update
+        </button>
+      </div>
 
       <h2 class="mb-3">Clients Information</h2>
 
@@ -448,22 +451,47 @@
             : rounded.toFixed(2).replace(/\.?0+$/, "")) + "%";
         }
 
-        $(document).ready(function () {
+        function loadClientsInformation(forceRefresh) {
+          if (forceRefresh) setRefreshBusy(true);
+
           google.script.run
             .withSuccessHandler(function (resp) {
               var headers = (resp && resp.headers) || [];
               var rows = (resp && resp.rows) || [];
 
               buildTable(headers, rows);
+              setRefreshBusy(false);
             })
             .withFailureHandler(function (err) {
               console.error("Error loading clients information list:", err);
               document.getElementById("clientsInfoTable").style.display = "";
+              setRefreshBusy(false);
             })
-            .getClientsInformationList();
+            .getClientsInformationList(forceRefresh === true);
+        }
+
+        function setRefreshBusy(busy) {
+          var button = document.getElementById("refresh-clients-btn");
+          button.disabled = busy;
+          button.querySelector("i").className = busy
+            ? "spinner-border spinner-border-sm me-1"
+            : "bi bi-arrow-clockwise me-1";
+        }
+
+        $(document).ready(function () {
+          document.getElementById("refresh-clients-btn").addEventListener("click", function () {
+            loadClientsInformation(true);
+          });
+          loadClientsInformation(false);
+          if (clientsInfoCanEdit) {
+            google.script.run.getClientsInformationDropdowns();
+          }
         });
 
         function buildTable(headers, rows) {
+          if ($.fn.DataTable.isDataTable("#clientsInfoTable")) {
+            $("#clientsInfoTable").DataTable().destroy();
+          }
           var thead = $("#clientsInfoTable thead");
           var tbody = $("#clientsInfoTable tbody");
           thead.empty();
