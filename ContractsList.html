@@ -335,13 +335,16 @@
 
     <!-- Main Content -->
     <div class="main-content container-xl">
-      <div class="mb-3 d-flex justify-content-start">
+      <div class="mb-3 d-flex justify-content-start gap-2">
         <a
           href="<?= baseUrl ?>?page=ContractGenerator&mode=create"
           class="btn btn-nav"
         >
           Create new
         </a>
+        <button type="button" id="refresh-contracts-btn" class="btn btn-outline-secondary">
+          <i class="bi bi-arrow-clockwise me-1"></i>Update
+        </button>
       </div>
 
       <h2 class="mb-4">List of Contracts</h2>
@@ -420,12 +423,16 @@
             });
           });
 
-          // Load contracts data
-          google.script.run
-            .withSuccessHandler(function (data) {
+          function loadContracts(forceRefresh) {
+            if (forceRefresh) setRefreshBusy(true);
+
+            google.script.run
+              .withSuccessHandler(function (data) {
+              table.clear();
               if (!Array.isArray(data) || data.length === 0) {
-                table.clear().draw();
+                table.draw();
                 document.getElementById("contractsTable").style.display = "";
+                setRefreshBusy(false);
                 return;
               }
 
@@ -453,13 +460,29 @@
 
               table.draw();
               document.getElementById("contractsTable").style.display = "";
+              setRefreshBusy(false);
             })
             .withFailureHandler(function (error) {
               console.error("Error loading contracts list:", error);
-              // Show empty table on error
               document.getElementById("contractsTable").style.display = "";
+              setRefreshBusy(false);
             })
-            .getContractList();
+            .getContractList(forceRefresh === true);
+          }
+
+          function setRefreshBusy(busy) {
+            const button = document.getElementById("refresh-contracts-btn");
+            button.disabled = busy;
+            button.querySelector("i").className = busy
+              ? "spinner-border spinner-border-sm me-1"
+              : "bi bi-arrow-clockwise me-1";
+          }
+
+          document.getElementById("refresh-contracts-btn").addEventListener("click", function () {
+            loadContracts(true);
+          });
+          loadContracts(false);
+          google.script.run.getContractDropdownOptions();
         });
       </script>
     </div>

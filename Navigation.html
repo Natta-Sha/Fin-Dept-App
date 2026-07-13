@@ -85,6 +85,112 @@
     cursor: not-allowed !important;
     pointer-events: none;
   }
+
+  .service-tools {
+    width: 150px;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 0.5rem;
+    position: relative;
+  }
+
+  .service-refresh-btn {
+    width: 34px;
+    height: 34px;
+    padding: 0;
+    border: 1px solid rgba(255, 255, 255, 0.35);
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.1);
+    color: white;
+    font-size: 1rem;
+    line-height: 32px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+
+  .service-refresh-btn:hover {
+    background: rgba(255, 255, 255, 0.22);
+  }
+
+  .service-refresh-btn:disabled {
+    cursor: wait;
+    opacity: 0.65;
+  }
+
+  .service-refresh-btn.is-loading .service-refresh-icon {
+    display: inline-block;
+    animation: service-gear-spin 1s linear infinite;
+  }
+
+  .service-panel {
+    position: absolute;
+    top: calc(100% + 0.75rem);
+    right: 0;
+    width: 310px;
+    padding: 1rem;
+    border: 1px solid #e9ecef;
+    border-radius: 10px;
+    background: white;
+    color: #212529;
+    box-shadow: 0 12px 35px rgba(0, 0, 0, 0.18);
+    z-index: 1100;
+  }
+
+  .service-panel[hidden] {
+    display: none;
+  }
+
+  .service-panel-title {
+    margin: 0 0 0.75rem;
+    font-size: 0.95rem;
+    font-weight: 700;
+  }
+
+  .service-action {
+    width: 100%;
+    padding: 0.75rem;
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    background: #f8f9fa;
+    color: #212529;
+    text-align: left;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+  }
+
+  .service-action:hover {
+    background: #eef1f4;
+  }
+
+  .service-action:disabled {
+    cursor: wait;
+    opacity: 0.65;
+  }
+
+  .service-action-name {
+    display: block;
+    margin-bottom: 0.2rem;
+    font-weight: 600;
+  }
+
+  .service-action-description {
+    display: block;
+    color: #6c757d;
+    font-size: 0.78rem;
+    line-height: 1.35;
+  }
+
+  .service-refresh-status {
+    min-height: 1.1rem;
+    margin-top: 0.65rem;
+    color: #6c757d;
+    font-size: 0.78rem;
+  }
+
+  @keyframes service-gear-spin {
+    to { transform: rotate(360deg); }
+  }
 </style>
 
 <?
@@ -101,6 +207,9 @@
   var clientsOk      = invoicesOk || creditnotesOk;
   var contractorsOk  = contractsOk || billsOk;
   var clientsInfoOk  = ha.clientsinfo === true;
+  var showServiceTools = Object.keys(ha).some(function (section) {
+    return ha[section] === true;
+  });
 ?>
 
 <nav class="top-nav">
@@ -273,8 +382,88 @@
         </div>
       </div>
 
-      <!-- Right spacer -->
-      <div style="width: 150px"></div>
+      <div class="service-tools">
+        <? if (showServiceTools) { ?>
+          <button
+            type="button"
+            id="service-refresh-btn"
+            class="service-refresh-btn"
+            title="Refresh reference data"
+            aria-label="Refresh reference data"
+            aria-controls="service-panel"
+            aria-expanded="false"
+          >
+            <span class="service-refresh-icon" aria-hidden="true">⚙</span>
+          </button>
+          <div id="service-panel" class="service-panel" hidden>
+            <h3 class="service-panel-title">Service tools</h3>
+            <button type="button" id="refresh-reference-data-action" class="service-action">
+              <span class="service-action-name">Refresh reference data</span>
+              <span class="service-action-description">
+                Reload dropdown values from Google Sheets and update the shared cache.
+              </span>
+            </button>
+            <div id="service-refresh-status" class="service-refresh-status" aria-live="polite"></div>
+          </div>
+        <? } ?>
+      </div>
     </div>
   </div>
 </nav>
+
+<? if (showServiceTools) { ?>
+  <script>
+    (function () {
+      var gearButton = document.getElementById("service-refresh-btn");
+      var panel = document.getElementById("service-panel");
+      var actionButton = document.getElementById("refresh-reference-data-action");
+      var status = document.getElementById("service-refresh-status");
+      if (!gearButton || !panel || !actionButton || !status) return;
+
+      gearButton.addEventListener("click", function () {
+        var willOpen = panel.hidden;
+        panel.hidden = !willOpen;
+        gearButton.setAttribute("aria-expanded", willOpen ? "true" : "false");
+      });
+
+      actionButton.addEventListener("click", function () {
+        gearButton.disabled = true;
+        gearButton.classList.add("is-loading");
+        actionButton.disabled = true;
+        status.textContent = "Refreshing...";
+
+        google.script.run
+          .withSuccessHandler(function (result) {
+            gearButton.disabled = false;
+            gearButton.classList.remove("is-loading");
+            actionButton.disabled = false;
+            status.textContent =
+              result && result.success ? "Updated" : "Refresh failed";
+          })
+          .withFailureHandler(function (error) {
+            console.error("Reference data refresh failed:", error);
+            gearButton.disabled = false;
+            gearButton.classList.remove("is-loading");
+            actionButton.disabled = false;
+            status.textContent = "Refresh failed";
+          })
+          .refreshReferenceDataCaches();
+      });
+
+      document.addEventListener("click", function (event) {
+        if (!panel.hidden && !event.target.closest(".service-tools")) {
+          panel.hidden = true;
+          gearButton.setAttribute("aria-expanded", "false");
+        }
+      });
+
+      document.addEventListener("keydown", function (event) {
+        if (event.key === "Escape" && !panel.hidden) {
+          panel.hidden = true;
+          gearButton.setAttribute("aria-expanded", "false");
+          gearButton.focus();
+        }
+      });
+    })();
+  </script>
+<? } ?>

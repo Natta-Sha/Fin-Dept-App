@@ -148,13 +148,16 @@
 
     <!-- Main Content -->
     <div class="main-content container-xl">
-      <div class="mb-3 d-flex justify-content-start">
+      <div class="mb-3 d-flex justify-content-start gap-2">
         <a
           href="<?= baseUrl ?>?page=BillGenerator"
           class="btn btn-nav"
         >
           Create new
         </a>
+        <button type="button" id="refresh-bills-btn" class="btn btn-outline-secondary">
+          <i class="bi bi-arrow-clockwise me-1"></i>Update
+        </button>
       </div>
 
       <h2 class="mb-4">List of Bills</h2>
@@ -227,12 +230,16 @@
             });
           });
 
-          // Load bills data
-          google.script.run
-            .withSuccessHandler(function (data) {
+          function loadBills(forceRefresh) {
+            if (forceRefresh) setRefreshBusy(true);
+
+            google.script.run
+              .withSuccessHandler(function (data) {
+              table.clear();
               if (!Array.isArray(data) || data.length === 0) {
-                table.clear().draw();
+                table.draw();
                 document.getElementById("billsTable").style.display = "";
+                setRefreshBusy(false);
                 return;
               }
 
@@ -263,12 +270,28 @@
 
               table.draw();
               document.getElementById("billsTable").style.display = "";
+              setRefreshBusy(false);
             })
             .withFailureHandler(function (error) {
               console.error("Error loading bills list:", error);
               document.getElementById("billsTable").style.display = "";
+              setRefreshBusy(false);
             })
-            .getBillList();
+            .getBillList(forceRefresh === true);
+          }
+
+          function setRefreshBusy(busy) {
+            var button = document.getElementById("refresh-bills-btn");
+            button.disabled = busy;
+            button.querySelector("i").className = busy
+              ? "spinner-border spinner-border-sm me-1"
+              : "bi bi-arrow-clockwise me-1";
+          }
+
+          document.getElementById("refresh-bills-btn").addEventListener("click", function () {
+            loadBills(true);
+          });
+          loadBills(false);
 
           // Prefetch dropdown options into server cache while user browses the list
           google.script.run.getBillDropdownOptions();

@@ -5,9 +5,26 @@
 
 var ACCESS_CACHE_TTL_SECONDS = 1800; // 30 minutes
 var _userAccessMap = null; // in-memory: avoids repeated CacheService calls within one request
+var _fullAccessByEmail = {};
 
 function getCurrentUserEmail() {
   return Session.getActiveUser().getEmail().toLowerCase();
+}
+
+function isFullAccessUser(email) {
+  var ac = CONFIG.ACCESS_CONTROL;
+  var normalizedEmail = email.toLowerCase();
+  if (_fullAccessByEmail.hasOwnProperty(normalizedEmail)) {
+    return _fullAccessByEmail[normalizedEmail];
+  }
+  var fullAccessEmails = getEmailsFromAccessSheet(ac.SPREADSHEET_ID, ac.SHEETS.FULL_ACCESS);
+  _fullAccessByEmail[normalizedEmail] =
+    fullAccessEmails.indexOf(normalizedEmail) !== -1;
+  return _fullAccessByEmail[normalizedEmail];
+}
+
+function canManageClientsInformation(email) {
+  return isFullAccessUser(email);
 }
 
 function getPageSection(page) {
@@ -51,8 +68,7 @@ function buildUserAccessMap(email) {
   var ac = CONFIG.ACCESS_CONTROL;
   var normalizedEmail = email.toLowerCase();
 
-  var fullAccessEmails = getEmailsFromAccessSheet(ac.SPREADSHEET_ID, ac.SHEETS.FULL_ACCESS);
-  var isFullAccess = fullAccessEmails.indexOf(normalizedEmail) !== -1;
+  var isFullAccess = isFullAccessUser(normalizedEmail);
 
   var allSections = {};
   Object.keys(ac.PAGE_TO_SECTION).forEach(function (page) {
@@ -74,8 +90,12 @@ function buildUserAccessMap(email) {
     access[section] = sectionEmails.indexOf(normalizedEmail) !== -1;
   });
 
-  // Clients Information is full-access only — not tied to a separate sheet
-  access["clientsinfo"] = isFullAccess;
+  var clientsInfoEmails = getEmailsFromAccessSheet(
+    ac.SPREADSHEET_ID,
+    "limited_information-clients"
+  );
+  access["clientsinfo"] =
+    isFullAccess || clientsInfoEmails.indexOf(normalizedEmail) !== -1;
 
   return access;
 }
@@ -132,7 +152,7 @@ function clearAccessCache() {
   cache.remove("access_user_" + getCurrentUserEmail());
 
   var ac = CONFIG.ACCESS_CONTROL;
-  var allSheets = [ac.SHEETS.FULL_ACCESS];
+  var allSheets = [ac.SHEETS.FULL_ACCESS, "limited_information-clients"];
   Object.keys(ac.SECTION_SHEETS).forEach(function (section) {
     allSheets.push(ac.SECTION_SHEETS[section]);
   });
@@ -151,6 +171,7 @@ function clearAccessCache() {
   });
 
   _userAccessMap = null;
+  _fullAccessByEmail = {};
   return { success: true, message: "Access cache cleared" };
 }
 
@@ -199,6 +220,17 @@ function doGet(e) {
       return denied.evaluate().setTitle("No Access");
     }
 
+    var pageMode = e.parameter.mode || "";
+    if (page === "ClientsInformationCard" && !canManageClientsInformation(email)) {
+      if (pageMode && pageMode !== "view") {
+        var clientsDenied = HtmlService.createTemplateFromFile("AccessDenied");
+        clientsDenied.baseUrl = ScriptApp.getService().getUrl();
+        clientsDenied.activePage = "";
+        return clientsDenied.evaluate().setTitle("No Access");
+      }
+      pageMode = "view";
+    }
+
     var template = HtmlService.createTemplateFromFile(page);
     template.baseUrl = ScriptApp.getService().getUrl();
     template.invoiceId = e.parameter.invoiceId || e.parameter.id || "";
@@ -206,7 +238,8 @@ function doGet(e) {
     template.contractId = e.parameter.contractId || e.parameter.id || "";
     template.billId = e.parameter.billId || e.parameter.id || "";
     template.clientId = e.parameter.clientId || e.parameter.id || "";
-    template.mode = e.parameter.mode || "";
+    template.mode = pageMode;
+    template.clientsInfoCanEdit = canManageClientsInformation(email);
 
     // Set active page for navigation
     template.activePage = getActivePageForNavigation(page, e.parameter);
@@ -223,8 +256,8 @@ function doGet(e) {
     if (e.parameter.contractId || e.parameter.id) {
       template.contractId = e.parameter.contractId || e.parameter.id;
     }
-    if (e.parameter.mode) {
-      template.mode = e.parameter.mode;
+    if (pageMode) {
+      template.mode = pageMode;
     }
 
     return template.evaluate().setTitle(page);
@@ -290,7 +323,10 @@ function getProjectDetails(projectName) {
  * Get list of all invoices
  * @returns {Array} Array of invoice objects
  */
-function getInvoiceList() {
+function getInvoiceList(forceRefresh) {
+  if (forceRefresh === true) {
+    CacheService.getScriptCache().remove("invoiceList");
+  }
   return getInvoiceListFromData();
 }
 
@@ -327,7 +363,10 @@ function getCreditNoteList() {
  * Get list of all contracts
  * @returns {Array} Array of contract objects
  */
-function getContractList() {
+function getContractList(forceRefresh) {
+  if (forceRefresh === true) {
+    removeCachedJson_("contractList");
+  }
   return getContractListFromData();
 }
 
@@ -346,6 +385,13 @@ function getContractDataById(id) {
  */
 function getContractDropdownOptions() {
   return getContractDropdownOptionsFromData();
+}
+
+function getContractFormInitialData(id) {
+  return {
+    contract: id ? getContractDataByIdFromData(id) : null,
+    dropdowns: getContractDropdownOptionsFromData(),
+  };
 }
 
 /**
@@ -400,7 +446,10 @@ function updateContract(formData) {
  * Get list of all bills
  * @returns {Array} Array of bill objects
  */
-function getBillList() {
+function getBillList(forceRefresh) {
+  if (forceRefresh === true) {
+    CacheService.getScriptCache().remove("billList");
+  }
   return getBillListFromData();
 }
 
@@ -428,6 +477,13 @@ function saveBill(formData) {
  */
 function getBillDataById(id) {
   return getBillDataByIdFromData(id);
+}
+
+function getBillFormInitialData(id) {
+  return {
+    bill: id ? getBillDataByIdFromData(id) : null,
+    dropdowns: getBillDropdownOptionsFromData(),
+  };
 }
 
 /**
@@ -533,6 +589,33 @@ function getNavigation(activePage) {
   return template.evaluate().getContent();
 }
 
+function refreshReferenceDataCaches() {
+  var email = getCurrentUserEmail();
+  var access = getUserNavAccess(email);
+  var hasAnyAccess = Object.keys(access).some(function (section) {
+    return access[section] === true;
+  });
+  if (!hasAnyAccess) {
+    return {
+      success: false,
+      message: "No permission to refresh reference data.",
+    };
+  }
+
+  removeCachedJson_("clientsInfoDropdownOptions");
+  removeCachedJson_("contractDropdownOptions");
+  CacheService.getScriptCache().remove("billDropdownOptions");
+
+  getClientsInformationDropdownsFromData();
+  getContractDropdownOptionsFromData();
+  getBillDropdownOptionsFromData();
+
+  return {
+    success: true,
+    message: "Reference data refreshed.",
+  };
+}
+
 /**
  * Determine active page for navigation based on current page and parameters
  * @param {string} page - Current page name
@@ -573,7 +656,10 @@ function getActivePageForNavigation(page, params = {}) {
 
 // ── Clients Information wrappers ─────────────────────────────────────────────
 
-function getClientsInformationList() {
+function getClientsInformationList(forceRefresh) {
+  if (forceRefresh === true) {
+    removeCachedJson_("clientsInfoList");
+  }
   return getClientsInformationListFromData();
 }
 
@@ -585,18 +671,36 @@ function getClientCardById(id) {
   return getClientCardByIdFromData(id);
 }
 
+function getClientCardInitialData(id, includeDropdowns) {
+  return {
+    card: id ? getClientCardByIdFromData(id) : null,
+    dropdowns: includeDropdowns === false
+      ? {}
+      : getClientsInformationDropdownsFromData(),
+  };
+}
+
 function checkClientProjectNameDuplicate(projectName, allowedId) {
   return checkClientProjectNameDuplicateFromData(projectName, allowedId);
 }
 
 function saveClientCard(formData) {
+  if (!canManageClientsInformation(getCurrentUserEmail())) {
+    return { success: false, message: "No permission to edit client information." };
+  }
   return saveClientCardToData(formData);
 }
 
 function updateClientCard(formData) {
+  if (!canManageClientsInformation(getCurrentUserEmail())) {
+    return { success: false, message: "No permission to edit client information." };
+  }
   return updateClientCardByIdFromData(formData);
 }
 
 function deleteClientCard(id) {
+  if (!canManageClientsInformation(getCurrentUserEmail())) {
+    return { success: false, message: "No permission to edit client information." };
+  }
   return deleteClientCardByIdFromData(id);
 }
