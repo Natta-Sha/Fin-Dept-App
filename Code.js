@@ -586,13 +586,16 @@ function getNavigation(activePage) {
   template.baseUrl = ScriptApp.getService().getUrl();
   var email = getCurrentUserEmail();
   template.navAccess = getUserNavAccess(email);
-  template.canRefreshReferenceData = isFullAccessUser(email);
   return template.evaluate().getContent();
 }
 
 function refreshReferenceDataCaches() {
   var email = getCurrentUserEmail();
-  if (!isFullAccessUser(email)) {
+  var access = getUserNavAccess(email);
+  var hasAnyAccess = Object.keys(access).some(function (section) {
+    return access[section] === true;
+  });
+  if (!hasAnyAccess) {
     return {
       success: false,
       message: "No permission to refresh reference data.",
