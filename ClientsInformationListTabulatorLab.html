@@ -1,0 +1,735 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <base target="_top" />
+    <meta charset="UTF-8" />
+    <title>Clients Information</title>
+
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css"
+      rel="stylesheet"
+    />
+    <link
+      href="https://cdn.jsdelivr.net/npm/tabulator-tables@6.3.1/dist/css/tabulator_bootstrap5.min.css"
+      rel="stylesheet"
+    />
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/tabulator-tables@6.3.1/dist/js/tabulator.min.js"></script>
+
+    <style>
+      body {
+        margin: 0;
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+        font-size: 0.8rem;
+      }
+
+      .main-content {
+        flex-grow: 1;
+        padding: 20px;
+      }
+
+      .btn {
+        font-weight: 600 !important;
+        border-radius: 25px !important;
+        padding: 0.75rem 2rem !important;
+        font-size: 1.1rem !important;
+        transition: all 0.3s ease !important;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1) !important;
+        border: none !important;
+      }
+
+      .btn:hover {
+        transform: translateY(-1px) !important;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2) !important;
+      }
+
+      .btn:focus,
+      .btn:active {
+        transform: translateY(-1px) !important;
+      }
+
+      .btn-sm {
+        padding: 0.2rem 0.55rem !important;
+        font-size: 0.72rem !important;
+        border-radius: 12px !important;
+      }
+
+      .btn-primary,
+      .btn-nav {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+        color: white !important;
+      }
+
+      .btn-primary:hover,
+      .btn-nav:hover {
+        background: linear-gradient(135deg, #5a6fd8 0%, #6b4190 100%) !important;
+        color: white !important;
+      }
+
+      .btn-outline-primary {
+        background: rgba(102, 126, 234, 0.08) !important;
+        color: #667eea !important;
+        border: 1.5px solid #667eea !important;
+      }
+
+      .btn-outline-primary:hover {
+        background: linear-gradient(135deg, #667eea, #764ba2) !important;
+        color: white !important;
+      }
+
+      #clients-info-tabulator {
+        min-height: 220px;
+        font-size: 0.78rem;
+      }
+
+      #clients-info-tabulator .tabulator-header .tabulator-col {
+        background: #f1f3f5;
+      }
+
+      #clients-info-tabulator .tabulator-col-title {
+        white-space: normal;
+        overflow-wrap: anywhere;
+        line-height: 1.15;
+      }
+
+      #clients-info-tabulator .tabulator-col-content {
+        min-height: 48px;
+        padding: 8px 7px 5px;
+      }
+
+      #clients-info-tabulator .tabulator-header-filter input {
+        padding: 2px 4px;
+        font-size: 0.72rem;
+      }
+
+      #clients-info-tabulator .tabulator-cell {
+        padding: 4px 7px;
+        vertical-align: middle;
+        white-space: normal;
+        overflow-wrap: anywhere;
+      }
+
+      #clients-info-tabulator .tabulator-row:hover {
+        background: #f0f4ff;
+      }
+
+      #clients-info-tabulator .col-link {
+        text-align: center;
+      }
+
+      .table-link {
+        color: #667eea;
+        text-decoration: none;
+      }
+
+      .table-link:hover {
+        text-decoration: underline;
+      }
+
+      .project-cell {
+        display: flex;
+        align-items: center;
+        gap: 0.2rem;
+      }
+
+      .preview-btn {
+        flex: 0 0 auto;
+        padding: 0 0.25rem;
+        border: none;
+        background: transparent;
+        color: #667eea;
+        cursor: pointer;
+        line-height: 1;
+      }
+
+      .preview-btn:hover {
+        color: #764ba2;
+      }
+
+      .icon-link {
+        color: #667eea;
+        font-size: 1rem;
+        text-decoration: none;
+      }
+
+      .icon-link:hover {
+        color: #764ba2;
+      }
+
+      .client-preview-card {
+        position: fixed;
+        display: none;
+        width: min(720px, calc(100vw - 40px));
+        max-height: min(70vh, 620px);
+        overflow: auto;
+        z-index: 3000;
+        background: #fff;
+        border: 1px solid #dee2e6;
+        border-radius: 12px;
+        box-shadow: 0 12px 35px rgba(0, 0, 0, 0.18);
+      }
+
+      .client-preview-card .preview-header {
+        position: sticky;
+        top: 0;
+        z-index: 1;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1rem;
+        padding: 0.85rem 1rem;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: #fff;
+      }
+
+      .client-preview-card .preview-title {
+        margin: 0;
+        font-size: 1rem;
+        font-weight: 700;
+      }
+
+      .client-preview-card .preview-close {
+        width: 28px;
+        height: 28px;
+        border: none;
+        border-radius: 50%;
+        background: rgba(255, 255, 255, 0.16);
+        color: #fff;
+        cursor: pointer;
+        line-height: 28px;
+        text-align: center;
+      }
+
+      .client-preview-card .preview-body {
+        padding: 1rem;
+      }
+
+      .preview-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 0.65rem 1rem;
+      }
+
+      .preview-field {
+        padding-bottom: 0.45rem;
+        border-bottom: 1px solid #edf0f2;
+      }
+
+      .preview-label {
+        display: block;
+        margin-bottom: 0.15rem;
+        color: #6c757d;
+        font-size: 0.72rem;
+        font-weight: 700;
+      }
+
+      .preview-value {
+        color: #212529;
+        overflow-wrap: anywhere;
+      }
+
+      .preview-actions {
+        padding-top: 1rem;
+      }
+
+      @media (max-width: 700px) {
+        .preview-grid {
+          grid-template-columns: 1fr;
+        }
+      }
+    </style>
+  </head>
+
+  <body>
+    <?!= getNavigation(activePage) ?>
+
+    <main class="main-content container-xl">
+      <div class="mb-3 d-flex justify-content-start gap-2">
+        <? if (clientsInfoCanEdit) { ?>
+          <a
+            href="<?= baseUrl ?>?page=ClientsInformationCard&mode=create"
+            class="btn btn-nav"
+          >
+            Create new
+          </a>
+        <? } ?>
+        <button
+          type="button"
+          id="refresh-clients-btn"
+          class="btn btn-outline-secondary"
+        >
+          <i class="bi bi-arrow-clockwise me-1"></i>Update
+        </button>
+      </div>
+
+      <h2 class="mb-3">Clients Information</h2>
+
+      <div id="clients-load-error" class="alert alert-danger d-none" role="alert"></div>
+      <div id="clients-info-tabulator" aria-label="Clients information list"></div>
+      <div id="clientPreviewCard" class="client-preview-card" aria-hidden="true"></div>
+    </main>
+
+    <div class="modal fade" id="deletedModal" tabindex="-1" aria-hidden="true">
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title">Record Deleted</h5>
+            <button
+              type="button"
+              class="btn-close"
+              data-bs-dismiss="modal"
+              aria-label="Close"
+            ></button>
+          </div>
+          <div class="modal-body">The client record was deleted successfully.</div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      document.addEventListener("DOMContentLoaded", function () {
+        var baseUrl = <?!= JSON.stringify(baseUrl) ?>;
+        var clientsInfoCanEdit = <?!= clientsInfoCanEdit ? "true" : "false" ?>;
+        var refreshButton = document.getElementById("refresh-clients-btn");
+        var errorBox = document.getElementById("clients-load-error");
+        var tableElement = document.getElementById("clients-info-tabulator");
+        var tableTopOffset = tableElement.getBoundingClientRect().top;
+        var table = null;
+        var previewRowsById = {};
+
+        var PROJECT_HEADER = "Project name *";
+        var LINK_HEADERS = {
+          "Link to Fin folder": {
+            icon: "bi-folder2-open",
+            title: "Fin Folder",
+          },
+          "Link to Sales folder": {
+            icon: "bi-folder",
+            title: "Sales Folder",
+          },
+          "Link to file with rates": {
+            icon: "bi-file-earmark-text",
+            title: "Rates File",
+          },
+        };
+
+        function getTableHeight() {
+          return Math.max(220, window.innerHeight - tableTopOffset - 20);
+        }
+
+        function escHtml(value) {
+          if (!value) return "";
+          return String(value)
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;");
+        }
+
+        function formatDisplayValue(header, value) {
+          if (header !== "VAT rate") return value;
+          if (value === "" || value === null || value === undefined) return "";
+          var raw = String(value).trim();
+          if (raw.indexOf("%") !== -1) return raw;
+          var num = parseFloat(raw.replace(",", "."));
+          if (isNaN(num)) return raw;
+          var percent = Math.abs(num) <= 1 ? num * 100 : num;
+          var rounded = Math.round(percent * 100) / 100;
+          return (
+            (Math.abs(rounded - Math.round(rounded)) < 1e-9
+              ? String(Math.round(rounded))
+              : rounded.toFixed(2).replace(/\.?0+$/, "")) + "%"
+          );
+        }
+
+        function vatNumericValue(value) {
+          if (value === "" || value === null || value === undefined) return 0;
+          var raw = String(value).trim();
+          var hasPercentSign = raw.indexOf("%") !== -1;
+          var number = parseFloat(raw.replace("%", "").replace(",", "."));
+          if (isNaN(number)) return 0;
+          return hasPercentSign || Math.abs(number) > 1 ? number : number * 100;
+        }
+
+        function viewUrl(id) {
+          return (
+            baseUrl +
+            "?page=ClientsInformationCard&id=" +
+            encodeURIComponent(id) +
+            "&mode=view"
+          );
+        }
+
+        function makeTextElement(value) {
+          var span = document.createElement("span");
+          span.textContent = value || "";
+          return span;
+        }
+
+        function projectFormatter(cell) {
+          var row = cell.getRow().getData();
+          var value = formatDisplayValue(PROJECT_HEADER, cell.getValue() || "");
+          if (!value) return "";
+
+          var wrapper = document.createElement("div");
+          wrapper.className = "project-cell";
+
+          if (clientsInfoCanEdit) {
+            var link = document.createElement("a");
+            link.href = viewUrl(row._id);
+            link.className = "table-link";
+            link.target = "_top";
+            link.textContent = value;
+            wrapper.appendChild(link);
+          } else {
+            wrapper.appendChild(makeTextElement(value));
+          }
+
+          var previewButton = document.createElement("button");
+          previewButton.type = "button";
+          previewButton.className = "preview-btn";
+          previewButton.setAttribute("data-client-id", row._id);
+          previewButton.title = "Preview";
+          previewButton.setAttribute("aria-label", "Preview " + value);
+          previewButton.innerHTML = '<i class="bi bi-eye" aria-hidden="true"></i>';
+          wrapper.appendChild(previewButton);
+
+          return wrapper;
+        }
+
+        function linkFormatter(header, cell) {
+          var value = cell.getValue() || "";
+          if (!value) return "";
+
+          var linkConfig = LINK_HEADERS[header];
+          var link = document.createElement("a");
+          link.href = value;
+          link.target = "_blank";
+          link.rel = "noopener";
+          link.className = "icon-link";
+          link.title = linkConfig.title;
+
+          var icon = document.createElement("i");
+          icon.className = "bi " + linkConfig.icon;
+          icon.setAttribute("aria-hidden", "true");
+          link.appendChild(icon);
+          return link;
+        }
+
+        function textFormatter(header, cell) {
+          return makeTextElement(
+            formatDisplayValue(header, cell.getValue() || "")
+          );
+        }
+
+        function columnClassForHeader(header) {
+          var classes = [];
+          if (header === PROJECT_HEADER) classes.push("col-sticky");
+          if (LINK_HEADERS[header]) return "col-link";
+          if (header === "Currency for accounting *") classes.push("col-currency");
+          if (header === "Type of days for payment *") classes.push("col-days-type");
+          if (header === "Days for payment *") classes.push("col-days-payment");
+          if (
+            header === "Company address" ||
+            header === "Mail to" ||
+            header === "Copy mail (client)" ||
+            header === "Copy mail (Sloboda)"
+          ) {
+            classes.push("col-wide-text");
+          }
+          return classes.join(" ");
+        }
+
+        function columnWidthPxForHeader(header) {
+          if (header === PROJECT_HEADER) return 180;
+          if (LINK_HEADERS[header]) return 105;
+          if (header === "Currency for accounting *") return 95;
+          if (header === "Type of days for payment *") return 115;
+          if (header === "Days for payment *") return 90;
+          if (
+            header === "Company address" ||
+            header === "Mail to" ||
+            header === "Copy mail (client)" ||
+            header === "Copy mail (Sloboda)"
+          ) {
+            return 510;
+          }
+          return 170;
+        }
+
+        function buildColumns(headers) {
+          return headers.map(function (header, index) {
+            var column = {
+              title: header,
+              field: "c" + index,
+              width: columnWidthPxForHeader(header),
+              minWidth: columnWidthPxForHeader(header),
+              cssClass: columnClassForHeader(header),
+              headerHozAlign: "center",
+              headerFilter: "input",
+              headerFilterPlaceholder: "Search",
+              frozen: index === 0,
+            };
+
+            if (header === PROJECT_HEADER) {
+              column.formatter = projectFormatter;
+            } else if (LINK_HEADERS[header]) {
+              column.hozAlign = "center";
+              column.formatter = function (cell) {
+                return linkFormatter(header, cell);
+              };
+            } else {
+              column.formatter = function (cell) {
+                return textFormatter(header, cell);
+              };
+            }
+
+            if (header === "VAT rate") {
+              column.headerFilterFunc = function (filterValue, rowValue) {
+                return String(formatDisplayValue(header, rowValue || ""))
+                  .toLowerCase()
+                  .indexOf(String(filterValue || "").toLowerCase()) !== -1;
+              };
+              column.sorter = function (a, b) {
+                return vatNumericValue(a) - vatNumericValue(b);
+              };
+            }
+
+            return column;
+          });
+        }
+
+        function rowsToTableData(headers, rows) {
+          previewRowsById = {};
+          return rows.map(function (row) {
+            previewRowsById[row.id] = {
+              id: row.id,
+              headers: headers,
+              cells: row.cells || [],
+            };
+
+            var tableRow = { _id: row.id };
+            headers.forEach(function (header, index) {
+              tableRow["c" + index] = (row.cells && row.cells[index]) || "";
+            });
+            return tableRow;
+          });
+        }
+
+        function buildTable(headers, rows) {
+          hideClientPreview();
+          tableTopOffset = tableElement.getBoundingClientRect().top;
+          if (table) {
+            table.destroy();
+            table = null;
+          }
+
+          table = new Tabulator(tableElement, {
+            index: "_id",
+            height: getTableHeight(),
+            layout: "fitData",
+            placeholder: "No clients found",
+            pagination: true,
+            paginationMode: "local",
+            paginationSize: 10,
+            paginationSizeSelector: [10, 25, 50, 100, true],
+            columns: buildColumns(headers),
+            data: rowsToTableData(headers, rows),
+          });
+        }
+
+        function setRefreshBusy(busy) {
+          refreshButton.disabled = busy;
+          refreshButton.querySelector("i").className = busy
+            ? "spinner-border spinner-border-sm me-1"
+            : "bi bi-arrow-clockwise me-1";
+        }
+
+        function loadClientsInformation(forceRefresh) {
+          setRefreshBusy(true);
+          errorBox.classList.add("d-none");
+          errorBox.textContent = "";
+
+          google.script.run
+            .withSuccessHandler(function (response) {
+              buildTable(
+                (response && response.headers) || [],
+                (response && response.rows) || []
+              );
+              setRefreshBusy(false);
+            })
+            .withFailureHandler(function (error) {
+              console.error("Error loading clients information list:", error);
+              errorBox.textContent = "Failed to load clients information.";
+              errorBox.classList.remove("d-none");
+              setRefreshBusy(false);
+            })
+            .getClientsInformationList(forceRefresh === true);
+        }
+
+        function getRowFieldValue(row, header) {
+          var index = row.headers.indexOf(header);
+          return index >= 0 ? row.cells[index] || "" : "";
+        }
+
+        function formatPreviewValue(header, value) {
+          if (!value) return '<span class="text-muted">no data</span>';
+          if (LINK_HEADERS[header]) {
+            return (
+              '<a href="' +
+              escHtml(value) +
+              '" target="_blank" rel="noopener">' +
+              escHtml(value) +
+              "</a>"
+            );
+          }
+          return escHtml(value);
+        }
+
+        function buildPreviewHtml(row) {
+          var projectName =
+            getRowFieldValue(row, PROJECT_HEADER) || "Client preview";
+          var fields = row.headers
+            .map(function (header, index) {
+              var value = formatDisplayValue(
+                header,
+                row.cells[index] || ""
+              );
+              return (
+                '<div class="preview-field">' +
+                '<span class="preview-label">' +
+                escHtml(header) +
+                "</span>" +
+                '<div class="preview-value">' +
+                formatPreviewValue(header, value) +
+                "</div>" +
+                "</div>"
+              );
+            })
+            .join("");
+
+          return (
+            '<div class="preview-header">' +
+            '<h3 class="preview-title">' +
+            escHtml(projectName) +
+            "</h3>" +
+            '<button type="button" class="preview-close" aria-label="Close preview">&times;</button>' +
+            "</div>" +
+            '<div class="preview-body">' +
+            '<div class="preview-grid">' +
+            fields +
+            "</div>" +
+            (clientsInfoCanEdit
+              ? '<div class="preview-actions">' +
+                '<a href="' +
+                viewUrl(row.id) +
+                '" class="btn btn-sm btn-outline-primary" target="_top">Open full card</a>' +
+                "</div>"
+              : "") +
+            "</div>"
+          );
+        }
+
+        function positionPreviewCard(card, trigger) {
+          var rect = trigger.getBoundingClientRect();
+          var cardWidth = Math.min(720, window.innerWidth - 40);
+          var left = Math.min(
+            Math.max(20, rect.left),
+            window.innerWidth - cardWidth - 20
+          );
+          var top = rect.bottom + 8;
+
+          card.style.width = cardWidth + "px";
+          card.style.left = left + "px";
+          card.style.top = top + "px";
+          card.style.display = "block";
+
+          var cardRect = card.getBoundingClientRect();
+          if (cardRect.bottom > window.innerHeight - 20) {
+            card.style.top =
+              Math.max(20, rect.top - cardRect.height - 8) + "px";
+          }
+        }
+
+        function showClientPreview(id, trigger) {
+          var row = previewRowsById[id];
+          if (!row) return;
+          var card = document.getElementById("clientPreviewCard");
+          card.innerHTML = buildPreviewHtml(row);
+          card.setAttribute("data-client-id", id);
+          card.setAttribute("aria-hidden", "false");
+          positionPreviewCard(card, trigger);
+        }
+
+        function hideClientPreview() {
+          var card = document.getElementById("clientPreviewCard");
+          card.style.display = "none";
+          card.removeAttribute("data-client-id");
+          card.setAttribute("aria-hidden", "true");
+          card.innerHTML = "";
+        }
+
+        refreshButton.addEventListener("click", function () {
+          loadClientsInformation(true);
+        });
+
+        window.addEventListener("resize", function () {
+          hideClientPreview();
+          if (table) table.setHeight(getTableHeight());
+        });
+
+        document.addEventListener("click", function (event) {
+          var previewButton = event.target.closest(".preview-btn");
+          var card = document.getElementById("clientPreviewCard");
+
+          if (previewButton) {
+            event.preventDefault();
+            event.stopPropagation();
+            var id = previewButton.getAttribute("data-client-id");
+            if (
+              card.style.display === "block" &&
+              card.getAttribute("data-client-id") === id
+            ) {
+              hideClientPreview();
+            } else {
+              showClientPreview(id, previewButton);
+            }
+            return;
+          }
+
+          if (event.target.closest(".preview-close")) {
+            hideClientPreview();
+            return;
+          }
+
+          if (
+            card.style.display === "block" &&
+            !card.contains(event.target)
+          ) {
+            hideClientPreview();
+          }
+        });
+
+        document.addEventListener("keydown", function (event) {
+          if (event.key === "Escape") hideClientPreview();
+        });
+
+        var params = new URLSearchParams(window.location.search);
+        if (params.get("deleted") === "1") {
+          new bootstrap.Modal(document.getElementById("deletedModal")).show();
+        }
+
+        loadClientsInformation(false);
+        if (clientsInfoCanEdit) {
+          google.script.run.getClientsInformationDropdowns();
+        }
+      });
+    </script>
+  </body>
+</html>

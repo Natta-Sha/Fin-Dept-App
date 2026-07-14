@@ -64,7 +64,12 @@ function invalidateAllAccessCaches() {
 }
 
 function getPageSection(page) {
-  if (page === "ClientsInformationList" || page === "ClientsInformationCard") {
+  if (
+    page === "ClientsInformationList" ||
+    page === "ClientsInformationCard" ||
+    page === "ClientsInformationListTabulatorLab" ||
+    page === "ClientsInformationListDataTablesLegacy"
+  ) {
     return "clientsinfo";
   }
   if (page === "InvoicesListTabulatorLab") {
@@ -258,6 +263,10 @@ function doGet(e) {
       templateFile = "InvoicesListTabulatorLab";
     } else if (page === "InvoicesListDataTablesLegacy") {
       templateFile = "InvoicesList";
+    } else if (page === "ClientsInformationList") {
+      templateFile = "ClientsInformationListTabulatorLab";
+    } else if (page === "ClientsInformationListDataTablesLegacy") {
+      templateFile = "ClientsInformationList";
     }
 
     var template = HtmlService.createTemplateFromFile(templateFile);
@@ -696,6 +705,10 @@ function getActivePageForNavigation(page, params = {}) {
     case "BillGenerator":
       return "bills";
     case "ClientsInformationList":
+      return "clientsinfo";
+    case "ClientsInformationListDataTablesLegacy":
+      return "clientsinfo";
+    case "ClientsInformationListTabulatorLab":
       return "clientsinfo";
     case "ClientsInformationCard":
       return "clientsinfo";
