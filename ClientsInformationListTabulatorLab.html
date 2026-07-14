@@ -34,53 +34,44 @@
         padding: 20px;
       }
 
-      .btn {
-        font-weight: 600 !important;
-        border-radius: 25px !important;
-        padding: 0.75rem 2rem !important;
-        font-size: 1.1rem !important;
-        transition: all 0.3s ease !important;
-        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1) !important;
-        border: none !important;
+      .clients-toolbar .btn {
+        border-radius: 25px;
+        font-weight: 600;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        transition: all 0.3s ease;
       }
 
-      .btn:hover {
-        transform: translateY(-1px) !important;
-        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2) !important;
+      .clients-toolbar .btn:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
       }
 
-      .btn:focus,
-      .btn:active {
-        transform: translateY(-1px) !important;
+      .clients-toolbar .btn-primary {
+        border-color: transparent;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
       }
 
-      .btn-sm {
-        padding: 0.2rem 0.55rem !important;
-        font-size: 0.72rem !important;
-        border-radius: 12px !important;
+      .clients-toolbar .btn-primary:hover,
+      .clients-toolbar .btn-primary:focus,
+      .clients-toolbar .btn-primary:active {
+        border-color: transparent;
+        background: linear-gradient(135deg, #5a6fd8 0%, #6b4190 100%);
+        color: white;
       }
 
-      .btn-primary,
-      .btn-nav {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
-        color: white !important;
+      .clients-toolbar .btn-outline-secondary {
+        border-color: #6c757d;
+        background: rgba(108, 117, 125, 0.08);
+        color: #6c757d;
       }
 
-      .btn-primary:hover,
-      .btn-nav:hover {
-        background: linear-gradient(135deg, #5a6fd8 0%, #6b4190 100%) !important;
-        color: white !important;
-      }
-
-      .btn-outline-primary {
-        background: rgba(102, 126, 234, 0.08) !important;
-        color: #667eea !important;
-        border: 1.5px solid #667eea !important;
-      }
-
-      .btn-outline-primary:hover {
-        background: linear-gradient(135deg, #667eea, #764ba2) !important;
-        color: white !important;
+      .clients-toolbar .btn-outline-secondary:hover,
+      .clients-toolbar .btn-outline-secondary:focus,
+      .clients-toolbar .btn-outline-secondary:active {
+        border-color: #6c757d;
+        background: linear-gradient(135deg, #6c757d 0%, #495057 100%);
+        color: white;
       }
 
       #clients-info-tabulator {
@@ -93,19 +84,35 @@
       }
 
       #clients-info-tabulator .tabulator-col-title {
+        display: -webkit-box;
+        overflow: hidden;
         white-space: normal;
         overflow-wrap: anywhere;
         line-height: 1.15;
+        -webkit-box-orient: vertical;
+        -webkit-line-clamp: 2;
       }
 
       #clients-info-tabulator .tabulator-col-content {
-        min-height: 48px;
+        height: 76px;
         padding: 8px 7px 5px;
+        display: flex;
+        flex-direction: column;
+      }
+
+      #clients-info-tabulator .tabulator-col-title-holder {
+        min-height: 32px;
+        display: flex;
+        align-items: center;
       }
 
       #clients-info-tabulator .tabulator-header-filter input {
         padding: 2px 4px;
         font-size: 0.72rem;
+      }
+
+      #clients-info-tabulator .tabulator-header-filter {
+        margin-top: auto;
       }
 
       #clients-info-tabulator .tabulator-cell {
@@ -238,6 +245,22 @@
         padding-top: 1rem;
       }
 
+      .preview-actions .btn {
+        border: 1.5px solid #667eea;
+        border-radius: 12px;
+        background: rgba(102, 126, 234, 0.08);
+        color: #667eea;
+        font-size: 0.72rem;
+        font-weight: 600;
+        padding: 0.2rem 0.55rem;
+      }
+
+      .preview-actions .btn:hover {
+        border-color: #667eea;
+        background: linear-gradient(135deg, #667eea, #764ba2);
+        color: white;
+      }
+
       @media (max-width: 700px) {
         .preview-grid {
           grid-template-columns: 1fr;
@@ -250,25 +273,26 @@
     <?!= getNavigation(activePage) ?>
 
     <main class="main-content container-xl">
-      <div class="mb-3 d-flex justify-content-start gap-2">
-        <? if (clientsInfoCanEdit) { ?>
-          <a
-            href="<?= baseUrl ?>?page=ClientsInformationCard&mode=create"
-            class="btn btn-nav"
+      <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-3">
+        <h2 class="mb-0">Clients Information</h2>
+        <div class="clients-toolbar d-flex gap-2">
+          <? if (clientsInfoCanEdit) { ?>
+            <a
+              href="<?= baseUrl ?>?page=ClientsInformationCard&mode=create"
+              class="btn btn-primary"
+            >
+              Create new
+            </a>
+          <? } ?>
+          <button
+            type="button"
+            id="refresh-clients-btn"
+            class="btn btn-outline-secondary"
           >
-            Create new
-          </a>
-        <? } ?>
-        <button
-          type="button"
-          id="refresh-clients-btn"
-          class="btn btn-outline-secondary"
-        >
-          <i class="bi bi-arrow-clockwise me-1"></i>Update
-        </button>
+            <i class="bi bi-arrow-clockwise me-1"></i>Update
+          </button>
+        </div>
       </div>
-
-      <h2 class="mb-3">Clients Information</h2>
 
       <div id="clients-load-error" class="alert alert-danger d-none" role="alert"></div>
       <div id="clients-info-tabulator" aria-label="Clients information list"></div>
@@ -448,10 +472,12 @@
 
         function columnWidthPxForHeader(header) {
           if (header === PROJECT_HEADER) return 180;
-          if (LINK_HEADERS[header]) return 105;
-          if (header === "Currency for accounting *") return 95;
-          if (header === "Type of days for payment *") return 115;
-          if (header === "Days for payment *") return 90;
+          if (header === "Link to Fin folder") return 105;
+          if (header === "Link to Sales folder") return 135;
+          if (header === "Link to file with rates") return 150;
+          if (header === "Currency for accounting *") return 150;
+          if (header === "Type of days for payment *") return 175;
+          if (header === "Days for payment *") return 135;
           if (
             header === "Company address" ||
             header === "Mail to" ||
