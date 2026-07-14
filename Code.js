@@ -78,6 +78,12 @@ function getPageSection(page) {
   if (page === "InvoicesListDataTablesLegacy") {
     return "invoices";
   }
+  if (
+    page === "CreditNotesListTabulatorLab" ||
+    page === "CreditNotesListDataTablesLegacy"
+  ) {
+    return "creditnotes";
+  }
   return CONFIG.ACCESS_CONTROL.PAGE_TO_SECTION[page] || null;
 }
 
@@ -267,6 +273,10 @@ function doGet(e) {
       templateFile = "ClientsInformationListTabulatorLab";
     } else if (page === "ClientsInformationListDataTablesLegacy") {
       templateFile = "ClientsInformationList";
+    } else if (page === "CreditNotesList") {
+      templateFile = "CreditNotesListTabulatorLab";
+    } else if (page === "CreditNotesListDataTablesLegacy") {
+      templateFile = "CreditNotesList";
     }
 
     var template = HtmlService.createTemplateFromFile(templateFile);
@@ -391,9 +401,13 @@ function getCreditNoteDataById(id) {
 
 /**
  * Get credit note list
+ * @param {boolean} forceRefresh - Whether to clear the cached list first
  * @returns {Array} Credit note list
  */
-function getCreditNoteList() {
+function getCreditNoteList(forceRefresh) {
+  if (forceRefresh === true) {
+    CacheService.getScriptCache().remove("creditNoteList");
+  }
   return getCreditNoteListFromData();
 }
 
@@ -691,6 +705,10 @@ function getActivePageForNavigation(page, params = {}) {
       // InvoiceGenerator is part of invoices section
       return "invoices";
     case "CreditNotesList":
+      return "creditnotes";
+    case "CreditNotesListDataTablesLegacy":
+      return "creditnotes";
+    case "CreditNotesListTabulatorLab":
       return "creditnotes";
     case "CreditNotesGenerator":
       // CreditNotesGenerator is part of credit notes section
