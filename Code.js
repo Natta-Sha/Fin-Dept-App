@@ -64,8 +64,24 @@ function invalidateAllAccessCaches() {
 }
 
 function getPageSection(page) {
-  if (page === "ClientsInformationList" || page === "ClientsInformationCard") {
+  if (
+    page === "ClientsInformationList" ||
+    page === "ClientsInformationCard" ||
+    page === "ClientsInformationListTabulatorLab"
+  ) {
     return "clientsinfo";
+  }
+  if (page === "InvoicesListTabulatorLab") {
+    return "invoices";
+  }
+  if (page === "CreditNotesListTabulatorLab") {
+    return "creditnotes";
+  }
+  if (page === "ContractsListTabulatorLab") {
+    return "contracts";
+  }
+  if (page === "BillsListTabulatorLab") {
+    return "bills";
   }
   return CONFIG.ACCESS_CONTROL.PAGE_TO_SECTION[page] || null;
 }
@@ -247,7 +263,20 @@ function doGet(e) {
       pageMode = "view";
     }
 
-    var template = HtmlService.createTemplateFromFile(page);
+    var templateFile = page;
+    if (page === "InvoicesList") {
+      templateFile = "InvoicesListTabulatorLab";
+    } else if (page === "ClientsInformationList") {
+      templateFile = "ClientsInformationListTabulatorLab";
+    } else if (page === "CreditNotesList") {
+      templateFile = "CreditNotesListTabulatorLab";
+    } else if (page === "ContractsList") {
+      templateFile = "ContractsListTabulatorLab";
+    } else if (page === "BillsList") {
+      templateFile = "BillsListTabulatorLab";
+    }
+
+    var template = HtmlService.createTemplateFromFile(templateFile);
     template.baseUrl = ScriptApp.getService().getUrl();
     template.invoiceId = e.parameter.invoiceId || e.parameter.id || "";
     template.creditNoteId = e.parameter.invoiceId || e.parameter.id || "";
@@ -369,9 +398,13 @@ function getCreditNoteDataById(id) {
 
 /**
  * Get credit note list
+ * @param {boolean} forceRefresh - Whether to clear the cached list first
  * @returns {Array} Credit note list
  */
-function getCreditNoteList() {
+function getCreditNoteList(forceRefresh) {
+  if (forceRefresh === true) {
+    CacheService.getScriptCache().remove("creditNoteList");
+  }
   return getCreditNoteListFromData();
 }
 
@@ -661,24 +694,34 @@ function getActivePageForNavigation(page, params = {}) {
       return "home";
     case "InvoicesList":
       return "invoices";
+    case "InvoicesListTabulatorLab":
+      return "invoices";
     case "InvoiceGenerator":
       // InvoiceGenerator is part of invoices section
       return "invoices";
     case "CreditNotesList":
+      return "creditnotes";
+    case "CreditNotesListTabulatorLab":
       return "creditnotes";
     case "CreditNotesGenerator":
       // CreditNotesGenerator is part of credit notes section
       return "creditnotes";
     case "ContractsList":
       return "contracts";
+    case "ContractsListTabulatorLab":
+      return "contracts";
     case "ContractGenerator":
       // ContractGenerator is part of contracts section
       return "contracts";
     case "BillsList":
       return "bills";
+    case "BillsListTabulatorLab":
+      return "bills";
     case "BillGenerator":
       return "bills";
     case "ClientsInformationList":
+      return "clientsinfo";
+    case "ClientsInformationListTabulatorLab":
       return "clientsinfo";
     case "ClientsInformationCard":
       return "clientsinfo";
