@@ -84,6 +84,12 @@ function getPageSection(page) {
   ) {
     return "creditnotes";
   }
+  if (
+    page === "ContractsListTabulatorLab" ||
+    page === "ContractsListDataTablesLegacy"
+  ) {
+    return "contracts";
+  }
   return CONFIG.ACCESS_CONTROL.PAGE_TO_SECTION[page] || null;
 }
 
@@ -277,6 +283,10 @@ function doGet(e) {
       templateFile = "CreditNotesListTabulatorLab";
     } else if (page === "CreditNotesListDataTablesLegacy") {
       templateFile = "CreditNotesList";
+    } else if (page === "ContractsList") {
+      templateFile = "ContractsListTabulatorLab";
+    } else if (page === "ContractsListDataTablesLegacy") {
+      templateFile = "ContractsList";
     }
 
     var template = HtmlService.createTemplateFromFile(templateFile);
@@ -714,6 +724,10 @@ function getActivePageForNavigation(page, params = {}) {
       // CreditNotesGenerator is part of credit notes section
       return "creditnotes";
     case "ContractsList":
+      return "contracts";
+    case "ContractsListDataTablesLegacy":
+      return "contracts";
+    case "ContractsListTabulatorLab":
       return "contracts";
     case "ContractGenerator":
       // ContractGenerator is part of contracts section
