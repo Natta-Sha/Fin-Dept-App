@@ -97,6 +97,12 @@
         var baseUrl = <?!= JSON.stringify(baseUrl) ?>;
         var refreshButton = document.getElementById("refresh-invoices-btn");
         var errorBox = document.getElementById("invoice-load-error");
+        var tableElement = document.getElementById("invoice-tabulator");
+        var tableTopOffset = tableElement.getBoundingClientRect().top;
+
+        function getTableHeight() {
+          return Math.max(220, window.innerHeight - tableTopOffset - 20);
+        }
 
         function parseDate(value) {
           if (!value) return 0;
@@ -153,6 +159,7 @@
         }
 
         var table = new Tabulator("#invoice-tabulator", {
+          height: getTableHeight(),
           layout: "fitColumns",
           placeholder: "No invoices found",
           pagination: true,
@@ -210,6 +217,10 @@
               formatter: actionsFormatter,
             },
           ],
+        });
+
+        window.addEventListener("resize", function () {
+          table.setHeight(getTableHeight());
         });
 
         function setLoading(isLoading) {
