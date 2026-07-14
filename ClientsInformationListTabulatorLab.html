@@ -489,13 +489,39 @@
           return 170;
         }
 
+        var headerMeasureContext = document
+          .createElement("canvas")
+          .getContext("2d");
+
+        function widthForTwoLineHeader(header, configuredWidth) {
+          if (!headerMeasureContext) return configuredWidth;
+          headerMeasureContext.font = "600 13px Arial";
+          var words = String(header || "").trim().split(/\s+/);
+          var longestWordWidth = words.reduce(function (maxWidth, word) {
+            return Math.max(
+              maxWidth,
+              headerMeasureContext.measureText(word).width
+            );
+          }, 0);
+          var halfTitleWidth =
+            headerMeasureContext.measureText(String(header || "")).width / 2;
+          var requiredWidth = Math.ceil(
+            Math.max(longestWordWidth, halfTitleWidth) + 45
+          );
+          return Math.max(configuredWidth, requiredWidth);
+        }
+
         function buildColumns(headers) {
           return headers.map(function (header, index) {
+            var columnWidth = widthForTwoLineHeader(
+              header,
+              columnWidthPxForHeader(header)
+            );
             var column = {
               title: header,
               field: "c" + index,
-              width: columnWidthPxForHeader(header),
-              minWidth: columnWidthPxForHeader(header),
+              width: columnWidth,
+              minWidth: columnWidth,
               cssClass: columnClassForHeader(header),
               headerHozAlign: "center",
               headerFilter: "input",

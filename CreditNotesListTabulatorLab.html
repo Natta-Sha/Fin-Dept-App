@@ -39,6 +39,33 @@
         text-align: center;
       }
 
+      #credit-note-tabulator .tabulator-col-title {
+        display: -webkit-box;
+        overflow: hidden;
+        white-space: normal;
+        overflow-wrap: anywhere;
+        line-height: 1.15;
+        -webkit-box-orient: vertical;
+        -webkit-line-clamp: 2;
+      }
+
+      #credit-note-tabulator .tabulator-col-content {
+        height: 76px;
+        padding: 8px 7px 5px;
+        display: flex;
+        flex-direction: column;
+      }
+
+      #credit-note-tabulator .tabulator-col-title-holder {
+        min-height: 32px;
+        display: flex;
+        align-items: center;
+      }
+
+      #credit-note-tabulator .tabulator-header-filter {
+        margin-top: auto;
+      }
+
       #credit-note-tabulator .tabulator-cell {
         padding: 6px 8px;
       }
@@ -244,13 +271,13 @@
             {
               title: "Credit Note Number",
               field: "creditNoteNumber",
-              minWidth: 160,
+              minWidth: 175,
               headerFilter: "input",
             },
             {
               title: "Credit Note Date",
               field: "creditNoteDate",
-              minWidth: 150,
+              minWidth: 160,
               sorter: dateSorter,
               headerFilter: "input",
             },
