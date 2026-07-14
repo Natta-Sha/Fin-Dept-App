@@ -67,6 +67,9 @@ function getPageSection(page) {
   if (page === "ClientsInformationList" || page === "ClientsInformationCard") {
     return "clientsinfo";
   }
+  if (page === "InvoicesListTabulatorLab") {
+    return "invoices";
+  }
   return CONFIG.ACCESS_CONTROL.PAGE_TO_SECTION[page] || null;
 }
 
@@ -661,6 +664,8 @@ function getActivePageForNavigation(page, params = {}) {
       return "home";
     case "InvoicesList":
       return "invoices";
+    case "InvoicesListTabulatorLab":
+      return "tabulatorInvoices";
     case "InvoiceGenerator":
       // InvoiceGenerator is part of invoices section
       return "invoices";
