@@ -326,31 +326,6 @@
             <? } ?>
           </div>
 
-          <!-- Test Tabulator Dropdown -->
-          <div class="nav-item dropdown mx-3">
-            <? if (invoicesOk) { ?>
-              <a
-                href="#"
-                class="nav-link dropdown-toggle <?= activePage === 'tabulatorInvoices' ? 'active' : '' ?>"
-                role="button"
-                data-bs-toggle="dropdown"
-              >Test Tabulator</a>
-
-              <ul class="dropdown-menu">
-                <li>
-                  <a
-                    href="<?= baseUrl ?>?page=InvoicesListTabulatorLab"
-                    class="dropdown-item <?= activePage === 'tabulatorInvoices' ? 'active' : '' ?>"
-                  >Tabulator invoices</a>
-                </li>
-              </ul>
-            <? } else { ?>
-              <span class="nav-link disabled-access dropdown-toggle" title="No access">
-                Test Tabulator
-              </span>
-            <? } ?>
-          </div>
-
           <!-- Contractors Dropdown -->
           <div class="nav-item dropdown mx-3">
             <? if (contractorsOk) { ?>

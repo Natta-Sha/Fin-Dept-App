@@ -70,6 +70,9 @@ function getPageSection(page) {
   if (page === "InvoicesListTabulatorLab") {
     return "invoices";
   }
+  if (page === "InvoicesListDataTablesLegacy") {
+    return "invoices";
+  }
   return CONFIG.ACCESS_CONTROL.PAGE_TO_SECTION[page] || null;
 }
 
@@ -250,7 +253,14 @@ function doGet(e) {
       pageMode = "view";
     }
 
-    var template = HtmlService.createTemplateFromFile(page);
+    var templateFile = page;
+    if (page === "InvoicesList") {
+      templateFile = "InvoicesListTabulatorLab";
+    } else if (page === "InvoicesListDataTablesLegacy") {
+      templateFile = "InvoicesList";
+    }
+
+    var template = HtmlService.createTemplateFromFile(templateFile);
     template.baseUrl = ScriptApp.getService().getUrl();
     template.invoiceId = e.parameter.invoiceId || e.parameter.id || "";
     template.creditNoteId = e.parameter.invoiceId || e.parameter.id || "";
@@ -664,8 +674,10 @@ function getActivePageForNavigation(page, params = {}) {
       return "home";
     case "InvoicesList":
       return "invoices";
+    case "InvoicesListDataTablesLegacy":
+      return "invoices";
     case "InvoicesListTabulatorLab":
-      return "tabulatorInvoices";
+      return "invoices";
     case "InvoiceGenerator":
       // InvoiceGenerator is part of invoices section
       return "invoices";
