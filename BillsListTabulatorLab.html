@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <base target="_top" />
+    <meta charset="UTF-8" />
+    <title>List of Bills</title>
+
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css"
+      rel="stylesheet"
+    />
+    <link
+      href="https://cdn.jsdelivr.net/npm/tabulator-tables@6.3.1/dist/css/tabulator_bootstrap5.min.css"
+      rel="stylesheet"
+    />
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/tabulator-tables@6.3.1/dist/js/tabulator.min.js"></script>
+
+    <style>
+      body {
+        margin: 0;
+        min-height: 100vh;
+        font-size: 0.875rem;
+      }
+
+      .main-content {
+        padding: 20px;
+      }
+
+      #bills-tabulator {
+        min-height: 220px;
+        font-size: 0.85rem;
+      }
+
+      #bills-tabulator .tabulator-header .tabulator-col {
+        background: #f1f3f5;
+      }
+
+      #bills-tabulator .tabulator-col-title {
+        display: -webkit-box;
+        overflow: hidden;
+        white-space: normal;
+        overflow-wrap: anywhere;
+        line-height: 1.15;
+        -webkit-box-orient: vertical;
+        -webkit-line-clamp: 2;
+      }
+
+      #bills-tabulator .tabulator-col-content {
+        height: 76px;
+        padding: 8px 7px 5px;
+        display: flex;
+        flex-direction: column;
+      }
+
+      #bills-tabulator .tabulator-col-title-holder {
+        min-height: 32px;
+        display: flex;
+        align-items: center;
+      }
+
+      #bills-tabulator .tabulator-header-filter {
+        margin-top: auto;
+      }
+
+      #bills-tabulator .tabulator-header-filter input {
+        padding: 2px 4px;
+        font-size: 0.75rem;
+      }
+
+      #bills-tabulator .tabulator-cell {
+        padding: 6px 7px;
+        white-space: normal;
+        overflow-wrap: anywhere;
+      }
+
+      .bills-toolbar .btn {
+        border-radius: 25px;
+        font-weight: 600;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        transition: all 0.3s ease;
+      }
+
+      .bills-toolbar .btn:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+      }
+
+      .bills-toolbar .btn-primary {
+        border-color: transparent;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+      }
+
+      .bills-toolbar .btn-primary:hover,
+      .bills-toolbar .btn-primary:focus,
+      .bills-toolbar .btn-primary:active {
+        border-color: transparent;
+        background: linear-gradient(135deg, #5a6fd8 0%, #6b4190 100%);
+        color: white;
+      }
+
+      .bills-toolbar .btn-outline-secondary {
+        border-color: #6c757d;
+        background: rgba(108, 117, 125, 0.08);
+        color: #6c757d;
+      }
+
+      .bills-toolbar .btn-outline-secondary:hover,
+      .bills-toolbar .btn-outline-secondary:focus,
+      .bills-toolbar .btn-outline-secondary:active {
+        border-color: #6c757d;
+        background: linear-gradient(135deg, #6c757d 0%, #495057 100%);
+        color: white;
+      }
+
+      .icon-link {
+        color: #667eea;
+        font-size: 1rem;
+        text-decoration: none;
+      }
+
+      .icon-link:hover {
+        color: #764ba2;
+      }
+
+      .bill-action {
+        border-radius: 15px;
+        font-size: 0.8rem;
+        font-weight: 600;
+        padding: 0.25rem 0.75rem;
+        white-space: nowrap;
+      }
+    </style>
+  </head>
+
+  <body>
+    <?!= getNavigation(activePage) ?>
+
+    <main class="main-content container-fluid">
+      <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-3">
+        <h2 class="mb-0">List of Bills</h2>
+        <div class="bills-toolbar d-flex gap-2">
+          <a href="<?= baseUrl ?>?page=BillGenerator" class="btn btn-primary">
+            Create new
+          </a>
+          <button
+            type="button"
+            id="refresh-bills-btn"
+            class="btn btn-outline-secondary"
+          >
+            <i class="bi bi-arrow-clockwise me-1"></i>Update
+          </button>
+        </div>
+      </div>
+
+      <div
+        id="bills-load-error"
+        class="alert alert-danger d-none"
+        role="alert"
+      ></div>
+      <div id="bills-tabulator" aria-label="Bill list"></div>
+    </main>
+
+    <script>
+      document.addEventListener("DOMContentLoaded", function () {
+        var baseUrl = <?!= JSON.stringify(baseUrl) ?>;
+        var refreshButton = document.getElementById("refresh-bills-btn");
+        var errorBox = document.getElementById("bills-load-error");
+        var tableElement = document.getElementById("bills-tabulator");
+        var tableTopOffset = tableElement.getBoundingClientRect().top;
+
+        function getTableHeight() {
+          return Math.max(220, window.innerHeight - tableTopOffset - 20);
+        }
+
+        function parseDate(value) {
+          if (!value) return 0;
+          var parts = String(value).split("/");
+          if (parts.length !== 3) return 0;
+          return new Date(
+            Number(parts[2]),
+            Number(parts[1]) - 1,
+            Number(parts[0])
+          ).getTime();
+        }
+
+        function parseAmount(value) {
+          return parseFloat(String(value || "").replace(/,/g, "")) || 0;
+        }
+
+        function folderFormatter(cell) {
+          var value = cell.getValue() || "";
+          if (!value) return "";
+          var link = document.createElement("a");
+          link.href = value;
+          link.target = "_blank";
+          link.rel = "noopener";
+          link.className = "icon-link";
+          link.title = "Storage folder";
+          link.innerHTML =
+            '<i class="bi bi-folder2-open" aria-hidden="true"></i>';
+          return link;
+        }
+
+        function detailsFormatter(cell) {
+          var billId = encodeURIComponent(cell.getRow().getData().id || "");
+          var link = document.createElement("a");
+          link.href =
+            baseUrl +
+            "?page=BillGenerator&id=" +
+            billId +
+            "&mode=view";
+          link.className = "btn btn-sm btn-outline-primary bill-action";
+          link.textContent = "Open details";
+          return link;
+        }
+
+        var table = new Tabulator(tableElement, {
+          height: getTableHeight(),
+          layout: "fitColumns",
+          placeholder: "No bills found",
+          pagination: true,
+          paginationMode: "local",
+          paginationSize: 25,
+          paginationSizeSelector: [10, 25, 50, 100, true],
+          initialSort: [{ column: "invoiceDate", dir: "desc" }],
+          columns: [
+            {
+              title: "Contractor's name",
+              field: "contractorName",
+              minWidth: 190,
+              headerFilter: "input",
+            },
+            {
+              title: "Invoice number",
+              field: "invoiceNumber",
+              minWidth: 145,
+              headerFilter: "input",
+            },
+            {
+              title: "Invoice date",
+              field: "invoiceDate",
+              minWidth: 135,
+              hozAlign: "center",
+              sorter: function (a, b) {
+                return parseDate(a) - parseDate(b);
+              },
+              headerFilter: "input",
+            },
+            {
+              title: "Total amount",
+              field: "totalAmount",
+              minWidth: 145,
+              hozAlign: "right",
+              sorter: function (a, b) {
+                return parseAmount(a) - parseAmount(b);
+              },
+              headerFilter: "input",
+            },
+            {
+              title: "Currency",
+              field: "currency",
+              minWidth: 110,
+              headerFilter: "input",
+            },
+            {
+              title: "EU",
+              field: "isContractorEU",
+              minWidth: 90,
+              hozAlign: "center",
+              headerFilter: "input",
+            },
+            {
+              title: "Storage folder link",
+              field: "billDocStorageLocation",
+              minWidth: 165,
+              hozAlign: "center",
+              formatter: folderFormatter,
+              headerFilter: "input",
+            },
+            {
+              title: "Actions",
+              field: "id",
+              minWidth: 150,
+              hozAlign: "center",
+              headerSort: false,
+              formatter: detailsFormatter,
+            },
+          ],
+        });
+
+        window.addEventListener("resize", function () {
+          table.setHeight(getTableHeight());
+        });
+
+        function setLoading(isLoading) {
+          refreshButton.disabled = isLoading;
+          refreshButton.querySelector("i").className = isLoading
+            ? "spinner-border spinner-border-sm me-1"
+            : "bi bi-arrow-clockwise me-1";
+        }
+
+        function loadBills(forceRefresh) {
+          setLoading(true);
+          errorBox.classList.add("d-none");
+          errorBox.textContent = "";
+
+          google.script.run
+            .withSuccessHandler(function (data) {
+              table.setData(Array.isArray(data) ? data : []);
+              setLoading(false);
+            })
+            .withFailureHandler(function (error) {
+              console.error("Error loading bills list:", error);
+              errorBox.textContent = "Failed to load bills list.";
+              errorBox.classList.remove("d-none");
+              setLoading(false);
+            })
+            .getBillList(forceRefresh === true);
+        }
+
+        refreshButton.addEventListener("click", function () {
+          loadBills(true);
+        });
+
+        loadBills(false);
+        google.script.run.getBillDropdownOptions();
+      });
+    </script>
+  </body>
+</html>

@@ -90,6 +90,12 @@ function getPageSection(page) {
   ) {
     return "contracts";
   }
+  if (
+    page === "BillsListTabulatorLab" ||
+    page === "BillsListDataTablesLegacy"
+  ) {
+    return "bills";
+  }
   return CONFIG.ACCESS_CONTROL.PAGE_TO_SECTION[page] || null;
 }
 
@@ -287,6 +293,10 @@ function doGet(e) {
       templateFile = "ContractsListTabulatorLab";
     } else if (page === "ContractsListDataTablesLegacy") {
       templateFile = "ContractsList";
+    } else if (page === "BillsList") {
+      templateFile = "BillsListTabulatorLab";
+    } else if (page === "BillsListDataTablesLegacy") {
+      templateFile = "BillsList";
     }
 
     var template = HtmlService.createTemplateFromFile(templateFile);
@@ -733,6 +743,10 @@ function getActivePageForNavigation(page, params = {}) {
       // ContractGenerator is part of contracts section
       return "contracts";
     case "BillsList":
+      return "bills";
+    case "BillsListDataTablesLegacy":
+      return "bills";
+    case "BillsListTabulatorLab":
       return "bills";
     case "BillGenerator":
       return "bills";
