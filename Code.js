@@ -67,33 +67,20 @@ function getPageSection(page) {
   if (
     page === "ClientsInformationList" ||
     page === "ClientsInformationCard" ||
-    page === "ClientsInformationListTabulatorLab" ||
-    page === "ClientsInformationListDataTablesLegacy"
+    page === "ClientsInformationListTabulatorLab"
   ) {
     return "clientsinfo";
   }
   if (page === "InvoicesListTabulatorLab") {
     return "invoices";
   }
-  if (page === "InvoicesListDataTablesLegacy") {
-    return "invoices";
-  }
-  if (
-    page === "CreditNotesListTabulatorLab" ||
-    page === "CreditNotesListDataTablesLegacy"
-  ) {
+  if (page === "CreditNotesListTabulatorLab") {
     return "creditnotes";
   }
-  if (
-    page === "ContractsListTabulatorLab" ||
-    page === "ContractsListDataTablesLegacy"
-  ) {
+  if (page === "ContractsListTabulatorLab") {
     return "contracts";
   }
-  if (
-    page === "BillsListTabulatorLab" ||
-    page === "BillsListDataTablesLegacy"
-  ) {
+  if (page === "BillsListTabulatorLab") {
     return "bills";
   }
   return CONFIG.ACCESS_CONTROL.PAGE_TO_SECTION[page] || null;
@@ -279,24 +266,14 @@ function doGet(e) {
     var templateFile = page;
     if (page === "InvoicesList") {
       templateFile = "InvoicesListTabulatorLab";
-    } else if (page === "InvoicesListDataTablesLegacy") {
-      templateFile = "InvoicesList";
     } else if (page === "ClientsInformationList") {
       templateFile = "ClientsInformationListTabulatorLab";
-    } else if (page === "ClientsInformationListDataTablesLegacy") {
-      templateFile = "ClientsInformationList";
     } else if (page === "CreditNotesList") {
       templateFile = "CreditNotesListTabulatorLab";
-    } else if (page === "CreditNotesListDataTablesLegacy") {
-      templateFile = "CreditNotesList";
     } else if (page === "ContractsList") {
       templateFile = "ContractsListTabulatorLab";
-    } else if (page === "ContractsListDataTablesLegacy") {
-      templateFile = "ContractsList";
     } else if (page === "BillsList") {
       templateFile = "BillsListTabulatorLab";
-    } else if (page === "BillsListDataTablesLegacy") {
-      templateFile = "BillsList";
     }
 
     var template = HtmlService.createTemplateFromFile(templateFile);
@@ -717,16 +694,12 @@ function getActivePageForNavigation(page, params = {}) {
       return "home";
     case "InvoicesList":
       return "invoices";
-    case "InvoicesListDataTablesLegacy":
-      return "invoices";
     case "InvoicesListTabulatorLab":
       return "invoices";
     case "InvoiceGenerator":
       // InvoiceGenerator is part of invoices section
       return "invoices";
     case "CreditNotesList":
-      return "creditnotes";
-    case "CreditNotesListDataTablesLegacy":
       return "creditnotes";
     case "CreditNotesListTabulatorLab":
       return "creditnotes";
@@ -735,8 +708,6 @@ function getActivePageForNavigation(page, params = {}) {
       return "creditnotes";
     case "ContractsList":
       return "contracts";
-    case "ContractsListDataTablesLegacy":
-      return "contracts";
     case "ContractsListTabulatorLab":
       return "contracts";
     case "ContractGenerator":
@@ -744,15 +715,11 @@ function getActivePageForNavigation(page, params = {}) {
       return "contracts";
     case "BillsList":
       return "bills";
-    case "BillsListDataTablesLegacy":
-      return "bills";
     case "BillsListTabulatorLab":
       return "bills";
     case "BillGenerator":
       return "bills";
     case "ClientsInformationList":
-      return "clientsinfo";
-    case "ClientsInformationListDataTablesLegacy":
       return "clientsinfo";
     case "ClientsInformationListTabulatorLab":
       return "clientsinfo";
