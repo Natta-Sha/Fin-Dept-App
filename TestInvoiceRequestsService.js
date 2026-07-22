@@ -196,6 +196,119 @@ function getTestInvoiceRequests() {
   return { headers: headers, rows: rows };
 }
 
+function writeTestInvoiceRequestStatus_(range, status) {
+  if (status === "notApplicable") {
+    range.clearDataValidations();
+    range.setValue(TEST_INVOICE_REQUESTS_NOT_APPLICABLE);
+    range.setBackground(TEST_INVOICE_REQUESTS_NOT_APPLICABLE_BACKGROUND);
+    return;
+  }
+  if (status !== "checked" && status !== "unchecked") {
+    throw new Error("Invalid checkbox status.");
+  }
+  range.insertCheckboxes();
+  range.setValue(status === "checked");
+  range.setBackground(null);
+}
+
+function createTestInvoiceRequest(data) {
+  assertTestInvoiceRequestsAccess_();
+  var cells = data && Array.isArray(data.cells) ? data.cells : [];
+  var project = String(cells[1] || "").trim();
+  var details = String(cells[2] || "").trim();
+  if (!project || !details) {
+    return {
+      success: false,
+      validation: true,
+      message: "Project and Details are required.",
+    };
+  }
+
+  var lock = LockService.getScriptLock();
+  if (!lock.tryLock(30000)) {
+    throw new Error("The sheet is busy. Please try saving again.");
+  }
+
+  var sheet = null;
+  var newRow = -1;
+  try {
+    var spreadsheet = SpreadsheetApp.openById(
+      TEST_INVOICE_REQUESTS_SPREADSHEET_ID
+    );
+    sheet = spreadsheet.getSheetByName(
+      TEST_INVOICE_REQUESTS_SHEET_NAME
+    );
+    if (!sheet) throw new Error('Sheet "анкета" was not found.');
+
+    var lastRow = sheet.getLastRow();
+    var existingIds =
+      lastRow > 1
+        ? sheet.getRange(2, 1, lastRow - 1, 1).getValues()
+        : [];
+    var maxId = 0;
+    for (var idIndex = 0; idIndex < existingIds.length; idIndex++) {
+      var numericId = Number(existingIds[idIndex][0]);
+      if (Number.isFinite(numericId)) maxId = Math.max(maxId, numericId);
+    }
+    var newId = maxId + 1;
+
+    sheet.insertRowAfter(Math.max(lastRow, 1));
+    newRow = Math.max(lastRow, 1) + 1;
+    if (lastRow > 1) {
+      sheet
+        .getRange(lastRow, 1, 1, 13)
+        .copyTo(
+          sheet.getRange(newRow, 1, 1, 13),
+          SpreadsheetApp.CopyPasteType.PASTE_FORMAT,
+          false
+        );
+    }
+
+    var textValues = [
+      newId,
+      String(cells[0] || ""),
+      project,
+      details,
+      String(cells[3] || ""),
+    ];
+    sheet.getRange(newRow, 1, 1, textValues.length).setValues([textValues]);
+
+    for (
+      var columnOffset = 4;
+      columnOffset < TEST_INVOICE_REQUESTS_COLUMN_COUNT;
+      columnOffset++
+    ) {
+      writeTestInvoiceRequestStatus_(
+        sheet.getRange(
+          newRow,
+          TEST_INVOICE_REQUESTS_FIRST_COLUMN + columnOffset
+        ),
+        String(cells[columnOffset] || "unchecked")
+      );
+    }
+    SpreadsheetApp.flush();
+    return { success: true, id: String(newId) };
+  } catch (error) {
+    if (sheet && newRow > 0) {
+      try {
+        sheet.deleteRow(newRow);
+      } catch (rollbackError) {
+        console.error(
+          "Could not roll back Test Invoice Request row:",
+          rollbackError
+        );
+      }
+    }
+    throw error;
+  } finally {
+    try {
+      lock.releaseLock();
+    } catch (error) {
+      console.warn("Could not release Test Invoice Requests lock:", error);
+    }
+  }
+}
+
 function saveTestInvoiceRequestChanges(changes) {
   assertTestInvoiceRequestsAccess_();
   if (!Array.isArray(changes) || changes.length === 0) {
@@ -325,16 +438,8 @@ function saveTestInvoiceRequestChanges(changes) {
       var target = sheet.getRange(item.sheetRow, item.sheetColumn);
       if (item.columnOffset < 4) {
         target.setValue(item.value);
-      } else if (item.value === "notApplicable") {
-        target.clearDataValidations();
-        target.setValue(TEST_INVOICE_REQUESTS_NOT_APPLICABLE);
-        target.setBackground(
-          TEST_INVOICE_REQUESTS_NOT_APPLICABLE_BACKGROUND
-        );
       } else {
-        target.insertCheckboxes();
-        target.setValue(item.value === "checked");
-        target.setBackground(null);
+        writeTestInvoiceRequestStatus_(target, item.value);
       }
     }
     SpreadsheetApp.flush();

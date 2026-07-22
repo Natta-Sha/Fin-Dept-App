@@ -137,6 +137,28 @@
           inset 0 0 0 4px #fff3cd;
       }
 
+      #test-invoice-requests-table .tabulator-row.is-new-row {
+        background: #eef7ff;
+      }
+
+      #test-invoice-requests-table .tabulator-cell.is-required-missing {
+        box-shadow: inset 0 0 0 3px #dc3545;
+        background: #fff0f1;
+      }
+
+      .new-row-actions {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.3rem;
+      }
+
+      .new-row-actions .btn {
+        width: 32px;
+        height: 30px;
+        padding: 0;
+      }
+
       #save-test-invoice-requests.has-unsaved {
         animation: unsaved-save-pulse 1.4s ease-in-out infinite;
         box-shadow: 0 0 0 4px rgba(255, 140, 0, 0.3);
@@ -199,6 +221,13 @@
         </div>
         <div class="test-invoice-toolbar d-flex align-items-center gap-2">
           <span id="test-invoice-save-status" class="save-status" aria-live="polite"></span>
+          <button
+            type="button"
+            id="add-test-invoice-request"
+            class="btn btn-outline-primary"
+          >
+            <i class="bi bi-plus-lg me-1"></i>Add row
+          </button>
           <button
             type="button"
             id="reload-test-invoice-requests"
@@ -276,6 +305,9 @@
         var saveButton = document.getElementById(
           "save-test-invoice-requests"
         );
+        var addRowButton = document.getElementById(
+          "add-test-invoice-request"
+        );
         var reloadButton = document.getElementById(
           "reload-test-invoice-requests"
         );
@@ -293,6 +325,7 @@
         var table = null;
         var dirtyChanges = {};
         var isSaving = false;
+        var draftRowId = null;
         var allowUnsavedExit = false;
         var pendingDiscardAction = null;
         var tableTopOffset = tableElement.getBoundingClientRect().top;
@@ -338,6 +371,14 @@
           return Object.keys(dirtyChanges).length;
         }
 
+        function hasDraftRow() {
+          return draftRowId !== null;
+        }
+
+        function hasUnsavedWork() {
+          return dirtyCount() > 0 || hasDraftRow();
+        }
+
         function setStatus(message, type) {
           statusElement.textContent = message || "";
           statusElement.className =
@@ -348,8 +389,12 @@
           var count = dirtyCount();
           saveButton.disabled = isSaving || count === 0;
           reloadButton.disabled = isSaving;
+          addRowButton.disabled =
+            isSaving || count > 0 || hasDraftRow();
           saveButton.classList.toggle("has-unsaved", count > 0);
-          if (!isSaving && count > 0) {
+          if (!isSaving && hasDraftRow()) {
+            setStatus("New row not saved", "unsaved");
+          } else if (!isSaving && count > 0) {
             setStatus(
               count + (count === 1 ? " unsaved change" : " unsaved changes"),
               "unsaved"
@@ -413,8 +458,44 @@
           return icon;
         }
 
+        function newRowActionsFormatter(cell) {
+          if (!cell.getRow().getData()._isNew) return "";
+
+          var wrapper = document.createElement("div");
+          wrapper.className = "new-row-actions";
+
+          var saveRowButton = document.createElement("button");
+          saveRowButton.type = "button";
+          saveRowButton.className = "btn btn-sm btn-success";
+          saveRowButton.title = "Save row";
+          saveRowButton.setAttribute("aria-label", "Save row");
+          saveRowButton.innerHTML = '<i class="bi bi-check-lg"></i>';
+          saveRowButton.addEventListener("click", function (event) {
+            event.stopPropagation();
+            saveNewRow(cell.getRow());
+          });
+
+          var cancelRowButton = document.createElement("button");
+          cancelRowButton.type = "button";
+          cancelRowButton.className = "btn btn-sm btn-outline-danger";
+          cancelRowButton.title = "Cancel new row";
+          cancelRowButton.setAttribute("aria-label", "Cancel new row");
+          cancelRowButton.innerHTML = '<i class="bi bi-x-lg"></i>';
+          cancelRowButton.addEventListener("click", function (event) {
+            event.stopPropagation();
+            cancelNewRow(cell.getRow());
+          });
+
+          wrapper.appendChild(saveRowButton);
+          wrapper.appendChild(cancelRowButton);
+          return wrapper;
+        }
+
         function buildColumns(headers) {
-          return fallbackHeaders.map(function (fallbackHeader, columnOffset) {
+          var columns = fallbackHeaders.map(function (
+            fallbackHeader,
+            columnOffset
+          ) {
             var header = headers[columnOffset] || fallbackHeader;
             var checkboxColumn = columnOffset >= 4;
             var column = {
@@ -422,7 +503,14 @@
               field: "c" + columnOffset,
               headerHozAlign: "center",
               headerSort: true,
-              editable: !checkboxColumn,
+              editable: checkboxColumn
+                ? false
+                : function (cell) {
+                    return (
+                      !hasDraftRow() ||
+                      cell.getRow().getData()._isNew === true
+                    );
+                  },
               minWidth: checkboxColumn
                 ? 66
                 : textColumnWidths[columnOffset],
@@ -451,6 +539,12 @@
             if (checkboxColumn) {
               column.cellClick = function (event, cell) {
                 event.preventDefault();
+                if (
+                  hasDraftRow() &&
+                  cell.getRow().getData()._isNew !== true
+                ) {
+                  return;
+                }
                 var currentStatus = cell.getValue();
                 var nextStatus =
                   currentStatus === "unchecked"
@@ -465,6 +559,19 @@
             if (columnOffset === 0) column.frozen = true;
             return column;
           });
+
+          columns.push({
+            title: "",
+            field: "_rowActions",
+            width: 78,
+            minWidth: 78,
+            frozen: true,
+            visible: false,
+            headerSort: false,
+            hozAlign: "center",
+            formatter: newRowActionsFormatter,
+          });
+          return columns;
         }
 
         function tableRows(response) {
@@ -507,6 +614,12 @@
             data: tableRows(response),
             rowFormatter: function (row) {
               row.getElement().style.minHeight = "34px";
+              row
+                .getElement()
+                .classList.toggle(
+                  "is-new-row",
+                  row.getData()._isNew === true
+                );
             },
           });
           table.on("tableBuilt", applyHeaderColors);
@@ -516,6 +629,15 @@
         function trackCellChange(cell) {
           var row = cell.getRow().getData();
           var columnOffset = Number(cell.getColumn().getField().substring(1));
+          if (row._isNew) {
+            if (columnOffset === 1 || columnOffset === 2) {
+              cell
+                .getElement()
+                .classList.remove("is-required-missing");
+            }
+            updateToolbar();
+            return;
+          }
           var originalValue = row._original[columnOffset];
           var currentValue = cell.getValue();
           var key = changeKey(row._id, columnOffset);
@@ -539,13 +661,15 @@
 
         function setLoading(loading) {
           reloadButton.disabled = loading || isSaving;
+          addRowButton.disabled =
+            loading || isSaving || dirtyCount() > 0 || hasDraftRow();
           reloadButton.querySelector("i").className = loading
             ? "spinner-border spinner-border-sm me-1"
             : "bi bi-arrow-clockwise me-1";
         }
 
         function loadData(force) {
-          if (dirtyCount() > 0 && !force) return;
+          if (hasUnsavedWork() && !force) return;
           setLoading(true);
           errorElement.classList.add("d-none");
           errorElement.textContent = "";
@@ -554,6 +678,7 @@
           google.script.run
             .withSuccessHandler(function (response) {
               dirtyChanges = {};
+              draftRowId = null;
               buildTable(response || { headers: [], rows: [] });
               setLoading(false);
               setStatus("");
@@ -568,6 +693,110 @@
               setStatus("Load failed", "error");
             })
             .getTestInvoiceRequests();
+        }
+
+        function addNewRow() {
+          if (!table || isSaving || dirtyCount() > 0 || hasDraftRow()) {
+            return;
+          }
+
+          draftRowId = "new-" + Date.now();
+          table.getColumn("_rowActions").show();
+          var draft = {
+            _id: draftRowId,
+            _isNew: true,
+            _links: [],
+            _original: [],
+            _originalTokens: [],
+          };
+          for (
+            var columnOffset = 0;
+            columnOffset < fallbackHeaders.length;
+            columnOffset++
+          ) {
+            draft["c" + columnOffset] =
+              columnOffset >= 4 ? "unchecked" : "";
+          }
+
+          table.addRow(draft, true).then(function (row) {
+            row.scrollTo();
+            row.getCell("c1").edit();
+            updateToolbar();
+          });
+          updateToolbar();
+        }
+
+        function draftCells(row) {
+          var data = row.getData();
+          return fallbackHeaders.map(function (_header, columnOffset) {
+            return data["c" + columnOffset];
+          });
+        }
+
+        function validateNewRow(row) {
+          var projectCell = row.getCell("c1");
+          var detailsCell = row.getCell("c2");
+          var projectMissing =
+            String(projectCell.getValue() || "").trim() === "";
+          var detailsMissing =
+            String(detailsCell.getValue() || "").trim() === "";
+          projectCell
+            .getElement()
+            .classList.toggle("is-required-missing", projectMissing);
+          detailsCell
+            .getElement()
+            .classList.toggle("is-required-missing", detailsMissing);
+          return !projectMissing && !detailsMissing;
+        }
+
+        function saveNewRow(row) {
+          if (isSaving || !row || row.getData()._isNew !== true) return;
+          if (!validateNewRow(row)) {
+            setStatus("Project and Details are required", "error");
+            return;
+          }
+
+          isSaving = true;
+          setStatus("Saving new row…");
+          updateToolbar();
+
+          google.script.run
+            .withSuccessHandler(function (result) {
+              isSaving = false;
+              if (!result || !result.success) {
+                updateToolbar();
+                setStatus(
+                  (result && result.message) || "Could not save new row",
+                  "error"
+                );
+                return;
+              }
+              draftRowId = null;
+              setStatus("New row saved", "success");
+              updateToolbar();
+              loadData(true);
+            })
+            .withFailureHandler(function (error) {
+              console.error("Test Invoice Request row creation failed:", error);
+              isSaving = false;
+              updateToolbar();
+              setStatus(
+                (error && error.message) || "Could not save new row",
+                "error"
+              );
+            })
+            .createTestInvoiceRequest({ cells: draftCells(row) });
+        }
+
+        function cancelNewRow(row) {
+          if (!row || row.getData()._isNew !== true) return;
+          confirmDiscard(function () {
+            draftRowId = null;
+            row.delete();
+            table.getColumn("_rowActions").hide();
+            setStatus("");
+            updateToolbar();
+          });
         }
 
         function saveChanges() {
@@ -614,7 +843,7 @@
         }
 
         function confirmDiscard(action) {
-          if (dirtyCount() === 0) {
+          if (!hasUnsavedWork()) {
             action();
             return;
           }
@@ -622,6 +851,7 @@
           unsavedModal.show();
         }
 
+        addRowButton.addEventListener("click", addNewRow);
         saveButton.addEventListener("click", saveChanges);
         reloadButton.addEventListener("click", function () {
           confirmDiscard(function () {
@@ -639,7 +869,7 @@
         document.addEventListener(
           "click",
           function (event) {
-            if (dirtyCount() === 0) return;
+            if (!hasUnsavedWork()) return;
             var link = event.target.closest("a[href]");
             if (
               !link ||
@@ -666,7 +896,7 @@
         });
 
         window.addEventListener("beforeunload", function (event) {
-          if (dirtyCount() === 0 || allowUnsavedExit) return;
+          if (!hasUnsavedWork() || allowUnsavedExit) return;
           event.preventDefault();
           event.returnValue = "";
         });
