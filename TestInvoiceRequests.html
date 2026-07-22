@@ -94,6 +94,14 @@
         font-size: 1.05rem;
       }
 
+      #test-invoice-requests-table .tabulator-cell.scrollable-text-cell {
+        overflow-x: auto;
+        overflow-y: hidden;
+        overscroll-behavior-x: contain;
+        white-space: pre;
+        scrollbar-width: thin;
+      }
+
       #test-invoice-requests-table
         .tabulator-cell.invoice-checkbox-cell.is-unchecked {
         background: #f5c6cb;
@@ -219,7 +227,7 @@
           "Проекты",
           "Оп.б",
         ];
-        var textColumnWidths = [158, 158, 250, 210];
+        var textColumnWidths = [138, 138, 215, 180];
 
         function tableHeight() {
           return Math.max(240, window.innerHeight - tableTopOffset - 20);
@@ -294,11 +302,15 @@
               headerSort: true,
               editable: true,
               minWidth: checkboxColumn
-                ? 76
+                ? 66
                 : textColumnWidths[columnOffset],
-              width: checkboxColumn ? 80 : textColumnWidths[columnOffset],
+              width: checkboxColumn ? 70 : textColumnWidths[columnOffset],
               variableHeight: !checkboxColumn,
-              cssClass: checkboxColumn ? "invoice-checkbox-cell" : "",
+              cssClass: checkboxColumn
+                ? "invoice-checkbox-cell"
+                : columnOffset === 2 || columnOffset === 3
+                ? "scrollable-text-cell"
+                : "",
               formatter: checkboxColumn ? checkboxFormatter : textFormatter,
               editor: checkboxColumn ? "tickCross" : "textarea",
               editorParams: checkboxColumn
@@ -352,7 +364,7 @@
           table = new Tabulator(tableElement, {
             index: "_id",
             height: tableHeight(),
-            layout: "fitData",
+            layout: "fitColumns",
             placeholder: "No invoice requests found",
             columns: buildColumns(response.headers || []),
             data: tableRows(response),
