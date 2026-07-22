@@ -99,7 +99,16 @@
         overflow-y: hidden;
         overscroll-behavior-x: contain;
         white-space: pre;
+        text-overflow: clip;
         scrollbar-width: thin;
+      }
+
+      #test-invoice-requests-table
+        .tabulator-cell.scrollable-text-cell
+        .request-cell-content {
+        display: inline-block;
+        min-width: max-content;
+        white-space: pre;
       }
 
       #test-invoice-requests-table
@@ -263,14 +272,22 @@
           var row = cell.getRow().getData();
           var columnOffset = Number(cell.getColumn().getField().substring(1));
           var link = row._links[columnOffset] || "";
-          if (!link) return value === null || value === undefined ? "" : value;
+          var displayValue =
+            value === null || value === undefined ? "" : String(value);
+          if (!link) {
+            var text = document.createElement("span");
+            text.className = "request-cell-content";
+            text.textContent = displayValue;
+            return text;
+          }
 
           var anchor = document.createElement("a");
           anchor.href = link;
           anchor.target = "_blank";
           anchor.rel = "noopener";
-          anchor.className = "request-link";
-          anchor.textContent = row["_display" + columnOffset] || value || link;
+          anchor.className = "request-link request-cell-content";
+          anchor.textContent =
+            row["_display" + columnOffset] || displayValue || link;
           anchor.addEventListener("click", function (event) {
             event.stopPropagation();
           });
