@@ -49,11 +49,11 @@
       }
 
       #test-invoice-requests-table .tabulator-col-content {
-        min-height: 48px;
+        height: 76px;
         display: flex;
-        align-items: center;
-        justify-content: center;
-        padding: 7px;
+        flex-direction: column;
+        align-items: stretch;
+        padding: 8px 7px 5px;
       }
 
       #test-invoice-requests-table .tabulator-col-title {
@@ -61,6 +61,24 @@
         overflow-wrap: anywhere;
         text-align: center;
         font-weight: 700;
+      }
+
+      #test-invoice-requests-table .tabulator-col-title-holder {
+        min-height: 34px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      #test-invoice-requests-table .tabulator-header-filter {
+        width: 100%;
+        margin-top: auto;
+      }
+
+      #test-invoice-requests-table .tabulator-header-filter input {
+        width: 100%;
+        padding: 2px 4px;
+        font-size: 0.72rem;
       }
 
       #test-invoice-requests-table .tabulator-cell {
@@ -201,7 +219,7 @@
           "Проекты",
           "Оп.б",
         ];
-        var textColumnWidths = [105, 105, 125, 105];
+        var textColumnWidths = [158, 158, 250, 210];
 
         function tableHeight() {
           return Math.max(240, window.innerHeight - tableTopOffset - 20);
@@ -276,9 +294,9 @@
               headerSort: true,
               editable: true,
               minWidth: checkboxColumn
-                ? 58
+                ? 76
                 : textColumnWidths[columnOffset],
-              width: checkboxColumn ? 68 : textColumnWidths[columnOffset],
+              width: checkboxColumn ? 80 : textColumnWidths[columnOffset],
               variableHeight: !checkboxColumn,
               cssClass: checkboxColumn ? "invoice-checkbox-cell" : "",
               formatter: checkboxColumn ? checkboxFormatter : textFormatter,
@@ -334,7 +352,7 @@
           table = new Tabulator(tableElement, {
             index: "_id",
             height: tableHeight(),
-            layout: "fitColumns",
+            layout: "fitData",
             placeholder: "No invoice requests found",
             columns: buildColumns(response.headers || []),
             data: tableRows(response),
