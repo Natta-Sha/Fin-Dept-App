@@ -67,7 +67,8 @@ function getPageSection(page) {
   if (
     page === "ClientsInformationList" ||
     page === "ClientsInformationCard" ||
-    page === "ClientsInformationListTabulatorLab"
+    page === "ClientsInformationListTabulatorLab" ||
+    page === "TestInvoiceRequests"
   ) {
     return "clientsinfo";
   }
@@ -250,6 +251,14 @@ function doGet(e) {
       denied.baseUrl = ScriptApp.getService().getUrl();
       denied.activePage = "";
       return denied.evaluate().setTitle("No Access");
+    }
+
+    if (page === "TestInvoiceRequests" && !isFullAccessUser(email)) {
+      var testInvoiceRequestsDenied =
+        HtmlService.createTemplateFromFile("AccessDenied");
+      testInvoiceRequestsDenied.baseUrl = ScriptApp.getService().getUrl();
+      testInvoiceRequestsDenied.activePage = "";
+      return testInvoiceRequestsDenied.evaluate().setTitle("No Access");
     }
 
     var pageMode = e.parameter.mode || "";
@@ -636,6 +645,7 @@ function getNavigation(activePage) {
   var email = getCurrentUserEmail();
   template.navAccess = getUserNavAccess(email);
   template.canRefreshAccessPermissions = isFullAccessUser(email);
+  template.testInvoiceRequestsAccess = isFullAccessUser(email);
   return template.evaluate().getContent();
 }
 
@@ -725,6 +735,8 @@ function getActivePageForNavigation(page, params = {}) {
       return "clientsinfo";
     case "ClientsInformationCard":
       return "clientsinfo";
+    case "TestInvoiceRequests":
+      return "testinvoicerequests";
     default:
       return "";
   }

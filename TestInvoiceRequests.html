@@ -1,0 +1,458 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <base target="_top" />
+    <meta charset="UTF-8" />
+    <title>Test Invoice Requests</title>
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css"
+      rel="stylesheet"
+    />
+    <link
+      href="https://cdn.jsdelivr.net/npm/tabulator-tables@6.3.1/dist/css/tabulator_bootstrap5.min.css"
+      rel="stylesheet"
+    />
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/tabulator-tables@6.3.1/dist/js/tabulator.min.js"></script>
+
+    <style>
+      body {
+        min-height: 100vh;
+        margin: 0;
+        display: flex;
+        flex-direction: column;
+        font-size: 0.8rem;
+      }
+
+      .main-content {
+        flex-grow: 1;
+        padding: 20px;
+      }
+
+      .test-invoice-toolbar .btn {
+        border-radius: 25px;
+        font-weight: 600;
+      }
+
+      #save-test-invoice-requests {
+        border-color: transparent;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      }
+
+      #test-invoice-requests-table {
+        min-height: 240px;
+        font-size: 0.78rem;
+      }
+
+      #test-invoice-requests-table .tabulator-col-content {
+        min-height: 48px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 7px;
+      }
+
+      #test-invoice-requests-table .tabulator-col-title {
+        white-space: normal;
+        overflow-wrap: anywhere;
+        text-align: center;
+        font-weight: 700;
+      }
+
+      #test-invoice-requests-table .tabulator-cell {
+        min-height: 34px;
+        padding: 5px 7px;
+        white-space: pre-wrap;
+        overflow-wrap: anywhere;
+        vertical-align: middle;
+      }
+
+      #test-invoice-requests-table .tabulator-cell.invoice-checkbox-cell {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.05rem;
+      }
+
+      #test-invoice-requests-table
+        .tabulator-cell.invoice-checkbox-cell.is-unchecked {
+        background: #f5c6cb;
+        color: #c82333;
+      }
+
+      #test-invoice-requests-table
+        .tabulator-cell.invoice-checkbox-cell.is-checked {
+        color: #74797d;
+      }
+
+      #test-invoice-requests-table .tabulator-cell.is-dirty {
+        box-shadow: inset 0 0 0 2px #f0ad4e;
+      }
+
+      #test-invoice-requests-table .request-link {
+        color: #3976c6;
+        text-decoration: underline;
+      }
+
+      .save-status {
+        min-width: 150px;
+        color: #6c757d;
+        text-align: right;
+      }
+
+      .save-status.error {
+        color: #dc3545;
+      }
+
+      .save-status.success {
+        color: #198754;
+      }
+    </style>
+  </head>
+
+  <body>
+    <?!= getNavigation(activePage) ?>
+
+    <main class="main-content container-fluid">
+      <div
+        class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-3"
+      >
+        <div>
+          <h2 class="mb-1">Test Invoice Requests</h2>
+          <div class="text-muted">Tabulator test · source: анкета, columns B–M</div>
+        </div>
+        <div class="test-invoice-toolbar d-flex align-items-center gap-2">
+          <span id="test-invoice-save-status" class="save-status" aria-live="polite"></span>
+          <button
+            type="button"
+            id="reload-test-invoice-requests"
+            class="btn btn-outline-secondary"
+          >
+            <i class="bi bi-arrow-clockwise me-1"></i>Reload
+          </button>
+          <button
+            type="button"
+            id="save-test-invoice-requests"
+            class="btn btn-primary"
+            disabled
+          >
+            <i class="bi bi-floppy me-1"></i>Save changes
+          </button>
+        </div>
+      </div>
+
+      <div
+        id="test-invoice-load-error"
+        class="alert alert-danger d-none"
+        role="alert"
+      ></div>
+      <div
+        id="test-invoice-requests-table"
+        aria-label="Test invoice requests"
+      ></div>
+    </main>
+
+    <script>
+      document.addEventListener("DOMContentLoaded", function () {
+        var tableElement = document.getElementById(
+          "test-invoice-requests-table"
+        );
+        var saveButton = document.getElementById(
+          "save-test-invoice-requests"
+        );
+        var reloadButton = document.getElementById(
+          "reload-test-invoice-requests"
+        );
+        var statusElement = document.getElementById(
+          "test-invoice-save-status"
+        );
+        var errorElement = document.getElementById("test-invoice-load-error");
+        var table = null;
+        var dirtyChanges = {};
+        var isSaving = false;
+        var tableTopOffset = tableElement.getBoundingClientRect().top;
+        var headerColors = [
+          "#f1f3f5",
+          "#f1f3f5",
+          "#f1f3f5",
+          "#f1f3f5",
+          "#dbe8fb",
+          "#dbe8fb",
+          "#efc2c8",
+          "#efc2c8",
+          "#efc2c8",
+          "#dcebd5",
+          "#dcebd5",
+          "#dcebd5",
+        ];
+
+        function tableHeight() {
+          return Math.max(240, window.innerHeight - tableTopOffset - 20);
+        }
+
+        function changeKey(id, columnOffset) {
+          return id + "::" + columnOffset;
+        }
+
+        function dirtyCount() {
+          return Object.keys(dirtyChanges).length;
+        }
+
+        function setStatus(message, type) {
+          statusElement.textContent = message || "";
+          statusElement.className =
+            "save-status" + (type ? " " + type : "");
+        }
+
+        function updateToolbar() {
+          var count = dirtyCount();
+          saveButton.disabled = isSaving || count === 0;
+          reloadButton.disabled = isSaving;
+          if (!isSaving && count > 0) {
+            setStatus(
+              count + (count === 1 ? " unsaved change" : " unsaved changes")
+            );
+          }
+        }
+
+        function textFormatter(cell) {
+          var value = cell.getValue();
+          var row = cell.getRow().getData();
+          var columnOffset = Number(cell.getColumn().getField().substring(1));
+          var link = row._links[columnOffset] || "";
+          if (!link) return value === null || value === undefined ? "" : value;
+
+          var anchor = document.createElement("a");
+          anchor.href = link;
+          anchor.target = "_blank";
+          anchor.rel = "noopener";
+          anchor.className = "request-link";
+          anchor.textContent = row["_display" + columnOffset] || value || link;
+          anchor.addEventListener("click", function (event) {
+            event.stopPropagation();
+          });
+          return anchor;
+        }
+
+        function checkboxFormatter(cell) {
+          var checked = cell.getValue() === true;
+          var element = cell.getElement();
+          element.classList.toggle("is-checked", checked);
+          element.classList.toggle("is-unchecked", !checked);
+
+          var icon = document.createElement("i");
+          icon.className = checked
+            ? "bi bi-check-square-fill"
+            : "bi bi-square";
+          icon.setAttribute("aria-label", checked ? "Checked" : "Unchecked");
+          return icon;
+        }
+
+        function buildColumns(headers) {
+          return headers.map(function (header, columnOffset) {
+            var checkboxColumn = columnOffset >= 4;
+            var column = {
+              title: header || "",
+              field: "c" + columnOffset,
+              headerHozAlign: "center",
+              headerSort: true,
+              editable: true,
+              minWidth: checkboxColumn ? 88 : 145,
+              width: checkboxColumn ? 96 : undefined,
+              variableHeight: !checkboxColumn,
+              cssClass: checkboxColumn ? "invoice-checkbox-cell" : "",
+              formatter: checkboxColumn ? checkboxFormatter : textFormatter,
+              editor: checkboxColumn ? "tickCross" : "textarea",
+              editorParams: checkboxColumn
+                ? {
+                    tristate: false,
+                  }
+                : {
+                    verticalNavigation: "table",
+                    shiftEnterSubmit: true,
+                  },
+              headerFilter: checkboxColumn ? false : "input",
+              headerFilterPlaceholder: "Search",
+              headerSortTristate: true,
+            };
+
+            if (columnOffset === 0) column.frozen = true;
+            return column;
+          });
+        }
+
+        function tableRows(response) {
+          return (response.rows || []).map(function (sourceRow) {
+            var row = {
+              _id: sourceRow.id,
+              _links: [],
+              _original: [],
+              _originalTokens: [],
+            };
+            (sourceRow.cells || []).forEach(function (cell, columnOffset) {
+              row["c" + columnOffset] = cell.value;
+              row["_display" + columnOffset] = cell.displayValue;
+              row._links[columnOffset] = cell.link || "";
+              row._original[columnOffset] = cell.value;
+              row._originalTokens[columnOffset] = cell.originalToken;
+            });
+            return row;
+          });
+        }
+
+        function applyHeaderColors() {
+          if (!table) return;
+          table.getColumns().forEach(function (column, index) {
+            column.getElement().style.backgroundColor =
+              headerColors[index] || "#f1f3f5";
+          });
+        }
+
+        function buildTable(response) {
+          if (table) table.destroy();
+          tableTopOffset = tableElement.getBoundingClientRect().top;
+          table = new Tabulator(tableElement, {
+            index: "_id",
+            height: tableHeight(),
+            layout: "fitDataStretch",
+            placeholder: "No invoice requests found",
+            columns: buildColumns(response.headers || []),
+            data: tableRows(response),
+            rowFormatter: function (row) {
+              row.getElement().style.minHeight = "34px";
+            },
+          });
+          table.on("tableBuilt", applyHeaderColors);
+          table.on("cellEdited", trackCellChange);
+        }
+
+        function trackCellChange(cell) {
+          var row = cell.getRow().getData();
+          var columnOffset = Number(cell.getColumn().getField().substring(1));
+          var originalValue = row._original[columnOffset];
+          var currentValue = cell.getValue();
+          var key = changeKey(row._id, columnOffset);
+          var changed =
+            JSON.stringify(currentValue) !== JSON.stringify(originalValue);
+
+          if (changed) {
+            dirtyChanges[key] = {
+              id: row._id,
+              columnOffset: columnOffset,
+              originalToken: row._originalTokens[columnOffset],
+              value: currentValue,
+            };
+          } else {
+            delete dirtyChanges[key];
+          }
+          cell.getElement().classList.toggle("is-dirty", changed);
+          if (columnOffset >= 4) checkboxFormatter(cell);
+          updateToolbar();
+        }
+
+        function setLoading(loading) {
+          reloadButton.disabled = loading || isSaving;
+          reloadButton.querySelector("i").className = loading
+            ? "spinner-border spinner-border-sm me-1"
+            : "bi bi-arrow-clockwise me-1";
+        }
+
+        function loadData(force) {
+          if (dirtyCount() > 0 && !force) return;
+          setLoading(true);
+          errorElement.classList.add("d-none");
+          errorElement.textContent = "";
+          setStatus("Loading…");
+
+          google.script.run
+            .withSuccessHandler(function (response) {
+              dirtyChanges = {};
+              buildTable(response || { headers: [], rows: [] });
+              setLoading(false);
+              setStatus("");
+              updateToolbar();
+            })
+            .withFailureHandler(function (error) {
+              console.error("Test Invoice Requests load failed:", error);
+              errorElement.textContent =
+                (error && error.message) || "Failed to load invoice requests.";
+              errorElement.classList.remove("d-none");
+              setLoading(false);
+              setStatus("Load failed", "error");
+            })
+            .getTestInvoiceRequests();
+        }
+
+        function saveChanges() {
+          var changes = Object.keys(dirtyChanges).map(function (key) {
+            return dirtyChanges[key];
+          });
+          if (changes.length === 0 || isSaving) return;
+
+          isSaving = true;
+          saveButton.querySelector("i").className =
+            "spinner-border spinner-border-sm me-1";
+          setStatus("Saving…");
+          updateToolbar();
+
+          google.script.run
+            .withSuccessHandler(function (result) {
+              isSaving = false;
+              saveButton.querySelector("i").className = "bi bi-floppy me-1";
+              if (!result || !result.success) {
+                setStatus(
+                  (result && result.message) || "Save failed",
+                  "error"
+                );
+                updateToolbar();
+                return;
+              }
+
+              dirtyChanges = {};
+              setStatus("Saved", "success");
+              updateToolbar();
+              loadData(true);
+            })
+            .withFailureHandler(function (error) {
+              console.error("Test Invoice Requests save failed:", error);
+              isSaving = false;
+              saveButton.querySelector("i").className = "bi bi-floppy me-1";
+              setStatus(
+                (error && error.message) || "Save failed. Try again.",
+                "error"
+              );
+              updateToolbar();
+            })
+            .saveTestInvoiceRequestChanges(changes);
+        }
+
+        saveButton.addEventListener("click", saveChanges);
+        reloadButton.addEventListener("click", function () {
+          if (
+            dirtyCount() > 0 &&
+            !window.confirm("Discard all unsaved changes and reload?")
+          ) {
+            return;
+          }
+          loadData(true);
+        });
+
+        window.addEventListener("beforeunload", function (event) {
+          if (dirtyCount() === 0) return;
+          event.preventDefault();
+          event.returnValue = "";
+        });
+
+        window.addEventListener("resize", function () {
+          if (table) table.setHeight(tableHeight());
+        });
+
+        loadData(true);
+      });
+    </script>
+  </body>
+</html>

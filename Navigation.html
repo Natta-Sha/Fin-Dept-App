@@ -211,6 +211,9 @@
   var clientsOk      = invoicesOk || creditnotesOk;
   var contractorsOk  = contractsOk || billsOk;
   var clientsInfoOk  = ha.clientsinfo === true;
+  var testInvoiceRequestsOk =
+    typeof testInvoiceRequestsAccess !== 'undefined'
+    && testInvoiceRequestsAccess === true;
   var showServiceTools = Object.keys(ha).some(function (section) {
     return ha[section] === true;
   });
@@ -244,10 +247,10 @@
 
           <!-- Clients Dropdown -->
           <div class="nav-item dropdown mx-3">
-            <? if (clientsOk || clientsInfoOk) { ?>
+            <? if (clientsOk || clientsInfoOk || testInvoiceRequestsOk) { ?>
               <a
                 href="#"
-                class="nav-link dropdown-toggle <?= activePage === 'invoices' || activePage === 'creditnotes' || activePage === 'clientsinfo' ? 'active' : '' ?>"
+                class="nav-link dropdown-toggle <?= activePage === 'invoices' || activePage === 'creditnotes' || activePage === 'clientsinfo' || activePage === 'testinvoicerequests' ? 'active' : '' ?>"
                 role="button"
                 data-bs-toggle="dropdown"
               >Clients</a>
@@ -268,6 +271,14 @@
                     >Information</a>
                   <? } ?>
                 </li>
+                <? if (testInvoiceRequestsOk) { ?>
+                  <li>
+                    <a
+                      href="<?= baseUrl ?>?page=TestInvoiceRequests"
+                      class="dropdown-item <?= activePage === 'testinvoicerequests' ? 'active' : '' ?>"
+                    >Test Invoice Requests</a>
+                  </li>
+                <? } ?>
                 <li>
                   <a
                     href="#"
