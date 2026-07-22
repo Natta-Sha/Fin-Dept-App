@@ -273,19 +273,17 @@ function createTestInvoiceRequest(data) {
     ];
     sheet.getRange(newRow, 1, 1, textValues.length).setValues([textValues]);
 
-    for (
-      var columnOffset = 4;
-      columnOffset < TEST_INVOICE_REQUESTS_COLUMN_COUNT;
-      columnOffset++
-    ) {
-      writeTestInvoiceRequestStatus_(
-        sheet.getRange(
-          newRow,
-          TEST_INVOICE_REQUESTS_FIRST_COLUMN + columnOffset
-        ),
-        String(cells[columnOffset] || "unchecked")
-      );
-    }
+    // Processing statuses F:M belong to the person handling the request.
+    // A newly submitted request must leave them completely empty.
+    var statusRange = sheet.getRange(
+      newRow,
+      TEST_INVOICE_REQUESTS_FIRST_COLUMN + 4,
+      1,
+      TEST_INVOICE_REQUESTS_COLUMN_COUNT - 4
+    );
+    statusRange.clearContent();
+    statusRange.clearDataValidations();
+    statusRange.setBackground(null);
     SpreadsheetApp.flush();
     return { success: true, id: String(newId) };
   } catch (error) {
