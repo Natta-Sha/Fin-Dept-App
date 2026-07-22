@@ -627,7 +627,7 @@
                     verticalNavigation: "table",
                     shiftEnterSubmit: true,
                   },
-              headerFilter: checkboxColumn ? false : "input",
+              headerFilter: columnOffset < 2 ? "input" : false,
               headerFilterPlaceholder: "Search",
               headerSortTristate: true,
             };
