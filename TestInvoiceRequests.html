@@ -300,7 +300,7 @@
               field: "c" + columnOffset,
               headerHozAlign: "center",
               headerSort: true,
-              editable: true,
+              editable: !checkboxColumn,
               minWidth: checkboxColumn
                 ? 66
                 : textColumnWidths[columnOffset],
@@ -312,7 +312,7 @@
                 ? "scrollable-text-cell"
                 : "",
               formatter: checkboxColumn ? checkboxFormatter : textFormatter,
-              editor: checkboxColumn ? "tickCross" : "textarea",
+              editor: checkboxColumn ? false : "textarea",
               editorParams: checkboxColumn
                 ? {
                     tristate: false,
@@ -326,6 +326,13 @@
               headerSortTristate: true,
             };
 
+            if (checkboxColumn) {
+              column.cellClick = function (event, cell) {
+                event.preventDefault();
+                cell.setValue(cell.getValue() !== true);
+                trackCellChange(cell);
+              };
+            }
             if (columnOffset === 0) column.frozen = true;
             return column;
           });
@@ -365,6 +372,7 @@
             index: "_id",
             height: tableHeight(),
             layout: "fitColumns",
+            editTriggerEvent: "dblclick",
             placeholder: "No invoice requests found",
             columns: buildColumns(response.headers || []),
             data: tableRows(response),
