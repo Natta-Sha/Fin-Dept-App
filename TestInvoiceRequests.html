@@ -141,6 +141,17 @@
         background: #eef7ff;
       }
 
+      #test-invoice-requests-table .tabulator-row.is-saving-new-row {
+        opacity: 0.62;
+        filter: saturate(0.65);
+      }
+
+      #test-invoice-requests-table
+        .tabulator-row.is-saving-new-row
+        .new-row-input {
+        cursor: wait;
+      }
+
       #test-invoice-requests-table .tabulator-cell.is-required-missing {
         box-shadow: inset 0 0 0 3px #dc3545;
         background: #fff0f1;
@@ -520,13 +531,18 @@
 
           var wrapper = document.createElement("div");
           wrapper.className = "new-row-actions";
+          var rowIsSaving = cell.getRow().getData()._isSaving === true;
 
           var saveRowButton = document.createElement("button");
           saveRowButton.type = "button";
-          saveRowButton.className = "btn btn-sm btn-success";
+          saveRowButton.className =
+            "btn btn-sm btn-success save-new-row-btn";
           saveRowButton.title = "Save row";
           saveRowButton.setAttribute("aria-label", "Save row");
-          saveRowButton.innerHTML = '<i class="bi bi-check-lg"></i>';
+          saveRowButton.disabled = rowIsSaving;
+          saveRowButton.innerHTML = rowIsSaving
+            ? '<span class="spinner-border spinner-border-sm" aria-hidden="true"></span>'
+            : '<i class="bi bi-check-lg"></i>';
           saveRowButton.addEventListener("mousedown", function (event) {
             event.preventDefault();
             event.stopPropagation();
@@ -539,9 +555,11 @@
 
           var cancelRowButton = document.createElement("button");
           cancelRowButton.type = "button";
-          cancelRowButton.className = "btn btn-sm btn-outline-danger";
+          cancelRowButton.className =
+            "btn btn-sm btn-outline-danger cancel-new-row-btn";
           cancelRowButton.title = "Cancel new row";
           cancelRowButton.setAttribute("aria-label", "Cancel new row");
+          cancelRowButton.disabled = rowIsSaving;
           cancelRowButton.innerHTML = '<i class="bi bi-x-lg"></i>';
           cancelRowButton.addEventListener("mousedown", function (event) {
             event.preventDefault();
@@ -827,6 +845,28 @@
           return !projectMissing && !detailsMissing;
         }
 
+        function setNewRowBusy(row, busy) {
+          row.getData()._isSaving = busy;
+          row
+            .getElement()
+            .classList.toggle("is-saving-new-row", busy);
+          row
+            .getElement()
+            .querySelectorAll("textarea, button")
+            .forEach(function (control) {
+              control.disabled = busy;
+            });
+
+          var saveRowButton = row
+            .getElement()
+            .querySelector(".save-new-row-btn");
+          if (saveRowButton) {
+            saveRowButton.innerHTML = busy
+              ? '<span class="spinner-border spinner-border-sm" aria-hidden="true"></span>'
+              : '<i class="bi bi-check-lg"></i>';
+          }
+        }
+
         function saveNewRow(row) {
           if (isSaving || !row || row.getData()._isNew !== true) return;
           if (!validateNewRow(row)) {
@@ -835,6 +875,7 @@
           }
 
           isSaving = true;
+          setNewRowBusy(row, true);
           setStatus("Saving new row…");
           updateToolbar();
 
@@ -842,6 +883,7 @@
             .withSuccessHandler(function (result) {
               isSaving = false;
               if (!result || !result.success) {
+                setNewRowBusy(row, false);
                 updateToolbar();
                 setStatus(
                   (result && result.message) || "Could not save new row",
@@ -857,6 +899,7 @@
             .withFailureHandler(function (error) {
               console.error("Test Invoice Request row creation failed:", error);
               isSaving = false;
+              setNewRowBusy(row, false);
               updateToolbar();
               setStatus(
                 (error && error.message) || "Could not save new row",
