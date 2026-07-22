@@ -137,26 +137,72 @@
           inset 0 0 0 4px #fff3cd;
       }
 
-      #test-invoice-requests-table .tabulator-row.is-new-row {
-        background: #eef7ff;
+      .new-request-panel {
+        position: sticky;
+        top: 64px;
+        z-index: 900;
+        margin-bottom: 0.75rem;
+        padding: 0.65rem;
+        border: 2px solid #667eea;
+        border-radius: 10px;
+        background: #f8fbff;
+        box-shadow: 0 8px 24px rgba(41, 55, 95, 0.24);
       }
 
-      #test-invoice-requests-table .tabulator-cell.is-required-missing {
+      .new-request-panel[hidden] {
+        display: none;
+      }
+
+      .new-request-grid {
+        display: grid;
+        grid-template-columns:
+          138fr 138fr 215fr 180fr
+          repeat(8, 70fr) 82fr;
+        gap: 3px;
+        align-items: stretch;
+      }
+
+      .new-request-input {
+        width: 100%;
+        min-width: 0;
+        min-height: 52px;
+        padding: 0.35rem;
+        border: 1px solid #adb5bd;
+        border-radius: 4px;
+        resize: vertical;
+        font: inherit;
+      }
+
+      .new-request-input.is-required-missing {
         box-shadow: inset 0 0 0 3px #dc3545;
         background: #fff0f1;
       }
 
-      .new-row-actions {
+      .new-request-status {
+        min-width: 0;
+        border: 1px solid #ced4da;
+        border-radius: 4px;
+        background: #fff;
+        color: #74797d;
+        font-size: 1rem;
+      }
+
+      .new-request-status.is-not-applicable {
+        background: #d9ead3;
+        color: #4f772d;
+      }
+
+      .new-request-actions {
         display: flex;
         align-items: center;
         justify-content: center;
         gap: 0.3rem;
       }
 
-      .new-row-actions .btn {
-        width: 32px;
-        height: 30px;
-        padding: 0;
+      .new-request-actions .btn {
+        min-width: 34px;
+        height: 38px;
+        padding: 0.2rem;
       }
 
       #save-test-invoice-requests.has-unsaved {
@@ -251,6 +297,64 @@
         class="alert alert-danger d-none"
         role="alert"
       ></div>
+      <section
+        id="new-test-invoice-request-panel"
+        class="new-request-panel"
+        aria-label="New invoice request"
+        hidden
+      >
+        <div class="new-request-grid">
+          <textarea
+            id="new-request-pm"
+            class="new-request-input"
+            rows="2"
+            placeholder="PM"
+            aria-label="PM"
+          ></textarea>
+          <textarea
+            id="new-request-project"
+            class="new-request-input"
+            rows="2"
+            placeholder="Project *"
+            aria-label="Project, required"
+          ></textarea>
+          <textarea
+            id="new-request-details"
+            class="new-request-input"
+            rows="2"
+            placeholder="Details *"
+            aria-label="Details, required"
+          ></textarea>
+          <textarea
+            id="new-request-comment"
+            class="new-request-input"
+            rows="2"
+            placeholder="Comment"
+            aria-label="Comment"
+          ></textarea>
+          <div id="new-request-statuses" style="display: contents"></div>
+          <div class="new-request-actions">
+            <button
+              type="button"
+              id="save-new-test-invoice-request"
+              class="btn btn-success"
+              title="Save row"
+              aria-label="Save row"
+            >
+              <i class="bi bi-check-lg"></i>
+            </button>
+            <button
+              type="button"
+              id="cancel-new-test-invoice-request"
+              class="btn btn-outline-danger"
+              title="Cancel new row"
+              aria-label="Cancel new row"
+            >
+              <i class="bi bi-x-lg"></i>
+            </button>
+          </div>
+        </div>
+      </section>
       <div
         id="test-invoice-requests-table"
         aria-label="Test invoice requests"
@@ -308,6 +412,24 @@
         var addRowButton = document.getElementById(
           "add-test-invoice-request"
         );
+        var newRequestPanel = document.getElementById(
+          "new-test-invoice-request-panel"
+        );
+        var newRequestInputs = [
+          document.getElementById("new-request-pm"),
+          document.getElementById("new-request-project"),
+          document.getElementById("new-request-details"),
+          document.getElementById("new-request-comment"),
+        ];
+        var newRequestStatusesElement = document.getElementById(
+          "new-request-statuses"
+        );
+        var saveNewRowButton = document.getElementById(
+          "save-new-test-invoice-request"
+        );
+        var cancelNewRowButton = document.getElementById(
+          "cancel-new-test-invoice-request"
+        );
         var reloadButton = document.getElementById(
           "reload-test-invoice-requests"
         );
@@ -326,6 +448,7 @@
         var dirtyChanges = {};
         var isSaving = false;
         var draftRowId = null;
+        var draftStatuses = [];
         var allowUnsavedExit = false;
         var pendingDiscardAction = null;
         var tableTopOffset = tableElement.getBoundingClientRect().top;
@@ -391,6 +514,8 @@
           reloadButton.disabled = isSaving;
           addRowButton.disabled =
             isSaving || count > 0 || hasDraftRow();
+          saveNewRowButton.disabled = isSaving;
+          cancelNewRowButton.disabled = isSaving;
           saveButton.classList.toggle("has-unsaved", count > 0);
           if (!isSaving && hasDraftRow()) {
             setStatus("New row not saved", "unsaved");
@@ -458,39 +583,6 @@
           return icon;
         }
 
-        function newRowActionsFormatter(cell) {
-          if (!cell.getRow().getData()._isNew) return "";
-
-          var wrapper = document.createElement("div");
-          wrapper.className = "new-row-actions";
-
-          var saveRowButton = document.createElement("button");
-          saveRowButton.type = "button";
-          saveRowButton.className = "btn btn-sm btn-success";
-          saveRowButton.title = "Save row";
-          saveRowButton.setAttribute("aria-label", "Save row");
-          saveRowButton.innerHTML = '<i class="bi bi-check-lg"></i>';
-          saveRowButton.addEventListener("click", function (event) {
-            event.stopPropagation();
-            saveNewRow(cell.getRow());
-          });
-
-          var cancelRowButton = document.createElement("button");
-          cancelRowButton.type = "button";
-          cancelRowButton.className = "btn btn-sm btn-outline-danger";
-          cancelRowButton.title = "Cancel new row";
-          cancelRowButton.setAttribute("aria-label", "Cancel new row");
-          cancelRowButton.innerHTML = '<i class="bi bi-x-lg"></i>';
-          cancelRowButton.addEventListener("click", function (event) {
-            event.stopPropagation();
-            cancelNewRow(cell.getRow());
-          });
-
-          wrapper.appendChild(saveRowButton);
-          wrapper.appendChild(cancelRowButton);
-          return wrapper;
-        }
-
         function buildColumns(headers) {
           var columns = fallbackHeaders.map(function (
             fallbackHeader,
@@ -505,11 +597,8 @@
               headerSort: true,
               editable: checkboxColumn
                 ? false
-                : function (cell) {
-                    return (
-                      !hasDraftRow() ||
-                      cell.getRow().getData()._isNew === true
-                    );
+                : function () {
+                    return !hasDraftRow();
                   },
               minWidth: checkboxColumn
                 ? 66
@@ -539,12 +628,7 @@
             if (checkboxColumn) {
               column.cellClick = function (event, cell) {
                 event.preventDefault();
-                if (
-                  hasDraftRow() &&
-                  cell.getRow().getData()._isNew !== true
-                ) {
-                  return;
-                }
+                if (hasDraftRow()) return;
                 var currentStatus = cell.getValue();
                 var nextStatus =
                   currentStatus === "unchecked"
@@ -558,18 +642,6 @@
             }
             if (columnOffset === 0) column.frozen = true;
             return column;
-          });
-
-          columns.push({
-            title: "",
-            field: "_rowActions",
-            width: 78,
-            minWidth: 78,
-            frozen: true,
-            visible: false,
-            headerSort: false,
-            hozAlign: "center",
-            formatter: newRowActionsFormatter,
           });
           return columns;
         }
@@ -614,12 +686,6 @@
             data: tableRows(response),
             rowFormatter: function (row) {
               row.getElement().style.minHeight = "34px";
-              row
-                .getElement()
-                .classList.toggle(
-                  "is-new-row",
-                  row.getData()._isNew === true
-                );
             },
           });
           table.on("tableBuilt", applyHeaderColors);
@@ -629,15 +695,6 @@
         function trackCellChange(cell) {
           var row = cell.getRow().getData();
           var columnOffset = Number(cell.getColumn().getField().substring(1));
-          if (row._isNew) {
-            if (columnOffset === 1 || columnOffset === 2) {
-              cell
-                .getElement()
-                .classList.remove("is-required-missing");
-            }
-            updateToolbar();
-            return;
-          }
           var originalValue = row._original[columnOffset];
           var currentValue = cell.getValue();
           var key = changeKey(row._id, columnOffset);
@@ -679,6 +736,8 @@
             .withSuccessHandler(function (response) {
               dirtyChanges = {};
               draftRowId = null;
+              newRequestPanel.hidden = true;
+              resetNewRequestPanel();
               buildTable(response || { headers: [], rows: [] });
               setLoading(false);
               setStatus("");
@@ -701,57 +760,101 @@
           }
 
           draftRowId = "new-" + Date.now();
-          table.getColumn("_rowActions").show();
-          var draft = {
-            _id: draftRowId,
-            _isNew: true,
-            _links: [],
-            _original: [],
-            _originalTokens: [],
-          };
-          for (
-            var columnOffset = 0;
-            columnOffset < fallbackHeaders.length;
-            columnOffset++
-          ) {
-            draft["c" + columnOffset] =
-              columnOffset >= 4 ? "unchecked" : "";
-          }
-
-          table.addRow(draft, true).then(function (row) {
-            row.scrollTo();
-            row.getCell("c1").edit();
-            updateToolbar();
-          });
+          resetNewRequestPanel();
+          newRequestPanel.hidden = false;
+          newRequestInputs[0].focus();
           updateToolbar();
         }
 
-        function draftCells(row) {
-          var data = row.getData();
-          return fallbackHeaders.map(function (_header, columnOffset) {
-            return data["c" + columnOffset];
+        function draftStatusIcon(status) {
+          if (status === "checked") return "bi-check-square-fill";
+          if (status === "notApplicable") return "bi-dash-square-fill";
+          return "bi-square";
+        }
+
+        function renderDraftStatusButton(button, statusIndex) {
+          var status = draftStatuses[statusIndex];
+          button.classList.toggle(
+            "is-not-applicable",
+            status === "notApplicable"
+          );
+          button.innerHTML =
+            '<i class="bi ' + draftStatusIcon(status) + '"></i>';
+          button.title =
+            fallbackHeaders[statusIndex + 4] +
+            ": " +
+            (status === "checked"
+              ? "Checked"
+              : status === "notApplicable"
+              ? "Not applicable"
+              : "Unchecked");
+        }
+
+        function initializeDraftStatusButtons() {
+          newRequestStatusesElement.innerHTML = "";
+          draftStatuses = new Array(8).fill("unchecked");
+          draftStatuses.forEach(function (_status, statusIndex) {
+            var button = document.createElement("button");
+            button.type = "button";
+            button.className = "new-request-status";
+            button.setAttribute(
+              "aria-label",
+              fallbackHeaders[statusIndex + 4]
+            );
+            button.addEventListener("click", function () {
+              var currentStatus = draftStatuses[statusIndex];
+              draftStatuses[statusIndex] =
+                currentStatus === "unchecked"
+                  ? "checked"
+                  : currentStatus === "checked"
+                  ? "notApplicable"
+                  : "unchecked";
+              renderDraftStatusButton(button, statusIndex);
+            });
+            renderDraftStatusButton(button, statusIndex);
+            newRequestStatusesElement.appendChild(button);
           });
         }
 
-        function validateNewRow(row) {
-          var projectCell = row.getCell("c1");
-          var detailsCell = row.getCell("c2");
+        function resetNewRequestPanel() {
+          newRequestInputs.forEach(function (input) {
+            input.value = "";
+            input.classList.remove("is-required-missing");
+          });
+          initializeDraftStatusButtons();
+        }
+
+        function draftCells() {
+          return newRequestInputs
+            .map(function (input) {
+              return input.value;
+            })
+            .concat(draftStatuses);
+        }
+
+        function validateNewRow() {
+          var projectInput = newRequestInputs[1];
+          var detailsInput = newRequestInputs[2];
           var projectMissing =
-            String(projectCell.getValue() || "").trim() === "";
+            String(projectInput.value || "").trim() === "";
           var detailsMissing =
-            String(detailsCell.getValue() || "").trim() === "";
-          projectCell
-            .getElement()
-            .classList.toggle("is-required-missing", projectMissing);
-          detailsCell
-            .getElement()
-            .classList.toggle("is-required-missing", detailsMissing);
+            String(detailsInput.value || "").trim() === "";
+          projectInput.classList.toggle(
+            "is-required-missing",
+            projectMissing
+          );
+          detailsInput.classList.toggle(
+            "is-required-missing",
+            detailsMissing
+          );
+          if (projectMissing) projectInput.focus();
+          else if (detailsMissing) detailsInput.focus();
           return !projectMissing && !detailsMissing;
         }
 
-        function saveNewRow(row) {
-          if (isSaving || !row || row.getData()._isNew !== true) return;
-          if (!validateNewRow(row)) {
+        function saveNewRow() {
+          if (isSaving || !hasDraftRow()) return;
+          if (!validateNewRow()) {
             setStatus("Project and Details are required", "error");
             return;
           }
@@ -785,15 +888,15 @@
                 "error"
               );
             })
-            .createTestInvoiceRequest({ cells: draftCells(row) });
+            .createTestInvoiceRequest({ cells: draftCells() });
         }
 
-        function cancelNewRow(row) {
-          if (!row || row.getData()._isNew !== true) return;
+        function cancelNewRow() {
+          if (!hasDraftRow()) return;
           confirmDiscard(function () {
             draftRowId = null;
-            row.delete();
-            table.getColumn("_rowActions").hide();
+            newRequestPanel.hidden = true;
+            resetNewRequestPanel();
             setStatus("");
             updateToolbar();
           });
@@ -852,6 +955,14 @@
         }
 
         addRowButton.addEventListener("click", addNewRow);
+        saveNewRowButton.addEventListener("click", saveNewRow);
+        cancelNewRowButton.addEventListener("click", cancelNewRow);
+        newRequestInputs[1].addEventListener("input", function () {
+          this.classList.remove("is-required-missing");
+        });
+        newRequestInputs[2].addEventListener("input", function () {
+          this.classList.remove("is-required-missing");
+        });
         saveButton.addEventListener("click", saveChanges);
         reloadButton.addEventListener("click", function () {
           confirmDiscard(function () {
@@ -905,6 +1016,7 @@
           if (table) table.setHeight(tableHeight());
         });
 
+        resetNewRequestPanel();
         loadData(true);
       });
     </script>
