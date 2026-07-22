@@ -6,6 +6,8 @@ var TEST_INVOICE_REQUESTS_SPREADSHEET_ID =
 var TEST_INVOICE_REQUESTS_SHEET_NAME = "анкета";
 var TEST_INVOICE_REQUESTS_FIRST_COLUMN = 2; // B
 var TEST_INVOICE_REQUESTS_COLUMN_COUNT = 12; // B:M
+var TEST_INVOICE_REQUESTS_NOT_APPLICABLE = "⊟";
+var TEST_INVOICE_REQUESTS_NOT_APPLICABLE_BACKGROUND = "#d9ead3";
 
 function assertTestInvoiceRequestsAccess_() {
   if (!isFullAccessUser(getCurrentUserEmail())) {
@@ -32,6 +34,85 @@ function comparableTestInvoiceRequestValue_(value) {
   return String(value);
 }
 
+function normalizeTestInvoiceRequestBackground_(background) {
+  return String(background || "").trim().toLowerCase();
+}
+
+function isNeutralTestInvoiceRequestBackground_(background) {
+  var normalized = normalizeTestInvoiceRequestBackground_(background);
+  return (
+    normalized === "" ||
+    normalized === "#ffffff" ||
+    normalized === "#fff" ||
+    normalized === "white"
+  );
+}
+
+function getTestInvoiceRequestCheckboxStatus_(value, background) {
+  if (
+    String(value || "").trim() ===
+    TEST_INVOICE_REQUESTS_NOT_APPLICABLE
+  ) {
+    return "notApplicable";
+  }
+  if (value === true) return "checked";
+  if (value === false && !isNeutralTestInvoiceRequestBackground_(background)) {
+    return "notApplicable";
+  }
+  return "unchecked";
+}
+
+function getTestInvoiceRequestOriginalToken_(
+  value,
+  background,
+  columnOffset
+) {
+  if (columnOffset < 4) {
+    return comparableTestInvoiceRequestValue_(value);
+  }
+  return JSON.stringify([
+    comparableTestInvoiceRequestValue_(value),
+    normalizeTestInvoiceRequestBackground_(background),
+  ]);
+}
+
+function migrateLegacyTestInvoiceRequestStatuses_(
+  sheet,
+  values,
+  backgrounds
+) {
+  var migrated = 0;
+  for (var rowIndex = 1; rowIndex < values.length; rowIndex++) {
+    for (
+      var columnOffset = 4;
+      columnOffset < TEST_INVOICE_REQUESTS_COLUMN_COUNT;
+      columnOffset++
+    ) {
+      var sourceColumn =
+        TEST_INVOICE_REQUESTS_FIRST_COLUMN - 1 + columnOffset;
+      if (
+        values[rowIndex][sourceColumn] === false &&
+        !isNeutralTestInvoiceRequestBackground_(
+          backgrounds[rowIndex][sourceColumn]
+        )
+      ) {
+        var cell = sheet.getRange(rowIndex + 1, sourceColumn + 1);
+        cell.clearDataValidations();
+        cell.setValue(TEST_INVOICE_REQUESTS_NOT_APPLICABLE);
+        cell.setBackground(
+          TEST_INVOICE_REQUESTS_NOT_APPLICABLE_BACKGROUND
+        );
+        values[rowIndex][sourceColumn] =
+          TEST_INVOICE_REQUESTS_NOT_APPLICABLE;
+        backgrounds[rowIndex][sourceColumn] =
+          TEST_INVOICE_REQUESTS_NOT_APPLICABLE_BACKGROUND;
+        migrated++;
+      }
+    }
+  }
+  if (migrated > 0) SpreadsheetApp.flush();
+}
+
 function getTestInvoiceRequests() {
   assertTestInvoiceRequestsAccess_();
 
@@ -56,6 +137,8 @@ function getTestInvoiceRequests() {
   var values = range.getValues();
   var displayValues = range.getDisplayValues();
   var richTextValues = range.getRichTextValues();
+  var backgrounds = range.getBackgrounds();
+  migrateLegacyTestInvoiceRequestStatuses_(sheet, values, backgrounds);
   var headers = displayValues[0].slice(
     TEST_INVOICE_REQUESTS_FIRST_COLUMN - 1,
     TEST_INVOICE_REQUESTS_FIRST_COLUMN -
@@ -82,13 +165,25 @@ function getTestInvoiceRequests() {
       var sourceColumn =
         TEST_INVOICE_REQUESTS_FIRST_COLUMN - 1 + columnOffset;
       var richText = richTextValues[rowIndex][sourceColumn];
+      var checkboxStatus =
+        columnOffset >= 4
+          ? getTestInvoiceRequestCheckboxStatus_(
+              values[rowIndex][sourceColumn],
+              backgrounds[rowIndex][sourceColumn]
+            )
+          : null;
       cells.push({
-        value: serializeTestInvoiceRequestValue_(
+        value:
+          columnOffset >= 4
+            ? checkboxStatus
+            : serializeTestInvoiceRequestValue_(
+                values[rowIndex][sourceColumn],
+                displayValues[rowIndex][sourceColumn]
+              ),
+        originalToken: getTestInvoiceRequestOriginalToken_(
           values[rowIndex][sourceColumn],
-          displayValues[rowIndex][sourceColumn]
-        ),
-        originalToken: comparableTestInvoiceRequestValue_(
-          values[rowIndex][sourceColumn]
+          backgrounds[rowIndex][sourceColumn],
+          columnOffset
         ),
         displayValue: displayValues[rowIndex][sourceColumn] || "",
         link: richText ? richText.getLinkUrl() || "" : "",
@@ -132,6 +227,16 @@ function saveTestInvoiceRequestChanges(changes) {
           1
       )
       .getValues();
+    var sourceBackgrounds = sheet
+      .getRange(
+        2,
+        1,
+        lastRow - 1,
+        TEST_INVOICE_REQUESTS_FIRST_COLUMN +
+          TEST_INVOICE_REQUESTS_COLUMN_COUNT -
+          1
+      )
+      .getBackgrounds();
     var rowsById = {};
     for (var sourceIndex = 0; sourceIndex < source.length; sourceIndex++) {
       var sourceId = String(source[sourceIndex][0] || "").trim();
@@ -142,6 +247,7 @@ function saveTestInvoiceRequestChanges(changes) {
         rowsById[sourceId] = {
           sheetRow: sourceIndex + 2,
           values: source[sourceIndex],
+          backgrounds: sourceBackgrounds[sourceIndex],
         };
       }
     }
@@ -170,7 +276,11 @@ function saveTestInvoiceRequestChanges(changes) {
       var sourceColumn =
         TEST_INVOICE_REQUESTS_FIRST_COLUMN - 1 + columnOffset;
       if (
-        comparableTestInvoiceRequestValue_(targetRow.values[sourceColumn]) !==
+        getTestInvoiceRequestOriginalToken_(
+          targetRow.values[sourceColumn],
+          targetRow.backgrounds[sourceColumn],
+          columnOffset
+        ) !==
         change.originalToken
       ) {
         conflicts.push({ id: rowId, columnOffset: columnOffset });
@@ -178,10 +288,21 @@ function saveTestInvoiceRequestChanges(changes) {
       }
 
       var nextValue =
-        columnOffset >= 4 ? change.value === true : String(change.value || "");
+        change.value === null || change.value === undefined
+          ? ""
+          : String(change.value);
+      if (
+        columnOffset >= 4 &&
+        nextValue !== "checked" &&
+        nextValue !== "unchecked" &&
+        nextValue !== "notApplicable"
+      ) {
+        throw new Error("Invalid checkbox status.");
+      }
       validated.push({
         sheetRow: targetRow.sheetRow,
         sheetColumn: TEST_INVOICE_REQUESTS_FIRST_COLUMN + columnOffset,
+        columnOffset: columnOffset,
         value: nextValue,
       });
     }
@@ -196,37 +317,25 @@ function saveTestInvoiceRequestChanges(changes) {
       };
     }
 
-    // Send adjacent cells as one Sheets write while leaving unrelated cells
-    // untouched. The browser still makes only one server request per save.
-    validated.sort(function (left, right) {
-      return (
-        left.sheetRow - right.sheetRow ||
-        left.sheetColumn - right.sheetColumn
-      );
-    });
-    var writeIndex = 0;
-    while (writeIndex < validated.length) {
-      var first = validated[writeIndex];
-      var segmentValues = [first.value];
-      var nextIndex = writeIndex + 1;
-      while (
-        nextIndex < validated.length &&
-        validated[nextIndex].sheetRow === first.sheetRow &&
-        validated[nextIndex].sheetColumn ===
-          first.sheetColumn + segmentValues.length
-      ) {
-        segmentValues.push(validated[nextIndex].value);
-        nextIndex++;
+    // The browser makes one save request. Checkbox cells are written
+    // individually because N/A deliberately uses a symbol instead of Sheets
+    // checkbox validation.
+    for (var writeIndex = 0; writeIndex < validated.length; writeIndex++) {
+      var item = validated[writeIndex];
+      var target = sheet.getRange(item.sheetRow, item.sheetColumn);
+      if (item.columnOffset < 4) {
+        target.setValue(item.value);
+      } else if (item.value === "notApplicable") {
+        target.clearDataValidations();
+        target.setValue(TEST_INVOICE_REQUESTS_NOT_APPLICABLE);
+        target.setBackground(
+          TEST_INVOICE_REQUESTS_NOT_APPLICABLE_BACKGROUND
+        );
+      } else {
+        target.insertCheckboxes();
+        target.setValue(item.value === "checked");
+        target.setBackground(null);
       }
-      sheet
-        .getRange(
-          first.sheetRow,
-          first.sheetColumn,
-          1,
-          segmentValues.length
-        )
-        .setValues([segmentValues]);
-      writeIndex = nextIndex;
     }
     SpreadsheetApp.flush();
 

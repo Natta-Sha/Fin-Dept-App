@@ -113,17 +113,33 @@
 
       #test-invoice-requests-table
         .tabulator-cell.invoice-checkbox-cell.is-unchecked {
-        background: #f5c6cb;
-        color: #c82333;
+        background: #fff;
+        color: #74797d;
       }
 
       #test-invoice-requests-table
         .tabulator-cell.invoice-checkbox-cell.is-checked {
+        background: #fff;
         color: #74797d;
       }
 
+      #test-invoice-requests-table
+        .tabulator-cell.invoice-checkbox-cell.is-not-applicable {
+        background: #d9ead3;
+        color: #4f772d;
+      }
+
       #test-invoice-requests-table .tabulator-cell.is-dirty {
-        box-shadow: inset 0 0 0 2px #f0ad4e;
+        position: relative;
+        z-index: 1;
+        box-shadow:
+          inset 0 0 0 3px #ff8c00,
+          inset 0 0 0 4px #fff3cd;
+      }
+
+      #save-test-invoice-requests.has-unsaved {
+        animation: unsaved-save-pulse 1.4s ease-in-out infinite;
+        box-shadow: 0 0 0 4px rgba(255, 140, 0, 0.3);
       }
 
       #test-invoice-requests-table .request-link {
@@ -133,8 +149,18 @@
 
       .save-status {
         min-width: 150px;
+        padding: 0.3rem 0.55rem;
+        border: 2px solid transparent;
+        border-radius: 8px;
         color: #6c757d;
         text-align: right;
+      }
+
+      .save-status.unsaved {
+        border-color: #ff8c00;
+        background: #fff3cd;
+        color: #8a4b00;
+        font-weight: 700;
       }
 
       .save-status.error {
@@ -143,6 +169,19 @@
 
       .save-status.success {
         color: #198754;
+      }
+
+      @keyframes unsaved-save-pulse {
+        50% {
+          transform: translateY(-1px);
+          box-shadow: 0 0 0 7px rgba(255, 140, 0, 0.14);
+        }
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        #save-test-invoice-requests.has-unsaved {
+          animation: none;
+        }
       }
     </style>
   </head>
@@ -189,6 +228,46 @@
       ></div>
     </main>
 
+    <div
+      class="modal fade"
+      id="unsavedChangesModal"
+      tabindex="-1"
+      data-bs-backdrop="static"
+      data-bs-keyboard="false"
+      aria-labelledby="unsavedChangesModalLabel"
+      aria-hidden="true"
+    >
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-warning border-3">
+          <div class="modal-header bg-warning-subtle">
+            <h5 class="modal-title" id="unsavedChangesModalLabel">
+              Unsaved changes
+            </h5>
+          </div>
+          <div class="modal-body fs-6">
+            There are unsaved changes. Do you want to leave without saving?
+          </div>
+          <div class="modal-footer">
+            <button
+              type="button"
+              id="stay-with-unsaved-changes"
+              class="btn btn-secondary"
+              data-bs-dismiss="modal"
+            >
+              No, stay
+            </button>
+            <button
+              type="button"
+              id="leave-with-unsaved-changes"
+              class="btn btn-danger"
+            >
+              Yes, leave
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <script>
       document.addEventListener("DOMContentLoaded", function () {
         var tableElement = document.getElementById(
@@ -204,9 +283,18 @@
           "test-invoice-save-status"
         );
         var errorElement = document.getElementById("test-invoice-load-error");
+        var unsavedModalElement = document.getElementById(
+          "unsavedChangesModal"
+        );
+        var leaveWithoutSavingButton = document.getElementById(
+          "leave-with-unsaved-changes"
+        );
+        var unsavedModal = new bootstrap.Modal(unsavedModalElement);
         var table = null;
         var dirtyChanges = {};
         var isSaving = false;
+        var allowUnsavedExit = false;
+        var pendingDiscardAction = null;
         var tableTopOffset = tableElement.getBoundingClientRect().top;
         var headerColors = [
           "#f1f3f5",
@@ -260,9 +348,11 @@
           var count = dirtyCount();
           saveButton.disabled = isSaving || count === 0;
           reloadButton.disabled = isSaving;
+          saveButton.classList.toggle("has-unsaved", count > 0);
           if (!isSaving && count > 0) {
             setStatus(
-              count + (count === 1 ? " unsaved change" : " unsaved changes")
+              count + (count === 1 ? " unsaved change" : " unsaved changes"),
+              "unsaved"
             );
           }
         }
@@ -295,16 +385,31 @@
         }
 
         function checkboxFormatter(cell) {
-          var checked = cell.getValue() === true;
+          var status = cell.getValue();
+          if (status === true) status = "checked";
+          if (status === false || status === "") status = "unchecked";
           var element = cell.getElement();
-          element.classList.toggle("is-checked", checked);
-          element.classList.toggle("is-unchecked", !checked);
+          element.classList.toggle("is-checked", status === "checked");
+          element.classList.toggle("is-unchecked", status === "unchecked");
+          element.classList.toggle(
+            "is-not-applicable",
+            status === "notApplicable"
+          );
 
           var icon = document.createElement("i");
-          icon.className = checked
-            ? "bi bi-check-square-fill"
-            : "bi bi-square";
-          icon.setAttribute("aria-label", checked ? "Checked" : "Unchecked");
+          if (status === "checked") {
+            icon.className = "bi bi-check-square-fill";
+            icon.setAttribute("aria-label", "Checked");
+            icon.title = "Checked";
+          } else if (status === "notApplicable") {
+            icon.className = "bi bi-dash-square-fill";
+            icon.setAttribute("aria-label", "Not applicable");
+            icon.title = "Not applicable";
+          } else {
+            icon.className = "bi bi-square";
+            icon.setAttribute("aria-label", "Unchecked");
+            icon.title = "Unchecked";
+          }
           return icon;
         }
 
@@ -346,7 +451,14 @@
             if (checkboxColumn) {
               column.cellClick = function (event, cell) {
                 event.preventDefault();
-                cell.setValue(cell.getValue() !== true);
+                var currentStatus = cell.getValue();
+                var nextStatus =
+                  currentStatus === "unchecked"
+                    ? "checked"
+                    : currentStatus === "checked"
+                    ? "notApplicable"
+                    : "unchecked";
+                cell.setValue(nextStatus);
                 trackCellChange(cell);
               };
             }
@@ -475,11 +587,11 @@
               isSaving = false;
               saveButton.querySelector("i").className = "bi bi-floppy me-1";
               if (!result || !result.success) {
+                updateToolbar();
                 setStatus(
                   (result && result.message) || "Save failed",
                   "error"
                 );
-                updateToolbar();
                 return;
               }
 
@@ -492,28 +604,69 @@
               console.error("Test Invoice Requests save failed:", error);
               isSaving = false;
               saveButton.querySelector("i").className = "bi bi-floppy me-1";
+              updateToolbar();
               setStatus(
                 (error && error.message) || "Save failed. Try again.",
                 "error"
               );
-              updateToolbar();
             })
             .saveTestInvoiceRequestChanges(changes);
         }
 
-        saveButton.addEventListener("click", saveChanges);
-        reloadButton.addEventListener("click", function () {
-          if (
-            dirtyCount() > 0 &&
-            !window.confirm("Discard all unsaved changes and reload?")
-          ) {
+        function confirmDiscard(action) {
+          if (dirtyCount() === 0) {
+            action();
             return;
           }
-          loadData(true);
+          pendingDiscardAction = action;
+          unsavedModal.show();
+        }
+
+        saveButton.addEventListener("click", saveChanges);
+        reloadButton.addEventListener("click", function () {
+          confirmDiscard(function () {
+            loadData(true);
+          });
+        });
+
+        leaveWithoutSavingButton.addEventListener("click", function () {
+          var action = pendingDiscardAction;
+          pendingDiscardAction = null;
+          unsavedModal.hide();
+          if (action) action();
+        });
+
+        document.addEventListener(
+          "click",
+          function (event) {
+            if (dirtyCount() === 0) return;
+            var link = event.target.closest("a[href]");
+            if (
+              !link ||
+              link.classList.contains("request-link") ||
+              link.target === "_blank" ||
+              link.getAttribute("href").charAt(0) === "#"
+            ) {
+              return;
+            }
+
+            event.preventDefault();
+            event.stopImmediatePropagation();
+            var destination = link.href;
+            confirmDiscard(function () {
+              allowUnsavedExit = true;
+              window.top.location.href = destination;
+            });
+          },
+          true
+        );
+
+        unsavedModalElement.addEventListener("hidden.bs.modal", function () {
+          pendingDiscardAction = null;
         });
 
         window.addEventListener("beforeunload", function (event) {
-          if (dirtyCount() === 0) return;
+          if (dirtyCount() === 0 || allowUnsavedExit) return;
           event.preventDefault();
           event.returnValue = "";
         });
