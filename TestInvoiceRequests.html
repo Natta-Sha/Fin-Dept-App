@@ -102,7 +102,11 @@
         white-space: pre-wrap;
         overflow-wrap: anywhere;
         vertical-align: middle;
-        background: transparent;
+      }
+
+      /* Frozen cells must stay opaque while scrolling under them. */
+      #test-invoice-requests-table .tabulator-cell.tabulator-frozen {
+        background-color: inherit;
       }
 
       #test-invoice-requests-table .tabulator-cell.invoice-checkbox-cell {
@@ -131,7 +135,7 @@
         .tabulator-cell.invoice-checkbox-cell.is-unchecked,
       #test-invoice-requests-table
         .tabulator-cell.invoice-checkbox-cell.is-checked {
-        background: transparent;
+        background-color: inherit;
         color: #74797d;
       }
 
@@ -187,7 +191,7 @@
 
       #test-invoice-requests-table
         .tabulator-cell.invoice-checkbox-cell.is-new-row-empty {
-        background: transparent;
+        background-color: inherit;
         cursor: default;
       }
 
