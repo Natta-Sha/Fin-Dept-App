@@ -168,6 +168,16 @@
         font: inherit;
       }
 
+      #test-invoice-requests-table .new-row-input.new-row-select {
+        min-height: 34px;
+        resize: none;
+      }
+
+      #test-invoice-requests-table .tabulator-cell.is-system-field {
+        background: #f8f9fa;
+        color: #6c757d;
+      }
+
       #test-invoice-requests-table
         .tabulator-cell.invoice-checkbox-cell.is-new-row-empty {
         background: #eef7ff;
@@ -407,8 +417,12 @@
         };
         var STATUS_FIRST_OFFSET = 4;
         var STATUS_LAST_OFFSET = 11;
-        var DRAFT_INPUT_LAST_OFFSET = 3;
-        var READONLY_FIRST_OFFSET = 13;
+        var PROJECT_OFFSET = 0;
+        var DETAILS_OFFSET = 1;
+        var COMMENT_OFFSET = 2;
+        var AUTHOR_OFFSET = 3;
+        var RATE_FILE_OFFSET = 12;
+        var projectOptions = [];
 
         function isStatusColumn(columnOffset) {
           return (
@@ -418,11 +432,17 @@
         }
 
         function isDraftInputColumn(columnOffset) {
-          return columnOffset <= DRAFT_INPUT_LAST_OFFSET;
+          return (
+            columnOffset === PROJECT_OFFSET ||
+            columnOffset === DETAILS_OFFSET ||
+            columnOffset === COMMENT_OFFSET
+          );
         }
 
         function isReadOnlyColumn(columnOffset) {
-          return columnOffset >= READONLY_FIRST_OFFSET;
+          return (
+            columnOffset === AUTHOR_OFFSET || columnOffset >= RATE_FILE_OFFSET
+          );
         }
 
         function tableHeight() {
@@ -500,22 +520,55 @@
           return anchor;
         }
 
+        function newRowProjectSelectFormatter(cell) {
+          var select = document.createElement("select");
+          select.className = "new-row-input new-row-select";
+          select.setAttribute("aria-label", "Project *");
+
+          var placeholder = document.createElement("option");
+          placeholder.value = "";
+          placeholder.textContent = "Project *";
+          select.appendChild(placeholder);
+
+          projectOptions.forEach(function (project) {
+            var option = document.createElement("option");
+            option.value = project;
+            option.textContent = project;
+            select.appendChild(option);
+          });
+
+          select.value = cell.getValue() || "";
+          select.addEventListener("change", function () {
+            cell.getRow().getData().c0 = select.value;
+            cell
+              .getElement()
+              .classList.remove("is-required-missing");
+          });
+          ["mousedown", "click", "dblclick"].forEach(function (eventName) {
+            select.addEventListener(eventName, function (event) {
+              event.stopPropagation();
+            });
+          });
+          return select;
+        }
+
         function newRowInputFormatter(cell) {
           var columnOffset = Number(cell.getColumn().getField().substring(1));
+          if (columnOffset === PROJECT_OFFSET) {
+            return newRowProjectSelectFormatter(cell);
+          }
           var input = document.createElement("textarea");
           input.className = "new-row-input";
           input.rows = 2;
           input.value = cell.getValue() || "";
           input.placeholder =
-            columnOffset === 0
-              ? "Project *"
-              : columnOffset === 1
+            columnOffset === DETAILS_OFFSET
               ? "Details *"
               : fallbackHeaders[columnOffset];
           input.setAttribute("aria-label", input.placeholder);
           input.addEventListener("input", function () {
             cell.getRow().getData()["c" + columnOffset] = input.value;
-            if (columnOffset === 0 || columnOffset === 1) {
+            if (columnOffset === DETAILS_OFFSET) {
               cell
                 .getElement()
                 .classList.remove("is-required-missing");
@@ -627,7 +680,17 @@
             var header = headers[columnOffset] || fallbackHeader;
             var checkboxColumn = isStatusColumn(columnOffset);
             var readOnlyColumn = isReadOnlyColumn(columnOffset);
+            var projectColumn = columnOffset === PROJECT_OFFSET;
             var textWidth = textColumnWidths[columnOffset] || 120;
+            var cssClasses = [];
+            if (checkboxColumn) cssClasses.push("invoice-checkbox-cell");
+            if (
+              columnOffset === DETAILS_OFFSET ||
+              columnOffset === COMMENT_OFFSET
+            ) {
+              cssClasses.push("scrollable-text-cell");
+            }
+            if (readOnlyColumn) cssClasses.push("is-system-field");
             var column = {
               title: header,
               field: "c" + columnOffset,
@@ -644,11 +707,7 @@
               minWidth: checkboxColumn ? 66 : textWidth,
               width: checkboxColumn ? 70 : textWidth,
               variableHeight: !checkboxColumn,
-              cssClass: checkboxColumn
-                ? "invoice-checkbox-cell"
-                : columnOffset === 1 || columnOffset === 2
-                ? "scrollable-text-cell"
-                : "",
+              cssClass: cssClasses.join(" "),
               formatter: checkboxColumn
                 ? checkboxFormatter
                 : function (cell) {
@@ -660,18 +719,32 @@
                     }
                     return textFormatter(cell);
                   },
-              editor:
-                checkboxColumn || readOnlyColumn ? false : "textarea",
+              editor: checkboxColumn || readOnlyColumn
+                ? false
+                : projectColumn
+                ? "list"
+                : "textarea",
               editorParams: checkboxColumn || readOnlyColumn
                 ? {
                     tristate: false,
+                  }
+                : projectColumn
+                ? {
+                    values: projectOptions,
+                    autocomplete: true,
+                    listOnEmpty: true,
+                    freetext: false,
+                    emptyValue: "",
                   }
                 : {
                     verticalNavigation: "table",
                     shiftEnterSubmit: true,
                   },
               headerFilter:
-                columnOffset === 0 || columnOffset === 3 ? "input" : false,
+                columnOffset === PROJECT_OFFSET ||
+                columnOffset === AUTHOR_OFFSET
+                  ? "input"
+                  : false,
               headerFilterPlaceholder: "Search",
               headerSortTristate: true,
             };
@@ -775,7 +848,10 @@
           var row = cell.getRow().getData();
           var columnOffset = Number(cell.getColumn().getField().substring(1));
           if (row._isNew) {
-            if (columnOffset === 0 || columnOffset === 1) {
+            if (
+              columnOffset === PROJECT_OFFSET ||
+              columnOffset === DETAILS_OFFSET
+            ) {
               cell
                 .getElement()
                 .classList.remove("is-required-missing");
@@ -818,13 +894,14 @@
           setLoading(true);
           errorElement.classList.add("d-none");
           errorElement.textContent = "";
-          setStatus("Loading…");
+          setStatus("");
 
           google.script.run
             .withSuccessHandler(function (response) {
               dirtyChanges = {};
               draftRowId = null;
-              buildTable(response || { headers: [], rows: [] });
+              projectOptions = (response && response.projects) || [];
+              buildTable(response || { headers: [], rows: [], projects: [] });
               setLoading(false);
               setStatus("");
               updateToolbar();
@@ -868,7 +945,7 @@
             var projectInput = row
               .getCell("c0")
               .getElement()
-              .querySelector(".new-row-input");
+              .querySelector(".new-row-select, .new-row-input");
             if (projectInput) projectInput.focus();
             updateToolbar();
           });
@@ -885,16 +962,25 @@
         function validateNewRow(row) {
           var projectCell = row.getCell("c0");
           var detailsCell = row.getCell("c1");
-          var projectMissing =
-            String(row.getData().c0 || "").trim() === "";
+          var projectValue = String(row.getData().c0 || "").trim();
           var detailsMissing =
             String(row.getData().c1 || "").trim() === "";
+          var projectMissing = projectValue === "";
+          var projectInvalid =
+            !projectMissing && projectOptions.indexOf(projectValue) === -1;
           projectCell
             .getElement()
-            .classList.toggle("is-required-missing", projectMissing);
+            .classList.toggle(
+              "is-required-missing",
+              projectMissing || projectInvalid
+            );
           detailsCell
             .getElement()
             .classList.toggle("is-required-missing", detailsMissing);
+          if (projectInvalid) {
+            setStatus("Select a project from the list", "error");
+            return false;
+          }
           return !projectMissing && !detailsMissing;
         }
 
@@ -905,7 +991,7 @@
             .classList.toggle("is-saving-new-row", busy);
           row
             .getElement()
-            .querySelectorAll("textarea, button")
+            .querySelectorAll("textarea, select, button")
             .forEach(function (control) {
               control.disabled = busy;
             });

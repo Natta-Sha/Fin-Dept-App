@@ -4,11 +4,22 @@
 var TEST_INVOICE_REQUESTS_SPREADSHEET_ID =
   "1-5b98hkm-wsrTlyt-1j2PJcTvu1VNyAh0EjRhT3ZBg0";
 var TEST_INVOICE_REQUESTS_SHEET_NAME = "Requests";
+var TEST_INVOICE_REQUESTS_INFORMATION_SHEET = "Information";
+var TEST_INVOICE_REQUESTS_LISTS_SHEET = "Lists";
 var TEST_INVOICE_REQUESTS_FIRST_COLUMN = 2; // B
 var TEST_INVOICE_REQUESTS_COLUMN_COUNT = 17; // B:R
 var TEST_INVOICE_REQUESTS_LAST_COLUMN = 18; // R
 var TEST_INVOICE_REQUESTS_STATUS_FIRST_OFFSET = 4; // F
 var TEST_INVOICE_REQUESTS_STATUS_COUNT = 8; // F:M
+var TEST_INVOICE_REQUESTS_PROJECT_OFFSET = 0; // B
+var TEST_INVOICE_REQUESTS_DETAILS_OFFSET = 1; // C
+var TEST_INVOICE_REQUESTS_COMMENT_OFFSET = 2; // D
+var TEST_INVOICE_REQUESTS_AUTHOR_OFFSET = 3; // E
+var TEST_INVOICE_REQUESTS_RATE_FILE_OFFSET = 12; // N
+var TEST_INVOICE_REQUESTS_CREATED_BY_OFFSET = 13; // O
+var TEST_INVOICE_REQUESTS_CREATED_AT_OFFSET = 14; // P
+var TEST_INVOICE_REQUESTS_EDITED_BY_OFFSET = 15; // Q
+var TEST_INVOICE_REQUESTS_EDITED_AT_OFFSET = 16; // R
 var TEST_INVOICE_REQUESTS_NOT_APPLICABLE = "⊟";
 var TEST_INVOICE_REQUESTS_NOT_APPLICABLE_BACKGROUND = "#d9ead3";
 
@@ -19,6 +30,129 @@ function isTestInvoiceRequestStatusColumn_(columnOffset) {
       TEST_INVOICE_REQUESTS_STATUS_FIRST_OFFSET +
         TEST_INVOICE_REQUESTS_STATUS_COUNT
   );
+}
+
+function isTestInvoiceRequestContentColumn_(columnOffset) {
+  return (
+    columnOffset === TEST_INVOICE_REQUESTS_PROJECT_OFFSET ||
+    columnOffset === TEST_INVOICE_REQUESTS_DETAILS_OFFSET ||
+    columnOffset === TEST_INVOICE_REQUESTS_COMMENT_OFFSET
+  );
+}
+
+function isTestInvoiceRequestClientEditableColumn_(columnOffset) {
+  return (
+    isTestInvoiceRequestContentColumn_(columnOffset) ||
+    isTestInvoiceRequestStatusColumn_(columnOffset)
+  );
+}
+
+function formatTestInvoiceRequestTimestamp_(date) {
+  return Utilities.formatDate(
+    date || new Date(),
+    Session.getScriptTimeZone(),
+    "dd/MM/yyyy HH:mm"
+  );
+}
+
+function sheetColumnForTestInvoiceRequestOffset_(columnOffset) {
+  return TEST_INVOICE_REQUESTS_FIRST_COLUMN + columnOffset;
+}
+
+function getTestInvoiceRequestProjects_(spreadsheet) {
+  var sheet = spreadsheet.getSheetByName(
+    TEST_INVOICE_REQUESTS_INFORMATION_SHEET
+  );
+  if (!sheet) throw new Error('Sheet "Information" was not found.');
+  var lastRow = sheet.getLastRow();
+  if (lastRow < 2) return [];
+
+  var values = sheet.getRange(2, 2, lastRow - 1, 1).getDisplayValues();
+  var seen = {};
+  var projects = [];
+  for (var i = 0; i < values.length; i++) {
+    var project = String(values[i][0] || "").trim();
+    if (!project || seen[project]) continue;
+    seen[project] = true;
+    projects.push(project);
+  }
+  projects.sort(function (left, right) {
+    return left.localeCompare(right, undefined, { sensitivity: "base" });
+  });
+  return projects;
+}
+
+function resolveTestInvoiceRequestAuthor_(spreadsheet, email) {
+  var normalizedEmail = String(email || "").trim().toLowerCase();
+  if (!normalizedEmail) return "";
+
+  var sheet = spreadsheet.getSheetByName(TEST_INVOICE_REQUESTS_LISTS_SHEET);
+  if (!sheet) throw new Error('Sheet "Lists" was not found.');
+  var lastRow = sheet.getLastRow();
+  if (lastRow < 2) return normalizedEmail;
+
+  var values = sheet.getRange(2, 1, lastRow - 1, 2).getDisplayValues();
+  for (var i = 0; i < values.length; i++) {
+    var listEmail = String(values[i][1] || "").trim().toLowerCase();
+    if (listEmail === normalizedEmail) {
+      var fullName = String(values[i][0] || "").trim();
+      return fullName || normalizedEmail;
+    }
+  }
+  return normalizedEmail;
+}
+
+function resolveTestInvoiceRequestRateFile_(spreadsheet, project) {
+  var normalizedProject = String(project || "").trim();
+  if (!normalizedProject) return { value: "", link: "" };
+
+  var sheet = spreadsheet.getSheetByName(
+    TEST_INVOICE_REQUESTS_INFORMATION_SHEET
+  );
+  if (!sheet) throw new Error('Sheet "Information" was not found.');
+  var lastRow = sheet.getLastRow();
+  if (lastRow < 2) return { value: "", link: "" };
+
+  var projects = sheet.getRange(2, 2, lastRow - 1, 1).getDisplayValues();
+  var richTextValues = sheet.getRange(2, 5, lastRow - 1, 1).getRichTextValues();
+  var displayValues = sheet.getRange(2, 5, lastRow - 1, 1).getDisplayValues();
+  for (var i = 0; i < projects.length; i++) {
+    if (String(projects[i][0] || "").trim() !== normalizedProject) continue;
+    var richText = richTextValues[i][0];
+    var link = richText ? richText.getLinkUrl() || "" : "";
+    var value = String(displayValues[i][0] || "").trim();
+    if (!value && link) value = link;
+    return { value: value, link: link };
+  }
+  return { value: "", link: "" };
+}
+
+function writeTestInvoiceRequestLinkedValue_(range, value, link) {
+  var text = String(value || "").trim();
+  var url = String(link || "").trim();
+  if (url) {
+    range.setRichTextValue(
+      SpreadsheetApp.newRichTextValue()
+        .setText(text || url)
+        .setLinkUrl(url)
+        .build()
+    );
+    return;
+  }
+  range.clear();
+  if (text) range.setValue(text);
+}
+
+function assertTestInvoiceRequestProject_(spreadsheet, project) {
+  var projects = getTestInvoiceRequestProjects_(spreadsheet);
+  if (projects.indexOf(project) === -1) {
+    return {
+      success: false,
+      validation: true,
+      message: "Select a project from the list.",
+    };
+  }
+  return null;
 }
 
 function assertTestInvoiceRequestsAccess_() {
@@ -137,7 +271,8 @@ function getTestInvoiceRequests() {
   if (!sheet) throw new Error('Sheet "Requests" was not found.');
 
   var lastRow = sheet.getLastRow();
-  if (lastRow < 1) return { headers: [], rows: [] };
+  var projects = getTestInvoiceRequestProjects_(spreadsheet);
+  if (lastRow < 1) return { headers: [], rows: [], projects: projects };
 
   // Column A is read only as a stable hidden row key.
   var range = sheet.getRange(
@@ -206,7 +341,7 @@ function getTestInvoiceRequests() {
     rows.push({ id: rowId, cells: cells });
   }
 
-  return { headers: headers, rows: rows };
+  return { headers: headers, rows: rows, projects: projects };
 }
 
 function writeTestInvoiceRequestStatus_(range, status) {
@@ -227,8 +362,9 @@ function writeTestInvoiceRequestStatus_(range, status) {
 function createTestInvoiceRequest(data) {
   assertTestInvoiceRequestsAccess_();
   var cells = data && Array.isArray(data.cells) ? data.cells : [];
-  var project = String(cells[0] || "").trim();
-  var details = String(cells[1] || "").trim();
+  var project = String(cells[TEST_INVOICE_REQUESTS_PROJECT_OFFSET] || "").trim();
+  var details = String(cells[TEST_INVOICE_REQUESTS_DETAILS_OFFSET] || "").trim();
+  var comment = String(cells[TEST_INVOICE_REQUESTS_COMMENT_OFFSET] || "");
   if (!project || !details) {
     return {
       success: false,
@@ -248,10 +384,18 @@ function createTestInvoiceRequest(data) {
     var spreadsheet = SpreadsheetApp.openById(
       TEST_INVOICE_REQUESTS_SPREADSHEET_ID
     );
+    var projectError = assertTestInvoiceRequestProject_(spreadsheet, project);
+    if (projectError) return projectError;
+
     sheet = spreadsheet.getSheetByName(
       TEST_INVOICE_REQUESTS_SHEET_NAME
     );
     if (!sheet) throw new Error('Sheet "Requests" was not found.');
+
+    var email = getCurrentUserEmail();
+    var author = resolveTestInvoiceRequestAuthor_(spreadsheet, email);
+    var rateFile = resolveTestInvoiceRequestRateFile_(spreadsheet, project);
+    var createdAt = formatTestInvoiceRequestTimestamp_();
 
     var lastRow = sheet.getLastRow();
     var existingIds =
@@ -277,21 +421,17 @@ function createTestInvoiceRequest(data) {
         );
     }
 
-    var textValues = [
-      newId,
-      project,
-      details,
-      String(cells[2] || ""),
-      String(cells[3] || ""),
-    ];
-    sheet.getRange(newRow, 1, 1, textValues.length).setValues([textValues]);
+    sheet
+      .getRange(newRow, 1, 1, 5)
+      .setValues([[newId, project, details, comment, author]]);
 
     // Processing statuses F:M belong to the person handling the request.
     // A newly submitted request must leave them completely empty.
     var statusRange = sheet.getRange(
       newRow,
-      TEST_INVOICE_REQUESTS_FIRST_COLUMN +
-        TEST_INVOICE_REQUESTS_STATUS_FIRST_OFFSET,
+      sheetColumnForTestInvoiceRequestOffset_(
+        TEST_INVOICE_REQUESTS_STATUS_FIRST_OFFSET
+      ),
       1,
       TEST_INVOICE_REQUESTS_STATUS_COUNT
     );
@@ -299,23 +439,45 @@ function createTestInvoiceRequest(data) {
     statusRange.clearDataValidations();
     statusRange.setBackground(null);
 
-    // Trailing metadata columns N:R stay empty for a new request.
-    var trailingOffset =
-      TEST_INVOICE_REQUESTS_STATUS_FIRST_OFFSET +
-      TEST_INVOICE_REQUESTS_STATUS_COUNT;
-    var trailingCount =
-      TEST_INVOICE_REQUESTS_COLUMN_COUNT - trailingOffset;
-    if (trailingCount > 0) {
-      var trailingRange = sheet.getRange(
+    var trailingRange = sheet.getRange(
+      newRow,
+      sheetColumnForTestInvoiceRequestOffset_(
+        TEST_INVOICE_REQUESTS_RATE_FILE_OFFSET
+      ),
+      1,
+      5
+    );
+    trailingRange.clearContent();
+    trailingRange.clearDataValidations();
+    trailingRange.setBackground(null);
+
+    writeTestInvoiceRequestLinkedValue_(
+      sheet.getRange(
         newRow,
-        TEST_INVOICE_REQUESTS_FIRST_COLUMN + trailingOffset,
-        1,
-        trailingCount
-      );
-      trailingRange.clearContent();
-      trailingRange.clearDataValidations();
-      trailingRange.setBackground(null);
-    }
+        sheetColumnForTestInvoiceRequestOffset_(
+          TEST_INVOICE_REQUESTS_RATE_FILE_OFFSET
+        )
+      ),
+      rateFile.value,
+      rateFile.link
+    );
+    sheet
+      .getRange(
+        newRow,
+        sheetColumnForTestInvoiceRequestOffset_(
+          TEST_INVOICE_REQUESTS_CREATED_BY_OFFSET
+        )
+      )
+      .setValue(email);
+    sheet
+      .getRange(
+        newRow,
+        sheetColumnForTestInvoiceRequestOffset_(
+          TEST_INVOICE_REQUESTS_CREATED_AT_OFFSET
+        )
+      )
+      .setValue(createdAt);
+
     SpreadsheetApp.flush();
     return { success: true, id: String(newId) };
   } catch (error) {
@@ -397,6 +559,7 @@ function saveTestInvoiceRequestChanges(changes) {
 
     var conflicts = [];
     var validated = [];
+    var contentEditsByRow = {};
     for (var changeIndex = 0; changeIndex < changes.length; changeIndex++) {
       var change = changes[changeIndex] || {};
       var rowId = String(change.id || "").trim();
@@ -404,8 +567,7 @@ function saveTestInvoiceRequestChanges(changes) {
       if (
         !rowId ||
         !Number.isInteger(columnOffset) ||
-        columnOffset < 0 ||
-        columnOffset >= TEST_INVOICE_REQUESTS_COLUMN_COUNT
+        !isTestInvoiceRequestClientEditableColumn_(columnOffset)
       ) {
         throw new Error("Invalid change payload.");
       }
@@ -442,12 +604,52 @@ function saveTestInvoiceRequestChanges(changes) {
       ) {
         throw new Error("Invalid checkbox status.");
       }
+      if (
+        columnOffset === TEST_INVOICE_REQUESTS_PROJECT_OFFSET &&
+        String(nextValue || "").trim()
+      ) {
+        var projectError = assertTestInvoiceRequestProject_(
+          spreadsheet,
+          String(nextValue).trim()
+        );
+        if (projectError) return projectError;
+      }
+      if (
+        columnOffset === TEST_INVOICE_REQUESTS_PROJECT_OFFSET ||
+        columnOffset === TEST_INVOICE_REQUESTS_DETAILS_OFFSET
+      ) {
+        if (!String(nextValue || "").trim()) {
+          return {
+            success: false,
+            validation: true,
+            message: "Project and Details are required.",
+          };
+        }
+      }
       validated.push({
         sheetRow: targetRow.sheetRow,
-        sheetColumn: TEST_INVOICE_REQUESTS_FIRST_COLUMN + columnOffset,
+        sheetColumn: sheetColumnForTestInvoiceRequestOffset_(columnOffset),
         columnOffset: columnOffset,
         value: nextValue,
+        rowId: rowId,
       });
+      if (isTestInvoiceRequestContentColumn_(columnOffset)) {
+        if (!contentEditsByRow[rowId]) {
+          contentEditsByRow[rowId] = {
+            sheetRow: targetRow.sheetRow,
+            project: String(
+              targetRow.values[
+                TEST_INVOICE_REQUESTS_FIRST_COLUMN -
+                  1 +
+                  TEST_INVOICE_REQUESTS_PROJECT_OFFSET
+              ] || ""
+            ).trim(),
+          };
+        }
+        if (columnOffset === TEST_INVOICE_REQUESTS_PROJECT_OFFSET) {
+          contentEditsByRow[rowId].project = String(nextValue || "").trim();
+        }
+      }
     }
 
     if (conflicts.length > 0) {
@@ -472,6 +674,53 @@ function saveTestInvoiceRequestChanges(changes) {
         target.setValue(item.value);
       }
     }
+
+    var email = getCurrentUserEmail();
+    var author = resolveTestInvoiceRequestAuthor_(spreadsheet, email);
+    var editedAt = formatTestInvoiceRequestTimestamp_();
+    var contentRowIds = Object.keys(contentEditsByRow);
+    for (var metaIndex = 0; metaIndex < contentRowIds.length; metaIndex++) {
+      var meta = contentEditsByRow[contentRowIds[metaIndex]];
+      var rateFile = resolveTestInvoiceRequestRateFile_(
+        spreadsheet,
+        meta.project
+      );
+      sheet
+        .getRange(
+          meta.sheetRow,
+          sheetColumnForTestInvoiceRequestOffset_(
+            TEST_INVOICE_REQUESTS_AUTHOR_OFFSET
+          )
+        )
+        .setValue(author);
+      writeTestInvoiceRequestLinkedValue_(
+        sheet.getRange(
+          meta.sheetRow,
+          sheetColumnForTestInvoiceRequestOffset_(
+            TEST_INVOICE_REQUESTS_RATE_FILE_OFFSET
+          )
+        ),
+        rateFile.value,
+        rateFile.link
+      );
+      sheet
+        .getRange(
+          meta.sheetRow,
+          sheetColumnForTestInvoiceRequestOffset_(
+            TEST_INVOICE_REQUESTS_EDITED_BY_OFFSET
+          )
+        )
+        .setValue(email);
+      sheet
+        .getRange(
+          meta.sheetRow,
+          sheetColumnForTestInvoiceRequestOffset_(
+            TEST_INVOICE_REQUESTS_EDITED_AT_OFFSET
+          )
+        )
+        .setValue(editedAt);
+    }
+
     SpreadsheetApp.flush();
 
     return { success: true, updated: validated.length };
