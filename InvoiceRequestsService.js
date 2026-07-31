@@ -184,6 +184,14 @@ function getInvoiceRequestsPageUrl_() {
   return ScriptApp.getService().getUrl() + "?page=InvoiceRequests";
 }
 
+function escapeInvoiceRequestHtml_(value) {
+  return String(value || "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+}
+
 function sendInvoiceRequestNotification_(
   spreadsheet,
   kind,
@@ -200,11 +208,17 @@ function sendInvoiceRequestNotification_(
     var subject = isEdited
       ? "Invoice request edited"
       : "Invoice request created";
-    var intro = isEdited
-      ? "Привіт. Заявку на інвойс було змінено."
-      : "Привіт. Було створено заявку на інвойс.";
-    var body =
-      intro +
+    var paragraph = isEdited
+      ? "Заявку на інвойс було змінено."
+      : "Було створено заявку на інвойс.";
+    var pageUrl = getInvoiceRequestsPageUrl_();
+    var safeProject = escapeInvoiceRequestHtml_(project);
+    var safeAuthor = escapeInvoiceRequestHtml_(author);
+    var safeUrl = escapeInvoiceRequestHtml_(pageUrl);
+
+    var plainBody =
+      "Привіт.\n\n" +
+      paragraph +
       "\n\n" +
       "Проект: " +
       String(project || "") +
@@ -212,13 +226,30 @@ function sendInvoiceRequestNotification_(
       "Автор: " +
       String(author || "") +
       "\n\n" +
-      getInvoiceRequestsPageUrl_();
+      "Деталі за посиланням: " +
+      pageUrl;
+
+    var htmlBody =
+      "<p>Привіт.</p>" +
+      "<p>" +
+      escapeInvoiceRequestHtml_(paragraph) +
+      "</p>" +
+      "<p><b>Проект:</b> " +
+      safeProject +
+      "<br>" +
+      "<b>Автор:</b> " +
+      safeAuthor +
+      "</p>" +
+      "<p>Деталі за <a href=\"" +
+      safeUrl +
+      "\">посиланням</a></p>";
 
     MailApp.sendEmail({
       to: recipients[0],
       bcc: recipients.slice(1).join(","),
       subject: subject,
-      body: body,
+      body: plainBody,
+      htmlBody: htmlBody,
     });
   } catch (error) {
     console.error("Invoice request notification failed:", error);
