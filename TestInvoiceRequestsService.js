@@ -3,7 +3,7 @@
 
 var TEST_INVOICE_REQUESTS_SPREADSHEET_ID =
   "1-5b98hkm-wsrTlyt-1j2PJcTvu1VNyAh0EjRhT3ZBg0";
-var TEST_INVOICE_REQUESTS_SHEET_NAME = "анкета";
+var TEST_INVOICE_REQUESTS_SHEET_NAME = "Requests";
 var TEST_INVOICE_REQUESTS_FIRST_COLUMN = 2; // B
 var TEST_INVOICE_REQUESTS_COLUMN_COUNT = 12; // B:M
 var TEST_INVOICE_REQUESTS_NOT_APPLICABLE = "⊟";
@@ -120,7 +120,7 @@ function getTestInvoiceRequests() {
     TEST_INVOICE_REQUESTS_SPREADSHEET_ID
   );
   var sheet = spreadsheet.getSheetByName(TEST_INVOICE_REQUESTS_SHEET_NAME);
-  if (!sheet) throw new Error('Sheet "анкета" was not found.');
+  if (!sheet) throw new Error('Sheet "Requests" was not found.');
 
   var lastRow = sheet.getLastRow();
   if (lastRow < 1) return { headers: [], rows: [] };
@@ -238,7 +238,7 @@ function createTestInvoiceRequest(data) {
     sheet = spreadsheet.getSheetByName(
       TEST_INVOICE_REQUESTS_SHEET_NAME
     );
-    if (!sheet) throw new Error('Sheet "анкета" was not found.');
+    if (!sheet) throw new Error('Sheet "Requests" was not found.');
 
     var lastRow = sheet.getLastRow();
     var existingIds =
@@ -323,7 +323,7 @@ function saveTestInvoiceRequestChanges(changes) {
       TEST_INVOICE_REQUESTS_SPREADSHEET_ID
     );
     var sheet = spreadsheet.getSheetByName(TEST_INVOICE_REQUESTS_SHEET_NAME);
-    if (!sheet) throw new Error('Sheet "анкета" was not found.');
+    if (!sheet) throw new Error('Sheet "Requests" was not found.');
 
     var lastRow = sheet.getLastRow();
     if (lastRow < 2) throw new Error("No editable rows were found.");
