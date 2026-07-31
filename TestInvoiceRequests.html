@@ -908,6 +908,14 @@
             : "bi bi-arrow-clockwise me-1";
         }
 
+        function applyLoadedData(response) {
+          dirtyChanges = {};
+          draftRowId = null;
+          projectOptions = (response && response.projects) || [];
+          buildTable(response || { headers: [], rows: [], projects: [] });
+          updateToolbar();
+        }
+
         function loadData(force) {
           if (hasUnsavedWork() && !force) return;
           setLoading(true);
@@ -917,13 +925,9 @@
 
           google.script.run
             .withSuccessHandler(function (response) {
-              dirtyChanges = {};
-              draftRowId = null;
-              projectOptions = (response && response.projects) || [];
-              buildTable(response || { headers: [], rows: [], projects: [] });
+              applyLoadedData(response);
               setLoading(false);
               setStatus("");
-              updateToolbar();
             })
             .withFailureHandler(function (error) {
               console.error("Test Invoice Requests load failed:", error);
@@ -1051,9 +1055,13 @@
                 return;
               }
               draftRowId = null;
+              if (result.rows) {
+                applyLoadedData(result);
+              } else {
+                loadData(true);
+              }
               setStatus("New row saved", "success");
               updateToolbar();
-              loadData(true);
             })
             .withFailureHandler(function (error) {
               console.error("Test Invoice Request row creation failed:", error);
@@ -1104,10 +1112,14 @@
                 return;
               }
 
-              dirtyChanges = {};
+              if (result.rows) {
+                applyLoadedData(result);
+              } else {
+                dirtyChanges = {};
+                loadData(true);
+              }
               setStatus("Saved", "success");
               updateToolbar();
-              loadData(true);
             })
             .withFailureHandler(function (error) {
               console.error("Test Invoice Requests save failed:", error);

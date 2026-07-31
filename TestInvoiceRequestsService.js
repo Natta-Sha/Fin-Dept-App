@@ -86,44 +86,62 @@ function sheetColumnForTestInvoiceRequestOffset_(columnOffset) {
 }
 
 function resetTestInvoiceRequestStatuses_(sheet, sheetRow) {
-  for (
-    var columnOffset = TEST_INVOICE_REQUESTS_STATUS_FIRST_OFFSET;
-    columnOffset <
-    TEST_INVOICE_REQUESTS_STATUS_FIRST_OFFSET +
-      TEST_INVOICE_REQUESTS_STATUS_COUNT;
-    columnOffset++
-  ) {
-    writeTestInvoiceRequestStatus_(
-      sheet.getRange(
-        sheetRow,
-        sheetColumnForTestInvoiceRequestOffset_(columnOffset)
-      ),
-      "unchecked"
-    );
+  var statusRange = sheet.getRange(
+    sheetRow,
+    sheetColumnForTestInvoiceRequestOffset_(
+      TEST_INVOICE_REQUESTS_STATUS_FIRST_OFFSET
+    ),
+    1,
+    TEST_INVOICE_REQUESTS_STATUS_COUNT
+  );
+  var uncheckedRow = [];
+  for (var i = 0; i < TEST_INVOICE_REQUESTS_STATUS_COUNT; i++) {
+    uncheckedRow.push(false);
   }
+  statusRange.insertCheckboxes();
+  statusRange.setValues([uncheckedRow]);
+  statusRange.setBackground(null);
 }
 
-function getTestInvoiceRequestProjects_(spreadsheet) {
+function getTestInvoiceRequestInformationLookup_(spreadsheet) {
   var sheet = spreadsheet.getSheetByName(
     TEST_INVOICE_REQUESTS_INFORMATION_SHEET
   );
   if (!sheet) throw new Error('Sheet "Information" was not found.');
   var lastRow = sheet.getLastRow();
-  if (lastRow < 2) return [];
+  if (lastRow < 2) {
+    return { projects: [], rateByProject: {} };
+  }
 
-  var values = sheet.getRange(2, 2, lastRow - 1, 1).getDisplayValues();
+  // B:E in one read: project in B, rate-file link in E.
+  var range = sheet.getRange(2, 2, lastRow - 1, 4);
+  var displayValues = range.getDisplayValues();
+  var richTextValues = range.getRichTextValues();
   var seen = {};
   var projects = [];
-  for (var i = 0; i < values.length; i++) {
-    var project = String(values[i][0] || "").trim();
-    if (!project || seen[project]) continue;
-    seen[project] = true;
-    projects.push(project);
+  var rateByProject = {};
+  for (var i = 0; i < displayValues.length; i++) {
+    var project = String(displayValues[i][0] || "").trim();
+    if (!project) continue;
+    if (!seen[project]) {
+      seen[project] = true;
+      projects.push(project);
+    }
+    if (rateByProject[project]) continue;
+    var richText = richTextValues[i][3];
+    var link = richText ? richText.getLinkUrl() || "" : "";
+    var value = String(displayValues[i][3] || "").trim();
+    if (!value && link) value = link;
+    rateByProject[project] = { value: value, link: link };
   }
   projects.sort(function (left, right) {
     return left.localeCompare(right, undefined, { sensitivity: "base" });
   });
-  return projects;
+  return { projects: projects, rateByProject: rateByProject };
+}
+
+function getTestInvoiceRequestProjects_(spreadsheet) {
+  return getTestInvoiceRequestInformationLookup_(spreadsheet).projects;
 }
 
 function resolveTestInvoiceRequestAuthor_(spreadsheet, email) {
@@ -146,29 +164,16 @@ function resolveTestInvoiceRequestAuthor_(spreadsheet, email) {
   return normalizedEmail;
 }
 
-function resolveTestInvoiceRequestRateFile_(spreadsheet, project) {
+function resolveTestInvoiceRequestRateFile_(
+  spreadsheet,
+  project,
+  informationLookup
+) {
   var normalizedProject = String(project || "").trim();
   if (!normalizedProject) return { value: "", link: "" };
-
-  var sheet = spreadsheet.getSheetByName(
-    TEST_INVOICE_REQUESTS_INFORMATION_SHEET
-  );
-  if (!sheet) throw new Error('Sheet "Information" was not found.');
-  var lastRow = sheet.getLastRow();
-  if (lastRow < 2) return { value: "", link: "" };
-
-  var projects = sheet.getRange(2, 2, lastRow - 1, 1).getDisplayValues();
-  var richTextValues = sheet.getRange(2, 5, lastRow - 1, 1).getRichTextValues();
-  var displayValues = sheet.getRange(2, 5, lastRow - 1, 1).getDisplayValues();
-  for (var i = 0; i < projects.length; i++) {
-    if (String(projects[i][0] || "").trim() !== normalizedProject) continue;
-    var richText = richTextValues[i][0];
-    var link = richText ? richText.getLinkUrl() || "" : "";
-    var value = String(displayValues[i][0] || "").trim();
-    if (!value && link) value = link;
-    return { value: value, link: link };
-  }
-  return { value: "", link: "" };
+  var lookup =
+    informationLookup || getTestInvoiceRequestInformationLookup_(spreadsheet);
+  return lookup.rateByProject[normalizedProject] || { value: "", link: "" };
 }
 
 function writeTestInvoiceRequestLinkedValue_(range, value, link) {
@@ -187,9 +192,8 @@ function writeTestInvoiceRequestLinkedValue_(range, value, link) {
   if (text) range.setValue(text);
 }
 
-function assertTestInvoiceRequestProject_(spreadsheet, project) {
-  var projects = getTestInvoiceRequestProjects_(spreadsheet);
-  if (projects.indexOf(project) === -1) {
+function assertTestInvoiceRequestProject_(project, projects) {
+  if (!projects || projects.indexOf(project) === -1) {
     return {
       success: false,
       validation: true,
@@ -305,17 +309,14 @@ function migrateLegacyTestInvoiceRequestStatuses_(
   if (migrated > 0) SpreadsheetApp.flush();
 }
 
-function getTestInvoiceRequests() {
-  assertTestInvoiceRequestsAccess_();
-
-  var spreadsheet = SpreadsheetApp.openById(
-    TEST_INVOICE_REQUESTS_SPREADSHEET_ID
-  );
+function buildTestInvoiceRequestsPayload_(spreadsheet, informationLookup) {
   var sheet = spreadsheet.getSheetByName(TEST_INVOICE_REQUESTS_SHEET_NAME);
   if (!sheet) throw new Error('Sheet "Requests" was not found.');
 
+  var lookup =
+    informationLookup || getTestInvoiceRequestInformationLookup_(spreadsheet);
+  var projects = lookup.projects;
   var lastRow = sheet.getLastRow();
-  var projects = getTestInvoiceRequestProjects_(spreadsheet);
   if (lastRow < 1) return { headers: [], rows: [], projects: projects };
 
   // Column A is read only as a stable hidden row key.
@@ -409,6 +410,14 @@ function getTestInvoiceRequests() {
   return { headers: headers, rows: rows, projects: projects };
 }
 
+function getTestInvoiceRequests() {
+  assertTestInvoiceRequestsAccess_();
+  var spreadsheet = SpreadsheetApp.openById(
+    TEST_INVOICE_REQUESTS_SPREADSHEET_ID
+  );
+  return buildTestInvoiceRequestsPayload_(spreadsheet);
+}
+
 function writeTestInvoiceRequestStatus_(range, status) {
   if (status === "notApplicable") {
     range.clearDataValidations();
@@ -449,7 +458,13 @@ function createTestInvoiceRequest(data) {
     var spreadsheet = SpreadsheetApp.openById(
       TEST_INVOICE_REQUESTS_SPREADSHEET_ID
     );
-    var projectError = assertTestInvoiceRequestProject_(spreadsheet, project);
+    var informationLookup = getTestInvoiceRequestInformationLookup_(
+      spreadsheet
+    );
+    var projectError = assertTestInvoiceRequestProject_(
+      project,
+      informationLookup.projects
+    );
     if (projectError) return projectError;
 
     sheet = spreadsheet.getSheetByName(
@@ -459,7 +474,11 @@ function createTestInvoiceRequest(data) {
 
     var email = getCurrentUserEmail();
     var author = resolveTestInvoiceRequestAuthor_(spreadsheet, email);
-    var rateFile = resolveTestInvoiceRequestRateFile_(spreadsheet, project);
+    var rateFile = resolveTestInvoiceRequestRateFile_(
+      spreadsheet,
+      project,
+      informationLookup
+    );
     var createdAt = formatTestInvoiceRequestTimestamp_();
 
     var lastRow = sheet.getLastRow();
@@ -544,7 +563,17 @@ function createTestInvoiceRequest(data) {
       .setValue(createdAt);
 
     SpreadsheetApp.flush();
-    return { success: true, id: String(newId) };
+    var payload = buildTestInvoiceRequestsPayload_(
+      spreadsheet,
+      informationLookup
+    );
+    return {
+      success: true,
+      id: String(newId),
+      headers: payload.headers,
+      rows: payload.rows,
+      projects: payload.projects,
+    };
   } catch (error) {
     if (sheet && newRow > 0) {
       try {
@@ -587,26 +616,17 @@ function saveTestInvoiceRequestChanges(changes) {
     var lastRow = sheet.getLastRow();
     if (lastRow < 2) throw new Error("No editable rows were found.");
 
-    var source = sheet
-      .getRange(
-        2,
-        1,
-        lastRow - 1,
-        TEST_INVOICE_REQUESTS_FIRST_COLUMN +
-          TEST_INVOICE_REQUESTS_COLUMN_COUNT -
-          1
-      )
-      .getValues();
-    var sourceBackgrounds = sheet
-      .getRange(
-        2,
-        1,
-        lastRow - 1,
-        TEST_INVOICE_REQUESTS_FIRST_COLUMN +
-          TEST_INVOICE_REQUESTS_COLUMN_COUNT -
-          1
-      )
-      .getBackgrounds();
+    var sourceRange = sheet.getRange(
+      2,
+      1,
+      lastRow - 1,
+      TEST_INVOICE_REQUESTS_FIRST_COLUMN +
+        TEST_INVOICE_REQUESTS_COLUMN_COUNT -
+        1
+    );
+    var source = sourceRange.getValues();
+    var sourceBackgrounds = sourceRange.getBackgrounds();
+    var informationLookup = null;
     var rowsById = {};
     for (var sourceIndex = 0; sourceIndex < source.length; sourceIndex++) {
       var sourceId = String(source[sourceIndex][0] || "").trim();
@@ -673,9 +693,14 @@ function saveTestInvoiceRequestChanges(changes) {
         columnOffset === TEST_INVOICE_REQUESTS_PROJECT_OFFSET &&
         String(nextValue || "").trim()
       ) {
+        if (!informationLookup) {
+          informationLookup = getTestInvoiceRequestInformationLookup_(
+            spreadsheet
+          );
+        }
         var projectError = assertTestInvoiceRequestProject_(
-          spreadsheet,
-          String(nextValue).trim()
+          String(nextValue).trim(),
+          informationLookup.projects
         );
         if (projectError) return projectError;
       }
@@ -748,14 +773,23 @@ function saveTestInvoiceRequestChanges(changes) {
     }
 
     var email = getCurrentUserEmail();
-    var author = resolveTestInvoiceRequestAuthor_(spreadsheet, email);
+    var author = "";
     var editedAt = formatTestInvoiceRequestTimestamp_();
     var contentRowIds = Object.keys(contentEditsByRow);
+    if (contentRowIds.length > 0) {
+      if (!informationLookup) {
+        informationLookup = getTestInvoiceRequestInformationLookup_(
+          spreadsheet
+        );
+      }
+      author = resolveTestInvoiceRequestAuthor_(spreadsheet, email);
+    }
     for (var metaIndex = 0; metaIndex < contentRowIds.length; metaIndex++) {
       var meta = contentEditsByRow[contentRowIds[metaIndex]];
       var rateFile = resolveTestInvoiceRequestRateFile_(
         spreadsheet,
-        meta.project
+        meta.project,
+        informationLookup
       );
       sheet
         .getRange(
@@ -796,7 +830,17 @@ function saveTestInvoiceRequestChanges(changes) {
 
     SpreadsheetApp.flush();
 
-    return { success: true, updated: validated.length };
+    var payload = buildTestInvoiceRequestsPayload_(
+      spreadsheet,
+      informationLookup
+    );
+    return {
+      success: true,
+      updated: validated.length,
+      headers: payload.headers,
+      rows: payload.rows,
+      projects: payload.projects,
+    };
   } finally {
     try {
       lock.releaseLock();
