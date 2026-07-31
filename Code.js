@@ -68,7 +68,7 @@ function getPageSection(page) {
     page === "ClientsInformationList" ||
     page === "ClientsInformationCard" ||
     page === "ClientsInformationListTabulatorLab" ||
-    page === "TestInvoiceRequests"
+    page === "InvoiceRequests"
   ) {
     return "clientsinfo";
   }
@@ -219,6 +219,10 @@ function doGet(e) {
   try {
     var email = getCurrentUserEmail();
     var page = e.parameter.page || "Home";
+    // Backward-compatible alias for the previous page id.
+    if (page === "TestInvoiceRequests") {
+      page = "InvoiceRequests";
+    }
 
     // Access check
     if (!hasAccessToPage(email, page)) {
@@ -253,12 +257,12 @@ function doGet(e) {
       return denied.evaluate().setTitle("No Access");
     }
 
-    if (page === "TestInvoiceRequests" && !isFullAccessUser(email)) {
-      var testInvoiceRequestsDenied =
+    if (page === "InvoiceRequests" && !isFullAccessUser(email)) {
+      var invoiceRequestsDenied =
         HtmlService.createTemplateFromFile("AccessDenied");
-      testInvoiceRequestsDenied.baseUrl = ScriptApp.getService().getUrl();
-      testInvoiceRequestsDenied.activePage = "";
-      return testInvoiceRequestsDenied.evaluate().setTitle("No Access");
+      invoiceRequestsDenied.baseUrl = ScriptApp.getService().getUrl();
+      invoiceRequestsDenied.activePage = "";
+      return invoiceRequestsDenied.evaluate().setTitle("No Access");
     }
 
     var pageMode = e.parameter.mode || "";
@@ -645,7 +649,7 @@ function getNavigation(activePage) {
   var email = getCurrentUserEmail();
   template.navAccess = getUserNavAccess(email);
   template.canRefreshAccessPermissions = isFullAccessUser(email);
-  template.testInvoiceRequestsAccess = isFullAccessUser(email);
+  template.invoiceRequestsAccess = isFullAccessUser(email);
   return template.evaluate().getContent();
 }
 
@@ -735,8 +739,8 @@ function getActivePageForNavigation(page, params = {}) {
       return "clientsinfo";
     case "ClientsInformationCard":
       return "clientsinfo";
-    case "TestInvoiceRequests":
-      return "testinvoicerequests";
+    case "InvoiceRequests":
+      return "invoicerequests";
     default:
       return "";
   }

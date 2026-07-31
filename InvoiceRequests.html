@@ -33,17 +33,17 @@
         padding: 20px;
       }
 
-      .test-invoice-toolbar .btn {
+      .invoice-requests-toolbar .btn {
         border-radius: 25px;
         font-weight: 600;
       }
 
-      #save-test-invoice-requests {
+      #save-invoice-requests {
         border-color: transparent;
         background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
       }
 
-      #test-invoice-requests-table {
+      #invoice-requests-table {
         min-height: 240px;
         font-size: 0.78rem;
       }
@@ -56,14 +56,14 @@
         font-weight: 400;
       }
 
-      #test-invoice-requests-table .tabulator-editing input,
-      #test-invoice-requests-table .tabulator-editing select,
-      #test-invoice-requests-table .new-row-select {
+      #invoice-requests-table .tabulator-editing input,
+      #invoice-requests-table .tabulator-editing select,
+      #invoice-requests-table .new-row-select {
         font-size: 0.78rem;
         font-weight: 400;
       }
 
-      #test-invoice-requests-table .tabulator-col-content {
+      #invoice-requests-table .tabulator-col-content {
         height: 76px;
         display: flex;
         flex-direction: column;
@@ -71,32 +71,32 @@
         padding: 8px 7px 5px;
       }
 
-      #test-invoice-requests-table .tabulator-col-title {
+      #invoice-requests-table .tabulator-col-title {
         white-space: normal;
         overflow-wrap: anywhere;
         text-align: center;
         font-weight: 700;
       }
 
-      #test-invoice-requests-table .tabulator-col-title-holder {
+      #invoice-requests-table .tabulator-col-title-holder {
         min-height: 34px;
         display: flex;
         align-items: center;
         justify-content: center;
       }
 
-      #test-invoice-requests-table .tabulator-header-filter {
+      #invoice-requests-table .tabulator-header-filter {
         width: 100%;
         margin-top: auto;
       }
 
-      #test-invoice-requests-table .tabulator-header-filter input {
+      #invoice-requests-table .tabulator-header-filter input {
         width: 100%;
         padding: 2px 4px;
         font-size: 0.72rem;
       }
 
-      #test-invoice-requests-table .tabulator-cell {
+      #invoice-requests-table .tabulator-cell {
         min-height: 34px;
         padding: 5px 7px;
         white-space: pre-wrap;
@@ -105,16 +105,16 @@
       }
 
       /* Frozen cells must stay opaque while scrolling under them. */
-      #test-invoice-requests-table .tabulator-cell.tabulator-frozen {
+      #invoice-requests-table .tabulator-cell.tabulator-frozen {
         background-color: inherit;
       }
 
-      #test-invoice-requests-table .tabulator-cell.invoice-checkbox-cell {
+      #invoice-requests-table .tabulator-cell.invoice-checkbox-cell {
         text-align: center;
         font-size: 1.05rem;
       }
 
-      #test-invoice-requests-table .tabulator-cell.scrollable-text-cell {
+      #invoice-requests-table .tabulator-cell.scrollable-text-cell {
         overflow-x: auto;
         overflow-y: hidden;
         overscroll-behavior-x: contain;
@@ -123,7 +123,7 @@
         scrollbar-width: thin;
       }
 
-      #test-invoice-requests-table
+      #invoice-requests-table
         .tabulator-cell.scrollable-text-cell
         .request-cell-content {
         display: inline-block;
@@ -131,21 +131,21 @@
         white-space: pre;
       }
 
-      #test-invoice-requests-table
+      #invoice-requests-table
         .tabulator-cell.invoice-checkbox-cell.is-unchecked,
-      #test-invoice-requests-table
+      #invoice-requests-table
         .tabulator-cell.invoice-checkbox-cell.is-checked {
         background-color: inherit;
         color: #74797d;
       }
 
-      #test-invoice-requests-table
+      #invoice-requests-table
         .tabulator-cell.invoice-checkbox-cell.is-not-applicable {
         background: #d9ead3;
         color: #4f772d;
       }
 
-      #test-invoice-requests-table .tabulator-cell.is-dirty {
+      #invoice-requests-table .tabulator-cell.is-dirty {
         position: relative;
         z-index: 1;
         box-shadow:
@@ -153,27 +153,27 @@
           inset 0 0 0 4px #fff3cd;
       }
 
-      #test-invoice-requests-table .tabulator-row.is-new-row {
+      #invoice-requests-table .tabulator-row.is-new-row {
         background: #eef7ff;
       }
 
-      #test-invoice-requests-table .tabulator-row.is-saving-new-row {
+      #invoice-requests-table .tabulator-row.is-saving-new-row {
         opacity: 0.62;
         filter: saturate(0.65);
       }
 
-      #test-invoice-requests-table
+      #invoice-requests-table
         .tabulator-row.is-saving-new-row
         .new-row-input {
         cursor: wait;
       }
 
-      #test-invoice-requests-table .tabulator-cell.is-required-missing {
+      #invoice-requests-table .tabulator-cell.is-required-missing {
         box-shadow: inset 0 0 0 3px #dc3545;
         background: #fff0f1;
       }
 
-      #test-invoice-requests-table .new-row-input {
+      #invoice-requests-table .new-row-input {
         width: 100%;
         min-height: 54px;
         padding: 0.35rem;
@@ -184,12 +184,12 @@
         font: inherit;
       }
 
-      #test-invoice-requests-table .new-row-input.new-row-select {
+      #invoice-requests-table .new-row-input.new-row-select {
         min-height: 34px;
         resize: none;
       }
 
-      #test-invoice-requests-table
+      #invoice-requests-table
         .tabulator-cell.invoice-checkbox-cell.is-new-row-empty {
         background-color: inherit;
         cursor: default;
@@ -208,12 +208,12 @@
         padding: 0;
       }
 
-      #save-test-invoice-requests.has-unsaved {
+      #save-invoice-requests.has-unsaved {
         animation: unsaved-save-pulse 1.4s ease-in-out infinite;
         box-shadow: 0 0 0 4px rgba(255, 140, 0, 0.3);
       }
 
-      #test-invoice-requests-table .request-link {
+      #invoice-requests-table .request-link {
         color: #3976c6;
         text-decoration: underline;
       }
@@ -250,7 +250,7 @@
       }
 
       @media (prefers-reduced-motion: reduce) {
-        #save-test-invoice-requests.has-unsaved {
+        #save-invoice-requests.has-unsaved {
           animation: none;
         }
       }
@@ -267,25 +267,25 @@
         <div>
           <h2 class="mb-1">Invoice Requests</h2>
         </div>
-        <div class="test-invoice-toolbar d-flex align-items-center gap-2">
-          <span id="test-invoice-save-status" class="save-status" aria-live="polite"></span>
+        <div class="invoice-requests-toolbar d-flex align-items-center gap-2">
+          <span id="invoice-save-status" class="save-status" aria-live="polite"></span>
           <button
             type="button"
-            id="add-test-invoice-request"
+            id="add-invoice-request"
             class="btn btn-outline-primary"
           >
             <i class="bi bi-plus-lg me-1"></i>New invoice request
           </button>
           <button
             type="button"
-            id="reload-test-invoice-requests"
+            id="reload-invoice-requests"
             class="btn btn-outline-secondary"
           >
             <i class="bi bi-arrow-clockwise me-1"></i>Reload
           </button>
           <button
             type="button"
-            id="save-test-invoice-requests"
+            id="save-invoice-requests"
             class="btn btn-primary"
             disabled
           >
@@ -295,13 +295,13 @@
       </div>
 
       <div
-        id="test-invoice-load-error"
+        id="invoice-load-error"
         class="alert alert-danger d-none"
         role="alert"
       ></div>
       <div
-        id="test-invoice-requests-table"
-        aria-label="Test invoice requests"
+        id="invoice-requests-table"
+        aria-label="Invoice requests"
       ></div>
     </main>
 
@@ -348,21 +348,21 @@
     <script>
       document.addEventListener("DOMContentLoaded", function () {
         var tableElement = document.getElementById(
-          "test-invoice-requests-table"
+          "invoice-requests-table"
         );
         var saveButton = document.getElementById(
-          "save-test-invoice-requests"
+          "save-invoice-requests"
         );
         var addRowButton = document.getElementById(
-          "add-test-invoice-request"
+          "add-invoice-request"
         );
         var reloadButton = document.getElementById(
-          "reload-test-invoice-requests"
+          "reload-invoice-requests"
         );
         var statusElement = document.getElementById(
-          "test-invoice-save-status"
+          "invoice-save-status"
         );
-        var errorElement = document.getElementById("test-invoice-load-error");
+        var errorElement = document.getElementById("invoice-load-error");
         var unsavedModalElement = document.getElementById(
           "unsavedChangesModal"
         );
@@ -930,14 +930,14 @@
               setStatus("");
             })
             .withFailureHandler(function (error) {
-              console.error("Test Invoice Requests load failed:", error);
+              console.error("Invoice Requests load failed:", error);
               errorElement.textContent =
                 (error && error.message) || "Failed to load invoice requests.";
               errorElement.classList.remove("d-none");
               setLoading(false);
               setStatus("Load failed", "error");
             })
-            .getTestInvoiceRequests();
+            .getInvoiceRequests();
         }
 
         function addNewRow() {
@@ -1064,7 +1064,7 @@
               updateToolbar();
             })
             .withFailureHandler(function (error) {
-              console.error("Test Invoice Request row creation failed:", error);
+              console.error("Invoice Request row creation failed:", error);
               isSaving = false;
               setNewRowBusy(row, false);
               updateToolbar();
@@ -1073,7 +1073,7 @@
                 "error"
               );
             })
-            .createTestInvoiceRequest({ cells: draftCells(row) });
+            .createInvoiceRequest({ cells: draftCells(row) });
         }
 
         function cancelNewRow(row) {
@@ -1122,7 +1122,7 @@
               updateToolbar();
             })
             .withFailureHandler(function (error) {
-              console.error("Test Invoice Requests save failed:", error);
+              console.error("Invoice Requests save failed:", error);
               isSaving = false;
               saveButton.querySelector("i").className = "bi bi-floppy me-1";
               updateToolbar();
@@ -1131,7 +1131,7 @@
                 "error"
               );
             })
-            .saveTestInvoiceRequestChanges(changes);
+            .saveInvoiceRequestChanges(changes);
         }
 
         function confirmDiscard(action) {
