@@ -214,8 +214,8 @@ function writeTestInvoiceRequestStatus_(range, status) {
 function createTestInvoiceRequest(data) {
   assertTestInvoiceRequestsAccess_();
   var cells = data && Array.isArray(data.cells) ? data.cells : [];
-  var project = String(cells[1] || "").trim();
-  var details = String(cells[2] || "").trim();
+  var project = String(cells[0] || "").trim();
+  var details = String(cells[1] || "").trim();
   if (!project || !details) {
     return {
       success: false,
@@ -266,9 +266,9 @@ function createTestInvoiceRequest(data) {
 
     var textValues = [
       newId,
-      String(cells[0] || ""),
       project,
       details,
+      String(cells[2] || ""),
       String(cells[3] || ""),
     ];
     sheet.getRange(newRow, 1, 1, textValues.length).setValues([textValues]);

@@ -372,10 +372,10 @@
           "#dcebd5",
         ];
         var fallbackHeaders = [
-          "PM",
           "Проект",
           "Дані",
           "Комент",
+          "PM",
           "Инв",
           "Файл зад.",
           "XERO",
@@ -385,7 +385,7 @@
           "Проекты",
           "Оп.б",
         ];
-        var textColumnWidths = [138, 138, 215, 180];
+        var textColumnWidths = [138, 215, 180, 138];
 
         function tableHeight() {
           return Math.max(240, window.innerHeight - tableTopOffset - 20);
@@ -469,15 +469,15 @@
           input.rows = 2;
           input.value = cell.getValue() || "";
           input.placeholder =
-            columnOffset === 1
+            columnOffset === 0
               ? "Project *"
-              : columnOffset === 2
+              : columnOffset === 1
               ? "Details *"
               : fallbackHeaders[columnOffset];
           input.setAttribute("aria-label", input.placeholder);
           input.addEventListener("input", function () {
             cell.getRow().getData()["c" + columnOffset] = input.value;
-            if (columnOffset === 1 || columnOffset === 2) {
+            if (columnOffset === 0 || columnOffset === 1) {
               cell
                 .getElement()
                 .classList.remove("is-required-missing");
@@ -608,7 +608,7 @@
               variableHeight: !checkboxColumn,
               cssClass: checkboxColumn
                 ? "invoice-checkbox-cell"
-                : columnOffset === 2 || columnOffset === 3
+                : columnOffset === 1 || columnOffset === 2
                 ? "scrollable-text-cell"
                 : "",
               formatter: checkboxColumn
@@ -627,7 +627,8 @@
                     verticalNavigation: "table",
                     shiftEnterSubmit: true,
                   },
-              headerFilter: columnOffset < 2 ? "input" : false,
+              headerFilter:
+                columnOffset === 0 || columnOffset === 3 ? "input" : false,
               headerFilterPlaceholder: "Search",
               headerSortTristate: true,
             };
@@ -731,7 +732,7 @@
           var row = cell.getRow().getData();
           var columnOffset = Number(cell.getColumn().getField().substring(1));
           if (row._isNew) {
-            if (columnOffset === 1 || columnOffset === 2) {
+            if (columnOffset === 0 || columnOffset === 1) {
               cell
                 .getElement()
                 .classList.remove("is-required-missing");
@@ -822,7 +823,7 @@
           table.addRow(draft, true).then(function (row) {
             row.scrollTo();
             var projectInput = row
-              .getCell("c1")
+              .getCell("c0")
               .getElement()
               .querySelector(".new-row-input");
             if (projectInput) projectInput.focus();
@@ -839,12 +840,12 @@
         }
 
         function validateNewRow(row) {
-          var projectCell = row.getCell("c1");
-          var detailsCell = row.getCell("c2");
+          var projectCell = row.getCell("c0");
+          var detailsCell = row.getCell("c1");
           var projectMissing =
-            String(row.getData().c1 || "").trim() === "";
+            String(row.getData().c0 || "").trim() === "";
           var detailsMissing =
-            String(row.getData().c2 || "").trim() === "";
+            String(row.getData().c1 || "").trim() === "";
           projectCell
             .getElement()
             .classList.toggle("is-required-missing", projectMissing);
