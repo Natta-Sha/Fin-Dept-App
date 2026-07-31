@@ -296,9 +296,40 @@ function assertInvoiceRequestProject_(project, projects) {
 }
 
 function assertInvoiceRequestsAccess_() {
-  if (!isFullAccessUser(getCurrentUserEmail())) {
+  if (!canAccessInvoiceRequests(getCurrentUserEmail())) {
     throw new Error("No permission to access Invoice Requests.");
   }
+}
+
+function getInvoiceRequestAccessMode_() {
+  return isInvoiceRequestsFullAccess() ? "full" : "limited";
+}
+
+function invoiceRequestRowOwnedByEmail_(rowValues, email) {
+  var createdBy =
+    String(
+      rowValues[
+        INVOICE_REQUESTS_FIRST_COLUMN -
+          1 +
+          INVOICE_REQUESTS_CREATED_BY_OFFSET
+      ] || ""
+    )
+      .trim()
+      .toLowerCase();
+  var editedBy =
+    String(
+      rowValues[
+        INVOICE_REQUESTS_FIRST_COLUMN -
+          1 +
+          INVOICE_REQUESTS_EDITED_BY_OFFSET
+      ] || ""
+    )
+      .trim()
+      .toLowerCase();
+  var normalized = String(email || "")
+    .trim()
+    .toLowerCase();
+  return createdBy === normalized || editedBy === normalized;
 }
 
 function serializeInvoiceRequestValue_(value, displayValue) {
@@ -405,11 +436,20 @@ function buildInvoiceRequestsPayload_(spreadsheet, informationLookup) {
   var sheet = spreadsheet.getSheetByName(INVOICE_REQUESTS_SHEET_NAME);
   if (!sheet) throw new Error('Sheet "Requests" was not found.');
 
+  var accessMode = getInvoiceRequestAccessMode_();
+  var email = getCurrentUserEmail();
   var lookup =
     informationLookup || getInvoiceRequestInformationLookup_(spreadsheet);
   var projects = lookup.projects;
+  var emptyPayload = {
+    headers: [],
+    rows: [],
+    projects: projects,
+    accessMode: accessMode,
+    showStatusColumns: accessMode === "full",
+  };
   var lastRow = sheet.getLastRow();
-  if (lastRow < 1) return { headers: [], rows: [], projects: projects };
+  if (lastRow < 1) return emptyPayload;
 
   // Column A is read only as a stable hidden row key.
   var range = sheet.getRange(
@@ -424,7 +464,9 @@ function buildInvoiceRequestsPayload_(spreadsheet, informationLookup) {
   var displayValues = range.getDisplayValues();
   var richTextValues = range.getRichTextValues();
   var backgrounds = range.getBackgrounds();
-  migrateLegacyInvoiceRequestStatuses_(sheet, values, backgrounds);
+  if (accessMode === "full") {
+    migrateLegacyInvoiceRequestStatuses_(sheet, values, backgrounds);
+  }
   var headers = displayValues[0].slice(
     INVOICE_REQUESTS_FIRST_COLUMN - 1,
     INVOICE_REQUESTS_FIRST_COLUMN -
@@ -441,6 +483,12 @@ function buildInvoiceRequestsPayload_(spreadsheet, informationLookup) {
       throw new Error("Duplicate row ID in column A: " + rowId);
     }
     seenIds[rowId] = true;
+    if (
+      accessMode === "limited" &&
+      !invoiceRequestRowOwnedByEmail_(values[rowIndex], email)
+    ) {
+      continue;
+    }
 
     var cells = [];
     for (
@@ -499,7 +547,13 @@ function buildInvoiceRequestsPayload_(spreadsheet, informationLookup) {
     return (right.activityAt || 0) - (left.activityAt || 0);
   });
 
-  return { headers: headers, rows: rows, projects: projects };
+  return {
+    headers: headers,
+    rows: rows,
+    projects: projects,
+    accessMode: accessMode,
+    showStatusColumns: accessMode === "full",
+  };
 }
 
 function getInvoiceRequests() {
@@ -677,6 +731,8 @@ function createInvoiceRequest(data) {
       headers: payload.headers,
       rows: payload.rows,
       projects: payload.projects,
+      accessMode: payload.accessMode,
+      showStatusColumns: payload.showStatusColumns,
     };
   } catch (error) {
     if (sheet && newRow > 0) {
@@ -711,6 +767,8 @@ function saveInvoiceRequestChanges(changes) {
   }
 
   try {
+    var accessMode = getInvoiceRequestAccessMode_();
+    var email = getCurrentUserEmail();
     var spreadsheet = SpreadsheetApp.openById(
       INVOICE_REQUESTS_SPREADSHEET_ID
     );
@@ -760,11 +818,23 @@ function saveInvoiceRequestChanges(changes) {
       ) {
         throw new Error("Invalid change payload.");
       }
+      if (
+        accessMode === "limited" &&
+        isInvoiceRequestStatusColumn_(columnOffset)
+      ) {
+        throw new Error("No permission to edit status columns.");
+      }
 
       var targetRow = rowsById[rowId];
       if (!targetRow) {
         conflicts.push({ id: rowId, columnOffset: columnOffset });
         continue;
+      }
+      if (
+        accessMode === "limited" &&
+        !invoiceRequestRowOwnedByEmail_(targetRow.values, email)
+      ) {
+        throw new Error("No permission to edit this invoice request.");
       }
 
       var sourceColumn =
@@ -876,7 +946,6 @@ function saveInvoiceRequestChanges(changes) {
       }
     }
 
-    var email = getCurrentUserEmail();
     var author = "";
     var listsLookup = null;
     var editedAt = formatInvoiceRequestTimestamp_();
@@ -960,6 +1029,8 @@ function saveInvoiceRequestChanges(changes) {
       headers: payload.headers,
       rows: payload.rows,
       projects: payload.projects,
+      accessMode: payload.accessMode,
+      showStatusColumns: payload.showStatusColumns,
     };
   } finally {
     try {

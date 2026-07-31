@@ -434,6 +434,7 @@
         var AUTHOR_OFFSET = 3;
         var RATE_FILE_OFFSET = 12;
         var projectOptions = [];
+        var showStatusColumns = true;
 
         function isStatusColumn(columnOffset) {
           return (
@@ -761,8 +762,12 @@
             };
 
             if (checkboxColumn) {
+              if (!showStatusColumns) {
+                column.visible = false;
+              }
               column.cellClick = function (event, cell) {
                 event.preventDefault();
+                if (!showStatusColumns) return;
                 if (cell.getRow().getData()._isNew) return;
                 if (
                   hasDraftRow() &&
@@ -878,6 +883,9 @@
             updateToolbar();
             return;
           }
+          if (isStatusColumn(columnOffset) && !showStatusColumns) {
+            return;
+          }
           var originalValue = row._original[columnOffset];
           var currentValue = cell.getValue();
           var key = changeKey(row._id, columnOffset);
@@ -912,6 +920,9 @@
           dirtyChanges = {};
           draftRowId = null;
           projectOptions = (response && response.projects) || [];
+          showStatusColumns = !(
+            response && response.showStatusColumns === false
+          );
           buildTable(response || { headers: [], rows: [], projects: [] });
           updateToolbar();
         }

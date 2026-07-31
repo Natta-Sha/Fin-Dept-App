@@ -67,8 +67,7 @@ function getPageSection(page) {
   if (
     page === "ClientsInformationList" ||
     page === "ClientsInformationCard" ||
-    page === "ClientsInformationListTabulatorLab" ||
-    page === "InvoiceRequests"
+    page === "ClientsInformationListTabulatorLab"
   ) {
     return "clientsinfo";
   }
@@ -257,7 +256,7 @@ function doGet(e) {
       return denied.evaluate().setTitle("No Access");
     }
 
-    if (page === "InvoiceRequests" && !isFullAccessUser(email)) {
+    if (page === "InvoiceRequests" && !canAccessInvoiceRequests(email)) {
       var invoiceRequestsDenied =
         HtmlService.createTemplateFromFile("AccessDenied");
       invoiceRequestsDenied.baseUrl = ScriptApp.getService().getUrl();
@@ -647,10 +646,23 @@ function getNavigation(activePage) {
   template.activePage = activePage;
   template.baseUrl = ScriptApp.getService().getUrl();
   var email = getCurrentUserEmail();
+  // Resolve Invoice Requests first so a missing cached section key
+  // rebuilds the access map before Navigation reads navAccess.
+  template.invoiceRequestsAccess = canAccessInvoiceRequests(email);
   template.navAccess = getUserNavAccess(email);
   template.canRefreshAccessPermissions = isFullAccessUser(email);
-  template.invoiceRequestsAccess = isFullAccessUser(email);
   return template.evaluate().getContent();
+}
+
+function canAccessInvoiceRequests(email) {
+  return hasAccessToPage(
+    email || getCurrentUserEmail(),
+    "InvoiceRequests"
+  );
+}
+
+function isInvoiceRequestsFullAccess(email) {
+  return isFullAccessUser(email || getCurrentUserEmail());
 }
 
 function refreshReferenceDataCaches() {
