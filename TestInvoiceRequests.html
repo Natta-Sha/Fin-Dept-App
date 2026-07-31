@@ -245,7 +245,7 @@
       >
         <div>
           <h2 class="mb-1">Test Invoice Requests</h2>
-          <div class="text-muted">Tabulator test · source: Requests, columns B–M</div>
+          <div class="text-muted">Tabulator test · source: Requests, columns B–R</div>
         </div>
         <div class="test-invoice-toolbar d-flex align-items-center gap-2">
           <span id="test-invoice-save-status" class="save-status" aria-live="polite"></span>
@@ -370,12 +370,17 @@
           "#dcebd5",
           "#dcebd5",
           "#dcebd5",
+          "#f1f3f5",
+          "#f1f3f5",
+          "#f1f3f5",
+          "#f1f3f5",
+          "#f1f3f5",
         ];
         var fallbackHeaders = [
           "Проект",
           "Дані",
           "Комент",
-          "PM",
+          "Автор",
           "Инв",
           "Файл зад.",
           "XERO",
@@ -384,8 +389,42 @@
           "Отпр.инв",
           "Проекты",
           "Оп.б",
+          "Файл рейтів",
+          "Created by",
+          "Created at",
+          "Edited by",
+          "Edited at",
         ];
-        var textColumnWidths = [138, 215, 180, 138];
+        var textColumnWidths = {
+          0: 138,
+          1: 215,
+          2: 180,
+          3: 138,
+          12: 150,
+          13: 120,
+          14: 140,
+          15: 120,
+          16: 140,
+        };
+        var STATUS_FIRST_OFFSET = 4;
+        var STATUS_LAST_OFFSET = 11;
+        var DRAFT_INPUT_LAST_OFFSET = 3;
+        var READONLY_FIRST_OFFSET = 13;
+
+        function isStatusColumn(columnOffset) {
+          return (
+            columnOffset >= STATUS_FIRST_OFFSET &&
+            columnOffset <= STATUS_LAST_OFFSET
+          );
+        }
+
+        function isDraftInputColumn(columnOffset) {
+          return columnOffset <= DRAFT_INPUT_LAST_OFFSET;
+        }
+
+        function isReadOnlyColumn(columnOffset) {
+          return columnOffset >= READONLY_FIRST_OFFSET;
+        }
 
         function tableHeight() {
           return Math.max(240, window.innerHeight - tableTopOffset - 20);
@@ -587,13 +626,15 @@
             columnOffset
           ) {
             var header = headers[columnOffset] || fallbackHeader;
-            var checkboxColumn = columnOffset >= 4;
+            var checkboxColumn = isStatusColumn(columnOffset);
+            var readOnlyColumn = isReadOnlyColumn(columnOffset);
+            var textWidth = textColumnWidths[columnOffset] || 120;
             var column = {
               title: header,
               field: "c" + columnOffset,
               headerHozAlign: "center",
               headerSort: true,
-              editable: checkboxColumn
+              editable: checkboxColumn || readOnlyColumn
                 ? false
                 : function (cell) {
                     return (
@@ -601,10 +642,8 @@
                       cell.getRow().getData()._isNew !== true
                     );
                   },
-              minWidth: checkboxColumn
-                ? 66
-                : textColumnWidths[columnOffset],
-              width: checkboxColumn ? 70 : textColumnWidths[columnOffset],
+              minWidth: checkboxColumn ? 66 : textWidth,
+              width: checkboxColumn ? 70 : textWidth,
               variableHeight: !checkboxColumn,
               cssClass: checkboxColumn
                 ? "invoice-checkbox-cell"
@@ -614,12 +653,17 @@
               formatter: checkboxColumn
                 ? checkboxFormatter
                 : function (cell) {
-                    return cell.getRow().getData()._isNew
-                      ? newRowInputFormatter(cell)
-                      : textFormatter(cell);
+                    if (
+                      cell.getRow().getData()._isNew &&
+                      isDraftInputColumn(columnOffset)
+                    ) {
+                      return newRowInputFormatter(cell);
+                    }
+                    return textFormatter(cell);
                   },
-              editor: checkboxColumn ? false : "textarea",
-              editorParams: checkboxColumn
+              editor:
+                checkboxColumn || readOnlyColumn ? false : "textarea",
+              editorParams: checkboxColumn || readOnlyColumn
                 ? {
                     tristate: false,
                   }
@@ -757,7 +801,7 @@
             delete dirtyChanges[key];
           }
           cell.getElement().classList.toggle("is-dirty", changed);
-          if (columnOffset >= 4) checkboxFormatter(cell);
+          if (isStatusColumn(columnOffset)) checkboxFormatter(cell);
           updateToolbar();
         }
 

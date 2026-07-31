@@ -5,9 +5,21 @@ var TEST_INVOICE_REQUESTS_SPREADSHEET_ID =
   "1-5b98hkm-wsrTlyt-1j2PJcTvu1VNyAh0EjRhT3ZBg0";
 var TEST_INVOICE_REQUESTS_SHEET_NAME = "Requests";
 var TEST_INVOICE_REQUESTS_FIRST_COLUMN = 2; // B
-var TEST_INVOICE_REQUESTS_COLUMN_COUNT = 12; // B:M
+var TEST_INVOICE_REQUESTS_COLUMN_COUNT = 17; // B:R
+var TEST_INVOICE_REQUESTS_LAST_COLUMN = 18; // R
+var TEST_INVOICE_REQUESTS_STATUS_FIRST_OFFSET = 4; // F
+var TEST_INVOICE_REQUESTS_STATUS_COUNT = 8; // F:M
 var TEST_INVOICE_REQUESTS_NOT_APPLICABLE = "⊟";
 var TEST_INVOICE_REQUESTS_NOT_APPLICABLE_BACKGROUND = "#d9ead3";
+
+function isTestInvoiceRequestStatusColumn_(columnOffset) {
+  return (
+    columnOffset >= TEST_INVOICE_REQUESTS_STATUS_FIRST_OFFSET &&
+    columnOffset <
+      TEST_INVOICE_REQUESTS_STATUS_FIRST_OFFSET +
+        TEST_INVOICE_REQUESTS_STATUS_COUNT
+  );
+}
 
 function assertTestInvoiceRequestsAccess_() {
   if (!isFullAccessUser(getCurrentUserEmail())) {
@@ -67,7 +79,7 @@ function getTestInvoiceRequestOriginalToken_(
   background,
   columnOffset
 ) {
-  if (columnOffset < 4) {
+  if (!isTestInvoiceRequestStatusColumn_(columnOffset)) {
     return comparableTestInvoiceRequestValue_(value);
   }
   return JSON.stringify([
@@ -84,8 +96,10 @@ function migrateLegacyTestInvoiceRequestStatuses_(
   var migrated = 0;
   for (var rowIndex = 1; rowIndex < values.length; rowIndex++) {
     for (
-      var columnOffset = 4;
-      columnOffset < TEST_INVOICE_REQUESTS_COLUMN_COUNT;
+      var columnOffset = TEST_INVOICE_REQUESTS_STATUS_FIRST_OFFSET;
+      columnOffset <
+      TEST_INVOICE_REQUESTS_STATUS_FIRST_OFFSET +
+        TEST_INVOICE_REQUESTS_STATUS_COUNT;
       columnOffset++
     ) {
       var sourceColumn =
@@ -165,21 +179,20 @@ function getTestInvoiceRequests() {
       var sourceColumn =
         TEST_INVOICE_REQUESTS_FIRST_COLUMN - 1 + columnOffset;
       var richText = richTextValues[rowIndex][sourceColumn];
-      var checkboxStatus =
-        columnOffset >= 4
-          ? getTestInvoiceRequestCheckboxStatus_(
-              values[rowIndex][sourceColumn],
-              backgrounds[rowIndex][sourceColumn]
-            )
-          : null;
+      var isStatusColumn = isTestInvoiceRequestStatusColumn_(columnOffset);
+      var checkboxStatus = isStatusColumn
+        ? getTestInvoiceRequestCheckboxStatus_(
+            values[rowIndex][sourceColumn],
+            backgrounds[rowIndex][sourceColumn]
+          )
+        : null;
       cells.push({
-        value:
-          columnOffset >= 4
-            ? checkboxStatus
-            : serializeTestInvoiceRequestValue_(
-                values[rowIndex][sourceColumn],
-                displayValues[rowIndex][sourceColumn]
-              ),
+        value: isStatusColumn
+          ? checkboxStatus
+          : serializeTestInvoiceRequestValue_(
+              values[rowIndex][sourceColumn],
+              displayValues[rowIndex][sourceColumn]
+            ),
         originalToken: getTestInvoiceRequestOriginalToken_(
           values[rowIndex][sourceColumn],
           backgrounds[rowIndex][sourceColumn],
@@ -256,9 +269,9 @@ function createTestInvoiceRequest(data) {
     newRow = Math.max(lastRow, 1) + 1;
     if (lastRow > 1) {
       sheet
-        .getRange(lastRow, 1, 1, 13)
+        .getRange(lastRow, 1, 1, TEST_INVOICE_REQUESTS_LAST_COLUMN)
         .copyTo(
-          sheet.getRange(newRow, 1, 1, 13),
+          sheet.getRange(newRow, 1, 1, TEST_INVOICE_REQUESTS_LAST_COLUMN),
           SpreadsheetApp.CopyPasteType.PASTE_FORMAT,
           false
         );
@@ -277,13 +290,32 @@ function createTestInvoiceRequest(data) {
     // A newly submitted request must leave them completely empty.
     var statusRange = sheet.getRange(
       newRow,
-      TEST_INVOICE_REQUESTS_FIRST_COLUMN + 4,
+      TEST_INVOICE_REQUESTS_FIRST_COLUMN +
+        TEST_INVOICE_REQUESTS_STATUS_FIRST_OFFSET,
       1,
-      TEST_INVOICE_REQUESTS_COLUMN_COUNT - 4
+      TEST_INVOICE_REQUESTS_STATUS_COUNT
     );
     statusRange.clearContent();
     statusRange.clearDataValidations();
     statusRange.setBackground(null);
+
+    // Trailing metadata columns N:R stay empty for a new request.
+    var trailingOffset =
+      TEST_INVOICE_REQUESTS_STATUS_FIRST_OFFSET +
+      TEST_INVOICE_REQUESTS_STATUS_COUNT;
+    var trailingCount =
+      TEST_INVOICE_REQUESTS_COLUMN_COUNT - trailingOffset;
+    if (trailingCount > 0) {
+      var trailingRange = sheet.getRange(
+        newRow,
+        TEST_INVOICE_REQUESTS_FIRST_COLUMN + trailingOffset,
+        1,
+        trailingCount
+      );
+      trailingRange.clearContent();
+      trailingRange.clearDataValidations();
+      trailingRange.setBackground(null);
+    }
     SpreadsheetApp.flush();
     return { success: true, id: String(newId) };
   } catch (error) {
@@ -403,7 +435,7 @@ function saveTestInvoiceRequestChanges(changes) {
           ? ""
           : String(change.value);
       if (
-        columnOffset >= 4 &&
+        isTestInvoiceRequestStatusColumn_(columnOffset) &&
         nextValue !== "checked" &&
         nextValue !== "unchecked" &&
         nextValue !== "notApplicable"
@@ -434,10 +466,10 @@ function saveTestInvoiceRequestChanges(changes) {
     for (var writeIndex = 0; writeIndex < validated.length; writeIndex++) {
       var item = validated[writeIndex];
       var target = sheet.getRange(item.sheetRow, item.sheetColumn);
-      if (item.columnOffset < 4) {
-        target.setValue(item.value);
-      } else {
+      if (isTestInvoiceRequestStatusColumn_(item.columnOffset)) {
         writeTestInvoiceRequestStatus_(target, item.value);
+      } else {
+        target.setValue(item.value);
       }
     }
     SpreadsheetApp.flush();
