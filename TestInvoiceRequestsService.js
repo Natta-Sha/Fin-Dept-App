@@ -55,8 +55,52 @@ function formatTestInvoiceRequestTimestamp_(date) {
   );
 }
 
+function parseTestInvoiceRequestTimestamp_(value) {
+  if (value instanceof Date && !isNaN(value.getTime())) {
+    return value.getTime();
+  }
+  var text = String(value || "").trim();
+  if (!text) return 0;
+  var match = text.match(
+    /^(\d{2})\/(\d{2})\/(\d{4})(?:\s+(\d{2}):(\d{2})(?::(\d{2}))?)?$/
+  );
+  if (!match) return 0;
+  return new Date(
+    Number(match[3]),
+    Number(match[2]) - 1,
+    Number(match[1]),
+    Number(match[4] || 0),
+    Number(match[5] || 0),
+    Number(match[6] || 0)
+  ).getTime();
+}
+
+function getTestInvoiceRequestActivityAt_(createdAt, editedAt) {
+  var editedMs = parseTestInvoiceRequestTimestamp_(editedAt);
+  if (editedMs) return editedMs;
+  return parseTestInvoiceRequestTimestamp_(createdAt);
+}
+
 function sheetColumnForTestInvoiceRequestOffset_(columnOffset) {
   return TEST_INVOICE_REQUESTS_FIRST_COLUMN + columnOffset;
+}
+
+function resetTestInvoiceRequestStatuses_(sheet, sheetRow) {
+  for (
+    var columnOffset = TEST_INVOICE_REQUESTS_STATUS_FIRST_OFFSET;
+    columnOffset <
+    TEST_INVOICE_REQUESTS_STATUS_FIRST_OFFSET +
+      TEST_INVOICE_REQUESTS_STATUS_COUNT;
+    columnOffset++
+  ) {
+    writeTestInvoiceRequestStatus_(
+      sheet.getRange(
+        sheetRow,
+        sheetColumnForTestInvoiceRequestOffset_(columnOffset)
+      ),
+      "unchecked"
+    );
+  }
 }
 
 function getTestInvoiceRequestProjects_(spreadsheet) {
@@ -338,8 +382,29 @@ function getTestInvoiceRequests() {
       });
     }
 
-    rows.push({ id: rowId, cells: cells });
+    var createdAtColumn =
+      TEST_INVOICE_REQUESTS_FIRST_COLUMN -
+      1 +
+      TEST_INVOICE_REQUESTS_CREATED_AT_OFFSET;
+    var editedAtColumn =
+      TEST_INVOICE_REQUESTS_FIRST_COLUMN -
+      1 +
+      TEST_INVOICE_REQUESTS_EDITED_AT_OFFSET;
+    rows.push({
+      id: rowId,
+      cells: cells,
+      activityAt: getTestInvoiceRequestActivityAt_(
+        displayValues[rowIndex][createdAtColumn] ||
+          values[rowIndex][createdAtColumn],
+        displayValues[rowIndex][editedAtColumn] ||
+          values[rowIndex][editedAtColumn]
+      ),
+    });
   }
+
+  rows.sort(function (left, right) {
+    return (right.activityAt || 0) - (left.activityAt || 0);
+  });
 
   return { headers: headers, rows: rows, projects: projects };
 }
@@ -664,9 +729,16 @@ function saveTestInvoiceRequestChanges(changes) {
 
     // The browser makes one save request. Checkbox cells are written
     // individually because N/A deliberately uses a symbol instead of Sheets
-    // checkbox validation.
+    // checkbox validation. Status clicks on rows with content edits are
+    // ignored because those statuses are reset below.
     for (var writeIndex = 0; writeIndex < validated.length; writeIndex++) {
       var item = validated[writeIndex];
+      if (
+        isTestInvoiceRequestStatusColumn_(item.columnOffset) &&
+        contentEditsByRow[item.rowId]
+      ) {
+        continue;
+      }
       var target = sheet.getRange(item.sheetRow, item.sheetColumn);
       if (isTestInvoiceRequestStatusColumn_(item.columnOffset)) {
         writeTestInvoiceRequestStatus_(target, item.value);
@@ -719,6 +791,7 @@ function saveTestInvoiceRequestChanges(changes) {
           )
         )
         .setValue(editedAt);
+      resetTestInvoiceRequestStatuses_(sheet, meta.sheetRow);
     }
 
     SpreadsheetApp.flush();
