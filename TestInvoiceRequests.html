@@ -102,6 +102,7 @@
         white-space: pre-wrap;
         overflow-wrap: anywhere;
         vertical-align: middle;
+        background: transparent;
       }
 
       #test-invoice-requests-table .tabulator-cell.invoice-checkbox-cell {
@@ -127,14 +128,10 @@
       }
 
       #test-invoice-requests-table
-        .tabulator-cell.invoice-checkbox-cell.is-unchecked {
-        background: #fff;
-        color: #74797d;
-      }
-
+        .tabulator-cell.invoice-checkbox-cell.is-unchecked,
       #test-invoice-requests-table
         .tabulator-cell.invoice-checkbox-cell.is-checked {
-        background: #fff;
+        background: transparent;
         color: #74797d;
       }
 
@@ -188,14 +185,9 @@
         resize: none;
       }
 
-      #test-invoice-requests-table .tabulator-cell.is-system-field {
-        background: #f8f9fa;
-        color: #6c757d;
-      }
-
       #test-invoice-requests-table
         .tabulator-cell.invoice-checkbox-cell.is-new-row-empty {
-        background: #eef7ff;
+        background: transparent;
         cursor: default;
       }
 
@@ -701,11 +693,11 @@
             if (checkboxColumn) cssClasses.push("invoice-checkbox-cell");
             if (
               columnOffset === DETAILS_OFFSET ||
-              columnOffset === COMMENT_OFFSET
+              columnOffset === COMMENT_OFFSET ||
+              columnOffset === RATE_FILE_OFFSET
             ) {
               cssClasses.push("scrollable-text-cell");
             }
-            if (readOnlyColumn) cssClasses.push("is-system-field");
             var column = {
               title: header,
               field: "c" + columnOffset,
