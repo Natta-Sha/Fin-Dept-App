@@ -143,24 +143,86 @@ function getInvoiceRequestProjects_(spreadsheet) {
   return getInvoiceRequestInformationLookup_(spreadsheet).projects;
 }
 
-function resolveInvoiceRequestAuthor_(spreadsheet, email) {
-  var normalizedEmail = String(email || "").trim().toLowerCase();
-  if (!normalizedEmail) return "";
-
+function getInvoiceRequestListsLookup_(spreadsheet) {
   var sheet = spreadsheet.getSheetByName(INVOICE_REQUESTS_LISTS_SHEET);
   if (!sheet) throw new Error('Sheet "Lists" was not found.');
   var lastRow = sheet.getLastRow();
-  if (lastRow < 2) return normalizedEmail;
-
-  var values = sheet.getRange(2, 1, lastRow - 1, 2).getDisplayValues();
-  for (var i = 0; i < values.length; i++) {
-    var listEmail = String(values[i][1] || "").trim().toLowerCase();
-    if (listEmail === normalizedEmail) {
-      var fullName = String(values[i][0] || "").trim();
-      return fullName || normalizedEmail;
-    }
+  if (lastRow < 2) {
+    return { authorByEmail: {}, notificationEmails: [] };
   }
-  return normalizedEmail;
+
+  // A:D — Full Name, Email, unused, notification recipients.
+  var values = sheet.getRange(2, 1, lastRow - 1, 4).getDisplayValues();
+  var authorByEmail = {};
+  var notificationEmails = [];
+  var seenNotify = {};
+  for (var i = 0; i < values.length; i++) {
+    var fullName = String(values[i][0] || "").trim();
+    var listEmail = String(values[i][1] || "").trim().toLowerCase();
+    if (listEmail && !authorByEmail[listEmail]) {
+      authorByEmail[listEmail] = fullName || listEmail;
+    }
+    var notifyEmail = String(values[i][3] || "").trim().toLowerCase();
+    if (!notifyEmail || seenNotify[notifyEmail]) continue;
+    seenNotify[notifyEmail] = true;
+    notificationEmails.push(notifyEmail);
+  }
+  return {
+    authorByEmail: authorByEmail,
+    notificationEmails: notificationEmails,
+  };
+}
+
+function resolveInvoiceRequestAuthor_(spreadsheet, email, listsLookup) {
+  var normalizedEmail = String(email || "").trim().toLowerCase();
+  if (!normalizedEmail) return "";
+  var lookup = listsLookup || getInvoiceRequestListsLookup_(spreadsheet);
+  return lookup.authorByEmail[normalizedEmail] || normalizedEmail;
+}
+
+function getInvoiceRequestsPageUrl_() {
+  return ScriptApp.getService().getUrl() + "?page=InvoiceRequests";
+}
+
+function sendInvoiceRequestNotification_(
+  spreadsheet,
+  kind,
+  project,
+  author,
+  listsLookup
+) {
+  try {
+    var lookup = listsLookup || getInvoiceRequestListsLookup_(spreadsheet);
+    var recipients = lookup.notificationEmails || [];
+    if (!recipients.length) return;
+
+    var isEdited = kind === "edited";
+    var subject = isEdited
+      ? "Invoice request edited"
+      : "Invoice request created";
+    var intro = isEdited
+      ? "Привіт. Заявку на інвойс було змінено."
+      : "Привіт. Було створено заявку на інвойс.";
+    var body =
+      intro +
+      "\n\n" +
+      "Проект: " +
+      String(project || "") +
+      "\n" +
+      "Автор: " +
+      String(author || "") +
+      "\n\n" +
+      getInvoiceRequestsPageUrl_();
+
+    MailApp.sendEmail({
+      to: recipients[0],
+      bcc: recipients.slice(1).join(","),
+      subject: subject,
+      body: body,
+    });
+  } catch (error) {
+    console.error("Invoice request notification failed:", error);
+  }
 }
 
 function resolveInvoiceRequestRateFile_(
@@ -472,7 +534,12 @@ function createInvoiceRequest(data) {
     if (!sheet) throw new Error('Sheet "Requests" was not found.');
 
     var email = getCurrentUserEmail();
-    var author = resolveInvoiceRequestAuthor_(spreadsheet, email);
+    var listsLookup = getInvoiceRequestListsLookup_(spreadsheet);
+    var author = resolveInvoiceRequestAuthor_(
+      spreadsheet,
+      email,
+      listsLookup
+    );
     var rateFile = resolveInvoiceRequestRateFile_(
       spreadsheet,
       project,
@@ -562,6 +629,13 @@ function createInvoiceRequest(data) {
       .setValue(createdAt);
 
     SpreadsheetApp.flush();
+    sendInvoiceRequestNotification_(
+      spreadsheet,
+      "created",
+      project,
+      author,
+      listsLookup
+    );
     var payload = buildInvoiceRequestsPayload_(
       spreadsheet,
       informationLookup
@@ -773,6 +847,7 @@ function saveInvoiceRequestChanges(changes) {
 
     var email = getCurrentUserEmail();
     var author = "";
+    var listsLookup = null;
     var editedAt = formatInvoiceRequestTimestamp_();
     var contentRowIds = Object.keys(contentEditsByRow);
     if (contentRowIds.length > 0) {
@@ -781,7 +856,12 @@ function saveInvoiceRequestChanges(changes) {
           spreadsheet
         );
       }
-      author = resolveInvoiceRequestAuthor_(spreadsheet, email);
+      listsLookup = getInvoiceRequestListsLookup_(spreadsheet);
+      author = resolveInvoiceRequestAuthor_(
+        spreadsheet,
+        email,
+        listsLookup
+      );
     }
     for (var metaIndex = 0; metaIndex < contentRowIds.length; metaIndex++) {
       var meta = contentEditsByRow[contentRowIds[metaIndex]];
@@ -828,6 +908,16 @@ function saveInvoiceRequestChanges(changes) {
     }
 
     SpreadsheetApp.flush();
+
+    for (var notifyIndex = 0; notifyIndex < contentRowIds.length; notifyIndex++) {
+      sendInvoiceRequestNotification_(
+        spreadsheet,
+        "edited",
+        contentEditsByRow[contentRowIds[notifyIndex]].project,
+        author,
+        listsLookup
+      );
+    }
 
     var payload = buildInvoiceRequestsPayload_(
       spreadsheet,
