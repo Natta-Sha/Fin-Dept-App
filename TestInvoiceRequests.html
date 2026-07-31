@@ -81,23 +81,12 @@
         font-size: 0.72rem;
       }
 
-      #test-invoice-requests-table .tabulator-header,
-      #test-invoice-requests-table .tabulator-tableholder {
-        scrollbar-gutter: stable;
-      }
-
-      #test-invoice-requests-table .tabulator-col,
-      #test-invoice-requests-table .tabulator-cell {
-        box-sizing: border-box;
-      }
-
       #test-invoice-requests-table .tabulator-cell {
         min-height: 34px;
         padding: 5px 7px;
         white-space: pre-wrap;
         overflow-wrap: anywhere;
         vertical-align: middle;
-        overflow: hidden;
       }
 
       #test-invoice-requests-table .tabulator-cell.invoice-checkbox-cell {
@@ -117,9 +106,8 @@
       #test-invoice-requests-table
         .tabulator-cell.scrollable-text-cell
         .request-cell-content {
-        display: block;
-        width: max-content;
-        max-width: none;
+        display: inline-block;
+        min-width: max-content;
         white-space: pre;
       }
 
@@ -755,24 +743,13 @@
           });
         }
 
-        function alignHeaderScrollGutter() {
-          if (!table) return;
-          var root = table.getElement();
-          var holder = root.querySelector(".tabulator-tableholder");
-          var header = root.querySelector(".tabulator-header");
-          if (!holder || !header) return;
-          var gutter = Math.max(0, holder.offsetWidth - holder.clientWidth);
-          header.style.paddingRight = gutter ? gutter + "px" : "";
-        }
-
         function buildTable(response) {
           if (table) table.destroy();
           tableTopOffset = tableElement.getBoundingClientRect().top;
           table = new Tabulator(tableElement, {
             index: "_id",
             height: tableHeight(),
-            layout: "fitData",
-            renderHorizontal: "basic",
+            layout: "fitColumns",
             editTriggerEvent: "dblclick",
             placeholder: "No invoice requests found",
             pagination: true,
@@ -791,12 +768,7 @@
                 );
             },
           });
-          table.on("tableBuilt", function () {
-            applyHeaderColors();
-            alignHeaderScrollGutter();
-          });
-          table.on("pageLoaded", alignHeaderScrollGutter);
-          table.on("dataFiltered", alignHeaderScrollGutter);
+          table.on("tableBuilt", applyHeaderColors);
           table.on("cellEdited", trackCellChange);
         }
 
@@ -1105,9 +1077,7 @@
         });
 
         window.addEventListener("resize", function () {
-          if (!table) return;
-          table.setHeight(tableHeight());
-          alignHeaderScrollGutter();
+          if (table) table.setHeight(tableHeight());
         });
 
         loadData(true);
