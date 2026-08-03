@@ -434,26 +434,17 @@ function getInvoiceRequestAccessMode_() {
 }
 
 function invoiceRequestRowOwnedByEmail_(rowValues, email) {
-  var createdBy =
-    String(
-      rowValues[
-        INVOICE_REQUESTS_FIRST_COLUMN -
-          1 +
-          INVOICE_REQUESTS_CREATED_BY_OFFSET
-      ] || ""
-    )
-      .trim()
-      .toLowerCase();
-  var editedBy =
-    String(
-      rowValues[
-        INVOICE_REQUESTS_FIRST_COLUMN -
-          1 +
-          INVOICE_REQUESTS_EDITED_BY_OFFSET
-      ] || ""
-    )
-      .trim()
-      .toLowerCase();
+  var start = INVOICE_REQUESTS_FIRST_COLUMN - 1;
+  var createdBy = String(
+    rowValues[start + INVOICE_REQUESTS_CREATED_BY_OFFSET] || ""
+  )
+    .trim()
+    .toLowerCase();
+  var editedBy = String(
+    rowValues[start + INVOICE_REQUESTS_EDITED_BY_OFFSET] || ""
+  )
+    .trim()
+    .toLowerCase();
   var normalized = String(email || "")
     .trim()
     .toLowerCase();
@@ -605,6 +596,7 @@ function buildInvoiceRequestsPayload_(spreadsheet, informationLookup) {
   );
   var rows = [];
   var seenIds = {};
+  var start = INVOICE_REQUESTS_FIRST_COLUMN - 1;
 
   for (var rowIndex = 1; rowIndex < values.length; rowIndex++) {
     var rowId = String(values[rowIndex][0] || "").trim();
@@ -626,8 +618,7 @@ function buildInvoiceRequestsPayload_(spreadsheet, informationLookup) {
       columnOffset < INVOICE_REQUESTS_COLUMN_COUNT;
       columnOffset++
     ) {
-      var sourceColumn =
-        INVOICE_REQUESTS_FIRST_COLUMN - 1 + columnOffset;
+      var sourceColumn = start + columnOffset;
       var richText = richTextValues[rowIndex][sourceColumn];
       var isStatusColumn = isInvoiceRequestStatusColumn_(columnOffset);
       var checkboxStatus = isStatusColumn
@@ -663,14 +654,32 @@ function buildInvoiceRequestsPayload_(spreadsheet, informationLookup) {
       });
     }
 
-    var createdAtColumn =
-      INVOICE_REQUESTS_FIRST_COLUMN -
-      1 +
-      INVOICE_REQUESTS_CREATED_AT_OFFSET;
-    var editedAtColumn =
-      INVOICE_REQUESTS_FIRST_COLUMN -
-      1 +
-      INVOICE_REQUESTS_EDITED_AT_OFFSET;
+    // Empty client-folder cells are filled from Information!C (same as rates).
+    var folderCell = cells[INVOICE_REQUESTS_CLIENT_FOLDER_OFFSET];
+    if (!(folderCell.value || folderCell.link)) {
+      var project = String(
+        values[rowIndex][start + INVOICE_REQUESTS_PROJECT_OFFSET] || ""
+      ).trim();
+      var resolvedFolder = resolveInvoiceRequestClientFolder_(
+        spreadsheet,
+        project,
+        lookup
+      );
+      if (resolvedFolder.value || resolvedFolder.link) {
+        folderCell.value = resolvedFolder.value || resolvedFolder.link || "";
+        folderCell.displayValue =
+          resolvedFolder.value || resolvedFolder.link || "";
+        folderCell.link = resolvedFolder.link || "";
+        folderCell.originalToken = getInvoiceRequestOriginalToken_(
+          folderCell.value,
+          null,
+          INVOICE_REQUESTS_CLIENT_FOLDER_OFFSET
+        );
+      }
+    }
+
+    var createdAtColumn = start + INVOICE_REQUESTS_CREATED_AT_OFFSET;
+    var editedAtColumn = start + INVOICE_REQUESTS_EDITED_AT_OFFSET;
     rows.push({
       id: rowId,
       cells: cells,
