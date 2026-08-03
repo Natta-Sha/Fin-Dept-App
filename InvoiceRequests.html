@@ -908,6 +908,19 @@
           return getViewportWidth_() <= 768;
         }
 
+        function queueInvoiceRequestNotifications(result) {
+          var notifications = result && result.notifications;
+          if (!notifications || !notifications.length) return;
+          google.script.run
+            .withFailureHandler(function (error) {
+              console.error(
+                "Invoice request notification failed:",
+                error
+              );
+            })
+            .sendInvoiceRequestNotifications(notifications);
+        }
+
         function setStatus(message, type) {
           statusElement.textContent = message || "";
           statusElement.className =
@@ -1535,6 +1548,7 @@
                 );
                 return;
               }
+              queueInvoiceRequestNotifications(result);
               desktopCreateOpen = false;
               desktopCreateBaseline = null;
               createInvoiceModal.hide();
@@ -1721,6 +1735,7 @@
                   );
                   return;
                 }
+                queueInvoiceRequestNotifications(result);
                 mobileFormMode = null;
                 mobileEditRow = null;
                 mobileFormBaseline = null;
@@ -1801,6 +1816,7 @@
                 );
                 return;
               }
+              queueInvoiceRequestNotifications(result);
               mobileFormMode = null;
               mobileEditRow = null;
               mobileFormBaseline = null;
@@ -2017,6 +2033,7 @@
                 );
                 return;
               }
+              queueInvoiceRequestNotifications(result);
               draftRowId = null;
               if (result.rows) {
                 applyLoadedData(result);
@@ -2075,6 +2092,7 @@
                 return;
               }
 
+              queueInvoiceRequestNotifications(result);
               if (result.rows) {
                 applyLoadedData(result);
               } else {

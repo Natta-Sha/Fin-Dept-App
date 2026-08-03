@@ -320,6 +320,39 @@ function sendInvoiceRequestNotification_(
   }
 }
 
+/**
+ * Public entry for deferred notifications after create/edit succeeded.
+ * Called from the browser after the UI already received the save result.
+ */
+function sendInvoiceRequestNotifications(notifications) {
+  assertInvoiceRequestsAccess_();
+  if (!Array.isArray(notifications) || notifications.length === 0) {
+    return { success: true, sent: 0 };
+  }
+
+  var spreadsheet = SpreadsheetApp.openById(
+    INVOICE_REQUESTS_SPREADSHEET_ID
+  );
+  var listsLookup = getInvoiceRequestListsLookup_(spreadsheet);
+  var sent = 0;
+  for (var i = 0; i < notifications.length; i++) {
+    var item = notifications[i] || {};
+    var kind = item.kind === "edited" ? "edited" : "created";
+    var project = String(item.project || "").trim();
+    var author = String(item.author || "").trim();
+    if (!project) continue;
+    sendInvoiceRequestNotification_(
+      spreadsheet,
+      kind,
+      project,
+      author,
+      listsLookup
+    );
+    sent++;
+  }
+  return { success: true, sent: sent };
+}
+
 function resolveInvoiceRequestRateFile_(
   spreadsheet,
   project,
@@ -790,13 +823,6 @@ function createInvoiceRequest(data) {
       .setValue(createdAt);
 
     SpreadsheetApp.flush();
-    sendInvoiceRequestNotification_(
-      spreadsheet,
-      "created",
-      project,
-      author,
-      listsLookup
-    );
     var payload = buildInvoiceRequestsPayload_(
       spreadsheet,
       informationLookup
@@ -810,6 +836,14 @@ function createInvoiceRequest(data) {
       accessMode: payload.accessMode,
       showStatusColumns: payload.showStatusColumns,
       showAuthorColumn: payload.showAuthorColumn,
+      // Sent by a separate client call so the UI is not blocked on MailApp.
+      notifications: [
+        {
+          kind: "created",
+          project: project,
+          author: author,
+        },
+      ],
     };
   } catch (error) {
     if (sheet && newRow > 0) {
@@ -1086,14 +1120,13 @@ function saveInvoiceRequestChanges(changes) {
 
     SpreadsheetApp.flush();
 
+    var notifications = [];
     for (var notifyIndex = 0; notifyIndex < contentRowIds.length; notifyIndex++) {
-      sendInvoiceRequestNotification_(
-        spreadsheet,
-        "edited",
-        contentEditsByRow[contentRowIds[notifyIndex]].project,
-        author,
-        listsLookup
-      );
+      notifications.push({
+        kind: "edited",
+        project: contentEditsByRow[contentRowIds[notifyIndex]].project,
+        author: author,
+      });
     }
 
     var payload = buildInvoiceRequestsPayload_(
@@ -1109,6 +1142,7 @@ function saveInvoiceRequestChanges(changes) {
       accessMode: payload.accessMode,
       showStatusColumns: payload.showStatusColumns,
       showAuthorColumn: payload.showAuthorColumn,
+      notifications: notifications,
     };
   } finally {
     try {
