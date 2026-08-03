@@ -6,8 +6,8 @@ var INVOICE_REQUESTS_SHEET_NAME = "Requests";
 var INVOICE_REQUESTS_INFORMATION_SHEET = "Information";
 var INVOICE_REQUESTS_LISTS_SHEET = "Lists";
 var INVOICE_REQUESTS_FIRST_COLUMN = 2; // B
-var INVOICE_REQUESTS_COLUMN_COUNT = 17; // B:R
-var INVOICE_REQUESTS_LAST_COLUMN = 18; // R
+var INVOICE_REQUESTS_COLUMN_COUNT = 18; // B:S
+var INVOICE_REQUESTS_LAST_COLUMN = 19; // S
 var INVOICE_REQUESTS_STATUS_FIRST_OFFSET = 4; // F
 var INVOICE_REQUESTS_STATUS_COUNT = 8; // F:M
 var INVOICE_REQUESTS_PROJECT_OFFSET = 0; // B
@@ -15,10 +15,12 @@ var INVOICE_REQUESTS_DETAILS_OFFSET = 1; // C
 var INVOICE_REQUESTS_COMMENT_OFFSET = 2; // D
 var INVOICE_REQUESTS_AUTHOR_OFFSET = 3; // E
 var INVOICE_REQUESTS_RATE_FILE_OFFSET = 12; // N
-var INVOICE_REQUESTS_CREATED_BY_OFFSET = 13; // O
-var INVOICE_REQUESTS_CREATED_AT_OFFSET = 14; // P
-var INVOICE_REQUESTS_EDITED_BY_OFFSET = 15; // Q
-var INVOICE_REQUESTS_EDITED_AT_OFFSET = 16; // R
+var INVOICE_REQUESTS_CLIENT_FOLDER_OFFSET = 13; // O
+var INVOICE_REQUESTS_CREATED_BY_OFFSET = 14; // P
+var INVOICE_REQUESTS_CREATED_AT_OFFSET = 15; // Q
+var INVOICE_REQUESTS_EDITED_BY_OFFSET = 16; // R
+var INVOICE_REQUESTS_EDITED_AT_OFFSET = 17; // S
+var INVOICE_REQUESTS_TRAILING_COLUMN_COUNT = 6; // N:S
 var INVOICE_REQUESTS_NOT_APPLICABLE = "⊟";
 var INVOICE_REQUESTS_NOT_APPLICABLE_BACKGROUND = "#d9ead3";
 
@@ -173,22 +175,35 @@ function getInvoiceRequestInformationLookup_(spreadsheet) {
   if (!sheet) throw new Error('Sheet "Information" was not found.');
   var lastRow = sheet.getLastRow();
   if (lastRow < 2) {
-    return { projects: [], rateByProject: {} };
+    return { projects: [], rateByProject: {}, folderByProject: {} };
   }
 
-  // B:E in one read: project in B, rate-file link in E.
+  // B:E in one read: project in B, client-folder link in C, rate-file link in E.
   var range = sheet.getRange(2, 2, lastRow - 1, 4);
   var displayValues = range.getDisplayValues();
   var richTextValues = range.getRichTextValues();
   var seen = {};
   var projects = [];
   var rateByProject = {};
+  var folderByProject = {};
   for (var i = 0; i < displayValues.length; i++) {
     var project = String(displayValues[i][0] || "").trim();
     if (!project) continue;
     if (!seen[project]) {
       seen[project] = true;
       projects.push(project);
+    }
+    if (!folderByProject[project]) {
+      var folderRichText = richTextValues[i][1];
+      var folderLink = folderRichText
+        ? folderRichText.getLinkUrl() || ""
+        : "";
+      var folderValue = String(displayValues[i][1] || "").trim();
+      if (!folderValue && folderLink) folderValue = folderLink;
+      folderByProject[project] = {
+        value: folderValue,
+        link: folderLink,
+      };
     }
     if (rateByProject[project]) continue;
     var richText = richTextValues[i][3];
@@ -200,7 +215,11 @@ function getInvoiceRequestInformationLookup_(spreadsheet) {
   projects.sort(function (left, right) {
     return left.localeCompare(right, undefined, { sensitivity: "base" });
   });
-  return { projects: projects, rateByProject: rateByProject };
+  return {
+    projects: projects,
+    rateByProject: rateByProject,
+    folderByProject: folderByProject,
+  };
 }
 
 function getInvoiceRequestProjects_(spreadsheet) {
@@ -363,6 +382,18 @@ function resolveInvoiceRequestRateFile_(
   var lookup =
     informationLookup || getInvoiceRequestInformationLookup_(spreadsheet);
   return lookup.rateByProject[normalizedProject] || { value: "", link: "" };
+}
+
+function resolveInvoiceRequestClientFolder_(
+  spreadsheet,
+  project,
+  informationLookup
+) {
+  var normalizedProject = String(project || "").trim();
+  if (!normalizedProject) return { value: "", link: "" };
+  var lookup =
+    informationLookup || getInvoiceRequestInformationLookup_(spreadsheet);
+  return lookup.folderByProject[normalizedProject] || { value: "", link: "" };
 }
 
 function writeInvoiceRequestLinkedValue_(range, value, link) {
@@ -545,6 +576,7 @@ function buildInvoiceRequestsPayload_(spreadsheet, informationLookup) {
     accessMode: accessMode,
     showStatusColumns: accessMode === "full",
     showAuthorColumn: accessMode === "full",
+    showClientFolderColumn: accessMode === "full",
   };
   var lastRow = sheet.getLastRow();
   if (lastRow < 1) return emptyPayload;
@@ -662,6 +694,7 @@ function buildInvoiceRequestsPayload_(spreadsheet, informationLookup) {
     accessMode: accessMode,
     showStatusColumns: accessMode === "full",
     showAuthorColumn: accessMode === "full",
+    showClientFolderColumn: accessMode === "full",
   };
 }
 
@@ -739,6 +772,11 @@ function createInvoiceRequest(data) {
       project,
       informationLookup
     );
+    var clientFolder = resolveInvoiceRequestClientFolder_(
+      spreadsheet,
+      project,
+      informationLookup
+    );
     var createdAt = new Date();
 
     var lastRow = sheet.getLastRow();
@@ -789,7 +827,7 @@ function createInvoiceRequest(data) {
         INVOICE_REQUESTS_RATE_FILE_OFFSET
       ),
       1,
-      5
+      INVOICE_REQUESTS_TRAILING_COLUMN_COUNT
     );
     trailingRange.clearContent();
     trailingRange.clearDataValidations();
@@ -804,6 +842,16 @@ function createInvoiceRequest(data) {
       ),
       rateFile.value,
       rateFile.link
+    );
+    writeInvoiceRequestLinkedValue_(
+      sheet.getRange(
+        newRow,
+        sheetColumnForInvoiceRequestOffset_(
+          INVOICE_REQUESTS_CLIENT_FOLDER_OFFSET
+        )
+      ),
+      clientFolder.value,
+      clientFolder.link
     );
     sheet
       .getRange(
@@ -836,6 +884,7 @@ function createInvoiceRequest(data) {
       accessMode: payload.accessMode,
       showStatusColumns: payload.showStatusColumns,
       showAuthorColumn: payload.showAuthorColumn,
+      showClientFolderColumn: payload.showClientFolderColumn,
       // Sent by a separate client call so the UI is not blocked on MailApp.
       notifications: [
         {
@@ -1081,6 +1130,11 @@ function saveInvoiceRequestChanges(changes) {
         meta.project,
         informationLookup
       );
+      var clientFolder = resolveInvoiceRequestClientFolder_(
+        spreadsheet,
+        meta.project,
+        informationLookup
+      );
       sheet
         .getRange(
           meta.sheetRow,
@@ -1098,6 +1152,16 @@ function saveInvoiceRequestChanges(changes) {
         ),
         rateFile.value,
         rateFile.link
+      );
+      writeInvoiceRequestLinkedValue_(
+        sheet.getRange(
+          meta.sheetRow,
+          sheetColumnForInvoiceRequestOffset_(
+            INVOICE_REQUESTS_CLIENT_FOLDER_OFFSET
+          )
+        ),
+        clientFolder.value,
+        clientFolder.link
       );
       sheet
         .getRange(
@@ -1142,6 +1206,7 @@ function saveInvoiceRequestChanges(changes) {
       accessMode: payload.accessMode,
       showStatusColumns: payload.showStatusColumns,
       showAuthorColumn: payload.showAuthorColumn,
+      showClientFolderColumn: payload.showClientFolderColumn,
       notifications: notifications,
     };
   } finally {

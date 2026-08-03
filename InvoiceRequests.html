@@ -707,6 +707,7 @@
           "#f1f3f5",
           "#f1f3f5",
           "#f1f3f5",
+          "#f1f3f5",
         ];
         var fallbackHeaders = [
           "Проект",
@@ -722,6 +723,7 @@
           "Проекты",
           "Оп.б",
           "Файл рейтів",
+          "Папка клієнта",
           "Created by",
           "Created at",
           "Edited by",
@@ -733,10 +735,11 @@
           2: 216,
           3: 138,
           12: 150,
-          13: 120,
-          14: 140,
-          15: 120,
-          16: 140,
+          13: 150,
+          14: 120,
+          15: 140,
+          16: 120,
+          17: 140,
         };
         var STATUS_FIRST_OFFSET = 4;
         var STATUS_LAST_OFFSET = 11;
@@ -747,11 +750,15 @@
         var COMMENT_OFFSET = 2;
         var AUTHOR_OFFSET = 3;
         var RATE_FILE_OFFSET = 12;
-        var CREATED_AT_OFFSET = 14;
-        var EDITED_AT_OFFSET = 16;
+        var CLIENT_FOLDER_OFFSET = 13;
+        var CREATED_BY_OFFSET = 14;
+        var CREATED_AT_OFFSET = 15;
+        var EDITED_BY_OFFSET = 16;
+        var EDITED_AT_OFFSET = 17;
         var projectOptions = [];
         var showStatusColumns = true;
         var showAuthorColumn = true;
+        var showClientFolderColumn = true;
         var isLimitedAccess = false;
         var lastLoadedResponse = null;
         var mobileFormMode = null;
@@ -1162,7 +1169,8 @@
             if (
               columnOffset === DETAILS_OFFSET ||
               columnOffset === COMMENT_OFFSET ||
-              columnOffset === RATE_FILE_OFFSET
+              columnOffset === RATE_FILE_OFFSET ||
+              columnOffset === CLIENT_FOLDER_OFFSET
             ) {
               cssClasses.push("scrollable-text-cell");
             }
@@ -1232,6 +1240,12 @@
             }
 
             if (columnOffset === AUTHOR_OFFSET && !showAuthorColumn) {
+              column.visible = false;
+            }
+            if (
+              columnOffset === CLIENT_FOLDER_OFFSET &&
+              !showClientFolderColumn
+            ) {
               column.visible = false;
             }
 
@@ -1648,19 +1662,19 @@
                 mobileFieldHtml("Файл рейтів", rateHtml || "&nbsp;") +
                 mobileFieldHtml(
                   "Created by",
-                  escapeHtml(row.c13 || "")
+                  escapeHtml(row["c" + CREATED_BY_OFFSET] || "")
                 ) +
                 mobileFieldHtml(
                   "Created at",
-                  escapeHtml(row.c14 || "")
+                  escapeHtml(row["c" + CREATED_AT_OFFSET] || "")
                 ) +
                 mobileFieldHtml(
                   "Edited by",
-                  escapeHtml(row.c15 || "")
+                  escapeHtml(row["c" + EDITED_BY_OFFSET] || "")
                 ) +
                 mobileFieldHtml(
                   "Edited at",
-                  escapeHtml(row.c16 || "")
+                  escapeHtml(row["c" + EDITED_AT_OFFSET] || "")
                 ) +
                 '<div class="invoice-mobile-card-actions">' +
                 '<button type="button" class="btn btn-outline-primary w-100 mobile-edit-btn">' +
@@ -1865,6 +1879,9 @@
           );
           showAuthorColumn = !(
             response && response.showAuthorColumn === false
+          );
+          showClientFolderColumn = !(
+            response && response.showClientFolderColumn === false
           );
           // Prefer accessMode; also treat hidden status columns as limited
           // so card UI still appears if accessMode is missing in the payload.
