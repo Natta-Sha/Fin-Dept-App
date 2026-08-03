@@ -1659,12 +1659,10 @@
           renderCurrentView();
         }
 
-        function applyStatusSavePatch(applied) {
-          if (!applied || !applied.length) return;
-          var responseRows =
-            (lastLoadedResponse && lastLoadedResponse.rows) || [];
+        function applyStatusSavePatchToResponse(applied) {
+          if (!applied || !applied.length || !lastLoadedResponse) return;
+          var responseRows = lastLoadedResponse.rows || [];
           applied.forEach(function (item) {
-            delete dirtyChanges[changeKey(item.id, item.columnOffset)];
             for (var i = 0; i < responseRows.length; i++) {
               if (String(responseRows[i].id) !== String(item.id)) continue;
               if (!responseRows[i].cells) responseRows[i].cells = [];
@@ -1678,24 +1676,10 @@
                 item.originalToken;
               break;
             }
-            if (!table) return;
-            var rowComponent = table.getRow(item.id);
-            if (!rowComponent) return;
-            var data = rowComponent.getData();
-            data["c" + item.columnOffset] = item.value;
-            data["_display" + item.columnOffset] = item.value;
-            data._original[item.columnOffset] = item.value;
-            data._originalTokens[item.columnOffset] = item.originalToken;
-            rowComponent.update(data);
-            var cell = rowComponent.getCell("c" + item.columnOffset);
-            if (cell) {
-              cell.getElement().classList.remove("is-dirty");
-              if (isStatusColumn(item.columnOffset)) checkboxFormatter(cell);
-            }
           });
         }
 
-        function mergePatchedRows(patchedRows) {
+        function mergePatchedRowsIntoResponse(patchedRows) {
           if (!patchedRows || !patchedRows.length) return;
           if (!lastLoadedResponse) {
             lastLoadedResponse = { headers: [], rows: [], projects: [] };
@@ -1712,11 +1696,17 @@
             } else {
               existing.unshift(sourceRow);
             }
-            Object.keys(dirtyChanges).forEach(function (key) {
-              if (key.indexOf(id + "::") === 0) delete dirtyChanges[key];
-            });
           });
           lastLoadedResponse.rows = existing;
+        }
+
+        function refreshTableFromLastResponse() {
+          if (!lastLoadedResponse) return;
+          var rows = lastLoadedResponse.rows || [];
+          rows.sort(function (left, right) {
+            return (Number(right.activityAt) || 0) - (Number(left.activityAt) || 0);
+          });
+          lastLoadedResponse.rows = rows;
           if (useMobileLimitedUi()) {
             renderMobileList(lastLoadedResponse);
             return;
@@ -1725,27 +1715,23 @@
             renderCurrentView();
             return;
           }
-          tableRows({ rows: patchedRows }).forEach(function (mapped) {
-            var rowComponent = table.getRow(mapped._id);
-            if (rowComponent) rowComponent.update(mapped);
-            else table.addRow(mapped, true);
-          });
+          table.replaceData(tableRows(lastLoadedResponse));
+          table.setSort([{ column: "_activityAt", dir: "desc" }]);
         }
 
         function handleSaveResult(result) {
           queueInvoiceRequestNotifications(result);
-          if (result.patch && result.applied) {
-            applyStatusSavePatch(result.applied);
-            updateToolbar();
-            return;
-          }
-          if (result.patch && result.rows) {
-            mergePatchedRows(result.rows);
+          // Always clear local dirty state after a successful save response.
+          dirtyChanges = {};
+          if (result && result.patch) {
+            applyStatusSavePatchToResponse(result.applied);
+            mergePatchedRowsIntoResponse(result.rows);
             if (mobileFormMode) closeMobileForm();
+            refreshTableFromLastResponse();
             updateToolbar();
             return;
           }
-          if (result.rows) {
+          if (result && result.rows) {
             applyLoadedData(result);
             return;
           }
@@ -2008,7 +1994,8 @@
           if (table) table.setHeight(tableHeight());
         });
 
-        loadData(true);
+        // Browser refresh / first open: always reload from sheet (bust list cache).
+        loadData(true, true);
         setInterval(function () {
           if (isSaving || hasUnsavedWork() || hasOpenCreateOrEditForm()) {
             return;

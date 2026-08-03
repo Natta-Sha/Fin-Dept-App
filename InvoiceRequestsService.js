@@ -935,7 +935,8 @@ function findInvoiceRequestSheetRowsByIds_(sheet, rowIds) {
 
   var lastRow = sheet.getLastRow();
   if (lastRow < 2) return {};
-  var idValues = sheet.getRange(2, 1, lastRow - 1, 1).getValues();
+  // Include the last sheet row — do not use lastRow-1 (drops the newest/last record).
+  var idValues = sheet.getRange(2, 1, lastRow, 1).getValues();
   var map = {};
   var found = 0;
   var wantedCount = Object.keys(wanted).length;
@@ -1249,9 +1250,29 @@ function saveInvoiceRequestChanges(changes) {
       });
     }
 
-    // Content edits: return only touched rows. Status-only: return applied cells.
+    var applied = [];
+    for (var a = 0; a < validated.length; a++) {
+      var appliedItem = validated[a];
+      if (
+        isInvoiceRequestStatusColumn_(appliedItem.columnOffset) &&
+        contentEditsByRow[appliedItem.rowId]
+      ) {
+        // Status on a content-edited row was reset below; skip stale applied value.
+        continue;
+      }
+      if (!isInvoiceRequestStatusColumn_(appliedItem.columnOffset)) {
+        continue;
+      }
+      applied.push({
+        id: appliedItem.rowId,
+        columnOffset: appliedItem.columnOffset,
+        value: appliedItem.value,
+        originalToken: appliedItem.value,
+      });
+    }
+
+    var patchedRows = [];
     if (contentRowIds.length > 0) {
-      var patchedRows = [];
       for (var p = 0; p < contentRowIds.length; p++) {
         var patchedId = contentRowIds[p];
         patchedRows.push(
@@ -1262,32 +1283,14 @@ function saveInvoiceRequestChanges(changes) {
           )
         );
       }
-      return {
-        success: true,
-        updated: validated.length,
-        patch: true,
-        rows: patchedRows,
-        notifications: notifications,
-      };
     }
 
-    var applied = [];
-    for (var a = 0; a < validated.length; a++) {
-      var appliedItem = validated[a];
-      applied.push({
-        id: appliedItem.rowId,
-        columnOffset: appliedItem.columnOffset,
-        value: appliedItem.value,
-        originalToken: isInvoiceRequestStatusColumn_(appliedItem.columnOffset)
-          ? appliedItem.value
-          : comparableInvoiceRequestValue_(appliedItem.value),
-      });
-    }
     return {
       success: true,
       updated: validated.length,
       patch: true,
       applied: applied,
+      rows: patchedRows,
       notifications: notifications,
     };
   } finally {
