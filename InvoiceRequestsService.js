@@ -54,48 +54,81 @@ function formatInvoiceRequestTimestamp_(date) {
   );
 }
 
-function parseInvoiceRequestTimestamp_(value) {
-  if (value instanceof Date && !isNaN(value.getTime())) {
-    return value.getTime();
-  }
-  if (typeof value === "number" && Number.isFinite(value) && value > 0) {
-    // Sheets serial day number (approx) vs already-ms timestamp.
-    if (value < 1000000) {
-      return new Date(Math.round((value - 25569) * 86400000)).getTime();
-    }
-    return value;
-  }
+// App timestamps are always day/month/year. Do not use Date.parse on
+// slash-dates: in JS they are treated as MM/DD and break sorting.
+function parseInvoiceRequestDdMmTimestamp_(value) {
   var text = String(value || "").trim();
   if (!text) return 0;
   var match = text.match(
     /^(\d{1,2})[\/.\-](\d{1,2})[\/.\-](\d{4})(?:[,\s]+(\d{1,2}):(\d{2})(?::(\d{2}))?)?/
   );
-  if (match) {
-    return new Date(
-      Number(match[3]),
-      Number(match[2]) - 1,
-      Number(match[1]),
-      Number(match[4] || 0),
-      Number(match[5] || 0),
-      Number(match[6] || 0)
-    ).getTime();
-  }
-  var parsed = Date.parse(text);
-  return Number.isFinite(parsed) ? parsed : 0;
+  if (!match) return 0;
+  var day = Number(match[1]);
+  var month = Number(match[2]);
+  var year = Number(match[3]);
+  if (month < 1 || month > 12 || day < 1 || day > 31) return 0;
+  var parsed = new Date(
+    year,
+    month - 1,
+    day,
+    Number(match[4] || 0),
+    Number(match[5] || 0),
+    Number(match[6] || 0)
+  );
+  return isNaN(parsed.getTime()) ? 0 : parsed.getTime();
 }
 
-function invoiceRequestTimestampSource_(value, displayValue) {
-  if (value instanceof Date && !isNaN(value.getTime())) return value;
-  if (typeof value === "number" && Number.isFinite(value) && value > 0) {
-    return value;
+function parseInvoiceRequestTimestamp_(value) {
+  if (value instanceof Date && !isNaN(value.getTime())) {
+    return value.getTime();
   }
-  return displayValue || value;
+  return parseInvoiceRequestDdMmTimestamp_(value);
+}
+
+function isInvoiceRequestTimestampColumn_(columnOffset) {
+  return (
+    columnOffset === INVOICE_REQUESTS_CREATED_AT_OFFSET ||
+    columnOffset === INVOICE_REQUESTS_EDITED_AT_OFFSET
+  );
+}
+
+function resolveInvoiceRequestActivityMs_(value, displayValue) {
+  // Prefer the visible dd/MM text. Sheets may store 03/08/yyyy as a Date
+  // in MM/DD locale (March), which would sort newest rows to the bottom.
+  var fromDisplay = parseInvoiceRequestDdMmTimestamp_(displayValue);
+  if (fromDisplay) return fromDisplay;
+  var fromValue = parseInvoiceRequestDdMmTimestamp_(value);
+  if (fromValue) return fromValue;
+  if (value instanceof Date && !isNaN(value.getTime())) {
+    return value.getTime();
+  }
+  return 0;
+}
+
+function serializeInvoiceRequestTimestampCell_(value, displayValue) {
+  var ms = resolveInvoiceRequestActivityMs_(value, displayValue);
+  if (ms) return formatInvoiceRequestTimestamp_(new Date(ms));
+  return String(displayValue || "").trim();
 }
 
 function getInvoiceRequestActivityAt_(createdAt, editedAt) {
   var editedMs = parseInvoiceRequestTimestamp_(editedAt);
   if (editedMs) return editedMs;
   return parseInvoiceRequestTimestamp_(createdAt);
+}
+
+function getInvoiceRequestActivityAtFromCells_(
+  createdValue,
+  createdDisplay,
+  editedValue,
+  editedDisplay
+) {
+  var editedMs = resolveInvoiceRequestActivityMs_(
+    editedValue,
+    editedDisplay
+  );
+  if (editedMs) return editedMs;
+  return resolveInvoiceRequestActivityMs_(createdValue, createdDisplay);
 }
 
 function sheetColumnForInvoiceRequestOffset_(columnOffset) {
@@ -527,6 +560,11 @@ function buildInvoiceRequestsPayload_(spreadsheet, informationLookup) {
       cells.push({
         value: isStatusColumn
           ? checkboxStatus
+          : isInvoiceRequestTimestampColumn_(columnOffset)
+          ? serializeInvoiceRequestTimestampCell_(
+              values[rowIndex][sourceColumn],
+              displayValues[rowIndex][sourceColumn]
+            )
           : serializeInvoiceRequestValue_(
               values[rowIndex][sourceColumn],
               displayValues[rowIndex][sourceColumn]
@@ -536,7 +574,12 @@ function buildInvoiceRequestsPayload_(spreadsheet, informationLookup) {
           backgrounds[rowIndex][sourceColumn],
           columnOffset
         ),
-        displayValue: displayValues[rowIndex][sourceColumn] || "",
+        displayValue: isInvoiceRequestTimestampColumn_(columnOffset)
+          ? serializeInvoiceRequestTimestampCell_(
+              values[rowIndex][sourceColumn],
+              displayValues[rowIndex][sourceColumn]
+            )
+          : displayValues[rowIndex][sourceColumn] || "",
         link: richText ? richText.getLinkUrl() || "" : "",
       });
     }
@@ -552,15 +595,11 @@ function buildInvoiceRequestsPayload_(spreadsheet, informationLookup) {
     rows.push({
       id: rowId,
       cells: cells,
-      activityAt: getInvoiceRequestActivityAt_(
-        invoiceRequestTimestampSource_(
-          values[rowIndex][createdAtColumn],
-          displayValues[rowIndex][createdAtColumn]
-        ),
-        invoiceRequestTimestampSource_(
-          values[rowIndex][editedAtColumn],
-          displayValues[rowIndex][editedAtColumn]
-        )
+      activityAt: getInvoiceRequestActivityAtFromCells_(
+        values[rowIndex][createdAtColumn],
+        displayValues[rowIndex][createdAtColumn],
+        values[rowIndex][editedAtColumn],
+        displayValues[rowIndex][editedAtColumn]
       ),
     });
   }
@@ -652,7 +691,7 @@ function createInvoiceRequest(data) {
       project,
       informationLookup
     );
-    var createdAt = formatInvoiceRequestTimestamp_();
+    var createdAt = new Date();
 
     var lastRow = sheet.getLastRow();
     var existingIds =
@@ -970,7 +1009,7 @@ function saveInvoiceRequestChanges(changes) {
 
     var author = "";
     var listsLookup = null;
-    var editedAt = formatInvoiceRequestTimestamp_();
+    var editedAt = new Date();
     var contentRowIds = Object.keys(contentEditsByRow);
     if (contentRowIds.length > 0) {
       if (!informationLookup) {

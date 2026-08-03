@@ -433,6 +433,8 @@
         var COMMENT_OFFSET = 2;
         var AUTHOR_OFFSET = 3;
         var RATE_FILE_OFFSET = 12;
+        var CREATED_AT_OFFSET = 14;
+        var EDITED_AT_OFFSET = 16;
         var projectOptions = [];
         var showStatusColumns = true;
 
@@ -441,6 +443,48 @@
             columnOffset >= STATUS_FIRST_OFFSET &&
             columnOffset <= STATUS_LAST_OFFSET
           );
+        }
+
+        function isTimestampColumn(columnOffset) {
+          return (
+            columnOffset === CREATED_AT_OFFSET ||
+            columnOffset === EDITED_AT_OFFSET
+          );
+        }
+
+        function parseDdMmTimestamp(value) {
+          var text = String(value || "").trim();
+          if (!text) return 0;
+          var match = text.match(
+            /^(\d{1,2})[\/.\-](\d{1,2})[\/.\-](\d{4})(?:[,\s]+(\d{1,2}):(\d{2})(?::(\d{2}))?)?/
+          );
+          if (!match) return 0;
+          var day = Number(match[1]);
+          var month = Number(match[2]);
+          var year = Number(match[3]);
+          if (month < 1 || month > 12 || day < 1 || day > 31) return 0;
+          var parsed = new Date(
+            year,
+            month - 1,
+            day,
+            Number(match[4] || 0),
+            Number(match[5] || 0),
+            Number(match[6] || 0)
+          );
+          return isNaN(parsed.getTime()) ? 0 : parsed.getTime();
+        }
+
+        function rowActivityAt(row) {
+          return (
+            parseDdMmTimestamp(row["c" + EDITED_AT_OFFSET]) ||
+            parseDdMmTimestamp(row["c" + CREATED_AT_OFFSET]) ||
+            Number(row._activityAt) ||
+            0
+          );
+        }
+
+        function ddMmSorter(a, b) {
+          return parseDdMmTimestamp(a) - parseDdMmTimestamp(b);
         }
 
         function isDraftInputColumn(columnOffset) {
@@ -761,6 +805,10 @@
               headerSortTristate: true,
             };
 
+            if (isTimestampColumn(columnOffset)) {
+              column.sorter = ddMmSorter;
+            }
+
             if (checkboxColumn) {
               if (!showStatusColumns) {
                 column.visible = false;
@@ -828,6 +876,7 @@
                 row._original[columnOffset] = cell.value;
                 row._originalTokens[columnOffset] = cell.originalToken;
               });
+              row._activityAt = rowActivityAt(row);
               return row;
             })
             .sort(function (left, right) {
