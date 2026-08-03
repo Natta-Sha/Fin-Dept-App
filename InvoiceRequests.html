@@ -876,7 +876,9 @@
                 row._original[columnOffset] = cell.value;
                 row._originalTokens[columnOffset] = cell.originalToken;
               });
-              row._activityAt = rowActivityAt(row);
+              if (!row._activityAt) {
+                row._activityAt = rowActivityAt(row);
+              }
               return row;
             })
             .sort(function (left, right) {

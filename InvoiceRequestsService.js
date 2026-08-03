@@ -93,22 +93,35 @@ function isInvoiceRequestTimestampColumn_(columnOffset) {
 }
 
 function resolveInvoiceRequestActivityMs_(value, displayValue) {
-  // Prefer the visible dd/MM text. Sheets may store 03/08/yyyy as a Date
-  // in MM/DD locale (March), which would sort newest rows to the bottom.
-  var fromDisplay = parseInvoiceRequestDdMmTimestamp_(displayValue);
-  if (fromDisplay) return fromDisplay;
-  var fromValue = parseInvoiceRequestDdMmTimestamp_(value);
-  if (fromValue) return fromValue;
+  // Trust the real cell Date first. Sheets display strings follow the
+  // spreadsheet locale (often MM/DD), so parsing them as dd/MM flips
+  // days and months (e.g. 3 Aug -> 08/03/2026) and breaks sort order.
   if (value instanceof Date && !isNaN(value.getTime())) {
     return value.getTime();
   }
-  return 0;
+  if (typeof value === "number" && Number.isFinite(value) && value > 0) {
+    if (value < 1000000) {
+      return new Date(Math.round((value - 25569) * 86400000)).getTime();
+    }
+    return value;
+  }
+  // Legacy app-written text timestamps used dd/MM/yyyy HH:mm.
+  var fromValue = parseInvoiceRequestDdMmTimestamp_(value);
+  if (fromValue) return fromValue;
+  return parseInvoiceRequestDdMmTimestamp_(displayValue);
 }
 
 function serializeInvoiceRequestTimestampCell_(value, displayValue) {
-  var ms = resolveInvoiceRequestActivityMs_(value, displayValue);
-  if (ms) return formatInvoiceRequestTimestamp_(new Date(ms));
-  return String(displayValue || "").trim();
+  if (value instanceof Date && !isNaN(value.getTime())) {
+    return formatInvoiceRequestTimestamp_(value);
+  }
+  var fromValue = parseInvoiceRequestDdMmTimestamp_(value);
+  if (fromValue) return formatInvoiceRequestTimestamp_(new Date(fromValue));
+  var fromDisplay = parseInvoiceRequestDdMmTimestamp_(displayValue);
+  if (fromDisplay) {
+    return formatInvoiceRequestTimestamp_(new Date(fromDisplay));
+  }
+  return String(displayValue || value || "").trim();
 }
 
 function getInvoiceRequestActivityAt_(createdAt, editedAt) {
