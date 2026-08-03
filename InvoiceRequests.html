@@ -1206,6 +1206,18 @@
           selectElement.value = selected || "";
         }
 
+        function refreshProjectOptions(done) {
+          google.script.run
+            .withSuccessHandler(function (projects) {
+              if (Array.isArray(projects)) projectOptions = projects;
+              if (typeof done === "function") done();
+            })
+            .withFailureHandler(function () {
+              if (typeof done === "function") done();
+            })
+            .getInvoiceRequestProjectOptions();
+        }
+
         function fillMobileProjectOptions(selected) {
           fillSelectOptions(mobileProjectField, selected);
         }
@@ -1249,16 +1261,18 @@
             details: "",
             comment: "",
           };
-          fillSelectOptions(desktopProjectField, "");
           desktopDetailsField.value = "";
           desktopCommentField.value = "";
           desktopProjectField.classList.remove("is-invalid");
           desktopDetailsField.classList.remove("is-invalid");
           updateToolbar();
           createInvoiceModal.show();
-          setTimeout(function () {
-            desktopProjectField.focus();
-          }, 200);
+          refreshProjectOptions(function () {
+            fillSelectOptions(desktopProjectField, "");
+            setTimeout(function () {
+              desktopProjectField.focus();
+            }, 200);
+          });
         }
 
         function closeDesktopCreateOverlay() {
@@ -1362,7 +1376,6 @@
           var project = row ? String(row.c0 || "") : "";
           var details = row ? String(row.c1 || "") : "";
           var comment = row ? String(row.c2 || "") : "";
-          fillMobileProjectOptions(project);
           mobileDetailsField.value = details;
           mobileCommentField.value = comment;
           mobileFormBaseline = {
@@ -1375,7 +1388,10 @@
           mobileFormElement.classList.remove("d-none");
           mobileListElement.classList.add("d-none");
           updateToolbar();
-          mobileProjectField.focus();
+          refreshProjectOptions(function () {
+            fillMobileProjectOptions(project);
+            mobileProjectField.focus();
+          });
         }
 
         function renderMobileList(response) {
@@ -1584,11 +1600,7 @@
               mobileFormMode = null;
               mobileEditRow = null;
               mobileFormBaseline = null;
-              if (result.rows) {
-                applyLoadedData(result);
-              } else {
-                loadData(true, true);
-              }
+              handleSaveResult(result);
               setStatus("Saved", "success");
               updateToolbar();
             })
@@ -1622,7 +1634,12 @@
             rows: [],
             projects: [],
           };
-          projectOptions = lastLoadedResponse.projects || [];
+          if (
+            lastLoadedResponse.projects &&
+            lastLoadedResponse.projects.length
+          ) {
+            projectOptions = lastLoadedResponse.projects;
+          }
           showStatusColumns = !(
             response && response.showStatusColumns === false
           );
@@ -1642,26 +1659,162 @@
           renderCurrentView();
         }
 
-        function loadData(force, refreshCache) {
+        function applyStatusSavePatch(applied) {
+          if (!applied || !applied.length) return;
+          var responseRows =
+            (lastLoadedResponse && lastLoadedResponse.rows) || [];
+          applied.forEach(function (item) {
+            delete dirtyChanges[changeKey(item.id, item.columnOffset)];
+            for (var i = 0; i < responseRows.length; i++) {
+              if (String(responseRows[i].id) !== String(item.id)) continue;
+              if (!responseRows[i].cells) responseRows[i].cells = [];
+              if (!responseRows[i].cells[item.columnOffset]) {
+                responseRows[i].cells[item.columnOffset] = {};
+              }
+              responseRows[i].cells[item.columnOffset].value = item.value;
+              responseRows[i].cells[item.columnOffset].displayValue =
+                item.value;
+              responseRows[i].cells[item.columnOffset].originalToken =
+                item.originalToken;
+              break;
+            }
+            if (!table) return;
+            var rowComponent = table.getRow(item.id);
+            if (!rowComponent) return;
+            var data = rowComponent.getData();
+            data["c" + item.columnOffset] = item.value;
+            data["_display" + item.columnOffset] = item.value;
+            data._original[item.columnOffset] = item.value;
+            data._originalTokens[item.columnOffset] = item.originalToken;
+            rowComponent.update(data);
+            var cell = rowComponent.getCell("c" + item.columnOffset);
+            if (cell) {
+              cell.getElement().classList.remove("is-dirty");
+              if (isStatusColumn(item.columnOffset)) checkboxFormatter(cell);
+            }
+          });
+        }
+
+        function mergePatchedRows(patchedRows) {
+          if (!patchedRows || !patchedRows.length) return;
+          if (!lastLoadedResponse) {
+            lastLoadedResponse = { headers: [], rows: [], projects: [] };
+          }
+          var existing = lastLoadedResponse.rows || [];
+          var indexById = {};
+          for (var i = 0; i < existing.length; i++) {
+            indexById[String(existing[i].id)] = i;
+          }
+          patchedRows.forEach(function (sourceRow) {
+            var id = String(sourceRow.id);
+            if (indexById[id] !== undefined) {
+              existing[indexById[id]] = sourceRow;
+            } else {
+              existing.unshift(sourceRow);
+            }
+            Object.keys(dirtyChanges).forEach(function (key) {
+              if (key.indexOf(id + "::") === 0) delete dirtyChanges[key];
+            });
+          });
+          lastLoadedResponse.rows = existing;
+          if (useMobileLimitedUi()) {
+            renderMobileList(lastLoadedResponse);
+            return;
+          }
+          if (!table) {
+            renderCurrentView();
+            return;
+          }
+          tableRows({ rows: patchedRows }).forEach(function (mapped) {
+            var rowComponent = table.getRow(mapped._id);
+            if (rowComponent) rowComponent.update(mapped);
+            else table.addRow(mapped, true);
+          });
+        }
+
+        function handleSaveResult(result) {
+          queueInvoiceRequestNotifications(result);
+          if (result.patch && result.applied) {
+            applyStatusSavePatch(result.applied);
+            updateToolbar();
+            return;
+          }
+          if (result.patch && result.rows) {
+            mergePatchedRows(result.rows);
+            if (mobileFormMode) closeMobileForm();
+            updateToolbar();
+            return;
+          }
+          if (result.rows) {
+            applyLoadedData(result);
+            return;
+          }
+          loadData(true, true);
+        }
+
+        function applySoftRefresh(response) {
+          if (hasUnsavedWork() || hasOpenCreateOrEditForm()) return;
+          if (!response) return;
+          if (response.projects && response.projects.length) {
+            projectOptions = response.projects;
+          }
+          lastLoadedResponse = {
+            headers:
+              response.headers ||
+              (lastLoadedResponse && lastLoadedResponse.headers) ||
+              [],
+            rows: response.rows || [],
+            projects: projectOptions,
+            accessMode: response.accessMode,
+            showStatusColumns: response.showStatusColumns,
+            showAuthorColumn: response.showAuthorColumn,
+            showClientFolderColumn: response.showClientFolderColumn,
+          };
+          showStatusColumns = !(response.showStatusColumns === false);
+          showAuthorColumn = !(response.showAuthorColumn === false);
+          showClientFolderColumn = !(
+            response.showClientFolderColumn === false
+          );
+          isLimitedAccess = !!(
+            response.accessMode === "limited" ||
+            response.showStatusColumns === false
+          );
+          if (useMobileLimitedUi()) {
+            renderMobileList(lastLoadedResponse);
+          } else if (table) {
+            table.replaceData(tableRows(lastLoadedResponse));
+          } else {
+            renderCurrentView();
+          }
+        }
+
+        function loadData(force, refreshCache, softRefresh) {
           if (hasUnsavedWork() && !force) return;
-          setLoading(true);
+          if (!softRefresh) setLoading(true);
           errorElement.classList.add("d-none");
           errorElement.textContent = "";
-          setStatus("");
+          if (!softRefresh) setStatus("");
 
           google.script.run
             .withSuccessHandler(function (response) {
-              applyLoadedData(response);
+              if (softRefresh) {
+                applySoftRefresh(response);
+              } else {
+                applyLoadedData(response);
+                setStatus("");
+              }
               setLoading(false);
-              setStatus("");
             })
             .withFailureHandler(function (error) {
               console.error("Invoice Requests load failed:", error);
-              errorElement.textContent =
-                (error && error.message) || "Failed to load invoice requests.";
-              errorElement.classList.remove("d-none");
+              if (!softRefresh) {
+                errorElement.textContent =
+                  (error && error.message) ||
+                  "Failed to load invoice requests.";
+                errorElement.classList.remove("d-none");
+                setStatus("Load failed", "error");
+              }
               setLoading(false);
-              setStatus("Load failed", "error");
             })
             .getInvoiceRequests(refreshCache === true);
         }
@@ -1702,13 +1855,7 @@
                 return;
               }
 
-              queueInvoiceRequestNotifications(result);
-              if (result.rows) {
-                applyLoadedData(result);
-              } else {
-                dirtyChanges = {};
-                loadData(true, true);
-              }
+              handleSaveResult(result);
               setStatus("Saved", "success");
               updateToolbar();
             })
@@ -1862,6 +2009,12 @@
         });
 
         loadData(true);
+        setInterval(function () {
+          if (isSaving || hasUnsavedWork() || hasOpenCreateOrEditForm()) {
+            return;
+          }
+          loadData(false, true, true);
+        }, 120000);
       });
     </script>
   </body>

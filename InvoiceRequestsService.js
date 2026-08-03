@@ -922,10 +922,110 @@ function createInvoiceRequest(data) {
   }
 }
 
+function findInvoiceRequestSheetRowsByIds_(sheet, rowIds) {
+  var wanted = {};
+  var hasWanted = false;
+  for (var i = 0; i < rowIds.length; i++) {
+    var id = String(rowIds[i] || "").trim();
+    if (!id || wanted[id]) continue;
+    wanted[id] = true;
+    hasWanted = true;
+  }
+  if (!hasWanted) return {};
+
+  var lastRow = sheet.getLastRow();
+  if (lastRow < 2) return {};
+  var idValues = sheet.getRange(2, 1, lastRow - 1, 1).getValues();
+  var map = {};
+  var found = 0;
+  var wantedCount = Object.keys(wanted).length;
+  for (var rowIndex = 0; rowIndex < idValues.length; rowIndex++) {
+    var rowId = String(idValues[rowIndex][0] || "").trim();
+    if (!rowId || !wanted[rowId] || map[rowId]) continue;
+    map[rowId] = rowIndex + 2;
+    found++;
+    if (found >= wantedCount) break;
+  }
+  return map;
+}
+
+function buildInvoiceRequestRowPayloadFromSheet_(sheet, sheetRow, rowId) {
+  var range = sheet.getRange(sheetRow, 1, 1, INVOICE_REQUESTS_LAST_COLUMN);
+  var valuesRow = range.getValues()[0];
+  var displayRow = range.getDisplayValues()[0];
+  var start = INVOICE_REQUESTS_FIRST_COLUMN - 1;
+  var cells = [];
+  for (
+    var columnOffset = 0;
+    columnOffset < INVOICE_REQUESTS_COLUMN_COUNT;
+    columnOffset++
+  ) {
+    var sourceColumn = start + columnOffset;
+    var isStatusColumn = isInvoiceRequestStatusColumn_(columnOffset);
+    var checkboxStatus = isStatusColumn
+      ? getInvoiceRequestCheckboxStatus_(valuesRow[sourceColumn])
+      : null;
+    var displayValue = isInvoiceRequestTimestampColumn_(columnOffset)
+      ? serializeInvoiceRequestTimestampCell_(
+          valuesRow[sourceColumn],
+          displayRow[sourceColumn]
+        )
+      : displayRow[sourceColumn] || "";
+    var cellValue = isStatusColumn
+      ? checkboxStatus
+      : isInvoiceRequestTimestampColumn_(columnOffset)
+      ? displayValue
+      : serializeInvoiceRequestValue_(
+          valuesRow[sourceColumn],
+          displayRow[sourceColumn]
+        );
+    var link = "";
+    if (
+      columnOffset === INVOICE_REQUESTS_RATE_FILE_OFFSET ||
+      columnOffset === INVOICE_REQUESTS_CLIENT_FOLDER_OFFSET
+    ) {
+      link = invoiceRequestLinkFromCell_(
+        valuesRow[sourceColumn],
+        displayRow[sourceColumn]
+      );
+      if (!cellValue && link) cellValue = link;
+      if (!displayValue && link) displayValue = link;
+    }
+    cells.push({
+      value: cellValue,
+      originalToken: getInvoiceRequestOriginalToken_(
+        valuesRow[sourceColumn],
+        columnOffset
+      ),
+      displayValue: displayValue,
+      link: link,
+    });
+  }
+  var createdAtColumn = start + INVOICE_REQUESTS_CREATED_AT_OFFSET;
+  var editedAtColumn = start + INVOICE_REQUESTS_EDITED_AT_OFFSET;
+  return {
+    id: String(rowId),
+    cells: cells,
+    activityAt: getInvoiceRequestActivityAtFromCells_(
+      valuesRow[createdAtColumn],
+      displayRow[createdAtColumn],
+      valuesRow[editedAtColumn],
+      displayRow[editedAtColumn]
+    ),
+  };
+}
+
+function getInvoiceRequestProjectOptions() {
+  assertInvoiceRequestsAccess_();
+  return getInvoiceRequestProjects_(
+    SpreadsheetApp.openById(INVOICE_REQUESTS_SPREADSHEET_ID)
+  );
+}
+
 function saveInvoiceRequestChanges(changes) {
   assertInvoiceRequestsAccess_();
   if (!Array.isArray(changes) || changes.length === 0) {
-    return { success: true, updated: 0 };
+    return { success: true, updated: 0, patch: true, applied: [] };
   }
 
   var lock = LockService.getScriptLock();
@@ -942,36 +1042,26 @@ function saveInvoiceRequestChanges(changes) {
     var sheet = spreadsheet.getSheetByName(INVOICE_REQUESTS_SHEET_NAME);
     if (!sheet) throw new Error('Sheet "Requests" was not found.');
 
-    var lastRow = sheet.getLastRow();
-    if (lastRow < 2) throw new Error("No editable rows were found.");
-
-    var sourceRange = sheet.getRange(
-      2,
-      1,
-      lastRow - 1,
-      INVOICE_REQUESTS_FIRST_COLUMN +
-        INVOICE_REQUESTS_COLUMN_COUNT -
-        1
-    );
-    var source = sourceRange.getValues();
-    var projects = null;
-    var rowsById = {};
-    for (var sourceIndex = 0; sourceIndex < source.length; sourceIndex++) {
-      var sourceId = String(source[sourceIndex][0] || "").trim();
-      if (sourceId && rowsById[sourceId] !== undefined) {
-        throw new Error("Duplicate row ID in column A: " + sourceId);
+    var requestedIds = [];
+    for (var prep = 0; prep < changes.length; prep++) {
+      requestedIds.push(String((changes[prep] && changes[prep].id) || ""));
+    }
+    var idToSheetRow = findInvoiceRequestSheetRowsByIds_(sheet, requestedIds);
+    var rowValuesCache = {};
+    function rowValuesFor_(sheetRow) {
+      if (!rowValuesCache[sheetRow]) {
+        rowValuesCache[sheetRow] = sheet
+          .getRange(sheetRow, 1, 1, INVOICE_REQUESTS_LAST_COLUMN)
+          .getValues()[0];
       }
-      if (sourceId) {
-        rowsById[sourceId] = {
-          sheetRow: sourceIndex + 2,
-          values: source[sourceIndex],
-        };
-      }
+      return rowValuesCache[sheetRow];
     }
 
+    var projects = null;
     var conflicts = [];
     var validated = [];
     var contentEditsByRow = {};
+
     for (var changeIndex = 0; changeIndex < changes.length; changeIndex++) {
       var change = changes[changeIndex] || {};
       var rowId = String(change.id || "").trim();
@@ -990,14 +1080,16 @@ function saveInvoiceRequestChanges(changes) {
         throw new Error("No permission to edit status columns.");
       }
 
-      var targetRow = rowsById[rowId];
-      if (!targetRow) {
+      var sheetRow = idToSheetRow[rowId];
+      if (!sheetRow) {
         conflicts.push({ id: rowId, columnOffset: columnOffset });
         continue;
       }
+
+      var rowValues = rowValuesFor_(sheetRow);
       if (
         accessMode === "limited" &&
-        !invoiceRequestRowOwnedByEmail_(targetRow.values, email)
+        !invoiceRequestRowOwnedByEmail_(rowValues, email)
       ) {
         throw new Error("No permission to edit this invoice request.");
       }
@@ -1006,10 +1098,9 @@ function saveInvoiceRequestChanges(changes) {
         INVOICE_REQUESTS_FIRST_COLUMN - 1 + columnOffset;
       if (
         getInvoiceRequestOriginalToken_(
-          targetRow.values[sourceColumn],
+          rowValues[sourceColumn],
           columnOffset
-        ) !==
-        change.originalToken
+        ) !== change.originalToken
       ) {
         conflicts.push({ id: rowId, columnOffset: columnOffset });
         continue;
@@ -1052,8 +1143,9 @@ function saveInvoiceRequestChanges(changes) {
           };
         }
       }
+
       validated.push({
-        sheetRow: targetRow.sheetRow,
+        sheetRow: sheetRow,
         sheetColumn: sheetColumnForInvoiceRequestOffset_(columnOffset),
         columnOffset: columnOffset,
         value: nextValue,
@@ -1062,9 +1154,9 @@ function saveInvoiceRequestChanges(changes) {
       if (isInvoiceRequestContentColumn_(columnOffset)) {
         if (!contentEditsByRow[rowId]) {
           contentEditsByRow[rowId] = {
-            sheetRow: targetRow.sheetRow,
+            sheetRow: sheetRow,
             project: String(
-              targetRow.values[
+              rowValues[
                 INVOICE_REQUESTS_FIRST_COLUMN -
                   1 +
                   INVOICE_REQUESTS_PROJECT_OFFSET
@@ -1088,10 +1180,6 @@ function saveInvoiceRequestChanges(changes) {
       };
     }
 
-    // The browser makes one save request. Checkbox cells are written
-    // individually because N/A deliberately uses a symbol instead of Sheets
-    // checkbox validation. Status clicks on rows with content edits are
-    // ignored because those statuses are reset below.
     for (var writeIndex = 0; writeIndex < validated.length; writeIndex++) {
       var item = validated[writeIndex];
       if (
@@ -1122,7 +1210,6 @@ function saveInvoiceRequestChanges(changes) {
     }
     for (var metaIndex = 0; metaIndex < contentRowIds.length; metaIndex++) {
       var meta = contentEditsByRow[contentRowIds[metaIndex]];
-      // Rate file and client folder are snapshotted only on create.
       sheet
         .getRange(
           meta.sheetRow,
@@ -1151,6 +1238,7 @@ function saveInvoiceRequestChanges(changes) {
     }
 
     SpreadsheetApp.flush();
+    invalidateInvoiceRequestsListCache_();
 
     var notifications = [];
     for (var notifyIndex = 0; notifyIndex < contentRowIds.length; notifyIndex++) {
@@ -1161,18 +1249,45 @@ function saveInvoiceRequestChanges(changes) {
       });
     }
 
-    invalidateInvoiceRequestsListCache_();
-    var payload = buildInvoiceRequestsPayload_(spreadsheet, projects);
+    // Content edits: return only touched rows. Status-only: return applied cells.
+    if (contentRowIds.length > 0) {
+      var patchedRows = [];
+      for (var p = 0; p < contentRowIds.length; p++) {
+        var patchedId = contentRowIds[p];
+        patchedRows.push(
+          buildInvoiceRequestRowPayloadFromSheet_(
+            sheet,
+            contentEditsByRow[patchedId].sheetRow,
+            patchedId
+          )
+        );
+      }
+      return {
+        success: true,
+        updated: validated.length,
+        patch: true,
+        rows: patchedRows,
+        notifications: notifications,
+      };
+    }
+
+    var applied = [];
+    for (var a = 0; a < validated.length; a++) {
+      var appliedItem = validated[a];
+      applied.push({
+        id: appliedItem.rowId,
+        columnOffset: appliedItem.columnOffset,
+        value: appliedItem.value,
+        originalToken: isInvoiceRequestStatusColumn_(appliedItem.columnOffset)
+          ? appliedItem.value
+          : comparableInvoiceRequestValue_(appliedItem.value),
+      });
+    }
     return {
       success: true,
       updated: validated.length,
-      headers: payload.headers,
-      rows: payload.rows,
-      projects: payload.projects,
-      accessMode: payload.accessMode,
-      showStatusColumns: payload.showStatusColumns,
-      showAuthorColumn: payload.showAuthorColumn,
-      showClientFolderColumn: payload.showClientFolderColumn,
+      patch: true,
+      applied: applied,
       notifications: notifications,
     };
   } finally {
