@@ -70,8 +70,7 @@
       }
 
       #invoice-requests-table .tabulator-editing input,
-      #invoice-requests-table .tabulator-editing select,
-      #invoice-requests-table .new-row-select {
+      #invoice-requests-table .tabulator-editing select {
         font-size: 0.78rem;
         font-weight: 400;
       }
@@ -182,61 +181,6 @@
         box-shadow:
           inset 0 0 0 3px #ff8c00,
           inset 0 0 0 4px #fff3cd;
-      }
-
-      #invoice-requests-table .tabulator-row.is-new-row {
-        background: #eef7ff;
-      }
-
-      #invoice-requests-table .tabulator-row.is-saving-new-row {
-        opacity: 0.62;
-        filter: saturate(0.65);
-      }
-
-      #invoice-requests-table
-        .tabulator-row.is-saving-new-row
-        .new-row-input {
-        cursor: wait;
-      }
-
-      #invoice-requests-table .tabulator-cell.is-required-missing {
-        box-shadow: inset 0 0 0 3px #dc3545;
-        background: #fff0f1;
-      }
-
-      #invoice-requests-table .new-row-input {
-        width: 100%;
-        min-height: 54px;
-        padding: 0.35rem;
-        border: 1px solid #9aa4b2;
-        border-radius: 4px;
-        background: #fff;
-        resize: vertical;
-        font: inherit;
-      }
-
-      #invoice-requests-table .new-row-input.new-row-select {
-        min-height: 34px;
-        resize: none;
-      }
-
-      #invoice-requests-table
-        .tabulator-cell.invoice-checkbox-cell.is-new-row-empty {
-        background-color: inherit;
-        cursor: default;
-      }
-
-      .new-row-actions {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        gap: 0.3rem;
-      }
-
-      .new-row-actions .btn {
-        width: 32px;
-        height: 30px;
-        padding: 0;
       }
 
       #save-invoice-requests.has-unsaved {
@@ -681,11 +625,8 @@
         var table = null;
         var dirtyChanges = {};
         var isSaving = false;
-        var draftRowId = null;
         var allowUnsavedExit = false;
         var pendingDiscardAction = null;
-        // Set false to restore the previous inline table-row create flow.
-        var USE_DESKTOP_CREATE_OVERLAY = true;
         var desktopCreateOpen = false;
         var desktopCreateBaseline = null;
         var tableTopOffset = tableElement.getBoundingClientRect().top;
@@ -825,14 +766,6 @@
           return parseDdMmTimestamp(a) - parseDdMmTimestamp(b);
         }
 
-        function isDraftInputColumn(columnOffset) {
-          return (
-            columnOffset === PROJECT_OFFSET ||
-            columnOffset === DETAILS_OFFSET ||
-            columnOffset === COMMENT_OFFSET
-          );
-        }
-
         function isReadOnlyColumn(columnOffset) {
           return (
             columnOffset === AUTHOR_OFFSET || columnOffset >= RATE_FILE_OFFSET
@@ -849,10 +782,6 @@
 
         function dirtyCount() {
           return Object.keys(dirtyChanges).length;
-        }
-
-        function hasDraftRow() {
-          return draftRowId !== null;
         }
 
         function hasOpenCreateOrEditForm() {
@@ -886,7 +815,6 @@
         function hasUnsavedWork() {
           return (
             dirtyCount() > 0 ||
-            draftRowId !== null ||
             (mobileFormMode && isMobileFormDirty()) ||
             (desktopCreateOpen && isDesktopCreateDirty())
           );
@@ -941,7 +869,7 @@
           saveButton.disabled = isSaving || count === 0;
           reloadButton.disabled = isSaving;
           addRowButton.disabled =
-            isSaving || count > 0 || hasDraftRow() || formOpen;
+            isSaving || count > 0 || formOpen;
           saveButton.classList.toggle("has-unsaved", count > 0);
           if (!isSaving && mobileFormMode === "edit" && isMobileFormDirty()) {
             setStatus("Unsaved changes", "unsaved");
@@ -957,8 +885,6 @@
             isMobileFormDirty()
           ) {
             setStatus("New request not saved", "unsaved");
-          } else if (!isSaving && hasDraftRow()) {
-            setStatus("New row not saved", "unsaved");
           } else if (!isSaving && count > 0) {
             setStatus(
               count + (count === 1 ? " unsaved change" : " unsaved changes"),
@@ -999,84 +925,11 @@
           return anchor;
         }
 
-        function newRowProjectSelectFormatter(cell) {
-          var select = document.createElement("select");
-          select.className = "new-row-input new-row-select";
-          select.setAttribute("aria-label", "Project *");
-
-          var placeholder = document.createElement("option");
-          placeholder.value = "";
-          placeholder.textContent = "Project *";
-          select.appendChild(placeholder);
-
-          projectOptions.forEach(function (project) {
-            var option = document.createElement("option");
-            option.value = project;
-            option.textContent = project;
-            select.appendChild(option);
-          });
-
-          select.value = cell.getValue() || "";
-          select.addEventListener("change", function () {
-            cell.getRow().getData().c0 = select.value;
-            cell
-              .getElement()
-              .classList.remove("is-required-missing");
-          });
-          ["mousedown", "click", "dblclick"].forEach(function (eventName) {
-            select.addEventListener(eventName, function (event) {
-              event.stopPropagation();
-            });
-          });
-          return select;
-        }
-
-        function newRowInputFormatter(cell) {
-          var columnOffset = Number(cell.getColumn().getField().substring(1));
-          if (columnOffset === PROJECT_OFFSET) {
-            return newRowProjectSelectFormatter(cell);
-          }
-          var input = document.createElement("textarea");
-          input.className = "new-row-input";
-          input.rows = 2;
-          input.value = cell.getValue() || "";
-          input.placeholder =
-            columnOffset === DETAILS_OFFSET
-              ? "Details *"
-              : fallbackHeaders[columnOffset];
-          input.setAttribute("aria-label", input.placeholder);
-          input.addEventListener("input", function () {
-            cell.getRow().getData()["c" + columnOffset] = input.value;
-            if (columnOffset === DETAILS_OFFSET) {
-              cell
-                .getElement()
-                .classList.remove("is-required-missing");
-            }
-          });
-          ["mousedown", "click", "dblclick"].forEach(function (eventName) {
-            input.addEventListener(eventName, function (event) {
-              event.stopPropagation();
-            });
-          });
-          return input;
-        }
-
         function checkboxFormatter(cell) {
-          if (cell.getRow().getData()._isNew) {
-            var draftElement = cell.getElement();
-            draftElement.classList.remove(
-              "is-checked",
-              "is-unchecked",
-              "is-not-applicable"
-            );
-            draftElement.classList.add("is-new-row-empty");
-            return "";
-          }
           var status = cell.getValue();
           if (status === true) status = "checked";
           if (status === false || status === "") status = "unchecked";
           var element = cell.getElement();
-          element.classList.remove("is-new-row-empty");
           element.classList.toggle("is-checked", status === "checked");
           element.classList.toggle("is-unchecked", status === "unchecked");
           element.classList.toggle(
@@ -1099,56 +952,6 @@
             icon.title = "Unchecked";
           }
           return icon;
-        }
-
-        function newRowActionsFormatter(cell) {
-          if (!cell.getRow().getData()._isNew) return "";
-
-          var wrapper = document.createElement("div");
-          wrapper.className = "new-row-actions";
-          var rowIsSaving = cell.getRow().getData()._isSaving === true;
-
-          var saveRowButton = document.createElement("button");
-          saveRowButton.type = "button";
-          saveRowButton.className =
-            "btn btn-sm btn-success save-new-row-btn";
-          saveRowButton.title = "Save row";
-          saveRowButton.setAttribute("aria-label", "Save row");
-          saveRowButton.disabled = rowIsSaving;
-          saveRowButton.innerHTML = rowIsSaving
-            ? '<span class="spinner-border spinner-border-sm" aria-hidden="true"></span>'
-            : '<i class="bi bi-check-lg"></i>';
-          saveRowButton.addEventListener("mousedown", function (event) {
-            event.preventDefault();
-            event.stopPropagation();
-          });
-          saveRowButton.addEventListener("click", function (event) {
-            event.preventDefault();
-            event.stopPropagation();
-            saveNewRow(cell.getRow());
-          });
-
-          var cancelRowButton = document.createElement("button");
-          cancelRowButton.type = "button";
-          cancelRowButton.className =
-            "btn btn-sm btn-outline-danger cancel-new-row-btn";
-          cancelRowButton.title = "Cancel new row";
-          cancelRowButton.setAttribute("aria-label", "Cancel new row");
-          cancelRowButton.disabled = rowIsSaving;
-          cancelRowButton.innerHTML = '<i class="bi bi-x-lg"></i>';
-          cancelRowButton.addEventListener("mousedown", function (event) {
-            event.preventDefault();
-            event.stopPropagation();
-          });
-          cancelRowButton.addEventListener("click", function (event) {
-            event.preventDefault();
-            event.stopPropagation();
-            cancelNewRow(cell.getRow());
-          });
-
-          wrapper.appendChild(saveRowButton);
-          wrapper.appendChild(cancelRowButton);
-          return wrapper;
         }
 
         function buildColumns(headers) {
@@ -1179,14 +982,7 @@
               field: "c" + columnOffset,
               headerHozAlign: "center",
               headerSort: true,
-              editable: checkboxColumn || readOnlyColumn
-                ? false
-                : function (cell) {
-                    return (
-                      !hasDraftRow() &&
-                      cell.getRow().getData()._isNew !== true
-                    );
-                  },
+              editable: !(checkboxColumn || readOnlyColumn),
               minWidth: checkboxColumn ? 66 : textWidth,
               width: checkboxColumn ? 70 : textWidth,
               variableHeight: !checkboxColumn,
@@ -1194,17 +990,7 @@
               headerCssClass: isStatusGroupBoundary(columnOffset)
                 ? "status-group-boundary"
                 : "",
-              formatter: checkboxColumn
-                ? checkboxFormatter
-                : function (cell) {
-                    if (
-                      cell.getRow().getData()._isNew &&
-                      isDraftInputColumn(columnOffset)
-                    ) {
-                      return newRowInputFormatter(cell);
-                    }
-                    return textFormatter(cell);
-                  },
+              formatter: checkboxColumn ? checkboxFormatter : textFormatter,
               editor: checkboxColumn || readOnlyColumn
                 ? false
                 : projectColumn
@@ -1256,13 +1042,7 @@
               column.cellClick = function (event, cell) {
                 event.preventDefault();
                 if (!showStatusColumns) return;
-                if (cell.getRow().getData()._isNew) return;
-                if (
-                  hasDraftRow() &&
-                  cell.getRow().getData()._isNew !== true
-                ) {
-                  return;
-                }
+                if (hasOpenCreateOrEditForm()) return;
                 var currentStatus = cell.getValue();
                 var nextStatus =
                   currentStatus === "unchecked"
@@ -1284,17 +1064,6 @@
             visible: false,
             headerSort: true,
             sorter: "number",
-          });
-          columns.push({
-            title: "",
-            field: "_rowActions",
-            width: 78,
-            minWidth: 78,
-            frozen: true,
-            visible: false,
-            headerSort: false,
-            hozAlign: "center",
-            formatter: newRowActionsFormatter,
           });
           return columns;
         }
@@ -1354,12 +1123,6 @@
             data: tableRows(response),
             rowFormatter: function (row) {
               row.getElement().style.minHeight = "34px";
-              row
-                .getElement()
-                .classList.toggle(
-                  "is-new-row",
-                  row.getData()._isNew === true
-                );
             },
           });
           table.on("tableBuilt", function () {
@@ -1372,18 +1135,6 @@
         function trackCellChange(cell) {
           var row = cell.getRow().getData();
           var columnOffset = Number(cell.getColumn().getField().substring(1));
-          if (row._isNew) {
-            if (
-              columnOffset === PROJECT_OFFSET ||
-              columnOffset === DETAILS_OFFSET
-            ) {
-              cell
-                .getElement()
-                .classList.remove("is-required-missing");
-            }
-            updateToolbar();
-            return;
-          }
           if (isStatusColumn(columnOffset) && !showStatusColumns) {
             return;
           }
@@ -1414,7 +1165,6 @@
             loading ||
             isSaving ||
             dirtyCount() > 0 ||
-            hasDraftRow() ||
             hasOpenCreateOrEditForm();
           reloadButton.querySelector("i").className = loading
             ? "spinner-border spinner-border-sm me-1"
@@ -1857,7 +1607,6 @@
 
         function applyLoadedData(response) {
           dirtyChanges = {};
-          draftRowId = null;
           mobileFormMode = null;
           mobileEditRow = null;
           mobileFormBaseline = null;
@@ -1918,170 +1667,14 @@
         }
 
         function addNewRow() {
-          if (
-            isSaving ||
-            dirtyCount() > 0 ||
-            hasDraftRow() ||
-            hasOpenCreateOrEditForm()
-          ) {
+          if (isSaving || dirtyCount() > 0 || hasOpenCreateOrEditForm()) {
             return;
           }
           if (useMobileLimitedUi()) {
             openMobileForm("create");
             return;
           }
-          if (USE_DESKTOP_CREATE_OVERLAY) {
-            openDesktopCreateOverlay();
-            return;
-          }
-          addNewRowInline();
-        }
-
-        // Legacy path: create as an editable draft row inside Tabulator.
-        // Kept for easy rollback via USE_DESKTOP_CREATE_OVERLAY = false.
-        function addNewRowInline() {
-          if (!table) return;
-
-          draftRowId = "new-" + Date.now();
-          table.getColumn("_rowActions").show();
-          var draft = {
-            _id: draftRowId,
-            _isNew: true,
-            _activityAt: Date.now(),
-            _links: [],
-            _original: [],
-            _originalTokens: [],
-          };
-          for (
-            var columnOffset = 0;
-            columnOffset < fallbackHeaders.length;
-            columnOffset++
-          ) {
-            draft["c" + columnOffset] = "";
-          }
-
-          table.addRow(draft, true).then(function (row) {
-            row.scrollTo();
-            var projectInput = row
-              .getCell("c0")
-              .getElement()
-              .querySelector(".new-row-select, .new-row-input");
-            if (projectInput) projectInput.focus();
-            updateToolbar();
-          });
-          updateToolbar();
-        }
-
-        function draftCells(row) {
-          var data = row.getData();
-          return fallbackHeaders.map(function (_header, columnOffset) {
-            return data["c" + columnOffset];
-          });
-        }
-
-        function validateNewRow(row) {
-          var projectCell = row.getCell("c0");
-          var detailsCell = row.getCell("c1");
-          var projectValue = String(row.getData().c0 || "").trim();
-          var detailsMissing =
-            String(row.getData().c1 || "").trim() === "";
-          var projectMissing = projectValue === "";
-          var projectInvalid =
-            !projectMissing && projectOptions.indexOf(projectValue) === -1;
-          projectCell
-            .getElement()
-            .classList.toggle(
-              "is-required-missing",
-              projectMissing || projectInvalid
-            );
-          detailsCell
-            .getElement()
-            .classList.toggle("is-required-missing", detailsMissing);
-          if (projectInvalid) {
-            setStatus("Select a project from the list", "error");
-            return false;
-          }
-          return !projectMissing && !detailsMissing;
-        }
-
-        function setNewRowBusy(row, busy) {
-          row.getData()._isSaving = busy;
-          row
-            .getElement()
-            .classList.toggle("is-saving-new-row", busy);
-          row
-            .getElement()
-            .querySelectorAll("textarea, select, button")
-            .forEach(function (control) {
-              control.disabled = busy;
-            });
-
-          var saveRowButton = row
-            .getElement()
-            .querySelector(".save-new-row-btn");
-          if (saveRowButton) {
-            saveRowButton.innerHTML = busy
-              ? '<span class="spinner-border spinner-border-sm" aria-hidden="true"></span>'
-              : '<i class="bi bi-check-lg"></i>';
-          }
-        }
-
-        function saveNewRow(row) {
-          if (isSaving || !row || row.getData()._isNew !== true) return;
-          if (!validateNewRow(row)) {
-            setStatus("Project and Details are required", "error");
-            return;
-          }
-
-          isSaving = true;
-          setNewRowBusy(row, true);
-          setStatus("Saving new row…");
-          updateToolbar();
-
-          google.script.run
-            .withSuccessHandler(function (result) {
-              isSaving = false;
-              if (!result || !result.success) {
-                setNewRowBusy(row, false);
-                updateToolbar();
-                setStatus(
-                  (result && result.message) || "Could not save new row",
-                  "error"
-                );
-                return;
-              }
-              queueInvoiceRequestNotifications(result);
-              draftRowId = null;
-              if (result.rows) {
-                applyLoadedData(result);
-              } else {
-                loadData(true);
-              }
-              setStatus("New row saved", "success");
-              updateToolbar();
-            })
-            .withFailureHandler(function (error) {
-              console.error("Invoice Request row creation failed:", error);
-              isSaving = false;
-              setNewRowBusy(row, false);
-              updateToolbar();
-              setStatus(
-                (error && error.message) || "Could not save new row",
-                "error"
-              );
-            })
-            .createInvoiceRequest({ cells: draftCells(row) });
-        }
-
-        function cancelNewRow(row) {
-          if (!row || row.getData()._isNew !== true) return;
-          confirmDiscard(function () {
-            draftRowId = null;
-            row.delete();
-            table.getColumn("_rowActions").hide();
-            setStatus("");
-            updateToolbar();
-          });
+          openDesktopCreateOverlay();
         }
 
         function saveChanges() {
@@ -2260,7 +1853,6 @@
               mobileEditRow = null;
               mobileFormBaseline = null;
               dirtyChanges = {};
-              draftRowId = null;
               renderCurrentView();
               setStatus("");
             });
