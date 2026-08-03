@@ -437,6 +437,7 @@
         var EDITED_AT_OFFSET = 16;
         var projectOptions = [];
         var showStatusColumns = true;
+        var showAuthorColumn = true;
 
         function isStatusColumn(columnOffset) {
           return (
@@ -809,6 +810,10 @@
               column.sorter = ddMmSorter;
             }
 
+            if (columnOffset === AUTHOR_OFFSET && !showAuthorColumn) {
+              column.visible = false;
+            }
+
             if (checkboxColumn) {
               if (!showStatusColumns) {
                 column.visible = false;
@@ -983,6 +988,9 @@
           projectOptions = (response && response.projects) || [];
           showStatusColumns = !(
             response && response.showStatusColumns === false
+          );
+          showAuthorColumn = !(
+            response && response.showAuthorColumn === false
           );
           buildTable(response || { headers: [], rows: [], projects: [] });
           updateToolbar();

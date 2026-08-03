@@ -511,6 +511,7 @@ function buildInvoiceRequestsPayload_(spreadsheet, informationLookup) {
     projects: projects,
     accessMode: accessMode,
     showStatusColumns: accessMode === "full",
+    showAuthorColumn: accessMode === "full",
   };
   var lastRow = sheet.getLastRow();
   if (lastRow < 1) return emptyPayload;
@@ -627,6 +628,7 @@ function buildInvoiceRequestsPayload_(spreadsheet, informationLookup) {
     projects: projects,
     accessMode: accessMode,
     showStatusColumns: accessMode === "full",
+    showAuthorColumn: accessMode === "full",
   };
 }
 
@@ -807,6 +809,7 @@ function createInvoiceRequest(data) {
       projects: payload.projects,
       accessMode: payload.accessMode,
       showStatusColumns: payload.showStatusColumns,
+      showAuthorColumn: payload.showAuthorColumn,
     };
   } catch (error) {
     if (sheet && newRow > 0) {
@@ -1105,6 +1108,7 @@ function saveInvoiceRequestChanges(changes) {
       projects: payload.projects,
       accessMode: payload.accessMode,
       showStatusColumns: payload.showStatusColumns,
+      showAuthorColumn: payload.showAuthorColumn,
     };
   } finally {
     try {
