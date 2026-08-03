@@ -115,10 +115,11 @@
         background-color: #ececec;
       }
 
-      /* Vertical separators between status checkbox role-groups. */
+      /* Vertical separators between status checkbox role-groups.
+         Match Tabulator Bootstrap5 grid borders (1px #dee2e6). */
       #invoice-requests-table .tabulator-col.status-group-boundary,
       #invoice-requests-table .tabulator-cell.status-group-boundary {
-        border-left: 2px solid #868e96;
+        border-left: 1px solid #dee2e6;
       }
 
       /* Frozen cells must stay opaque while scrolling under them. */
@@ -466,10 +467,14 @@
         }
 
         function isStatusGroupBoundary(columnOffset) {
-          return (
-            showStatusColumns &&
-            STATUS_GROUP_BOUNDARY_OFFSETS.indexOf(columnOffset) !== -1
-          );
+          if (showStatusColumns) {
+            return (
+              STATUS_GROUP_BOUNDARY_OFFSETS.indexOf(columnOffset) !== -1
+            );
+          }
+          // Limited view hides status columns; keep a separator between
+          // the data block and Файл рейтів / audit columns.
+          return columnOffset === RATE_FILE_OFFSET;
         }
 
         function isTimestampColumn(columnOffset) {
