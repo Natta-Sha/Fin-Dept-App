@@ -58,20 +58,38 @@ function parseInvoiceRequestTimestamp_(value) {
   if (value instanceof Date && !isNaN(value.getTime())) {
     return value.getTime();
   }
+  if (typeof value === "number" && Number.isFinite(value) && value > 0) {
+    // Sheets serial day number (approx) vs already-ms timestamp.
+    if (value < 1000000) {
+      return new Date(Math.round((value - 25569) * 86400000)).getTime();
+    }
+    return value;
+  }
   var text = String(value || "").trim();
   if (!text) return 0;
   var match = text.match(
-    /^(\d{2})\/(\d{2})\/(\d{4})(?:\s+(\d{2}):(\d{2})(?::(\d{2}))?)?$/
+    /^(\d{1,2})[\/.\-](\d{1,2})[\/.\-](\d{4})(?:[,\s]+(\d{1,2}):(\d{2})(?::(\d{2}))?)?/
   );
-  if (!match) return 0;
-  return new Date(
-    Number(match[3]),
-    Number(match[2]) - 1,
-    Number(match[1]),
-    Number(match[4] || 0),
-    Number(match[5] || 0),
-    Number(match[6] || 0)
-  ).getTime();
+  if (match) {
+    return new Date(
+      Number(match[3]),
+      Number(match[2]) - 1,
+      Number(match[1]),
+      Number(match[4] || 0),
+      Number(match[5] || 0),
+      Number(match[6] || 0)
+    ).getTime();
+  }
+  var parsed = Date.parse(text);
+  return Number.isFinite(parsed) ? parsed : 0;
+}
+
+function invoiceRequestTimestampSource_(value, displayValue) {
+  if (value instanceof Date && !isNaN(value.getTime())) return value;
+  if (typeof value === "number" && Number.isFinite(value) && value > 0) {
+    return value;
+  }
+  return displayValue || value;
 }
 
 function getInvoiceRequestActivityAt_(createdAt, editedAt) {
@@ -535,10 +553,14 @@ function buildInvoiceRequestsPayload_(spreadsheet, informationLookup) {
       id: rowId,
       cells: cells,
       activityAt: getInvoiceRequestActivityAt_(
-        displayValues[rowIndex][createdAtColumn] ||
+        invoiceRequestTimestampSource_(
           values[rowIndex][createdAtColumn],
-        displayValues[rowIndex][editedAtColumn] ||
-          values[rowIndex][editedAtColumn]
+          displayValues[rowIndex][createdAtColumn]
+        ),
+        invoiceRequestTimestampSource_(
+          values[rowIndex][editedAtColumn],
+          displayValues[rowIndex][editedAtColumn]
+        )
       ),
     });
   }

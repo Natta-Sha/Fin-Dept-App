@@ -795,6 +795,7 @@
             field: "_activityAt",
             visible: false,
             headerSort: true,
+            sorter: "number",
           });
           columns.push({
             title: "",
@@ -811,29 +812,35 @@
         }
 
         function tableRows(response) {
-          return (response.rows || []).map(function (sourceRow) {
-            var row = {
-              _id: sourceRow.id,
-              _activityAt: Number(sourceRow.activityAt) || 0,
-              _links: [],
-              _original: [],
-              _originalTokens: [],
-            };
-            (sourceRow.cells || []).forEach(function (cell, columnOffset) {
-              row["c" + columnOffset] = cell.value;
-              row["_display" + columnOffset] = cell.displayValue;
-              row._links[columnOffset] = cell.link || "";
-              row._original[columnOffset] = cell.value;
-              row._originalTokens[columnOffset] = cell.originalToken;
+          return (response.rows || [])
+            .map(function (sourceRow) {
+              var row = {
+                _id: sourceRow.id,
+                _activityAt: Number(sourceRow.activityAt) || 0,
+                _links: [],
+                _original: [],
+                _originalTokens: [],
+              };
+              (sourceRow.cells || []).forEach(function (cell, columnOffset) {
+                row["c" + columnOffset] = cell.value;
+                row["_display" + columnOffset] = cell.displayValue;
+                row._links[columnOffset] = cell.link || "";
+                row._original[columnOffset] = cell.value;
+                row._originalTokens[columnOffset] = cell.originalToken;
+              });
+              return row;
+            })
+            .sort(function (left, right) {
+              return (right._activityAt || 0) - (left._activityAt || 0);
             });
-            return row;
-          });
         }
 
         function applyHeaderColors() {
           if (!table) return;
           table.getColumns().forEach(function (column, index) {
-            column.getElement().style.backgroundColor =
+            var element = column.getElement();
+            if (!element) return;
+            element.style.backgroundColor =
               headerColors[index] || "#f1f3f5";
           });
         }
@@ -864,7 +871,10 @@
                 );
             },
           });
-          table.on("tableBuilt", applyHeaderColors);
+          table.on("tableBuilt", function () {
+            applyHeaderColors();
+            table.setSort([{ column: "_activityAt", dir: "desc" }]);
+          });
           table.on("cellEdited", trackCellChange);
         }
 
