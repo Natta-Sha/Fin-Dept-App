@@ -1319,7 +1319,7 @@
               if (result.rows) {
                 applyLoadedData(result);
               } else {
-                loadData(true);
+                loadData(true, true);
               }
               setStatus("New row saved", "success");
               updateToolbar();
@@ -1506,7 +1506,7 @@
                 if (result.rows) {
                   applyLoadedData(result);
                 } else {
-                  loadData(true);
+                  loadData(true, true);
                 }
                 setStatus("New row saved", "success");
                 updateToolbar();
@@ -1587,7 +1587,7 @@
               if (result.rows) {
                 applyLoadedData(result);
               } else {
-                loadData(true);
+                loadData(true, true);
               }
               setStatus("Saved", "success");
               updateToolbar();
@@ -1707,7 +1707,7 @@
                 applyLoadedData(result);
               } else {
                 dirtyChanges = {};
-                loadData(true);
+                loadData(true, true);
               }
               setStatus("Saved", "success");
               updateToolbar();
