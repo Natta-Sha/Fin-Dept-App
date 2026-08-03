@@ -218,6 +218,10 @@ function doGet(e) {
   try {
     var email = getCurrentUserEmail();
     var page = e.parameter.page || "Home";
+    // Backward-compatible alias for the previous page id.
+    if (page === "TestInvoiceRequests") {
+      page = "InvoiceRequests";
+    }
 
     // Access check
     if (!hasAccessToPage(email, page)) {
@@ -250,6 +254,14 @@ function doGet(e) {
       denied.baseUrl = ScriptApp.getService().getUrl();
       denied.activePage = "";
       return denied.evaluate().setTitle("No Access");
+    }
+
+    if (page === "InvoiceRequests" && !canAccessInvoiceRequests(email)) {
+      var invoiceRequestsDenied =
+        HtmlService.createTemplateFromFile("AccessDenied");
+      invoiceRequestsDenied.baseUrl = ScriptApp.getService().getUrl();
+      invoiceRequestsDenied.activePage = "";
+      return invoiceRequestsDenied.evaluate().setTitle("No Access");
     }
 
     var pageMode = e.parameter.mode || "";
@@ -634,9 +646,23 @@ function getNavigation(activePage) {
   template.activePage = activePage;
   template.baseUrl = ScriptApp.getService().getUrl();
   var email = getCurrentUserEmail();
+  // Resolve Invoice Requests first so a missing cached section key
+  // rebuilds the access map before Navigation reads navAccess.
+  template.invoiceRequestsAccess = canAccessInvoiceRequests(email);
   template.navAccess = getUserNavAccess(email);
   template.canRefreshAccessPermissions = isFullAccessUser(email);
   return template.evaluate().getContent();
+}
+
+function canAccessInvoiceRequests(email) {
+  return hasAccessToPage(
+    email || getCurrentUserEmail(),
+    "InvoiceRequests"
+  );
+}
+
+function isInvoiceRequestsFullAccess(email) {
+  return isFullAccessUser(email || getCurrentUserEmail());
 }
 
 function refreshReferenceDataCaches() {
@@ -725,6 +751,8 @@ function getActivePageForNavigation(page, params = {}) {
       return "clientsinfo";
     case "ClientsInformationCard":
       return "clientsinfo";
+    case "InvoiceRequests":
+      return "invoicerequests";
     default:
       return "";
   }

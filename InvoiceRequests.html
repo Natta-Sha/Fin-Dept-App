@@ -1,0 +1,1868 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <base target="_top" />
+    <meta charset="UTF-8" />
+    <title>Invoice Requests</title>
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css"
+      rel="stylesheet"
+    />
+    <link
+      href="https://cdn.jsdelivr.net/npm/tabulator-tables@6.3.1/dist/css/tabulator_bootstrap5.min.css"
+      rel="stylesheet"
+    />
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/tabulator-tables@6.3.1/dist/js/tabulator.min.js"></script>
+
+    <style>
+      body {
+        min-height: 100vh;
+        margin: 0;
+        display: flex;
+        flex-direction: column;
+        font-size: 0.8rem;
+      }
+
+      .main-content {
+        flex-grow: 1;
+        padding: 20px;
+      }
+
+      .invoice-requests-toolbar .btn {
+        border-radius: 25px;
+        font-weight: 600;
+      }
+
+      #add-invoice-request {
+        color: #667eea;
+        border-color: #667eea;
+        background: transparent;
+      }
+
+      #add-invoice-request:hover,
+      #add-invoice-request:focus {
+        color: #fff;
+        border-color: transparent;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      }
+
+      #save-invoice-requests {
+        border-color: transparent;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      }
+
+      #invoice-requests-table {
+        min-height: 240px;
+        font-size: 0.78rem;
+      }
+
+      /* List editor popup is attached outside the table root. */
+      .tabulator-edit-list,
+      .tabulator-edit-list .tabulator-edit-list-item,
+      .tabulator-edit-list input {
+        font-size: 0.78rem;
+        font-weight: 400;
+      }
+
+      #invoice-requests-table .tabulator-editing input,
+      #invoice-requests-table .tabulator-editing select {
+        font-size: 0.78rem;
+        font-weight: 400;
+      }
+
+      #invoice-requests-table .tabulator-col-content {
+        height: 76px;
+        display: flex;
+        flex-direction: column;
+        align-items: stretch;
+        padding: 8px 7px 5px;
+      }
+
+      #invoice-requests-table .tabulator-col-title {
+        white-space: normal;
+        overflow-wrap: anywhere;
+        text-align: center;
+        font-weight: 700;
+      }
+
+      #invoice-requests-table .tabulator-col-title-holder {
+        min-height: 34px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      #invoice-requests-table .tabulator-header-filter {
+        width: 100%;
+        margin-top: auto;
+      }
+
+      #invoice-requests-table .tabulator-header-filter input {
+        width: 100%;
+        padding: 2px 4px;
+        font-size: 0.72rem;
+      }
+
+      #invoice-requests-table .tabulator-cell {
+        min-height: 34px;
+        padding: 5px 7px;
+        white-space: pre-wrap;
+        overflow-wrap: anywhere;
+        vertical-align: middle;
+      }
+
+      /* One solid row color — disable Bootstrap Tabulator striping. */
+      #invoice-requests-table .tabulator-row,
+      #invoice-requests-table .tabulator-row.tabulator-row-even,
+      #invoice-requests-table .tabulator-row.tabulator-row-odd {
+        background-color: #ffffff;
+      }
+
+      #invoice-requests-table .tabulator-row:hover {
+        background-color: #ececec;
+      }
+
+      /* Vertical separators between status checkbox role-groups.
+         Match Tabulator Bootstrap5 grid borders (1px #dee2e6). */
+      #invoice-requests-table .tabulator-col.status-group-boundary,
+      #invoice-requests-table .tabulator-cell.status-group-boundary {
+        border-left: 1px solid #dee2e6;
+      }
+
+      /* Frozen cells must stay opaque while scrolling under them. */
+      #invoice-requests-table .tabulator-cell.tabulator-frozen {
+        background-color: inherit;
+      }
+
+      #invoice-requests-table .tabulator-cell.invoice-checkbox-cell {
+        text-align: center;
+        font-size: 1.05rem;
+      }
+
+      #invoice-requests-table .tabulator-cell.scrollable-text-cell {
+        overflow-x: auto;
+        overflow-y: hidden;
+        overscroll-behavior-x: contain;
+        white-space: pre;
+        text-overflow: clip;
+        scrollbar-width: thin;
+      }
+
+      #invoice-requests-table
+        .tabulator-cell.scrollable-text-cell
+        .request-cell-content {
+        display: inline-block;
+        min-width: max-content;
+        white-space: pre;
+      }
+
+      #invoice-requests-table
+        .tabulator-cell.invoice-checkbox-cell.is-unchecked,
+      #invoice-requests-table
+        .tabulator-cell.invoice-checkbox-cell.is-checked {
+        background-color: inherit;
+        color: #74797d;
+      }
+
+      #invoice-requests-table
+        .tabulator-cell.invoice-checkbox-cell.is-not-applicable {
+        background: #d9ead3;
+        color: #4f772d;
+      }
+
+      #invoice-requests-table .tabulator-cell.is-dirty {
+        position: relative;
+        z-index: 1;
+        box-shadow:
+          inset 0 0 0 3px #ff8c00,
+          inset 0 0 0 4px #fff3cd;
+      }
+
+      #save-invoice-requests.has-unsaved {
+        animation: unsaved-save-pulse 1.4s ease-in-out infinite;
+        box-shadow: 0 0 0 4px rgba(255, 140, 0, 0.3);
+      }
+
+      #invoice-requests-table .request-link {
+        color: #3976c6;
+        text-decoration: underline;
+      }
+
+      .save-status {
+        min-width: 150px;
+        padding: 0.3rem 0.55rem;
+        border: 2px solid transparent;
+        border-radius: 8px;
+        color: #6c757d;
+        text-align: right;
+      }
+
+      .save-status.unsaved {
+        border-color: #ff8c00;
+        background: #fff3cd;
+        color: #8a4b00;
+        font-weight: 700;
+      }
+
+      .save-status.error {
+        color: #dc3545;
+      }
+
+      .save-status.success {
+        color: #198754;
+      }
+
+      @keyframes unsaved-save-pulse {
+        50% {
+          transform: translateY(-1px);
+          box-shadow: 0 0 0 7px rgba(255, 140, 0, 0.14);
+        }
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        #save-invoice-requests.has-unsaved {
+          animation: none;
+        }
+      }
+
+      #invoice-requests-mobile {
+        display: none;
+      }
+
+      body.invoice-mobile-limited #invoice-requests-table {
+        display: none !important;
+      }
+
+      body.invoice-mobile-limited #invoice-requests-mobile {
+        display: block;
+      }
+
+      body.invoice-mobile-limited #save-invoice-requests {
+        display: none !important;
+      }
+
+      .invoice-mobile-card {
+        background: #fff;
+        border: 1px solid #dee2e6;
+        border-radius: 12px;
+        padding: 14px 14px 12px;
+        margin-bottom: 12px;
+        max-width: 720px;
+      }
+
+      .invoice-mobile-form {
+        background: #fff;
+        border: 1px solid #dee2e6;
+        border-radius: 12px;
+        padding: 16px;
+        margin-bottom: 16px;
+        max-width: 720px;
+      }
+
+      .invoice-mobile-card-field {
+        margin-bottom: 10px;
+      }
+
+      .invoice-mobile-card-field:last-child {
+        margin-bottom: 0;
+      }
+
+      .invoice-mobile-card-label {
+        display: block;
+        font-size: 0.72rem;
+        font-weight: 700;
+        color: #6c757d;
+        text-transform: uppercase;
+        letter-spacing: 0.02em;
+        margin-bottom: 2px;
+      }
+
+      .invoice-mobile-card-value {
+        white-space: pre-wrap;
+        overflow-wrap: anywhere;
+        font-size: 0.95rem;
+        color: #212529;
+      }
+
+      .invoice-mobile-card-actions {
+        margin-top: 12px;
+        padding-top: 10px;
+        border-top: 1px solid #eee;
+      }
+
+      .invoice-mobile-form label {
+        font-weight: 700;
+        font-size: 0.85rem;
+      }
+
+      .invoice-mobile-form .form-control,
+      .invoice-mobile-form .form-select {
+        font-size: 1rem;
+        min-height: 44px;
+      }
+
+      .invoice-mobile-form textarea.form-control {
+        min-height: 120px;
+      }
+
+      .invoice-mobile-empty {
+        color: #6c757d;
+        text-align: center;
+        padding: 28px 12px;
+      }
+
+      .invoice-mobile-form-title {
+        font-size: 1.05rem;
+        font-weight: 700;
+        margin-bottom: 12px;
+      }
+
+      #createInvoiceRequestModal .modal-header {
+        border-bottom: 1px solid #dee2e6;
+      }
+
+      #createInvoiceRequestModal .form-control,
+      #createInvoiceRequestModal .form-select {
+        font-size: 0.95rem;
+        min-height: 42px;
+      }
+
+      #createInvoiceRequestModal textarea.form-control {
+        min-height: 110px;
+      }
+
+      #create-invoice-save {
+        border-color: transparent;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      }
+    </style>
+  </head>
+
+  <body>
+    <?!= getNavigation(activePage) ?>
+
+    <main class="main-content container-fluid">
+      <div
+        class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-3"
+      >
+        <div>
+          <h2 class="mb-1">Invoice Requests</h2>
+        </div>
+        <div class="invoice-requests-toolbar d-flex align-items-center gap-2">
+          <span id="invoice-save-status" class="save-status" aria-live="polite"></span>
+          <button
+            type="button"
+            id="add-invoice-request"
+            class="btn btn-outline-primary"
+          >
+            <i class="bi bi-plus-lg me-1"></i>New invoice request
+          </button>
+          <button
+            type="button"
+            id="reload-invoice-requests"
+            class="btn btn-outline-secondary"
+          >
+            <i class="bi bi-arrow-clockwise me-1"></i>Reload
+          </button>
+          <button
+            type="button"
+            id="save-invoice-requests"
+            class="btn btn-primary"
+            disabled
+          >
+            <i class="bi bi-floppy me-1"></i>Save changes
+          </button>
+        </div>
+      </div>
+
+      <div
+        id="invoice-load-error"
+        class="alert alert-danger d-none"
+        role="alert"
+      ></div>
+      <div
+        id="invoice-requests-table"
+        aria-label="Invoice requests"
+      ></div>
+      <div id="invoice-requests-mobile" aria-label="Invoice requests mobile">
+        <div id="invoice-mobile-form" class="invoice-mobile-form d-none">
+          <div class="invoice-mobile-form-title" id="invoice-mobile-form-title">
+            New invoice request
+          </div>
+          <div class="mb-3">
+            <label for="mobile-field-project" class="form-label">Проект *</label>
+            <select id="mobile-field-project" class="form-select"></select>
+            <div class="invalid-feedback">Select a project from the list.</div>
+          </div>
+          <div class="mb-3">
+            <label for="mobile-field-details" class="form-label">Дані *</label>
+            <textarea
+              id="mobile-field-details"
+              class="form-control"
+              rows="5"
+            ></textarea>
+            <div class="invalid-feedback">Details are required.</div>
+          </div>
+          <div class="mb-3">
+            <label for="mobile-field-comment" class="form-label">Комент</label>
+            <textarea
+              id="mobile-field-comment"
+              class="form-control"
+              rows="4"
+            ></textarea>
+          </div>
+          <div class="d-flex gap-2">
+            <button
+              type="button"
+              id="mobile-form-save"
+              class="btn btn-primary flex-grow-1"
+            >
+              Save
+            </button>
+            <button
+              type="button"
+              id="mobile-form-cancel"
+              class="btn btn-outline-secondary flex-grow-1"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+        <div id="invoice-mobile-list"></div>
+      </div>
+    </main>
+
+    <div
+      class="modal fade"
+      id="createInvoiceRequestModal"
+      tabindex="-1"
+      data-bs-backdrop="static"
+      data-bs-keyboard="false"
+      aria-labelledby="createInvoiceRequestModalLabel"
+      aria-hidden="true"
+    >
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="createInvoiceRequestModalLabel">
+              New invoice request
+            </h5>
+            <button
+              type="button"
+              class="btn-close"
+              id="create-invoice-dismiss"
+              aria-label="Close"
+            ></button>
+          </div>
+          <div class="modal-body">
+            <div class="mb-3">
+              <label for="desktop-field-project" class="form-label"
+                >Проект *</label
+              >
+              <select id="desktop-field-project" class="form-select"></select>
+              <div class="invalid-feedback">Select a project from the list.</div>
+            </div>
+            <div class="mb-3">
+              <label for="desktop-field-details" class="form-label"
+                >Дані *</label
+              >
+              <textarea
+                id="desktop-field-details"
+                class="form-control"
+                rows="5"
+              ></textarea>
+              <div class="invalid-feedback">Details are required.</div>
+            </div>
+            <div class="mb-3">
+              <label for="desktop-field-comment" class="form-label"
+                >Комент</label
+              >
+              <textarea
+                id="desktop-field-comment"
+                class="form-control"
+                rows="4"
+              ></textarea>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button
+              type="button"
+              id="create-invoice-cancel"
+              class="btn btn-outline-secondary"
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              id="create-invoice-save"
+              class="btn btn-primary"
+            >
+              Save
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div
+      class="modal fade"
+      id="unsavedChangesModal"
+      tabindex="-1"
+      data-bs-backdrop="static"
+      data-bs-keyboard="false"
+      aria-labelledby="unsavedChangesModalLabel"
+      aria-hidden="true"
+    >
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-warning border-3">
+          <div class="modal-header bg-warning-subtle">
+            <h5 class="modal-title" id="unsavedChangesModalLabel">
+              Unsaved changes
+            </h5>
+          </div>
+          <div class="modal-body fs-6">
+            There are unsaved changes. Do you want to leave without saving?
+          </div>
+          <div class="modal-footer">
+            <button
+              type="button"
+              id="stay-with-unsaved-changes"
+              class="btn btn-secondary"
+              data-bs-dismiss="modal"
+            >
+              No, stay
+            </button>
+            <button
+              type="button"
+              id="leave-with-unsaved-changes"
+              class="btn btn-danger"
+            >
+              Yes, leave
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      document.addEventListener("DOMContentLoaded", function () {
+        var tableElement = document.getElementById(
+          "invoice-requests-table"
+        );
+        var saveButton = document.getElementById(
+          "save-invoice-requests"
+        );
+        var addRowButton = document.getElementById(
+          "add-invoice-request"
+        );
+        var reloadButton = document.getElementById(
+          "reload-invoice-requests"
+        );
+        var statusElement = document.getElementById(
+          "invoice-save-status"
+        );
+        var errorElement = document.getElementById("invoice-load-error");
+        var mobileListElement = document.getElementById(
+          "invoice-mobile-list"
+        );
+        var mobileFormElement = document.getElementById(
+          "invoice-mobile-form"
+        );
+        var mobileFormTitle = document.getElementById(
+          "invoice-mobile-form-title"
+        );
+        var mobileProjectField = document.getElementById(
+          "mobile-field-project"
+        );
+        var mobileDetailsField = document.getElementById(
+          "mobile-field-details"
+        );
+        var mobileCommentField = document.getElementById(
+          "mobile-field-comment"
+        );
+        var mobileFormSaveButton = document.getElementById(
+          "mobile-form-save"
+        );
+        var mobileFormCancelButton = document.getElementById(
+          "mobile-form-cancel"
+        );
+        var desktopProjectField = document.getElementById(
+          "desktop-field-project"
+        );
+        var desktopDetailsField = document.getElementById(
+          "desktop-field-details"
+        );
+        var desktopCommentField = document.getElementById(
+          "desktop-field-comment"
+        );
+        var createInvoiceSaveButton = document.getElementById(
+          "create-invoice-save"
+        );
+        var createInvoiceCancelButton = document.getElementById(
+          "create-invoice-cancel"
+        );
+        var createInvoiceDismissButton = document.getElementById(
+          "create-invoice-dismiss"
+        );
+        var createInvoiceModalElement = document.getElementById(
+          "createInvoiceRequestModal"
+        );
+        var createInvoiceModal = new bootstrap.Modal(
+          createInvoiceModalElement
+        );
+        var unsavedModalElement = document.getElementById(
+          "unsavedChangesModal"
+        );
+        var leaveWithoutSavingButton = document.getElementById(
+          "leave-with-unsaved-changes"
+        );
+        var unsavedModal = new bootstrap.Modal(unsavedModalElement);
+        var table = null;
+        var dirtyChanges = {};
+        var isSaving = false;
+        var allowUnsavedExit = false;
+        var pendingDiscardAction = null;
+        var desktopCreateOpen = false;
+        var desktopCreateBaseline = null;
+        var tableTopOffset = tableElement.getBoundingClientRect().top;
+        var headerColors = [
+          "#f1f3f5",
+          "#f1f3f5",
+          "#f1f3f5",
+          "#f1f3f5",
+          "#f1f3f5",
+          "#f1f3f5",
+          "#f1f3f5",
+          "#f1f3f5",
+          "#f1f3f5",
+          "#f1f3f5",
+          "#f1f3f5",
+          "#f1f3f5",
+          "#f1f3f5",
+          "#f1f3f5",
+          "#f1f3f5",
+          "#f1f3f5",
+          "#f1f3f5",
+          "#f1f3f5",
+        ];
+        var fallbackHeaders = [
+          "Проект",
+          "Дані",
+          "Комент",
+          "Автор",
+          "Инв",
+          "Файл зад.",
+          "XERO",
+          "подр",
+          "Repassage",
+          "Отпр.инв",
+          "Проекты",
+          "Оп.б",
+          "Файл рейтів",
+          "Папка клієнта",
+          "Created by",
+          "Created at",
+          "Edited by",
+          "Edited at",
+        ];
+        var textColumnWidths = {
+          0: 138,
+          1: 366,
+          2: 216,
+          3: 138,
+          12: 150,
+          13: 150,
+          14: 120,
+          15: 140,
+          16: 120,
+          17: 140,
+        };
+        var STATUS_FIRST_OFFSET = 4;
+        var STATUS_LAST_OFFSET = 11;
+        // Left edges: start of checkboxes, between former color groups, after checkboxes.
+        var STATUS_GROUP_BOUNDARY_OFFSETS = [4, 6, 9, 12];
+        var PROJECT_OFFSET = 0;
+        var DETAILS_OFFSET = 1;
+        var COMMENT_OFFSET = 2;
+        var AUTHOR_OFFSET = 3;
+        var RATE_FILE_OFFSET = 12;
+        var CLIENT_FOLDER_OFFSET = 13;
+        var CREATED_BY_OFFSET = 14;
+        var CREATED_AT_OFFSET = 15;
+        var EDITED_BY_OFFSET = 16;
+        var EDITED_AT_OFFSET = 17;
+        var projectOptions = [];
+        var showStatusColumns = true;
+        var showAuthorColumn = true;
+        var showClientFolderColumn = true;
+        var isLimitedAccess = false;
+        var lastLoadedResponse = null;
+        var mobileFormMode = null;
+        var mobileEditRow = null;
+        var mobileFormBaseline = null;
+
+        function isStatusColumn(columnOffset) {
+          return (
+            columnOffset >= STATUS_FIRST_OFFSET &&
+            columnOffset <= STATUS_LAST_OFFSET
+          );
+        }
+
+        function isStatusGroupBoundary(columnOffset) {
+          if (showStatusColumns) {
+            return (
+              STATUS_GROUP_BOUNDARY_OFFSETS.indexOf(columnOffset) !== -1
+            );
+          }
+          // Limited view hides status columns; keep a separator between
+          // the data block and Файл рейтів / audit columns.
+          return columnOffset === RATE_FILE_OFFSET;
+        }
+
+        function isTimestampColumn(columnOffset) {
+          return (
+            columnOffset === CREATED_AT_OFFSET ||
+            columnOffset === EDITED_AT_OFFSET
+          );
+        }
+
+        function parseDdMmTimestamp(value) {
+          var text = String(value || "").trim();
+          if (!text) return 0;
+          var match = text.match(
+            /^(\d{1,2})[\/.\-](\d{1,2})[\/.\-](\d{4})(?:[,\s]+(\d{1,2}):(\d{2})(?::(\d{2}))?)?/
+          );
+          if (!match) return 0;
+          var day = Number(match[1]);
+          var month = Number(match[2]);
+          var year = Number(match[3]);
+          if (month < 1 || month > 12 || day < 1 || day > 31) return 0;
+          var parsed = new Date(
+            year,
+            month - 1,
+            day,
+            Number(match[4] || 0),
+            Number(match[5] || 0),
+            Number(match[6] || 0)
+          );
+          return isNaN(parsed.getTime()) ? 0 : parsed.getTime();
+        }
+
+        function rowActivityAt(row) {
+          return (
+            parseDdMmTimestamp(row["c" + EDITED_AT_OFFSET]) ||
+            parseDdMmTimestamp(row["c" + CREATED_AT_OFFSET]) ||
+            Number(row._activityAt) ||
+            0
+          );
+        }
+
+        function ddMmSorter(a, b) {
+          return parseDdMmTimestamp(a) - parseDdMmTimestamp(b);
+        }
+
+        function isReadOnlyColumn(columnOffset) {
+          return (
+            columnOffset === AUTHOR_OFFSET || columnOffset >= RATE_FILE_OFFSET
+          );
+        }
+
+        function tableHeight() {
+          return Math.max(240, window.innerHeight - tableTopOffset - 20);
+        }
+
+        function changeKey(id, columnOffset) {
+          return id + "::" + columnOffset;
+        }
+
+        function dirtyCount() {
+          return Object.keys(dirtyChanges).length;
+        }
+
+        function hasOpenCreateOrEditForm() {
+          return !!mobileFormMode || desktopCreateOpen;
+        }
+
+        function isDesktopCreateDirty() {
+          if (!desktopCreateOpen || !desktopCreateBaseline) return false;
+          return (
+            String(desktopProjectField.value || "") !==
+              String(desktopCreateBaseline.project || "") ||
+            String(desktopDetailsField.value || "") !==
+              String(desktopCreateBaseline.details || "") ||
+            String(desktopCommentField.value || "") !==
+              String(desktopCreateBaseline.comment || "")
+          );
+        }
+
+        function isMobileFormDirty() {
+          if (!mobileFormMode || !mobileFormBaseline) return false;
+          return (
+            String(mobileProjectField.value || "") !==
+              String(mobileFormBaseline.project || "") ||
+            String(mobileDetailsField.value || "") !==
+              String(mobileFormBaseline.details || "") ||
+            String(mobileCommentField.value || "") !==
+              String(mobileFormBaseline.comment || "")
+          );
+        }
+
+        function hasUnsavedWork() {
+          return (
+            dirtyCount() > 0 ||
+            (mobileFormMode && isMobileFormDirty()) ||
+            (desktopCreateOpen && isDesktopCreateDirty())
+          );
+        }
+
+        function getViewportWidth_() {
+          var width =
+            window.innerWidth || document.documentElement.clientWidth || 0;
+          if (window.visualViewport && window.visualViewport.width) {
+            width = Math.min(width, window.visualViewport.width);
+          }
+          return width;
+        }
+
+        function isMobileUserAgent_() {
+          // Chrome device mode spoofs UA; Apps Script iframes often keep a
+          // wide innerWidth, so UA is more reliable than matchMedia alone.
+          return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini|Mobile/i.test(
+            String(navigator.userAgent || "")
+          );
+        }
+
+        function useMobileLimitedUi() {
+          if (!isLimitedAccess) return false;
+          if (isMobileUserAgent_()) return true;
+          return getViewportWidth_() <= 768;
+        }
+
+        function queueInvoiceRequestNotifications(result) {
+          var notifications = result && result.notifications;
+          if (!notifications || !notifications.length) return;
+          google.script.run
+            .withFailureHandler(function (error) {
+              console.error(
+                "Invoice request notification failed:",
+                error
+              );
+            })
+            .sendInvoiceRequestNotifications(notifications);
+        }
+
+        function setStatus(message, type) {
+          statusElement.textContent = message || "";
+          statusElement.className =
+            "save-status" + (type ? " " + type : "");
+        }
+
+        function updateToolbar() {
+          var count = dirtyCount();
+          var mobileUi = useMobileLimitedUi();
+          var formOpen = hasOpenCreateOrEditForm();
+          saveButton.disabled = isSaving || count === 0;
+          reloadButton.disabled = isSaving;
+          addRowButton.disabled =
+            isSaving || count > 0 || formOpen;
+          saveButton.classList.toggle("has-unsaved", count > 0);
+          if (!isSaving && mobileFormMode === "edit" && isMobileFormDirty()) {
+            setStatus("Unsaved changes", "unsaved");
+          } else if (
+            !isSaving &&
+            desktopCreateOpen &&
+            isDesktopCreateDirty()
+          ) {
+            setStatus("New request not saved", "unsaved");
+          } else if (
+            !isSaving &&
+            mobileFormMode === "create" &&
+            isMobileFormDirty()
+          ) {
+            setStatus("New request not saved", "unsaved");
+          } else if (!isSaving && count > 0) {
+            setStatus(
+              count + (count === 1 ? " unsaved change" : " unsaved changes"),
+              "unsaved"
+            );
+          } else if (
+            !isSaving &&
+            statusElement.classList.contains("unsaved")
+          ) {
+            setStatus("");
+          }
+        }
+
+        function textFormatter(cell) {
+          var value = cell.getValue();
+          var row = cell.getRow().getData();
+          var columnOffset = Number(cell.getColumn().getField().substring(1));
+          var link = row._links[columnOffset] || "";
+          var displayValue =
+            value === null || value === undefined ? "" : String(value);
+          if (!link) {
+            var text = document.createElement("span");
+            text.className = "request-cell-content";
+            text.textContent = displayValue;
+            return text;
+          }
+
+          var anchor = document.createElement("a");
+          anchor.href = link;
+          anchor.target = "_blank";
+          anchor.rel = "noopener";
+          anchor.className = "request-link request-cell-content";
+          anchor.textContent =
+            row["_display" + columnOffset] || displayValue || link;
+          anchor.addEventListener("click", function (event) {
+            event.stopPropagation();
+          });
+          return anchor;
+        }
+
+        function checkboxFormatter(cell) {
+          var status = cell.getValue();
+          if (status === true) status = "checked";
+          if (status === false || status === "") status = "unchecked";
+          var element = cell.getElement();
+          element.classList.toggle("is-checked", status === "checked");
+          element.classList.toggle("is-unchecked", status === "unchecked");
+          element.classList.toggle(
+            "is-not-applicable",
+            status === "notApplicable"
+          );
+
+          var icon = document.createElement("i");
+          if (status === "checked") {
+            icon.className = "bi bi-check-square-fill";
+            icon.setAttribute("aria-label", "Checked");
+            icon.title = "Checked";
+          } else if (status === "notApplicable") {
+            icon.className = "bi bi-dash-square-fill";
+            icon.setAttribute("aria-label", "Not applicable");
+            icon.title = "Not applicable";
+          } else {
+            icon.className = "bi bi-square";
+            icon.setAttribute("aria-label", "Unchecked");
+            icon.title = "Unchecked";
+          }
+          return icon;
+        }
+
+        function buildColumns(headers) {
+          var columns = fallbackHeaders.map(function (
+            fallbackHeader,
+            columnOffset
+          ) {
+            var header = headers[columnOffset] || fallbackHeader;
+            var checkboxColumn = isStatusColumn(columnOffset);
+            var readOnlyColumn = isReadOnlyColumn(columnOffset);
+            var projectColumn = columnOffset === PROJECT_OFFSET;
+            var textWidth = textColumnWidths[columnOffset] || 120;
+            var cssClasses = [];
+            if (checkboxColumn) cssClasses.push("invoice-checkbox-cell");
+            if (isStatusGroupBoundary(columnOffset)) {
+              cssClasses.push("status-group-boundary");
+            }
+            if (
+              columnOffset === DETAILS_OFFSET ||
+              columnOffset === COMMENT_OFFSET ||
+              columnOffset === RATE_FILE_OFFSET ||
+              columnOffset === CLIENT_FOLDER_OFFSET
+            ) {
+              cssClasses.push("scrollable-text-cell");
+            }
+            var column = {
+              title: header,
+              field: "c" + columnOffset,
+              headerHozAlign: "center",
+              headerSort: true,
+              editable: !(checkboxColumn || readOnlyColumn),
+              minWidth: checkboxColumn ? 66 : textWidth,
+              width: checkboxColumn ? 70 : textWidth,
+              variableHeight: !checkboxColumn,
+              cssClass: cssClasses.join(" "),
+              headerCssClass: isStatusGroupBoundary(columnOffset)
+                ? "status-group-boundary"
+                : "",
+              formatter: checkboxColumn ? checkboxFormatter : textFormatter,
+              editor: checkboxColumn || readOnlyColumn
+                ? false
+                : projectColumn
+                ? "list"
+                : "textarea",
+              editorParams: checkboxColumn || readOnlyColumn
+                ? {
+                    tristate: false,
+                  }
+                : projectColumn
+                ? {
+                    values: projectOptions,
+                    autocomplete: true,
+                    listOnEmpty: true,
+                    freetext: false,
+                    emptyValue: "",
+                  }
+                : {
+                    verticalNavigation: "table",
+                    shiftEnterSubmit: true,
+                  },
+              headerFilter:
+                columnOffset === PROJECT_OFFSET ||
+                columnOffset === AUTHOR_OFFSET
+                  ? "input"
+                  : false,
+              headerFilterPlaceholder: "Search",
+              headerSortTristate: true,
+            };
+
+            if (isTimestampColumn(columnOffset)) {
+              column.sorter = ddMmSorter;
+            }
+
+            if (columnOffset === AUTHOR_OFFSET && !showAuthorColumn) {
+              column.visible = false;
+            }
+            if (
+              columnOffset === CLIENT_FOLDER_OFFSET &&
+              !showClientFolderColumn
+            ) {
+              column.visible = false;
+            }
+
+            if (checkboxColumn) {
+              if (!showStatusColumns) {
+                column.visible = false;
+              }
+              column.cellClick = function (event, cell) {
+                event.preventDefault();
+                if (!showStatusColumns) return;
+                if (hasOpenCreateOrEditForm()) return;
+                var currentStatus = cell.getValue();
+                var nextStatus =
+                  currentStatus === "unchecked"
+                    ? "checked"
+                    : currentStatus === "checked"
+                    ? "notApplicable"
+                    : "unchecked";
+                cell.setValue(nextStatus);
+                trackCellChange(cell);
+              };
+            }
+            if (columnOffset === 0) column.frozen = true;
+            return column;
+          });
+
+          columns.push({
+            title: "",
+            field: "_activityAt",
+            visible: false,
+            headerSort: true,
+            sorter: "number",
+          });
+          return columns;
+        }
+
+        function tableRows(response) {
+          return (response.rows || [])
+            .map(function (sourceRow) {
+              var row = {
+                _id: sourceRow.id,
+                _activityAt: Number(sourceRow.activityAt) || 0,
+                _links: [],
+                _original: [],
+                _originalTokens: [],
+              };
+              (sourceRow.cells || []).forEach(function (cell, columnOffset) {
+                row["c" + columnOffset] = cell.value;
+                row["_display" + columnOffset] = cell.displayValue;
+                row._links[columnOffset] = cell.link || "";
+                row._original[columnOffset] = cell.value;
+                row._originalTokens[columnOffset] = cell.originalToken;
+              });
+              if (!row._activityAt) {
+                row._activityAt = rowActivityAt(row);
+              }
+              return row;
+            })
+            .sort(function (left, right) {
+              return (right._activityAt || 0) - (left._activityAt || 0);
+            });
+        }
+
+        function applyHeaderColors() {
+          if (!table) return;
+          table.getColumns().forEach(function (column, index) {
+            var element = column.getElement();
+            if (!element) return;
+            element.style.backgroundColor =
+              headerColors[index] || "#f1f3f5";
+          });
+        }
+
+        function buildTable(response) {
+          if (table) table.destroy();
+          tableTopOffset = tableElement.getBoundingClientRect().top;
+          table = new Tabulator(tableElement, {
+            index: "_id",
+            height: tableHeight(),
+            layout: "fitColumns",
+            editTriggerEvent: "dblclick",
+            placeholder: "No invoice requests found",
+            pagination: true,
+            paginationMode: "local",
+            paginationSize: 25,
+            paginationSizeSelector: [10, 25, 50, 100, true],
+            initialSort: [{ column: "_activityAt", dir: "desc" }],
+            columns: buildColumns(response.headers || []),
+            data: tableRows(response),
+            rowFormatter: function (row) {
+              row.getElement().style.minHeight = "34px";
+            },
+          });
+          table.on("tableBuilt", function () {
+            applyHeaderColors();
+            table.setSort([{ column: "_activityAt", dir: "desc" }]);
+          });
+          table.on("cellEdited", trackCellChange);
+        }
+
+        function trackCellChange(cell) {
+          var row = cell.getRow().getData();
+          var columnOffset = Number(cell.getColumn().getField().substring(1));
+          if (isStatusColumn(columnOffset) && !showStatusColumns) {
+            return;
+          }
+          var originalValue = row._original[columnOffset];
+          var currentValue = cell.getValue();
+          var key = changeKey(row._id, columnOffset);
+          var changed =
+            JSON.stringify(currentValue) !== JSON.stringify(originalValue);
+
+          if (changed) {
+            dirtyChanges[key] = {
+              id: row._id,
+              columnOffset: columnOffset,
+              originalToken: row._originalTokens[columnOffset],
+              value: currentValue,
+            };
+          } else {
+            delete dirtyChanges[key];
+          }
+          cell.getElement().classList.toggle("is-dirty", changed);
+          if (isStatusColumn(columnOffset)) checkboxFormatter(cell);
+          updateToolbar();
+        }
+
+        function setLoading(loading) {
+          reloadButton.disabled = loading || isSaving;
+          addRowButton.disabled =
+            loading ||
+            isSaving ||
+            dirtyCount() > 0 ||
+            hasOpenCreateOrEditForm();
+          reloadButton.querySelector("i").className = loading
+            ? "spinner-border spinner-border-sm me-1"
+            : "bi bi-arrow-clockwise me-1";
+        }
+
+        function escapeHtml(value) {
+          return String(value == null ? "" : value)
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;");
+        }
+
+        function mobileFieldHtml(label, valueHtml) {
+          return (
+            '<div class="invoice-mobile-card-field">' +
+            '<span class="invoice-mobile-card-label">' +
+            escapeHtml(label) +
+            "</span>" +
+            '<div class="invoice-mobile-card-value">' +
+            valueHtml +
+            "</div></div>"
+          );
+        }
+
+        function fillSelectOptions(selectElement, selected) {
+          selectElement.innerHTML = "";
+          var placeholder = document.createElement("option");
+          placeholder.value = "";
+          placeholder.textContent = "Project *";
+          selectElement.appendChild(placeholder);
+          projectOptions.forEach(function (project) {
+            var option = document.createElement("option");
+            option.value = project;
+            option.textContent = project;
+            selectElement.appendChild(option);
+          });
+          selectElement.value = selected || "";
+        }
+
+        function fillMobileProjectOptions(selected) {
+          fillSelectOptions(mobileProjectField, selected);
+        }
+
+        function buildCreateCellsFromForm(projectField, detailsField, commentField) {
+          var cells = [];
+          for (var i = 0; i < fallbackHeaders.length; i++) cells.push("");
+          cells[PROJECT_OFFSET] = String(projectField.value || "").trim();
+          cells[DETAILS_OFFSET] = String(detailsField.value || "").trim();
+          cells[COMMENT_OFFSET] = String(commentField.value || "");
+          return cells;
+        }
+
+        function validateCreateForm(projectField, detailsField) {
+          var projectValue = String(projectField.value || "").trim();
+          var detailsMissing =
+            String(detailsField.value || "").trim() === "";
+          var projectMissing = projectValue === "";
+          var projectInvalid =
+            !projectMissing && projectOptions.indexOf(projectValue) === -1;
+          projectField.classList.toggle(
+            "is-invalid",
+            projectMissing || projectInvalid
+          );
+          detailsField.classList.toggle("is-invalid", detailsMissing);
+          if (projectInvalid) {
+            setStatus("Select a project from the list", "error");
+            return false;
+          }
+          if (projectMissing || detailsMissing) {
+            setStatus("Project and Details are required", "error");
+            return false;
+          }
+          return true;
+        }
+
+        function openDesktopCreateOverlay() {
+          desktopCreateOpen = true;
+          desktopCreateBaseline = {
+            project: "",
+            details: "",
+            comment: "",
+          };
+          fillSelectOptions(desktopProjectField, "");
+          desktopDetailsField.value = "";
+          desktopCommentField.value = "";
+          desktopProjectField.classList.remove("is-invalid");
+          desktopDetailsField.classList.remove("is-invalid");
+          updateToolbar();
+          createInvoiceModal.show();
+          setTimeout(function () {
+            desktopProjectField.focus();
+          }, 200);
+        }
+
+        function closeDesktopCreateOverlay() {
+          desktopCreateOpen = false;
+          desktopCreateBaseline = null;
+          desktopProjectField.classList.remove("is-invalid");
+          desktopDetailsField.classList.remove("is-invalid");
+          createInvoiceModal.hide();
+          updateToolbar();
+        }
+
+        function requestCloseDesktopCreateOverlay() {
+          confirmDiscard(function () {
+            closeDesktopCreateOverlay();
+            setStatus("");
+          });
+        }
+
+        function setDesktopCreateBusy(busy) {
+          createInvoiceSaveButton.disabled = busy;
+          createInvoiceCancelButton.disabled = busy;
+          createInvoiceDismissButton.disabled = busy;
+          desktopProjectField.disabled = busy;
+          desktopDetailsField.disabled = busy;
+          desktopCommentField.disabled = busy;
+          createInvoiceSaveButton.innerHTML = busy
+            ? '<span class="spinner-border spinner-border-sm" aria-hidden="true"></span>'
+            : "Save";
+        }
+
+        function saveDesktopCreateOverlay() {
+          if (isSaving || !desktopCreateOpen) return;
+          if (!validateCreateForm(desktopProjectField, desktopDetailsField)) {
+            return;
+          }
+
+          isSaving = true;
+          setDesktopCreateBusy(true);
+          setStatus("Saving new row…");
+          updateToolbar();
+
+          google.script.run
+            .withSuccessHandler(function (result) {
+              isSaving = false;
+              setDesktopCreateBusy(false);
+              if (!result || !result.success) {
+                updateToolbar();
+                setStatus(
+                  (result && result.message) || "Could not save new row",
+                  "error"
+                );
+                return;
+              }
+              queueInvoiceRequestNotifications(result);
+              desktopCreateOpen = false;
+              desktopCreateBaseline = null;
+              createInvoiceModal.hide();
+              if (result.rows) {
+                applyLoadedData(result);
+              } else {
+                loadData(true);
+              }
+              setStatus("New row saved", "success");
+              updateToolbar();
+            })
+            .withFailureHandler(function (error) {
+              console.error("Desktop create failed:", error);
+              isSaving = false;
+              setDesktopCreateBusy(false);
+              updateToolbar();
+              setStatus(
+                (error && error.message) || "Could not save new row",
+                "error"
+              );
+            })
+            .createInvoiceRequest({
+              cells: buildCreateCellsFromForm(
+                desktopProjectField,
+                desktopDetailsField,
+                desktopCommentField
+              ),
+            });
+        }
+
+        function closeMobileForm() {
+          mobileFormMode = null;
+          mobileEditRow = null;
+          mobileFormBaseline = null;
+          mobileFormElement.classList.add("d-none");
+          mobileListElement.classList.remove("d-none");
+          mobileProjectField.classList.remove("is-invalid");
+          mobileDetailsField.classList.remove("is-invalid");
+          updateToolbar();
+        }
+
+        function openMobileForm(mode, row) {
+          mobileFormMode = mode;
+          mobileEditRow = row || null;
+          mobileFormTitle.textContent =
+            mode === "edit" ? "Edit invoice request" : "New invoice request";
+          var project = row ? String(row.c0 || "") : "";
+          var details = row ? String(row.c1 || "") : "";
+          var comment = row ? String(row.c2 || "") : "";
+          fillMobileProjectOptions(project);
+          mobileDetailsField.value = details;
+          mobileCommentField.value = comment;
+          mobileFormBaseline = {
+            project: project,
+            details: details,
+            comment: comment,
+          };
+          mobileProjectField.classList.remove("is-invalid");
+          mobileDetailsField.classList.remove("is-invalid");
+          mobileFormElement.classList.remove("d-none");
+          mobileListElement.classList.add("d-none");
+          updateToolbar();
+          mobileProjectField.focus();
+        }
+
+        function renderMobileList(response) {
+          var rows = tableRows(response || { rows: [] });
+          if (!rows.length) {
+            mobileListElement.innerHTML =
+              '<div class="invoice-mobile-empty">No invoice requests found</div>';
+            return;
+          }
+
+          mobileListElement.innerHTML = rows
+            .map(function (row) {
+              var rateValue = String(
+                row["_display" + RATE_FILE_OFFSET] ||
+                  row["c" + RATE_FILE_OFFSET] ||
+                  ""
+              );
+              var rateLink = row._links[RATE_FILE_OFFSET] || "";
+              var rateHtml = rateLink
+                ? '<a class="request-link" href="' +
+                  escapeHtml(rateLink) +
+                  '" target="_blank" rel="noopener">' +
+                  escapeHtml(rateValue || rateLink) +
+                  "</a>"
+                : escapeHtml(rateValue);
+
+              return (
+                '<article class="invoice-mobile-card" data-row-id="' +
+                escapeHtml(row._id) +
+                '">' +
+                mobileFieldHtml("Проект", escapeHtml(row.c0 || "")) +
+                mobileFieldHtml("Дані", escapeHtml(row.c1 || "")) +
+                mobileFieldHtml("Комент", escapeHtml(row.c2 || "")) +
+                mobileFieldHtml("Файл рейтів", rateHtml || "&nbsp;") +
+                mobileFieldHtml(
+                  "Created by",
+                  escapeHtml(row["c" + CREATED_BY_OFFSET] || "")
+                ) +
+                mobileFieldHtml(
+                  "Created at",
+                  escapeHtml(row["c" + CREATED_AT_OFFSET] || "")
+                ) +
+                mobileFieldHtml(
+                  "Edited by",
+                  escapeHtml(row["c" + EDITED_BY_OFFSET] || "")
+                ) +
+                mobileFieldHtml(
+                  "Edited at",
+                  escapeHtml(row["c" + EDITED_AT_OFFSET] || "")
+                ) +
+                '<div class="invoice-mobile-card-actions">' +
+                '<button type="button" class="btn btn-outline-primary w-100 mobile-edit-btn">' +
+                "Edit</button></div></article>"
+              );
+            })
+            .join("");
+        }
+
+        function renderCurrentView() {
+          var mobile = useMobileLimitedUi();
+          document.body.classList.toggle("invoice-mobile-limited", mobile);
+          if (mobile) {
+            if (table) {
+              table.destroy();
+              table = null;
+            }
+            if (mobileFormMode) {
+              fillMobileProjectOptions(mobileProjectField.value);
+              mobileFormElement.classList.remove("d-none");
+              mobileListElement.classList.add("d-none");
+            } else {
+              mobileFormElement.classList.add("d-none");
+              mobileListElement.classList.remove("d-none");
+              renderMobileList(lastLoadedResponse || { rows: [] });
+            }
+          } else {
+            if (mobileFormMode) {
+              closeMobileForm();
+            }
+            buildTable(
+              lastLoadedResponse || { headers: [], rows: [], projects: [] }
+            );
+          }
+          updateToolbar();
+        }
+
+        function validateMobileForm() {
+          return validateCreateForm(mobileProjectField, mobileDetailsField);
+        }
+
+        function setMobileFormBusy(busy) {
+          mobileFormSaveButton.disabled = busy;
+          mobileFormCancelButton.disabled = busy;
+          mobileProjectField.disabled = busy;
+          mobileDetailsField.disabled = busy;
+          mobileCommentField.disabled = busy;
+          mobileFormSaveButton.innerHTML = busy
+            ? '<span class="spinner-border spinner-border-sm" aria-hidden="true"></span>'
+            : "Save";
+        }
+
+        function saveMobileForm() {
+          if (isSaving || !mobileFormMode) return;
+          if (!validateMobileForm()) return;
+
+          if (mobileFormMode === "create") {
+            isSaving = true;
+            setMobileFormBusy(true);
+            setStatus("Saving new row…");
+            updateToolbar();
+
+            google.script.run
+              .withSuccessHandler(function (result) {
+                isSaving = false;
+                setMobileFormBusy(false);
+                if (!result || !result.success) {
+                  updateToolbar();
+                  setStatus(
+                    (result && result.message) || "Could not save new row",
+                    "error"
+                  );
+                  return;
+                }
+                queueInvoiceRequestNotifications(result);
+                mobileFormMode = null;
+                mobileEditRow = null;
+                mobileFormBaseline = null;
+                if (result.rows) {
+                  applyLoadedData(result);
+                } else {
+                  loadData(true);
+                }
+                setStatus("New row saved", "success");
+                updateToolbar();
+              })
+              .withFailureHandler(function (error) {
+                console.error("Mobile create failed:", error);
+                isSaving = false;
+                setMobileFormBusy(false);
+                updateToolbar();
+                setStatus(
+                  (error && error.message) || "Could not save new row",
+                  "error"
+                );
+              })
+              .createInvoiceRequest({
+                cells: buildCreateCellsFromForm(
+                  mobileProjectField,
+                  mobileDetailsField,
+                  mobileCommentField
+                ),
+              });
+            return;
+          }
+
+          if (!mobileEditRow) return;
+          var nextProject = String(mobileProjectField.value || "").trim();
+          var nextDetails = String(mobileDetailsField.value || "").trim();
+          var nextComment = String(mobileCommentField.value || "");
+          var changes = [];
+          [
+            [PROJECT_OFFSET, nextProject],
+            [DETAILS_OFFSET, nextDetails],
+            [COMMENT_OFFSET, nextComment],
+          ].forEach(function (pair) {
+            var columnOffset = pair[0];
+            var value = pair[1];
+            if (
+              JSON.stringify(value) !==
+              JSON.stringify(mobileEditRow._original[columnOffset])
+            ) {
+              changes.push({
+                id: mobileEditRow._id,
+                columnOffset: columnOffset,
+                originalToken: mobileEditRow._originalTokens[columnOffset],
+                value: value,
+              });
+            }
+          });
+
+          if (!changes.length) {
+            closeMobileForm();
+            renderMobileList(lastLoadedResponse || { rows: [] });
+            setStatus("");
+            return;
+          }
+
+          isSaving = true;
+          setMobileFormBusy(true);
+          setStatus("Saving…");
+          updateToolbar();
+
+          google.script.run
+            .withSuccessHandler(function (result) {
+              isSaving = false;
+              setMobileFormBusy(false);
+              if (!result || !result.success) {
+                updateToolbar();
+                setStatus(
+                  (result && result.message) || "Save failed",
+                  "error"
+                );
+                return;
+              }
+              queueInvoiceRequestNotifications(result);
+              mobileFormMode = null;
+              mobileEditRow = null;
+              mobileFormBaseline = null;
+              if (result.rows) {
+                applyLoadedData(result);
+              } else {
+                loadData(true);
+              }
+              setStatus("Saved", "success");
+              updateToolbar();
+            })
+            .withFailureHandler(function (error) {
+              console.error("Mobile save failed:", error);
+              isSaving = false;
+              setMobileFormBusy(false);
+              updateToolbar();
+              setStatus(
+                (error && error.message) || "Save failed. Try again.",
+                "error"
+              );
+            })
+            .saveInvoiceRequestChanges(changes);
+        }
+
+        function applyLoadedData(response) {
+          dirtyChanges = {};
+          mobileFormMode = null;
+          mobileEditRow = null;
+          mobileFormBaseline = null;
+          desktopCreateOpen = false;
+          desktopCreateBaseline = null;
+          if (
+            createInvoiceModalElement.classList.contains("show")
+          ) {
+            createInvoiceModal.hide();
+          }
+          lastLoadedResponse = response || {
+            headers: [],
+            rows: [],
+            projects: [],
+          };
+          projectOptions = lastLoadedResponse.projects || [];
+          showStatusColumns = !(
+            response && response.showStatusColumns === false
+          );
+          showAuthorColumn = !(
+            response && response.showAuthorColumn === false
+          );
+          showClientFolderColumn = !(
+            response && response.showClientFolderColumn === false
+          );
+          // Prefer accessMode; also treat hidden status columns as limited
+          // so card UI still appears if accessMode is missing in the payload.
+          isLimitedAccess = !!(
+            response &&
+            (response.accessMode === "limited" ||
+              response.showStatusColumns === false)
+          );
+          renderCurrentView();
+        }
+
+        function loadData(force) {
+          if (hasUnsavedWork() && !force) return;
+          setLoading(true);
+          errorElement.classList.add("d-none");
+          errorElement.textContent = "";
+          setStatus("");
+
+          google.script.run
+            .withSuccessHandler(function (response) {
+              applyLoadedData(response);
+              setLoading(false);
+              setStatus("");
+            })
+            .withFailureHandler(function (error) {
+              console.error("Invoice Requests load failed:", error);
+              errorElement.textContent =
+                (error && error.message) || "Failed to load invoice requests.";
+              errorElement.classList.remove("d-none");
+              setLoading(false);
+              setStatus("Load failed", "error");
+            })
+            .getInvoiceRequests();
+        }
+
+        function addNewRow() {
+          if (isSaving || dirtyCount() > 0 || hasOpenCreateOrEditForm()) {
+            return;
+          }
+          if (useMobileLimitedUi()) {
+            openMobileForm("create");
+            return;
+          }
+          openDesktopCreateOverlay();
+        }
+
+        function saveChanges() {
+          var changes = Object.keys(dirtyChanges).map(function (key) {
+            return dirtyChanges[key];
+          });
+          if (changes.length === 0 || isSaving) return;
+
+          isSaving = true;
+          saveButton.querySelector("i").className =
+            "spinner-border spinner-border-sm me-1";
+          setStatus("Saving…");
+          updateToolbar();
+
+          google.script.run
+            .withSuccessHandler(function (result) {
+              isSaving = false;
+              saveButton.querySelector("i").className = "bi bi-floppy me-1";
+              if (!result || !result.success) {
+                updateToolbar();
+                setStatus(
+                  (result && result.message) || "Save failed",
+                  "error"
+                );
+                return;
+              }
+
+              queueInvoiceRequestNotifications(result);
+              if (result.rows) {
+                applyLoadedData(result);
+              } else {
+                dirtyChanges = {};
+                loadData(true);
+              }
+              setStatus("Saved", "success");
+              updateToolbar();
+            })
+            .withFailureHandler(function (error) {
+              console.error("Invoice Requests save failed:", error);
+              isSaving = false;
+              saveButton.querySelector("i").className = "bi bi-floppy me-1";
+              updateToolbar();
+              setStatus(
+                (error && error.message) || "Save failed. Try again.",
+                "error"
+              );
+            })
+            .saveInvoiceRequestChanges(changes);
+        }
+
+        function confirmDiscard(action) {
+          if (!hasUnsavedWork()) {
+            action();
+            return;
+          }
+          pendingDiscardAction = action;
+          unsavedModal.show();
+        }
+
+        addRowButton.addEventListener("click", addNewRow);
+        saveButton.addEventListener("click", saveChanges);
+        reloadButton.addEventListener("click", function () {
+          confirmDiscard(function () {
+            loadData(true);
+          });
+        });
+        mobileFormSaveButton.addEventListener("click", saveMobileForm);
+        mobileFormCancelButton.addEventListener("click", function () {
+          confirmDiscard(function () {
+            closeMobileForm();
+            renderMobileList(lastLoadedResponse || { rows: [] });
+            setStatus("");
+          });
+        });
+        mobileListElement.addEventListener("click", function (event) {
+          var editButton = event.target.closest(".mobile-edit-btn");
+          if (!editButton || isSaving || mobileFormMode) return;
+          var card = editButton.closest(".invoice-mobile-card");
+          if (!card) return;
+          var rowId = card.getAttribute("data-row-id");
+          var rows = tableRows(lastLoadedResponse || { rows: [] });
+          var row = null;
+          for (var i = 0; i < rows.length; i++) {
+            if (rows[i]._id === rowId) {
+              row = rows[i];
+              break;
+            }
+          }
+          if (row) openMobileForm("edit", row);
+        });
+        [mobileProjectField, mobileDetailsField, mobileCommentField].forEach(
+          function (field) {
+            field.addEventListener("input", updateToolbar);
+            field.addEventListener("change", updateToolbar);
+          }
+        );
+        createInvoiceSaveButton.addEventListener(
+          "click",
+          saveDesktopCreateOverlay
+        );
+        createInvoiceCancelButton.addEventListener(
+          "click",
+          requestCloseDesktopCreateOverlay
+        );
+        createInvoiceDismissButton.addEventListener(
+          "click",
+          requestCloseDesktopCreateOverlay
+        );
+        [desktopProjectField, desktopDetailsField, desktopCommentField].forEach(
+          function (field) {
+            field.addEventListener("input", updateToolbar);
+            field.addEventListener("change", updateToolbar);
+          }
+        );
+        createInvoiceModalElement.addEventListener(
+          "hidden.bs.modal",
+          function () {
+            if (!desktopCreateOpen) return;
+            // Closed without going through our cancel helpers (e.g. programmatic).
+            desktopCreateOpen = false;
+            desktopCreateBaseline = null;
+            updateToolbar();
+          }
+        );
+
+        leaveWithoutSavingButton.addEventListener("click", function () {
+          var action = pendingDiscardAction;
+          pendingDiscardAction = null;
+          unsavedModal.hide();
+          if (action) action();
+        });
+
+        document.addEventListener(
+          "click",
+          function (event) {
+            if (!hasUnsavedWork()) return;
+            var link = event.target.closest("a[href]");
+            if (
+              !link ||
+              link.classList.contains("request-link") ||
+              link.target === "_blank" ||
+              link.getAttribute("href").charAt(0) === "#"
+            ) {
+              return;
+            }
+
+            event.preventDefault();
+            event.stopImmediatePropagation();
+            var destination = link.href;
+            confirmDiscard(function () {
+              allowUnsavedExit = true;
+              window.top.location.href = destination;
+            });
+          },
+          true
+        );
+
+        unsavedModalElement.addEventListener("hidden.bs.modal", function () {
+          pendingDiscardAction = null;
+        });
+
+        window.addEventListener("beforeunload", function (event) {
+          if (!hasUnsavedWork() || allowUnsavedExit) return;
+          event.preventDefault();
+          event.returnValue = "";
+        });
+
+        window.addEventListener("resize", function () {
+          var wantMobile = useMobileLimitedUi();
+          var isMobile = document.body.classList.contains(
+            "invoice-mobile-limited"
+          );
+          if (wantMobile !== isMobile) {
+            confirmDiscard(function () {
+              mobileFormMode = null;
+              mobileEditRow = null;
+              mobileFormBaseline = null;
+              dirtyChanges = {};
+              renderCurrentView();
+              setStatus("");
+            });
+            return;
+          }
+          if (table) table.setHeight(tableHeight());
+        });
+
+        loadData(true);
+      });
+    </script>
+  </body>
+</html>
