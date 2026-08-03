@@ -377,6 +377,25 @@
         font-weight: 700;
         margin-bottom: 12px;
       }
+
+      #createInvoiceRequestModal .modal-header {
+        border-bottom: 1px solid #dee2e6;
+      }
+
+      #createInvoiceRequestModal .form-control,
+      #createInvoiceRequestModal .form-select {
+        font-size: 0.95rem;
+        min-height: 42px;
+      }
+
+      #createInvoiceRequestModal textarea.form-control {
+        min-height: 110px;
+      }
+
+      #create-invoice-save {
+        border-color: transparent;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      }
     </style>
   </head>
 
@@ -476,6 +495,78 @@
 
     <div
       class="modal fade"
+      id="createInvoiceRequestModal"
+      tabindex="-1"
+      data-bs-backdrop="static"
+      data-bs-keyboard="false"
+      aria-labelledby="createInvoiceRequestModalLabel"
+      aria-hidden="true"
+    >
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="createInvoiceRequestModalLabel">
+              New invoice request
+            </h5>
+            <button
+              type="button"
+              class="btn-close"
+              id="create-invoice-dismiss"
+              aria-label="Close"
+            ></button>
+          </div>
+          <div class="modal-body">
+            <div class="mb-3">
+              <label for="desktop-field-project" class="form-label"
+                >Проект *</label
+              >
+              <select id="desktop-field-project" class="form-select"></select>
+              <div class="invalid-feedback">Select a project from the list.</div>
+            </div>
+            <div class="mb-3">
+              <label for="desktop-field-details" class="form-label"
+                >Дані *</label
+              >
+              <textarea
+                id="desktop-field-details"
+                class="form-control"
+                rows="5"
+              ></textarea>
+              <div class="invalid-feedback">Details are required.</div>
+            </div>
+            <div class="mb-3">
+              <label for="desktop-field-comment" class="form-label"
+                >Комент</label
+              >
+              <textarea
+                id="desktop-field-comment"
+                class="form-control"
+                rows="4"
+              ></textarea>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button
+              type="button"
+              id="create-invoice-cancel"
+              class="btn btn-outline-secondary"
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              id="create-invoice-save"
+              class="btn btn-primary"
+            >
+              Save
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div
+      class="modal fade"
       id="unsavedChangesModal"
       tabindex="-1"
       data-bs-backdrop="static"
@@ -556,6 +647,30 @@
         var mobileFormCancelButton = document.getElementById(
           "mobile-form-cancel"
         );
+        var desktopProjectField = document.getElementById(
+          "desktop-field-project"
+        );
+        var desktopDetailsField = document.getElementById(
+          "desktop-field-details"
+        );
+        var desktopCommentField = document.getElementById(
+          "desktop-field-comment"
+        );
+        var createInvoiceSaveButton = document.getElementById(
+          "create-invoice-save"
+        );
+        var createInvoiceCancelButton = document.getElementById(
+          "create-invoice-cancel"
+        );
+        var createInvoiceDismissButton = document.getElementById(
+          "create-invoice-dismiss"
+        );
+        var createInvoiceModalElement = document.getElementById(
+          "createInvoiceRequestModal"
+        );
+        var createInvoiceModal = new bootstrap.Modal(
+          createInvoiceModalElement
+        );
         var unsavedModalElement = document.getElementById(
           "unsavedChangesModal"
         );
@@ -569,6 +684,10 @@
         var draftRowId = null;
         var allowUnsavedExit = false;
         var pendingDiscardAction = null;
+        // Set false to restore the previous inline table-row create flow.
+        var USE_DESKTOP_CREATE_OVERLAY = true;
+        var desktopCreateOpen = false;
+        var desktopCreateBaseline = null;
         var tableTopOffset = tableElement.getBoundingClientRect().top;
         var headerColors = [
           "#f1f3f5",
@@ -726,7 +845,23 @@
         }
 
         function hasDraftRow() {
-          return draftRowId !== null || mobileFormMode === "create";
+          return draftRowId !== null;
+        }
+
+        function hasOpenCreateOrEditForm() {
+          return !!mobileFormMode || desktopCreateOpen;
+        }
+
+        function isDesktopCreateDirty() {
+          if (!desktopCreateOpen || !desktopCreateBaseline) return false;
+          return (
+            String(desktopProjectField.value || "") !==
+              String(desktopCreateBaseline.project || "") ||
+            String(desktopDetailsField.value || "") !==
+              String(desktopCreateBaseline.details || "") ||
+            String(desktopCommentField.value || "") !==
+              String(desktopCreateBaseline.comment || "")
+          );
         }
 
         function isMobileFormDirty() {
@@ -744,8 +879,9 @@
         function hasUnsavedWork() {
           return (
             dirtyCount() > 0 ||
-            hasDraftRow() ||
-            (mobileFormMode === "edit" && isMobileFormDirty())
+            draftRowId !== null ||
+            (mobileFormMode && isMobileFormDirty()) ||
+            (desktopCreateOpen && isDesktopCreateDirty())
           );
         }
 
@@ -781,17 +917,26 @@
         function updateToolbar() {
           var count = dirtyCount();
           var mobileUi = useMobileLimitedUi();
-          var formOpen = !!mobileFormMode;
+          var formOpen = hasOpenCreateOrEditForm();
           saveButton.disabled = isSaving || count === 0;
           reloadButton.disabled = isSaving;
           addRowButton.disabled =
-            isSaving ||
-            count > 0 ||
-            hasDraftRow() ||
-            (mobileUi && formOpen);
+            isSaving || count > 0 || hasDraftRow() || formOpen;
           saveButton.classList.toggle("has-unsaved", count > 0);
           if (!isSaving && mobileFormMode === "edit" && isMobileFormDirty()) {
             setStatus("Unsaved changes", "unsaved");
+          } else if (
+            !isSaving &&
+            desktopCreateOpen &&
+            isDesktopCreateDirty()
+          ) {
+            setStatus("New request not saved", "unsaved");
+          } else if (
+            !isSaving &&
+            mobileFormMode === "create" &&
+            isMobileFormDirty()
+          ) {
+            setStatus("New request not saved", "unsaved");
           } else if (!isSaving && hasDraftRow()) {
             setStatus("New row not saved", "unsaved");
           } else if (!isSaving && count > 0) {
@@ -1243,7 +1388,7 @@
             isSaving ||
             dirtyCount() > 0 ||
             hasDraftRow() ||
-            (useMobileLimitedUi() && !!mobileFormMode);
+            hasOpenCreateOrEditForm();
           reloadButton.querySelector("i").className = loading
             ? "spinner-border spinner-border-sm me-1"
             : "bi bi-arrow-clockwise me-1";
@@ -1269,19 +1414,155 @@
           );
         }
 
-        function fillMobileProjectOptions(selected) {
-          mobileProjectField.innerHTML = "";
+        function fillSelectOptions(selectElement, selected) {
+          selectElement.innerHTML = "";
           var placeholder = document.createElement("option");
           placeholder.value = "";
           placeholder.textContent = "Project *";
-          mobileProjectField.appendChild(placeholder);
+          selectElement.appendChild(placeholder);
           projectOptions.forEach(function (project) {
             var option = document.createElement("option");
             option.value = project;
             option.textContent = project;
-            mobileProjectField.appendChild(option);
+            selectElement.appendChild(option);
           });
-          mobileProjectField.value = selected || "";
+          selectElement.value = selected || "";
+        }
+
+        function fillMobileProjectOptions(selected) {
+          fillSelectOptions(mobileProjectField, selected);
+        }
+
+        function buildCreateCellsFromForm(projectField, detailsField, commentField) {
+          var cells = [];
+          for (var i = 0; i < fallbackHeaders.length; i++) cells.push("");
+          cells[PROJECT_OFFSET] = String(projectField.value || "").trim();
+          cells[DETAILS_OFFSET] = String(detailsField.value || "").trim();
+          cells[COMMENT_OFFSET] = String(commentField.value || "");
+          return cells;
+        }
+
+        function validateCreateForm(projectField, detailsField) {
+          var projectValue = String(projectField.value || "").trim();
+          var detailsMissing =
+            String(detailsField.value || "").trim() === "";
+          var projectMissing = projectValue === "";
+          var projectInvalid =
+            !projectMissing && projectOptions.indexOf(projectValue) === -1;
+          projectField.classList.toggle(
+            "is-invalid",
+            projectMissing || projectInvalid
+          );
+          detailsField.classList.toggle("is-invalid", detailsMissing);
+          if (projectInvalid) {
+            setStatus("Select a project from the list", "error");
+            return false;
+          }
+          if (projectMissing || detailsMissing) {
+            setStatus("Project and Details are required", "error");
+            return false;
+          }
+          return true;
+        }
+
+        function openDesktopCreateOverlay() {
+          desktopCreateOpen = true;
+          desktopCreateBaseline = {
+            project: "",
+            details: "",
+            comment: "",
+          };
+          fillSelectOptions(desktopProjectField, "");
+          desktopDetailsField.value = "";
+          desktopCommentField.value = "";
+          desktopProjectField.classList.remove("is-invalid");
+          desktopDetailsField.classList.remove("is-invalid");
+          updateToolbar();
+          createInvoiceModal.show();
+          setTimeout(function () {
+            desktopProjectField.focus();
+          }, 200);
+        }
+
+        function closeDesktopCreateOverlay() {
+          desktopCreateOpen = false;
+          desktopCreateBaseline = null;
+          desktopProjectField.classList.remove("is-invalid");
+          desktopDetailsField.classList.remove("is-invalid");
+          createInvoiceModal.hide();
+          updateToolbar();
+        }
+
+        function requestCloseDesktopCreateOverlay() {
+          confirmDiscard(function () {
+            closeDesktopCreateOverlay();
+            setStatus("");
+          });
+        }
+
+        function setDesktopCreateBusy(busy) {
+          createInvoiceSaveButton.disabled = busy;
+          createInvoiceCancelButton.disabled = busy;
+          createInvoiceDismissButton.disabled = busy;
+          desktopProjectField.disabled = busy;
+          desktopDetailsField.disabled = busy;
+          desktopCommentField.disabled = busy;
+          createInvoiceSaveButton.innerHTML = busy
+            ? '<span class="spinner-border spinner-border-sm" aria-hidden="true"></span>'
+            : "Save";
+        }
+
+        function saveDesktopCreateOverlay() {
+          if (isSaving || !desktopCreateOpen) return;
+          if (!validateCreateForm(desktopProjectField, desktopDetailsField)) {
+            return;
+          }
+
+          isSaving = true;
+          setDesktopCreateBusy(true);
+          setStatus("Saving new row…");
+          updateToolbar();
+
+          google.script.run
+            .withSuccessHandler(function (result) {
+              isSaving = false;
+              setDesktopCreateBusy(false);
+              if (!result || !result.success) {
+                updateToolbar();
+                setStatus(
+                  (result && result.message) || "Could not save new row",
+                  "error"
+                );
+                return;
+              }
+              desktopCreateOpen = false;
+              desktopCreateBaseline = null;
+              createInvoiceModal.hide();
+              if (result.rows) {
+                applyLoadedData(result);
+              } else {
+                loadData(true);
+              }
+              setStatus("New row saved", "success");
+              updateToolbar();
+            })
+            .withFailureHandler(function (error) {
+              console.error("Desktop create failed:", error);
+              isSaving = false;
+              setDesktopCreateBusy(false);
+              updateToolbar();
+              setStatus(
+                (error && error.message) || "Could not save new row",
+                "error"
+              );
+            })
+            .createInvoiceRequest({
+              cells: buildCreateCellsFromForm(
+                desktopProjectField,
+                desktopDetailsField,
+                desktopCommentField
+              ),
+            });
         }
 
         function closeMobileForm() {
@@ -1404,26 +1685,7 @@
         }
 
         function validateMobileForm() {
-          var projectValue = String(mobileProjectField.value || "").trim();
-          var detailsMissing =
-            String(mobileDetailsField.value || "").trim() === "";
-          var projectMissing = projectValue === "";
-          var projectInvalid =
-            !projectMissing && projectOptions.indexOf(projectValue) === -1;
-          mobileProjectField.classList.toggle(
-            "is-invalid",
-            projectMissing || projectInvalid
-          );
-          mobileDetailsField.classList.toggle("is-invalid", detailsMissing);
-          if (projectInvalid) {
-            setStatus("Select a project from the list", "error");
-            return false;
-          }
-          if (projectMissing || detailsMissing) {
-            setStatus("Project and Details are required", "error");
-            return false;
-          }
-          return true;
+          return validateCreateForm(mobileProjectField, mobileDetailsField);
         }
 
         function setMobileFormBusy(busy) {
@@ -1442,12 +1704,6 @@
           if (!validateMobileForm()) return;
 
           if (mobileFormMode === "create") {
-            var cells = [];
-            for (var i = 0; i < fallbackHeaders.length; i++) cells.push("");
-            cells[PROJECT_OFFSET] = String(mobileProjectField.value || "").trim();
-            cells[DETAILS_OFFSET] = String(mobileDetailsField.value || "").trim();
-            cells[COMMENT_OFFSET] = String(mobileCommentField.value || "");
-
             isSaving = true;
             setMobileFormBusy(true);
             setStatus("Saving new row…");
@@ -1486,7 +1742,13 @@
                   "error"
                 );
               })
-              .createInvoiceRequest({ cells: cells });
+              .createInvoiceRequest({
+                cells: buildCreateCellsFromForm(
+                  mobileProjectField,
+                  mobileDetailsField,
+                  mobileCommentField
+                ),
+              });
             return;
           }
 
@@ -1569,6 +1831,13 @@
           mobileFormMode = null;
           mobileEditRow = null;
           mobileFormBaseline = null;
+          desktopCreateOpen = false;
+          desktopCreateBaseline = null;
+          if (
+            createInvoiceModalElement.classList.contains("show")
+          ) {
+            createInvoiceModal.hide();
+          }
           lastLoadedResponse = response || {
             headers: [],
             rows: [],
@@ -1616,14 +1885,28 @@
         }
 
         function addNewRow() {
-          if (isSaving || dirtyCount() > 0 || hasDraftRow()) {
+          if (
+            isSaving ||
+            dirtyCount() > 0 ||
+            hasDraftRow() ||
+            hasOpenCreateOrEditForm()
+          ) {
             return;
           }
           if (useMobileLimitedUi()) {
-            if (mobileFormMode) return;
             openMobileForm("create");
             return;
           }
+          if (USE_DESKTOP_CREATE_OVERLAY) {
+            openDesktopCreateOverlay();
+            return;
+          }
+          addNewRowInline();
+        }
+
+        // Legacy path: create as an editable draft row inside Tabulator.
+        // Kept for easy rollback via USE_DESKTOP_CREATE_OVERLAY = false.
+        function addNewRowInline() {
           if (!table) return;
 
           draftRowId = "new-" + Date.now();
@@ -1858,6 +2141,34 @@
           function (field) {
             field.addEventListener("input", updateToolbar);
             field.addEventListener("change", updateToolbar);
+          }
+        );
+        createInvoiceSaveButton.addEventListener(
+          "click",
+          saveDesktopCreateOverlay
+        );
+        createInvoiceCancelButton.addEventListener(
+          "click",
+          requestCloseDesktopCreateOverlay
+        );
+        createInvoiceDismissButton.addEventListener(
+          "click",
+          requestCloseDesktopCreateOverlay
+        );
+        [desktopProjectField, desktopDetailsField, desktopCommentField].forEach(
+          function (field) {
+            field.addEventListener("input", updateToolbar);
+            field.addEventListener("change", updateToolbar);
+          }
+        );
+        createInvoiceModalElement.addEventListener(
+          "hidden.bs.modal",
+          function () {
+            if (!desktopCreateOpen) return;
+            // Closed without going through our cancel helpers (e.g. programmatic).
+            desktopCreateOpen = false;
+            desktopCreateBaseline = null;
+            updateToolbar();
           }
         );
 
