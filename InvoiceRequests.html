@@ -285,6 +285,96 @@
           animation: none;
         }
       }
+
+      #invoice-requests-mobile {
+        display: none;
+      }
+
+      body.invoice-mobile-limited #invoice-requests-table {
+        display: none !important;
+      }
+
+      body.invoice-mobile-limited #invoice-requests-mobile {
+        display: block;
+      }
+
+      body.invoice-mobile-limited #save-invoice-requests {
+        display: none !important;
+      }
+
+      .invoice-mobile-card {
+        background: #fff;
+        border: 1px solid #dee2e6;
+        border-radius: 12px;
+        padding: 14px 14px 12px;
+        margin-bottom: 12px;
+      }
+
+      .invoice-mobile-card-field {
+        margin-bottom: 10px;
+      }
+
+      .invoice-mobile-card-field:last-child {
+        margin-bottom: 0;
+      }
+
+      .invoice-mobile-card-label {
+        display: block;
+        font-size: 0.72rem;
+        font-weight: 700;
+        color: #6c757d;
+        text-transform: uppercase;
+        letter-spacing: 0.02em;
+        margin-bottom: 2px;
+      }
+
+      .invoice-mobile-card-value {
+        white-space: pre-wrap;
+        overflow-wrap: anywhere;
+        font-size: 0.95rem;
+        color: #212529;
+      }
+
+      .invoice-mobile-card-actions {
+        margin-top: 12px;
+        padding-top: 10px;
+        border-top: 1px solid #eee;
+      }
+
+      .invoice-mobile-form {
+        background: #fff;
+        border: 1px solid #dee2e6;
+        border-radius: 12px;
+        padding: 16px;
+        margin-bottom: 16px;
+      }
+
+      .invoice-mobile-form label {
+        font-weight: 700;
+        font-size: 0.85rem;
+      }
+
+      .invoice-mobile-form .form-control,
+      .invoice-mobile-form .form-select {
+        font-size: 1rem;
+        min-height: 44px;
+      }
+
+      .invoice-mobile-form textarea.form-control {
+        min-height: 120px;
+      }
+
+      .invoice-mobile-empty {
+        color: #6c757d;
+        text-align: center;
+        padding: 28px 12px;
+      }
+
+      .invoice-mobile-form-title {
+        font-size: 1.05rem;
+        font-weight: 700;
+        margin-bottom: 12px;
+      }
     </style>
   </head>
 
@@ -334,6 +424,52 @@
         id="invoice-requests-table"
         aria-label="Invoice requests"
       ></div>
+      <div id="invoice-requests-mobile" aria-label="Invoice requests mobile">
+        <div id="invoice-mobile-form" class="invoice-mobile-form d-none">
+          <div class="invoice-mobile-form-title" id="invoice-mobile-form-title">
+            New invoice request
+          </div>
+          <div class="mb-3">
+            <label for="mobile-field-project" class="form-label">Проект *</label>
+            <select id="mobile-field-project" class="form-select"></select>
+            <div class="invalid-feedback">Select a project from the list.</div>
+          </div>
+          <div class="mb-3">
+            <label for="mobile-field-details" class="form-label">Дані *</label>
+            <textarea
+              id="mobile-field-details"
+              class="form-control"
+              rows="5"
+            ></textarea>
+            <div class="invalid-feedback">Details are required.</div>
+          </div>
+          <div class="mb-3">
+            <label for="mobile-field-comment" class="form-label">Комент</label>
+            <textarea
+              id="mobile-field-comment"
+              class="form-control"
+              rows="4"
+            ></textarea>
+          </div>
+          <div class="d-flex gap-2">
+            <button
+              type="button"
+              id="mobile-form-save"
+              class="btn btn-primary flex-grow-1"
+            >
+              Save
+            </button>
+            <button
+              type="button"
+              id="mobile-form-cancel"
+              class="btn btn-outline-secondary flex-grow-1"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+        <div id="invoice-mobile-list"></div>
+      </div>
     </main>
 
     <div
@@ -394,6 +530,30 @@
           "invoice-save-status"
         );
         var errorElement = document.getElementById("invoice-load-error");
+        var mobileListElement = document.getElementById(
+          "invoice-mobile-list"
+        );
+        var mobileFormElement = document.getElementById(
+          "invoice-mobile-form"
+        );
+        var mobileFormTitle = document.getElementById(
+          "invoice-mobile-form-title"
+        );
+        var mobileProjectField = document.getElementById(
+          "mobile-field-project"
+        );
+        var mobileDetailsField = document.getElementById(
+          "mobile-field-details"
+        );
+        var mobileCommentField = document.getElementById(
+          "mobile-field-comment"
+        );
+        var mobileFormSaveButton = document.getElementById(
+          "mobile-form-save"
+        );
+        var mobileFormCancelButton = document.getElementById(
+          "mobile-form-cancel"
+        );
         var unsavedModalElement = document.getElementById(
           "unsavedChangesModal"
         );
@@ -471,6 +631,11 @@
         var projectOptions = [];
         var showStatusColumns = true;
         var showAuthorColumn = true;
+        var isLimitedAccess = false;
+        var lastLoadedResponse = null;
+        var mobileFormMode = null;
+        var mobileEditRow = null;
+        var mobileFormBaseline = null;
 
         function isStatusColumn(columnOffset) {
           return (
@@ -559,11 +724,34 @@
         }
 
         function hasDraftRow() {
-          return draftRowId !== null;
+          return draftRowId !== null || mobileFormMode === "create";
+        }
+
+        function isMobileFormDirty() {
+          if (!mobileFormMode || !mobileFormBaseline) return false;
+          return (
+            String(mobileProjectField.value || "") !==
+              String(mobileFormBaseline.project || "") ||
+            String(mobileDetailsField.value || "") !==
+              String(mobileFormBaseline.details || "") ||
+            String(mobileCommentField.value || "") !==
+              String(mobileFormBaseline.comment || "")
+          );
         }
 
         function hasUnsavedWork() {
-          return dirtyCount() > 0 || hasDraftRow();
+          return (
+            dirtyCount() > 0 ||
+            hasDraftRow() ||
+            (mobileFormMode === "edit" && isMobileFormDirty())
+          );
+        }
+
+        function useMobileLimitedUi() {
+          return (
+            isLimitedAccess &&
+            window.matchMedia("(max-width: 768px)").matches
+          );
         }
 
         function setStatus(message, type) {
@@ -574,12 +762,19 @@
 
         function updateToolbar() {
           var count = dirtyCount();
+          var mobileUi = useMobileLimitedUi();
+          var formOpen = !!mobileFormMode;
           saveButton.disabled = isSaving || count === 0;
           reloadButton.disabled = isSaving;
           addRowButton.disabled =
-            isSaving || count > 0 || hasDraftRow();
+            isSaving ||
+            count > 0 ||
+            hasDraftRow() ||
+            (mobileUi && formOpen);
           saveButton.classList.toggle("has-unsaved", count > 0);
-          if (!isSaving && hasDraftRow()) {
+          if (!isSaving && mobileFormMode === "edit" && isMobileFormDirty()) {
+            setStatus("Unsaved changes", "unsaved");
+          } else if (!isSaving && hasDraftRow()) {
             setStatus("New row not saved", "unsaved");
           } else if (!isSaving && count > 0) {
             setStatus(
@@ -1026,24 +1221,351 @@
         function setLoading(loading) {
           reloadButton.disabled = loading || isSaving;
           addRowButton.disabled =
-            loading || isSaving || dirtyCount() > 0 || hasDraftRow();
+            loading ||
+            isSaving ||
+            dirtyCount() > 0 ||
+            hasDraftRow() ||
+            (useMobileLimitedUi() && !!mobileFormMode);
           reloadButton.querySelector("i").className = loading
             ? "spinner-border spinner-border-sm me-1"
             : "bi bi-arrow-clockwise me-1";
         }
 
+        function escapeHtml(value) {
+          return String(value == null ? "" : value)
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;");
+        }
+
+        function mobileFieldHtml(label, valueHtml) {
+          return (
+            '<div class="invoice-mobile-card-field">' +
+            '<span class="invoice-mobile-card-label">' +
+            escapeHtml(label) +
+            "</span>" +
+            '<div class="invoice-mobile-card-value">' +
+            valueHtml +
+            "</div></div>"
+          );
+        }
+
+        function fillMobileProjectOptions(selected) {
+          mobileProjectField.innerHTML = "";
+          var placeholder = document.createElement("option");
+          placeholder.value = "";
+          placeholder.textContent = "Project *";
+          mobileProjectField.appendChild(placeholder);
+          projectOptions.forEach(function (project) {
+            var option = document.createElement("option");
+            option.value = project;
+            option.textContent = project;
+            mobileProjectField.appendChild(option);
+          });
+          mobileProjectField.value = selected || "";
+        }
+
+        function closeMobileForm() {
+          mobileFormMode = null;
+          mobileEditRow = null;
+          mobileFormBaseline = null;
+          mobileFormElement.classList.add("d-none");
+          mobileListElement.classList.remove("d-none");
+          mobileProjectField.classList.remove("is-invalid");
+          mobileDetailsField.classList.remove("is-invalid");
+          updateToolbar();
+        }
+
+        function openMobileForm(mode, row) {
+          mobileFormMode = mode;
+          mobileEditRow = row || null;
+          mobileFormTitle.textContent =
+            mode === "edit" ? "Edit invoice request" : "New invoice request";
+          var project = row ? String(row.c0 || "") : "";
+          var details = row ? String(row.c1 || "") : "";
+          var comment = row ? String(row.c2 || "") : "";
+          fillMobileProjectOptions(project);
+          mobileDetailsField.value = details;
+          mobileCommentField.value = comment;
+          mobileFormBaseline = {
+            project: project,
+            details: details,
+            comment: comment,
+          };
+          mobileProjectField.classList.remove("is-invalid");
+          mobileDetailsField.classList.remove("is-invalid");
+          mobileFormElement.classList.remove("d-none");
+          mobileListElement.classList.add("d-none");
+          updateToolbar();
+          mobileProjectField.focus();
+        }
+
+        function renderMobileList(response) {
+          var rows = tableRows(response || { rows: [] });
+          if (!rows.length) {
+            mobileListElement.innerHTML =
+              '<div class="invoice-mobile-empty">No invoice requests found</div>';
+            return;
+          }
+
+          mobileListElement.innerHTML = rows
+            .map(function (row) {
+              var rateValue = String(
+                row["_display" + RATE_FILE_OFFSET] ||
+                  row["c" + RATE_FILE_OFFSET] ||
+                  ""
+              );
+              var rateLink = row._links[RATE_FILE_OFFSET] || "";
+              var rateHtml = rateLink
+                ? '<a class="request-link" href="' +
+                  escapeHtml(rateLink) +
+                  '" target="_blank" rel="noopener">' +
+                  escapeHtml(rateValue || rateLink) +
+                  "</a>"
+                : escapeHtml(rateValue);
+
+              return (
+                '<article class="invoice-mobile-card" data-row-id="' +
+                escapeHtml(row._id) +
+                '">' +
+                mobileFieldHtml("Проект", escapeHtml(row.c0 || "")) +
+                mobileFieldHtml("Дані", escapeHtml(row.c1 || "")) +
+                mobileFieldHtml("Комент", escapeHtml(row.c2 || "")) +
+                mobileFieldHtml("Файл рейтів", rateHtml || "&nbsp;") +
+                mobileFieldHtml(
+                  "Created by",
+                  escapeHtml(row.c13 || "")
+                ) +
+                mobileFieldHtml(
+                  "Created at",
+                  escapeHtml(row.c14 || "")
+                ) +
+                mobileFieldHtml(
+                  "Edited by",
+                  escapeHtml(row.c15 || "")
+                ) +
+                mobileFieldHtml(
+                  "Edited at",
+                  escapeHtml(row.c16 || "")
+                ) +
+                '<div class="invoice-mobile-card-actions">' +
+                '<button type="button" class="btn btn-outline-primary w-100 mobile-edit-btn">' +
+                "Edit</button></div></article>"
+              );
+            })
+            .join("");
+        }
+
+        function renderCurrentView() {
+          var mobile = useMobileLimitedUi();
+          document.body.classList.toggle("invoice-mobile-limited", mobile);
+          if (mobile) {
+            if (table) {
+              table.destroy();
+              table = null;
+            }
+            if (mobileFormMode) {
+              fillMobileProjectOptions(mobileProjectField.value);
+              mobileFormElement.classList.remove("d-none");
+              mobileListElement.classList.add("d-none");
+            } else {
+              mobileFormElement.classList.add("d-none");
+              mobileListElement.classList.remove("d-none");
+              renderMobileList(lastLoadedResponse || { rows: [] });
+            }
+          } else {
+            if (mobileFormMode) {
+              closeMobileForm();
+            }
+            buildTable(
+              lastLoadedResponse || { headers: [], rows: [], projects: [] }
+            );
+          }
+          updateToolbar();
+        }
+
+        function validateMobileForm() {
+          var projectValue = String(mobileProjectField.value || "").trim();
+          var detailsMissing =
+            String(mobileDetailsField.value || "").trim() === "";
+          var projectMissing = projectValue === "";
+          var projectInvalid =
+            !projectMissing && projectOptions.indexOf(projectValue) === -1;
+          mobileProjectField.classList.toggle(
+            "is-invalid",
+            projectMissing || projectInvalid
+          );
+          mobileDetailsField.classList.toggle("is-invalid", detailsMissing);
+          if (projectInvalid) {
+            setStatus("Select a project from the list", "error");
+            return false;
+          }
+          if (projectMissing || detailsMissing) {
+            setStatus("Project and Details are required", "error");
+            return false;
+          }
+          return true;
+        }
+
+        function setMobileFormBusy(busy) {
+          mobileFormSaveButton.disabled = busy;
+          mobileFormCancelButton.disabled = busy;
+          mobileProjectField.disabled = busy;
+          mobileDetailsField.disabled = busy;
+          mobileCommentField.disabled = busy;
+          mobileFormSaveButton.innerHTML = busy
+            ? '<span class="spinner-border spinner-border-sm" aria-hidden="true"></span>'
+            : "Save";
+        }
+
+        function saveMobileForm() {
+          if (isSaving || !mobileFormMode) return;
+          if (!validateMobileForm()) return;
+
+          if (mobileFormMode === "create") {
+            var cells = [];
+            for (var i = 0; i < fallbackHeaders.length; i++) cells.push("");
+            cells[PROJECT_OFFSET] = String(mobileProjectField.value || "").trim();
+            cells[DETAILS_OFFSET] = String(mobileDetailsField.value || "").trim();
+            cells[COMMENT_OFFSET] = String(mobileCommentField.value || "");
+
+            isSaving = true;
+            setMobileFormBusy(true);
+            setStatus("Saving new row…");
+            updateToolbar();
+
+            google.script.run
+              .withSuccessHandler(function (result) {
+                isSaving = false;
+                setMobileFormBusy(false);
+                if (!result || !result.success) {
+                  updateToolbar();
+                  setStatus(
+                    (result && result.message) || "Could not save new row",
+                    "error"
+                  );
+                  return;
+                }
+                mobileFormMode = null;
+                mobileEditRow = null;
+                mobileFormBaseline = null;
+                if (result.rows) {
+                  applyLoadedData(result);
+                } else {
+                  loadData(true);
+                }
+                setStatus("New row saved", "success");
+                updateToolbar();
+              })
+              .withFailureHandler(function (error) {
+                console.error("Mobile create failed:", error);
+                isSaving = false;
+                setMobileFormBusy(false);
+                updateToolbar();
+                setStatus(
+                  (error && error.message) || "Could not save new row",
+                  "error"
+                );
+              })
+              .createInvoiceRequest({ cells: cells });
+            return;
+          }
+
+          if (!mobileEditRow) return;
+          var nextProject = String(mobileProjectField.value || "").trim();
+          var nextDetails = String(mobileDetailsField.value || "").trim();
+          var nextComment = String(mobileCommentField.value || "");
+          var changes = [];
+          [
+            [PROJECT_OFFSET, nextProject],
+            [DETAILS_OFFSET, nextDetails],
+            [COMMENT_OFFSET, nextComment],
+          ].forEach(function (pair) {
+            var columnOffset = pair[0];
+            var value = pair[1];
+            if (
+              JSON.stringify(value) !==
+              JSON.stringify(mobileEditRow._original[columnOffset])
+            ) {
+              changes.push({
+                id: mobileEditRow._id,
+                columnOffset: columnOffset,
+                originalToken: mobileEditRow._originalTokens[columnOffset],
+                value: value,
+              });
+            }
+          });
+
+          if (!changes.length) {
+            closeMobileForm();
+            renderMobileList(lastLoadedResponse || { rows: [] });
+            setStatus("");
+            return;
+          }
+
+          isSaving = true;
+          setMobileFormBusy(true);
+          setStatus("Saving…");
+          updateToolbar();
+
+          google.script.run
+            .withSuccessHandler(function (result) {
+              isSaving = false;
+              setMobileFormBusy(false);
+              if (!result || !result.success) {
+                updateToolbar();
+                setStatus(
+                  (result && result.message) || "Save failed",
+                  "error"
+                );
+                return;
+              }
+              mobileFormMode = null;
+              mobileEditRow = null;
+              mobileFormBaseline = null;
+              if (result.rows) {
+                applyLoadedData(result);
+              } else {
+                loadData(true);
+              }
+              setStatus("Saved", "success");
+              updateToolbar();
+            })
+            .withFailureHandler(function (error) {
+              console.error("Mobile save failed:", error);
+              isSaving = false;
+              setMobileFormBusy(false);
+              updateToolbar();
+              setStatus(
+                (error && error.message) || "Save failed. Try again.",
+                "error"
+              );
+            })
+            .saveInvoiceRequestChanges(changes);
+        }
+
         function applyLoadedData(response) {
           dirtyChanges = {};
           draftRowId = null;
-          projectOptions = (response && response.projects) || [];
+          mobileFormMode = null;
+          mobileEditRow = null;
+          mobileFormBaseline = null;
+          lastLoadedResponse = response || {
+            headers: [],
+            rows: [],
+            projects: [],
+          };
+          projectOptions = lastLoadedResponse.projects || [];
           showStatusColumns = !(
             response && response.showStatusColumns === false
           );
           showAuthorColumn = !(
             response && response.showAuthorColumn === false
           );
-          buildTable(response || { headers: [], rows: [], projects: [] });
-          updateToolbar();
+          isLimitedAccess =
+            response && response.accessMode === "limited";
+          renderCurrentView();
         }
 
         function loadData(force) {
@@ -1071,9 +1593,15 @@
         }
 
         function addNewRow() {
-          if (!table || isSaving || dirtyCount() > 0 || hasDraftRow()) {
+          if (isSaving || dirtyCount() > 0 || hasDraftRow()) {
             return;
           }
+          if (useMobileLimitedUi()) {
+            if (mobileFormMode) return;
+            openMobileForm("create");
+            return;
+          }
+          if (!table) return;
 
           draftRowId = "new-" + Date.now();
           table.getColumn("_rowActions").show();
@@ -1090,8 +1618,7 @@
             columnOffset < fallbackHeaders.length;
             columnOffset++
           ) {
-            draft["c" + columnOffset] =
-              "";
+            draft["c" + columnOffset] = "";
           }
 
           table.addRow(draft, true).then(function (row) {
@@ -1280,6 +1807,36 @@
             loadData(true);
           });
         });
+        mobileFormSaveButton.addEventListener("click", saveMobileForm);
+        mobileFormCancelButton.addEventListener("click", function () {
+          confirmDiscard(function () {
+            closeMobileForm();
+            renderMobileList(lastLoadedResponse || { rows: [] });
+            setStatus("");
+          });
+        });
+        mobileListElement.addEventListener("click", function (event) {
+          var editButton = event.target.closest(".mobile-edit-btn");
+          if (!editButton || isSaving || mobileFormMode) return;
+          var card = editButton.closest(".invoice-mobile-card");
+          if (!card) return;
+          var rowId = card.getAttribute("data-row-id");
+          var rows = tableRows(lastLoadedResponse || { rows: [] });
+          var row = null;
+          for (var i = 0; i < rows.length; i++) {
+            if (rows[i]._id === rowId) {
+              row = rows[i];
+              break;
+            }
+          }
+          if (row) openMobileForm("edit", row);
+        });
+        [mobileProjectField, mobileDetailsField, mobileCommentField].forEach(
+          function (field) {
+            field.addEventListener("input", updateToolbar);
+            field.addEventListener("change", updateToolbar);
+          }
+        );
 
         leaveWithoutSavingButton.addEventListener("click", function () {
           var action = pendingDiscardAction;
@@ -1324,6 +1881,22 @@
         });
 
         window.addEventListener("resize", function () {
+          var wantMobile = useMobileLimitedUi();
+          var isMobile = document.body.classList.contains(
+            "invoice-mobile-limited"
+          );
+          if (wantMobile !== isMobile) {
+            confirmDiscard(function () {
+              mobileFormMode = null;
+              mobileEditRow = null;
+              mobileFormBaseline = null;
+              dirtyChanges = {};
+              draftRowId = null;
+              renderCurrentView();
+              setStatus("");
+            });
+            return;
+          }
           if (table) table.setHeight(tableHeight());
         });
 
