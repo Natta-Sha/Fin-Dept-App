@@ -943,7 +943,7 @@
             icon.setAttribute("aria-label", "Checked");
             icon.title = "Checked";
           } else if (status === "notApplicable") {
-            icon.className = "bi bi-dash-square-fill";
+            icon.className = "bi bi-x-square-fill";
             icon.setAttribute("aria-label", "Not applicable");
             icon.title = "Not applicable";
           } else {
@@ -1642,7 +1642,7 @@
           renderCurrentView();
         }
 
-        function loadData(force) {
+        function loadData(force, refreshCache) {
           if (hasUnsavedWork() && !force) return;
           setLoading(true);
           errorElement.classList.add("d-none");
@@ -1663,7 +1663,7 @@
               setLoading(false);
               setStatus("Load failed", "error");
             })
-            .getInvoiceRequests();
+            .getInvoiceRequests(refreshCache === true);
         }
 
         function addNewRow() {
@@ -1738,7 +1738,7 @@
         saveButton.addEventListener("click", saveChanges);
         reloadButton.addEventListener("click", function () {
           confirmDiscard(function () {
-            loadData(true);
+            loadData(true, true);
           });
         });
         mobileFormSaveButton.addEventListener("click", saveMobileForm);

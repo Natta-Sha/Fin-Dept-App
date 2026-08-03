@@ -21,8 +21,10 @@ var INVOICE_REQUESTS_CREATED_AT_OFFSET = 15; // Q
 var INVOICE_REQUESTS_EDITED_BY_OFFSET = 16; // R
 var INVOICE_REQUESTS_EDITED_AT_OFFSET = 17; // S
 var INVOICE_REQUESTS_TRAILING_COLUMN_COUNT = 6; // N:S
-var INVOICE_REQUESTS_NOT_APPLICABLE = "⊟";
-var INVOICE_REQUESTS_NOT_APPLICABLE_BACKGROUND = "#d9ead3";
+// Stored in the status cell. No background color is used for N/A.
+var INVOICE_REQUESTS_NOT_APPLICABLE = "✕";
+var INVOICE_REQUESTS_LIST_CACHE_KEY = "invoiceRequestsList";
+var INVOICE_REQUESTS_LEGACY_NOT_APPLICABLE = "⊟";
 
 function isInvoiceRequestStatusColumn_(columnOffset) {
   return (
@@ -418,19 +420,15 @@ function resolveInvoiceRequestClientFolder_(
 }
 
 function writeInvoiceRequestLinkedValue_(range, value, link) {
-  var text = String(value || "").trim();
-  var url = String(link || "").trim();
+  // Plain URL text in the cell — same approach as Clients Information.
+  var url = String(link || value || "").trim();
+  range.clearDataValidations();
+  range.setBackground(null);
   if (url) {
-    range.setRichTextValue(
-      SpreadsheetApp.newRichTextValue()
-        .setText(text || url)
-        .setLinkUrl(url)
-        .build()
-    );
+    range.setValue(url);
     return;
   }
-  range.clear();
-  if (text) range.setValue(text);
+  range.clearContent();
 }
 
 function assertInvoiceRequestProject_(project, projects) {
@@ -491,93 +489,102 @@ function comparableInvoiceRequestValue_(value) {
   return String(value);
 }
 
-function normalizeInvoiceRequestBackground_(background) {
-  return String(background || "").trim().toLowerCase();
-}
-
-function isNeutralInvoiceRequestBackground_(background) {
-  var normalized = normalizeInvoiceRequestBackground_(background);
-  return (
-    normalized === "" ||
-    normalized === "#ffffff" ||
-    normalized === "#fff" ||
-    normalized === "white"
-  );
-}
-
-function getInvoiceRequestCheckboxStatus_(value, background) {
+function getInvoiceRequestCheckboxStatus_(value) {
+  var text = String(value || "").trim();
   if (
-    String(value || "").trim() ===
-    INVOICE_REQUESTS_NOT_APPLICABLE
+    text === INVOICE_REQUESTS_NOT_APPLICABLE ||
+    text === INVOICE_REQUESTS_LEGACY_NOT_APPLICABLE
   ) {
     return "notApplicable";
   }
   if (value === true) return "checked";
-  if (value === false && !isNeutralInvoiceRequestBackground_(background)) {
-    return "notApplicable";
-  }
   return "unchecked";
 }
 
-function getInvoiceRequestOriginalToken_(
-  value,
-  background,
-  columnOffset
-) {
+function getInvoiceRequestOriginalToken_(value, columnOffset) {
   if (!isInvoiceRequestStatusColumn_(columnOffset)) {
     return comparableInvoiceRequestValue_(value);
   }
-  return JSON.stringify([
-    comparableInvoiceRequestValue_(value),
-    normalizeInvoiceRequestBackground_(background),
-  ]);
+  return getInvoiceRequestCheckboxStatus_(value);
 }
 
-function migrateLegacyInvoiceRequestStatuses_(
-  sheet,
-  values,
-  backgrounds
-) {
-  var migrated = 0;
-  for (var rowIndex = 1; rowIndex < values.length; rowIndex++) {
-    for (
-      var columnOffset = INVOICE_REQUESTS_STATUS_FIRST_OFFSET;
-      columnOffset <
-      INVOICE_REQUESTS_STATUS_FIRST_OFFSET +
-        INVOICE_REQUESTS_STATUS_COUNT;
-      columnOffset++
-    ) {
-      var sourceColumn =
-        INVOICE_REQUESTS_FIRST_COLUMN - 1 + columnOffset;
-      if (
-        values[rowIndex][sourceColumn] === false &&
-        !isNeutralInvoiceRequestBackground_(
-          backgrounds[rowIndex][sourceColumn]
-        )
-      ) {
-        var cell = sheet.getRange(rowIndex + 1, sourceColumn + 1);
-        cell.clearDataValidations();
-        cell.setValue(INVOICE_REQUESTS_NOT_APPLICABLE);
-        cell.setBackground(
-          INVOICE_REQUESTS_NOT_APPLICABLE_BACKGROUND
-        );
-        values[rowIndex][sourceColumn] =
-          INVOICE_REQUESTS_NOT_APPLICABLE;
-        backgrounds[rowIndex][sourceColumn] =
-          INVOICE_REQUESTS_NOT_APPLICABLE_BACKGROUND;
-        migrated++;
-      }
-    }
-  }
-  if (migrated > 0) SpreadsheetApp.flush();
+function invoiceRequestLinkFromCell_(value, displayValue) {
+  var display = String(displayValue || "").trim();
+  var raw = value === null || value === undefined ? "" : String(value).trim();
+  var candidate = display || raw;
+  if (/^https?:\/\//i.test(candidate)) return candidate;
+  if (/^https?:\/\//i.test(raw)) return raw;
+  return candidate;
+}
+
+function invalidateInvoiceRequestsListCache_() {
+  removeCachedJson_(INVOICE_REQUESTS_LIST_CACHE_KEY);
+}
+
+function invoiceRequestPayloadRowOwnedByEmail_(row, email) {
+  var cells = row && row.cells ? row.cells : [];
+  var createdBy = String(
+    (cells[INVOICE_REQUESTS_CREATED_BY_OFFSET] &&
+      cells[INVOICE_REQUESTS_CREATED_BY_OFFSET].value) ||
+      ""
+  )
+    .trim()
+    .toLowerCase();
+  var editedBy = String(
+    (cells[INVOICE_REQUESTS_EDITED_BY_OFFSET] &&
+      cells[INVOICE_REQUESTS_EDITED_BY_OFFSET].value) ||
+      ""
+  )
+    .trim()
+    .toLowerCase();
+  var normalized = String(email || "")
+    .trim()
+    .toLowerCase();
+  return createdBy === normalized || editedBy === normalized;
 }
 
 function buildInvoiceRequestsPayload_(spreadsheet, projectsOrLookup) {
+  var accessMode = getInvoiceRequestAccessMode_();
+  var email = getCurrentUserEmail();
+  var cached = getCachedJson_(INVOICE_REQUESTS_LIST_CACHE_KEY);
+  var base;
+  if (cached && cached.headers && cached.rows) {
+    base = cached;
+  } else {
+    base = readInvoiceRequestsSheetPayload_(spreadsheet, projectsOrLookup);
+    putCachedJson_(
+      INVOICE_REQUESTS_LIST_CACHE_KEY,
+      {
+        headers: base.headers,
+        rows: base.rows,
+        projects: base.projects,
+      },
+      DATA_LIST_CACHE_TTL_SECONDS
+    );
+  }
+
+  var rows = base.rows || [];
+  if (accessMode === "limited") {
+    rows = rows.filter(function (row) {
+      return invoiceRequestPayloadRowOwnedByEmail_(row, email);
+    });
+  }
+
+  return {
+    headers: base.headers || [],
+    rows: rows,
+    projects: base.projects || [],
+    accessMode: accessMode,
+    showStatusColumns: accessMode === "full",
+    showAuthorColumn: accessMode === "full",
+    showClientFolderColumn: accessMode === "full",
+  };
+}
+
+function readInvoiceRequestsSheetPayload_(spreadsheet, projectsOrLookup) {
   var sheet = spreadsheet.getSheetByName(INVOICE_REQUESTS_SHEET_NAME);
   if (!sheet) throw new Error('Sheet "Requests" was not found.');
 
-  var accessMode = getInvoiceRequestAccessMode_();
-  var email = getCurrentUserEmail();
   var projects = Array.isArray(projectsOrLookup)
     ? projectsOrLookup
     : projectsOrLookup && projectsOrLookup.projects
@@ -587,15 +594,12 @@ function buildInvoiceRequestsPayload_(spreadsheet, projectsOrLookup) {
     headers: [],
     rows: [],
     projects: projects,
-    accessMode: accessMode,
-    showStatusColumns: accessMode === "full",
-    showAuthorColumn: accessMode === "full",
-    showClientFolderColumn: accessMode === "full",
   };
   var lastRow = sheet.getLastRow();
   if (lastRow < 1) return emptyPayload;
 
-  // Column A is read only as a stable hidden row key.
+  // Same pattern as Clients Information: values + display only.
+  // Links are plain URL text; N/A is a cell symbol (no background).
   var range = sheet.getRange(
     1,
     1,
@@ -606,11 +610,6 @@ function buildInvoiceRequestsPayload_(spreadsheet, projectsOrLookup) {
   );
   var values = range.getValues();
   var displayValues = range.getDisplayValues();
-  var richTextValues = range.getRichTextValues();
-  var backgrounds = range.getBackgrounds();
-  if (accessMode === "full") {
-    migrateLegacyInvoiceRequestStatuses_(sheet, values, backgrounds);
-  }
   var headers = displayValues[0].slice(
     INVOICE_REQUESTS_FIRST_COLUMN - 1,
     INVOICE_REQUESTS_FIRST_COLUMN -
@@ -628,12 +627,6 @@ function buildInvoiceRequestsPayload_(spreadsheet, projectsOrLookup) {
       throw new Error("Duplicate row ID in column A: " + rowId);
     }
     seenIds[rowId] = true;
-    if (
-      accessMode === "limited" &&
-      !invoiceRequestRowOwnedByEmail_(values[rowIndex], email)
-    ) {
-      continue;
-    }
 
     var cells = [];
     for (
@@ -642,38 +635,44 @@ function buildInvoiceRequestsPayload_(spreadsheet, projectsOrLookup) {
       columnOffset++
     ) {
       var sourceColumn = start + columnOffset;
-      var richText = richTextValues[rowIndex][sourceColumn];
       var isStatusColumn = isInvoiceRequestStatusColumn_(columnOffset);
       var checkboxStatus = isStatusColumn
-        ? getInvoiceRequestCheckboxStatus_(
-            values[rowIndex][sourceColumn],
-            backgrounds[rowIndex][sourceColumn]
-          )
+        ? getInvoiceRequestCheckboxStatus_(values[rowIndex][sourceColumn])
         : null;
+      var displayValue = isInvoiceRequestTimestampColumn_(columnOffset)
+        ? serializeInvoiceRequestTimestampCell_(
+            values[rowIndex][sourceColumn],
+            displayValues[rowIndex][sourceColumn]
+          )
+        : displayValues[rowIndex][sourceColumn] || "";
+      var cellValue = isStatusColumn
+        ? checkboxStatus
+        : isInvoiceRequestTimestampColumn_(columnOffset)
+        ? displayValue
+        : serializeInvoiceRequestValue_(
+            values[rowIndex][sourceColumn],
+            displayValues[rowIndex][sourceColumn]
+          );
+      var link = "";
+      if (
+        columnOffset === INVOICE_REQUESTS_RATE_FILE_OFFSET ||
+        columnOffset === INVOICE_REQUESTS_CLIENT_FOLDER_OFFSET
+      ) {
+        link = invoiceRequestLinkFromCell_(
+          values[rowIndex][sourceColumn],
+          displayValues[rowIndex][sourceColumn]
+        );
+        if (!cellValue && link) cellValue = link;
+        if (!displayValue && link) displayValue = link;
+      }
       cells.push({
-        value: isStatusColumn
-          ? checkboxStatus
-          : isInvoiceRequestTimestampColumn_(columnOffset)
-          ? serializeInvoiceRequestTimestampCell_(
-              values[rowIndex][sourceColumn],
-              displayValues[rowIndex][sourceColumn]
-            )
-          : serializeInvoiceRequestValue_(
-              values[rowIndex][sourceColumn],
-              displayValues[rowIndex][sourceColumn]
-            ),
+        value: cellValue,
         originalToken: getInvoiceRequestOriginalToken_(
           values[rowIndex][sourceColumn],
-          backgrounds[rowIndex][sourceColumn],
           columnOffset
         ),
-        displayValue: isInvoiceRequestTimestampColumn_(columnOffset)
-          ? serializeInvoiceRequestTimestampCell_(
-              values[rowIndex][sourceColumn],
-              displayValues[rowIndex][sourceColumn]
-            )
-          : displayValues[rowIndex][sourceColumn] || "",
-        link: richText ? richText.getLinkUrl() || "" : "",
+        displayValue: displayValue,
+        link: link,
       });
     }
 
@@ -699,15 +698,14 @@ function buildInvoiceRequestsPayload_(spreadsheet, projectsOrLookup) {
     headers: headers,
     rows: rows,
     projects: projects,
-    accessMode: accessMode,
-    showStatusColumns: accessMode === "full",
-    showAuthorColumn: accessMode === "full",
-    showClientFolderColumn: accessMode === "full",
   };
 }
 
-function getInvoiceRequests() {
+function getInvoiceRequests(forceRefresh) {
   assertInvoiceRequestsAccess_();
+  if (forceRefresh === true) {
+    invalidateInvoiceRequestsListCache_();
+  }
   var spreadsheet = SpreadsheetApp.openById(
     INVOICE_REQUESTS_SPREADSHEET_ID
   );
@@ -718,7 +716,7 @@ function writeInvoiceRequestStatus_(range, status) {
   if (status === "notApplicable") {
     range.clearDataValidations();
     range.setValue(INVOICE_REQUESTS_NOT_APPLICABLE);
-    range.setBackground(INVOICE_REQUESTS_NOT_APPLICABLE_BACKGROUND);
+    range.setBackground(null);
     return;
   }
   if (status !== "checked" && status !== "unchecked") {
@@ -879,6 +877,7 @@ function createInvoiceRequest(data) {
       .setValue(createdAt);
 
     SpreadsheetApp.flush();
+    invalidateInvoiceRequestsListCache_();
     var payload = buildInvoiceRequestsPayload_(
       spreadsheet,
       informationLookup
@@ -955,7 +954,6 @@ function saveInvoiceRequestChanges(changes) {
         1
     );
     var source = sourceRange.getValues();
-    var sourceBackgrounds = sourceRange.getBackgrounds();
     var projects = null;
     var rowsById = {};
     for (var sourceIndex = 0; sourceIndex < source.length; sourceIndex++) {
@@ -967,7 +965,6 @@ function saveInvoiceRequestChanges(changes) {
         rowsById[sourceId] = {
           sheetRow: sourceIndex + 2,
           values: source[sourceIndex],
-          backgrounds: sourceBackgrounds[sourceIndex],
         };
       }
     }
@@ -1010,7 +1007,6 @@ function saveInvoiceRequestChanges(changes) {
       if (
         getInvoiceRequestOriginalToken_(
           targetRow.values[sourceColumn],
-          targetRow.backgrounds[sourceColumn],
           columnOffset
         ) !==
         change.originalToken
@@ -1165,6 +1161,7 @@ function saveInvoiceRequestChanges(changes) {
       });
     }
 
+    invalidateInvoiceRequestsListCache_();
     var payload = buildInvoiceRequestsPayload_(spreadsheet, projects);
     return {
       success: true,
