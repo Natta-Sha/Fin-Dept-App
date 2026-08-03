@@ -115,6 +115,12 @@
         background-color: #ececec;
       }
 
+      /* Vertical separators between status checkbox role-groups. */
+      #invoice-requests-table .tabulator-col.status-group-boundary,
+      #invoice-requests-table .tabulator-cell.status-group-boundary {
+        border-left: 2px solid #868e96;
+      }
+
       /* Frozen cells must stay opaque while scrolling under them. */
       #invoice-requests-table .tabulator-cell.tabulator-frozen {
         background-color: inherit;
@@ -393,14 +399,14 @@
           "#f1f3f5",
           "#f1f3f5",
           "#f1f3f5",
-          "#dbe8fb",
-          "#dbe8fb",
-          "#efc2c8",
-          "#efc2c8",
-          "#efc2c8",
-          "#dcebd5",
-          "#dcebd5",
-          "#dcebd5",
+          "#f1f3f5",
+          "#f1f3f5",
+          "#f1f3f5",
+          "#f1f3f5",
+          "#f1f3f5",
+          "#f1f3f5",
+          "#f1f3f5",
+          "#f1f3f5",
           "#f1f3f5",
           "#f1f3f5",
           "#f1f3f5",
@@ -439,6 +445,8 @@
         };
         var STATUS_FIRST_OFFSET = 4;
         var STATUS_LAST_OFFSET = 11;
+        // Left edges: start of checkboxes, between former color groups, after checkboxes.
+        var STATUS_GROUP_BOUNDARY_OFFSETS = [4, 6, 9, 12];
         var PROJECT_OFFSET = 0;
         var DETAILS_OFFSET = 1;
         var COMMENT_OFFSET = 2;
@@ -454,6 +462,13 @@
           return (
             columnOffset >= STATUS_FIRST_OFFSET &&
             columnOffset <= STATUS_LAST_OFFSET
+          );
+        }
+
+        function isStatusGroupBoundary(columnOffset) {
+          return (
+            showStatusColumns &&
+            STATUS_GROUP_BOUNDARY_OFFSETS.indexOf(columnOffset) !== -1
           );
         }
 
@@ -752,6 +767,9 @@
             var textWidth = textColumnWidths[columnOffset] || 120;
             var cssClasses = [];
             if (checkboxColumn) cssClasses.push("invoice-checkbox-cell");
+            if (isStatusGroupBoundary(columnOffset)) {
+              cssClasses.push("status-group-boundary");
+            }
             if (
               columnOffset === DETAILS_OFFSET ||
               columnOffset === COMMENT_OFFSET ||
@@ -776,6 +794,9 @@
               width: checkboxColumn ? 70 : textWidth,
               variableHeight: !checkboxColumn,
               cssClass: cssClasses.join(" "),
+              headerCssClass: isStatusGroupBoundary(columnOffset)
+                ? "status-group-boundary"
+                : "",
               formatter: checkboxColumn
                 ? checkboxFormatter
                 : function (cell) {
