@@ -308,6 +308,16 @@
         border-radius: 12px;
         padding: 14px 14px 12px;
         margin-bottom: 12px;
+        max-width: 720px;
+      }
+
+      .invoice-mobile-form {
+        background: #fff;
+        border: 1px solid #dee2e6;
+        border-radius: 12px;
+        padding: 16px;
+        margin-bottom: 16px;
+        max-width: 720px;
       }
 
       .invoice-mobile-card-field {
@@ -339,14 +349,6 @@
         margin-top: 12px;
         padding-top: 10px;
         border-top: 1px solid #eee;
-      }
-
-      .invoice-mobile-form {
-        background: #fff;
-        border: 1px solid #dee2e6;
-        border-radius: 12px;
-        padding: 16px;
-        margin-bottom: 16px;
       }
 
       .invoice-mobile-form label {
@@ -748,10 +750,8 @@
         }
 
         function useMobileLimitedUi() {
-          return (
-            isLimitedAccess &&
-            window.matchMedia("(max-width: 768px)").matches
-          );
+          // Limited (PM) users always get the card/form UI — phones and desktop.
+          return isLimitedAccess;
         }
 
         function setStatus(message, type) {
@@ -1563,8 +1563,13 @@
           showAuthorColumn = !(
             response && response.showAuthorColumn === false
           );
-          isLimitedAccess =
-            response && response.accessMode === "limited";
+          // Prefer accessMode; also treat hidden status columns as limited
+          // so card UI still appears if accessMode is missing in the payload.
+          isLimitedAccess = !!(
+            response &&
+            (response.accessMode === "limited" ||
+              response.showStatusColumns === false)
+          );
           renderCurrentView();
         }
 
