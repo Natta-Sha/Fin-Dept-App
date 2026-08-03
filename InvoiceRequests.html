@@ -749,9 +749,27 @@
           );
         }
 
+        function getViewportWidth_() {
+          var width =
+            window.innerWidth || document.documentElement.clientWidth || 0;
+          if (window.visualViewport && window.visualViewport.width) {
+            width = Math.min(width, window.visualViewport.width);
+          }
+          return width;
+        }
+
+        function isMobileUserAgent_() {
+          // Chrome device mode spoofs UA; Apps Script iframes often keep a
+          // wide innerWidth, so UA is more reliable than matchMedia alone.
+          return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini|Mobile/i.test(
+            String(navigator.userAgent || "")
+          );
+        }
+
         function useMobileLimitedUi() {
-          // Limited (PM) users always get the card/form UI — phones and desktop.
-          return isLimitedAccess;
+          if (!isLimitedAccess) return false;
+          if (isMobileUserAgent_()) return true;
+          return getViewportWidth_() <= 768;
         }
 
         function setStatus(message, type) {
