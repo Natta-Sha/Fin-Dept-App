@@ -45,17 +45,6 @@
     font-weight: 600;
   }
 
-  .nav-link.disabled-access {
-    opacity: 0.35 !important;
-    cursor: not-allowed !important;
-    pointer-events: none;
-  }
-
-  .nav-link.disabled-access:hover {
-    transform: none;
-    background: rgba(255, 255, 255, 0.1);
-  }
-
   /* Dropdown styling */
   .dropdown-menu {
     border: none;
@@ -78,12 +67,6 @@
     background-color: #e3f2fd;
     color: #1976d2;
     font-weight: 500;
-  }
-
-  .dropdown-item.disabled-access {
-    opacity: 0.5 !important;
-    cursor: not-allowed !important;
-    pointer-events: none;
   }
 
   .service-tools {
@@ -234,20 +217,18 @@
         <div class="d-flex">
 
           <!-- Home -->
-          <div class="nav-item mx-3">
-            <? if (homeOk) { ?>
+          <? if (homeOk) { ?>
+            <div class="nav-item mx-3">
               <a
                 href="<?= baseUrl ?>"
                 class="nav-link <?= activePage === 'home' ? 'active' : '' ?>"
               >Home</a>
-            <? } else { ?>
-              <span class="nav-link disabled-access" title="No access">Home</span>
-            <? } ?>
-          </div>
+            </div>
+          <? } ?>
 
           <!-- Clients Dropdown -->
-          <div class="nav-item dropdown mx-3">
-            <? if (clientsOk || clientsInfoOk || invoiceRequestsOk) { ?>
+          <? if (clientsOk || clientsInfoOk || invoiceRequestsOk) { ?>
+            <div class="nav-item dropdown mx-3">
               <a
                 href="#"
                 class="nav-link dropdown-toggle <?= activePage === 'invoices' || activePage === 'creditnotes' || activePage === 'clientsinfo' || activePage === 'invoicerequests' ? 'active' : '' ?>"
@@ -256,21 +237,14 @@
               >Clients</a>
 
               <ul class="dropdown-menu">
-                <li>
-                  <? if (clientsInfoOk) { ?>
+                <? if (clientsInfoOk) { ?>
+                  <li>
                     <a
                       href="<?= baseUrl ?>?page=ClientsInformationList"
                       class="dropdown-item <?= activePage === 'clientsinfo' ? 'active' : '' ?>"
                     >Information</a>
-                  <? } else { ?>
-                    <a
-                      href="#"
-                      class="dropdown-item disabled-access"
-                      onclick="return false;"
-                      title="No access"
-                    >Information</a>
-                  <? } ?>
-                </li>
+                  </li>
+                <? } ?>
                 <li>
                   <a
                     href="#"
@@ -289,36 +263,22 @@
                     >Invoice Requests</a>
                   </li>
                 <? } ?>
-                <li>
-                  <? if (invoicesOk) { ?>
+                <? if (invoicesOk) { ?>
+                  <li>
                     <a
                       href="<?= baseUrl ?>?page=InvoicesList"
                       class="dropdown-item <?= activePage === 'invoices' ? 'active' : '' ?>"
                     >Invoices</a>
-                  <? } else { ?>
-                    <a
-                      href="#"
-                      class="dropdown-item disabled-access"
-                      onclick="return false;"
-                      title="No access"
-                    >Invoices</a>
-                  <? } ?>
-                </li>
-                <li>
-                  <? if (creditnotesOk) { ?>
+                  </li>
+                <? } ?>
+                <? if (creditnotesOk) { ?>
+                  <li>
                     <a
                       href="<?= baseUrl ?>?page=CreditNotesList"
                       class="dropdown-item <?= activePage === 'creditnotes' ? 'active' : '' ?>"
                     >Credit Notes</a>
-                  <? } else { ?>
-                    <a
-                      href="#"
-                      class="dropdown-item disabled-access"
-                      onclick="return false;"
-                      title="No access"
-                    >Credit Notes</a>
-                  <? } ?>
-                </li>
+                  </li>
+                <? } ?>
                 <li>
                   <a
                     href="#"
@@ -330,16 +290,12 @@
                   >Payments</a>
                 </li>
               </ul>
-            <? } else { ?>
-              <span class="nav-link disabled-access dropdown-toggle" title="No access">
-                Clients
-              </span>
-            <? } ?>
-          </div>
+            </div>
+          <? } ?>
 
           <!-- Contractors Dropdown -->
-          <div class="nav-item dropdown mx-3">
-            <? if (contractorsOk) { ?>
+          <? if (contractorsOk) { ?>
+            <div class="nav-item dropdown mx-3">
               <a
                 href="#"
                 class="nav-link dropdown-toggle <?= activePage === 'contracts' || activePage === 'bills' ? 'active' : '' ?>"
@@ -358,43 +314,25 @@
                     onclick="return false;"
                   >Information</a>
                 </li>
-                <li>
-                  <? if (contractsOk) { ?>
+                <? if (contractsOk) { ?>
+                  <li>
                     <a
                       href="<?= baseUrl ?>?page=ContractsList"
                       class="dropdown-item <?= activePage === 'contracts' ? 'active' : '' ?>"
                     >Contracts</a>
-                  <? } else { ?>
-                    <a
-                      href="#"
-                      class="dropdown-item disabled-access"
-                      onclick="return false;"
-                      title="No access"
-                    >Contracts</a>
-                  <? } ?>
-                </li>
-                <li>
-                  <? if (billsOk) { ?>
+                  </li>
+                <? } ?>
+                <? if (billsOk) { ?>
+                  <li>
                     <a
                       href="<?= baseUrl ?>?page=BillsList"
                       class="dropdown-item <?= activePage === 'bills' ? 'active' : '' ?>"
                     >Bills</a>
-                  <? } else { ?>
-                    <a
-                      href="#"
-                      class="dropdown-item disabled-access"
-                      onclick="return false;"
-                      title="No access"
-                    >Bills</a>
-                  <? } ?>
-                </li>
+                  </li>
+                <? } ?>
               </ul>
-            <? } else { ?>
-              <span class="nav-link disabled-access dropdown-toggle" title="No access">
-                Contractors
-              </span>
-            <? } ?>
-          </div>
+            </div>
+          <? } ?>
 
         </div>
       </div>
