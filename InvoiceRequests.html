@@ -104,6 +104,17 @@
         vertical-align: middle;
       }
 
+      /* One solid row color — disable Bootstrap Tabulator striping. */
+      #invoice-requests-table .tabulator-row,
+      #invoice-requests-table .tabulator-row.tabulator-row-even,
+      #invoice-requests-table .tabulator-row.tabulator-row-odd {
+        background-color: #ffffff;
+      }
+
+      #invoice-requests-table .tabulator-row:hover {
+        background-color: #ffffff;
+      }
+
       /* Frozen cells must stay opaque while scrolling under them. */
       #invoice-requests-table .tabulator-cell.tabulator-frozen {
         background-color: inherit;
@@ -417,8 +428,8 @@
         ];
         var textColumnWidths = {
           0: 138,
-          1: 215,
-          2: 180,
+          1: 366,
+          2: 216,
           3: 138,
           12: 150,
           13: 120,
