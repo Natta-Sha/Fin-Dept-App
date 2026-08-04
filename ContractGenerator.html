@@ -2053,27 +2053,81 @@
       window.addEventListener("DOMContentLoaded", function () {
         // For view mode - load contract data directly (faster, no dropdown options needed)
         if (mode === "view" && contractId) {
+          if (window.AppAsyncUX) {
+            window.AppAsyncUX.setRegionPending(
+              document.querySelector(".main-content"),
+              true,
+              "Loading contract..."
+            );
+          }
           console.log("Loading contract in view mode, ID:", contractId);
           google.script.run
-            .withSuccessHandler(fillContractFormViewMode)
+            .withSuccessHandler(function (contract) {
+              fillContractFormViewMode(contract);
+              if (window.AppAsyncUX) {
+                window.AppAsyncUX.setRegionPending(
+                  document.querySelector(".main-content"),
+                  false
+                );
+              }
+            })
             .withFailureHandler(function (error) {
               console.error("Error loading contract:", error);
+              if (window.AppAsyncUX) {
+                window.AppAsyncUX.setRegionPending(
+                  document.querySelector(".main-content"),
+                  false
+                );
+              }
               alert("Failed to load contract data");
             })
             .getContractDataById(contractId);
         } else if (contractId && mode !== "create") {
+          if (window.AppAsyncUX) {
+            window.AppAsyncUX.setRegionPending(
+              document.querySelector(".main-content"),
+              true,
+              "Loading contract..."
+            );
+          }
           google.script.run
             .withSuccessHandler(function (initialData) {
               applyContractDropdownOptions(initialData.dropdowns);
               fillContractForm(initialData.contract);
+              if (window.AppAsyncUX) {
+                window.AppAsyncUX.setRegionPending(
+                  document.querySelector(".main-content"),
+                  false
+                );
+              }
             })
             .withFailureHandler(function (error) {
               console.error("Error loading contract:", error);
+              if (window.AppAsyncUX) {
+                window.AppAsyncUX.setRegionPending(
+                  document.querySelector(".main-content"),
+                  false
+                );
+              }
               alert("Failed to load contract data");
             })
             .getContractFormInitialData(contractId);
         } else {
-          populateDropdowns();
+          if (window.AppAsyncUX) {
+            window.AppAsyncUX.setRegionPending(
+              document.getElementById("contract-form"),
+              true,
+              "Loading form options..."
+            );
+          }
+          populateDropdowns(function () {
+            if (window.AppAsyncUX) {
+              window.AppAsyncUX.setRegionPending(
+                document.getElementById("contract-form"),
+                false
+              );
+            }
+          });
         }
 
         updateUIForMode();

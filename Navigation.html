@@ -178,6 +178,50 @@
   @keyframes service-gear-spin {
     to { transform: rotate(360deg); }
   }
+
+  .app-async-region {
+    position: relative;
+    min-height: 96px;
+  }
+
+  .app-async-overlay {
+    position: absolute;
+    inset: 0;
+    z-index: 1050;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(255, 255, 255, 0.82);
+    backdrop-filter: blur(1px);
+  }
+
+  .app-async-overlay-content {
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
+    padding: 0.75rem 1rem;
+    border: 1px solid #dee2e6;
+    border-radius: 0.5rem;
+    background: #fff;
+    color: #495057;
+    font-weight: 600;
+  }
+
+  .app-navigation-indicator {
+    position: fixed;
+    top: 0.75rem;
+    right: 1rem;
+    z-index: 2000;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.55rem 0.8rem;
+    border: 1px solid rgba(255, 255, 255, 0.55);
+    border-radius: 0.5rem;
+    background: #212529;
+    color: #fff;
+    font-size: 0.875rem;
+  }
 </style>
 
 <?
@@ -392,7 +436,6 @@
 
       function setServiceBusy(busy) {
         gearButton.disabled = busy;
-        gearButton.classList.toggle("is-loading", busy);
         referenceAction.disabled = busy;
         if (accessAction) accessAction.disabled = busy;
       }
@@ -458,3 +501,156 @@
     })();
   </script>
 <? } ?>
+
+<script>
+  (function () {
+    if (window.AppAsyncUX) return;
+
+    function resolveElement(elementOrSelector) {
+      if (!elementOrSelector) return null;
+      if (typeof elementOrSelector === "string") {
+        return document.querySelector(elementOrSelector);
+      }
+      return elementOrSelector;
+    }
+
+    function setButtonPending(buttonOrSelector, label) {
+      var button = resolveElement(buttonOrSelector);
+      if (!button) return;
+      if (!button.hasAttribute("data-app-original-html")) {
+        button.setAttribute("data-app-original-html", button.innerHTML);
+      }
+      button.disabled = true;
+      button.setAttribute("aria-busy", "true");
+      button.innerHTML =
+        '<span class="spinner-border spinner-border-sm me-2" aria-hidden="true"></span>' +
+        String(label || "Loading...");
+    }
+
+    function clearButtonPending(buttonOrSelector) {
+      var button = resolveElement(buttonOrSelector);
+      if (!button) return;
+      var original = button.getAttribute("data-app-original-html");
+      if (original !== null) {
+        button.innerHTML = original;
+        button.removeAttribute("data-app-original-html");
+      }
+      button.disabled = false;
+      button.removeAttribute("aria-busy");
+    }
+
+    function findRegionOverlay(region) {
+      var children = region.children || [];
+      for (var i = 0; i < children.length; i++) {
+        if (
+          children[i].classList &&
+          children[i].classList.contains("app-async-overlay")
+        ) {
+          return children[i];
+        }
+      }
+      return null;
+    }
+
+    function setRegionPending(regionOrSelector, pending, label) {
+      var region = resolveElement(regionOrSelector);
+      if (!region) return;
+      var overlay = findRegionOverlay(region);
+      if (!pending) {
+        region.removeAttribute("aria-busy");
+        region.classList.remove("app-async-region");
+        if (overlay) overlay.remove();
+        return;
+      }
+      region.classList.add("app-async-region");
+      region.setAttribute("aria-busy", "true");
+      if (overlay) {
+        var text = overlay.querySelector(".app-async-label");
+        if (text) text.textContent = label || "Loading...";
+        return;
+      }
+      overlay = document.createElement("div");
+      overlay.className = "app-async-overlay";
+      overlay.innerHTML =
+        '<div class="app-async-overlay-content" role="status">' +
+        '<span class="spinner-border spinner-border-sm" aria-hidden="true"></span>' +
+        '<span class="app-async-label"></span></div>';
+      overlay.querySelector(".app-async-label").textContent =
+        label || "Loading...";
+      region.appendChild(overlay);
+    }
+
+    function setControlsPending(containerOrSelector, pending) {
+      var container = resolveElement(containerOrSelector);
+      if (!container) return;
+      container
+        .querySelectorAll("input, select, textarea, button")
+        .forEach(function (control) {
+          if (control.hasAttribute("data-app-pending-ignore")) return;
+          if (pending) {
+            control.setAttribute(
+              "data-app-was-disabled",
+              control.disabled ? "true" : "false"
+            );
+            control.disabled = true;
+          } else if (
+            control.getAttribute("data-app-was-disabled") === "false"
+          ) {
+            control.disabled = false;
+            control.removeAttribute("data-app-was-disabled");
+          } else {
+            control.removeAttribute("data-app-was-disabled");
+          }
+        });
+    }
+
+    function showNavigationPending(label) {
+      if (document.getElementById("app-navigation-indicator")) return;
+      var indicator = document.createElement("div");
+      indicator.id = "app-navigation-indicator";
+      indicator.className = "app-navigation-indicator";
+      indicator.setAttribute("role", "status");
+      indicator.innerHTML =
+        '<span class="spinner-border spinner-border-sm" aria-hidden="true"></span>' +
+        '<span></span>';
+      indicator.querySelector("span:last-child").textContent =
+        label || "Opening...";
+      document.body.appendChild(indicator);
+    }
+
+    window.AppAsyncUX = {
+      setButtonPending: setButtonPending,
+      clearButtonPending: clearButtonPending,
+      setRegionPending: setRegionPending,
+      setControlsPending: setControlsPending,
+      showNavigationPending: showNavigationPending,
+    };
+
+    document.addEventListener("click", function (event) {
+      if (
+        event.defaultPrevented ||
+        event.button !== 0 ||
+        event.metaKey ||
+        event.ctrlKey ||
+        event.shiftKey ||
+        event.altKey
+      ) {
+        return;
+      }
+      var link = event.target.closest("a[href]");
+      if (!link || link.target === "_blank" || link.hasAttribute("download")) {
+        return;
+      }
+      var href = link.getAttribute("href") || "";
+      if (
+        href.indexOf("?page=") === -1 &&
+        href.indexOf(window.location.origin) !== 0
+      ) {
+        return;
+      }
+      showNavigationPending("Opening...");
+      link.setAttribute("aria-busy", "true");
+      link.style.pointerEvents = "none";
+    });
+  })();
+</script>

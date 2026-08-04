@@ -1493,7 +1493,21 @@
         }
 
         // Create mode: load dropdowns and create first row
-        loadDropdownOptions();
+        if (window.AppAsyncUX) {
+          window.AppAsyncUX.setRegionPending(
+            document.getElementById("bill-form"),
+            true,
+            "Loading form options..."
+          );
+        }
+        loadDropdownOptions(function () {
+          if (window.AppAsyncUX) {
+            window.AppAsyncUX.setRegionPending(
+              document.getElementById("bill-form"),
+              false
+            );
+          }
+        });
         createServiceRow(null, "ar");
       });
     </script>

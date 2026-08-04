@@ -109,11 +109,77 @@
       }
 
       #invoice-requests-table .tabulator-cell {
-        min-height: 34px;
+        min-height: 0;
         padding: 5px 7px;
         white-space: pre-wrap;
+        overflow: hidden;
         overflow-wrap: anywhere;
-        vertical-align: middle;
+        vertical-align: top;
+      }
+
+      /* Compact text cells: clipped body + stable … more control (opens preview). */
+      #invoice-requests-table .details-cell-wrap {
+        display: flex;
+        flex-direction: column;
+        height: 100%;
+        min-height: 0;
+        overflow: hidden;
+      }
+
+      #invoice-requests-table .details-cell-wrap .request-cell-content {
+        flex: 1 1 auto;
+        min-height: 0;
+        overflow: hidden;
+        white-space: pre-wrap;
+        word-break: break-word;
+        overflow-wrap: anywhere;
+      }
+
+      #invoice-requests-table .details-more-btn {
+        flex: 0 0 auto;
+        align-self: flex-end;
+        margin-top: 0.1rem;
+        border: none;
+        padding: 0;
+        background: transparent;
+        color: #667eea;
+        font-size: 0.72rem;
+        font-weight: 700;
+        line-height: 1.2;
+        cursor: pointer;
+        white-space: nowrap;
+      }
+
+      #invoice-requests-table .details-cell-wrap:not(.has-more) .details-more-btn {
+        display: none;
+      }
+
+      #invoice-requests-table .details-more-btn:hover {
+        color: #764ba2;
+        text-decoration: underline;
+      }
+
+      /* Lightweight cell popover: just the full text, no chrome. */
+      .invoice-request-preview-card {
+        position: fixed;
+        display: none;
+        box-sizing: border-box;
+        min-width: 180px;
+        max-width: min(520px, calc(100vw - 24px));
+        max-height: min(50vh, 360px);
+        overflow: auto;
+        z-index: 3000;
+        padding: 8px 10px;
+        background: #fff;
+        border: none;
+        border-radius: 6px;
+        box-shadow: 0 6px 22px rgba(0, 0, 0, 0.16);
+        color: #212529;
+        font-size: 0.8rem;
+        line-height: 1.35;
+        white-space: pre-wrap;
+        overflow-wrap: anywhere;
+        word-break: break-word;
       }
 
       /* One solid row color — disable Bootstrap Tabulator striping. */
@@ -141,24 +207,25 @@
 
       #invoice-requests-table .tabulator-cell.invoice-checkbox-cell {
         text-align: center;
+        vertical-align: middle;
         font-size: 1.05rem;
       }
 
+      /* Compact 3-line rows: clip overflow; drag row edge to see more. */
       #invoice-requests-table .tabulator-cell.scrollable-text-cell {
-        overflow-x: auto;
-        overflow-y: hidden;
-        overscroll-behavior-x: contain;
-        white-space: pre;
+        overflow: hidden;
+        white-space: pre-wrap;
+        word-break: break-word;
         text-overflow: clip;
-        scrollbar-width: thin;
       }
 
       #invoice-requests-table
         .tabulator-cell.scrollable-text-cell
         .request-cell-content {
-        display: inline-block;
-        min-width: max-content;
-        white-space: pre;
+        display: block;
+        white-space: pre-wrap;
+        word-break: break-word;
+        overflow-wrap: anywhere;
       }
 
       #invoice-requests-table
@@ -181,6 +248,11 @@
         box-shadow:
           inset 0 0 0 3px #ff8c00,
           inset 0 0 0 4px #fff3cd;
+      }
+
+      #invoice-requests-table .tabulator-cell.is-status-saving {
+        cursor: progress;
+        opacity: 0.58;
       }
 
       #save-invoice-requests.has-unsaved {
@@ -388,6 +460,13 @@
       <div
         id="invoice-requests-table"
         aria-label="Invoice requests"
+      ></div>
+      <div
+        id="invoice-request-preview-card"
+        class="invoice-request-preview-card"
+        role="tooltip"
+        aria-label="Full cell text"
+        hidden
       ></div>
       <div id="invoice-requests-mobile" aria-label="Invoice requests mobile">
         <div id="invoice-mobile-form" class="invoice-mobile-form d-none">
@@ -624,6 +703,12 @@
         var unsavedModal = new bootstrap.Modal(unsavedModalElement);
         var table = null;
         var dirtyChanges = {};
+        var COMPACT_ROW_HEIGHT = 72;
+        var MORE_BTN_RESERVE_PX = 16;
+        var previewCard = document.getElementById(
+          "invoice-request-preview-card"
+        );
+        var previewOpen = false;
         var lastKnownFileUpdatedAt = 0;
         var softPulseInFlight = false;
         var statusSaveInFlight = {};
@@ -710,6 +795,14 @@
         var mobileFormMode = null;
         var mobileEditRow = null;
         var mobileFormBaseline = null;
+
+        function updateProjectOptions(options) {
+          if (!Array.isArray(options)) return;
+          projectOptions.length = 0;
+          options.forEach(function (option) {
+            projectOptions.push(option);
+          });
+        }
 
         function isStatusColumn(columnOffset) {
           return (
@@ -931,6 +1024,210 @@
           return anchor;
         }
 
+        function isExpandableTextColumn(columnOffset) {
+          return (
+            columnOffset === DETAILS_OFFSET ||
+            columnOffset === COMMENT_OFFSET
+          );
+        }
+
+        function buildTextContentNode(cell) {
+          var value = cell.getValue();
+          var row = cell.getRow().getData();
+          var columnOffset = Number(cell.getColumn().getField().substring(1));
+          var displayValue =
+            value === null || value === undefined ? "" : String(value);
+          // Дані / Комент always show full stored text — never replace with a link label.
+          if (isExpandableTextColumn(columnOffset)) {
+            var fullText = document.createElement("span");
+            fullText.className = "request-cell-content";
+            fullText.textContent =
+              row["_display" + columnOffset] || displayValue;
+            return fullText;
+          }
+          var link = row._links[columnOffset] || "";
+          if (!link) {
+            var text = document.createElement("span");
+            text.className = "request-cell-content";
+            text.textContent = displayValue;
+            return text;
+          }
+          var anchor = document.createElement("a");
+          anchor.href = link;
+          anchor.target = "_blank";
+          anchor.rel = "noopener";
+          anchor.className = "request-link request-cell-content";
+          anchor.textContent =
+            row["_display" + columnOffset] || displayValue || link;
+          anchor.addEventListener("click", function (event) {
+            event.stopPropagation();
+          });
+          return anchor;
+        }
+
+        function measureContentHeight(contentEl, widthPx) {
+          if (!contentEl) return 0;
+          var clone = contentEl.cloneNode(true);
+          clone.className = contentEl.className;
+          clone.style.position = "absolute";
+          clone.style.left = "-99999px";
+          clone.style.top = "0";
+          clone.style.visibility = "hidden";
+          clone.style.height = "auto";
+          clone.style.maxHeight = "none";
+          clone.style.overflow = "visible";
+          clone.style.whiteSpace = "pre-wrap";
+          clone.style.wordBreak = "break-word";
+          clone.style.overflowWrap = "anywhere";
+          clone.style.flex = "none";
+          clone.style.width =
+            (widthPx || contentEl.clientWidth || contentEl.offsetWidth || 300) +
+            "px";
+          clone.style.pointerEvents = "none";
+          document.body.appendChild(clone);
+          var height = clone.scrollHeight;
+          document.body.removeChild(clone);
+          return height;
+        }
+
+        function getExpandableCellWidth(cell) {
+          if (!cell) return 300;
+          var cellEl = cell.getElement();
+          return Math.max(cellEl.clientWidth - 14, cellEl.offsetWidth - 14, 120);
+        }
+
+        function getAvailableTextHeight(cell) {
+          var cellEl = cell && cell.getElement();
+          var wrap = cellEl && cellEl.querySelector(".details-cell-wrap");
+          var measured = wrap
+            ? wrap.clientHeight
+            : cellEl
+              ? cellEl.clientHeight
+              : COMPACT_ROW_HEIGHT;
+          // Leave room for the … more control so we don't flash false negatives.
+          return Math.max(measured - MORE_BTN_RESERVE_PX, 24);
+        }
+
+        function cellContentOverflows(cell) {
+          if (!cell) return false;
+          var content = cell
+            .getElement()
+            .querySelector(".request-cell-content");
+          if (!content || !String(content.textContent || "").trim()) {
+            return false;
+          }
+          return (
+            measureContentHeight(content, getExpandableCellWidth(cell)) >
+            getAvailableTextHeight(cell) + 1
+          );
+        }
+
+        function closeRequestPreview() {
+          if (!previewCard) return;
+          previewOpen = false;
+          previewCard.hidden = true;
+          previewCard.style.display = "none";
+          previewCard.innerHTML = "";
+        }
+
+        function positionRequestPreview(trigger) {
+          if (!previewCard || !trigger) return;
+          var cellEl = trigger.closest(".tabulator-cell") || trigger;
+          var rect = cellEl.getBoundingClientRect();
+          var width = Math.min(
+            Math.max(rect.width, 220),
+            Math.min(520, window.innerWidth - 24)
+          );
+          previewCard.style.width = width + "px";
+          var left = Math.min(
+            Math.max(12, rect.left),
+            window.innerWidth - width - 12
+          );
+          previewCard.style.left = left + "px";
+          previewCard.style.top = Math.max(12, rect.bottom + 4) + "px";
+          previewCard.style.display = "block";
+          previewCard.hidden = false;
+          var cardHeight = previewCard.offsetHeight;
+          if (rect.bottom + 4 + cardHeight > window.innerHeight - 12) {
+            previewCard.style.top =
+              Math.max(12, rect.top - cardHeight - 4) + "px";
+          }
+        }
+
+        function showRequestPreview(rowData, focusOffset, trigger) {
+          if (!previewCard || !rowData) return;
+          var text =
+            rowData["_display" + focusOffset] ||
+            rowData["c" + focusOffset] ||
+            "";
+          previewCard.textContent = String(text);
+          previewOpen = true;
+          positionRequestPreview(trigger);
+        }
+
+        function updateExpandableTextButton(cell) {
+          if (!cell) return;
+          var wrap = cell.getElement().querySelector(".details-cell-wrap");
+          if (!wrap) return;
+          var buttons = wrap.querySelectorAll(".details-more-btn");
+          var button = buttons[0] || null;
+          for (var i = 1; i < buttons.length; i++) {
+            buttons[i].remove();
+          }
+          if (!button) return;
+          var overflows = cellContentOverflows(cell);
+          wrap.classList.toggle("has-more", overflows);
+          button.hidden = !overflows;
+          button.textContent = "… more";
+          button.title = "Show full text";
+        }
+
+        function refreshExpandableTextButtons(rowComponent) {
+          if (!rowComponent) return;
+          [DETAILS_OFFSET, COMMENT_OFFSET].forEach(function (offset) {
+            updateExpandableTextButton(
+              rowComponent.getCell("c" + offset)
+            );
+          });
+        }
+
+        function refreshAllExpandableTextButtons() {
+          if (!table) return;
+          table.getRows("active").forEach(function (rowComponent) {
+            refreshExpandableTextButtons(rowComponent);
+          });
+        }
+
+        function expandableTextFormatter(cell) {
+          var wrap = document.createElement("div");
+          wrap.className = "details-cell-wrap";
+          wrap.appendChild(buildTextContentNode(cell));
+
+          var moreBtn = document.createElement("button");
+          moreBtn.type = "button";
+          moreBtn.className = "details-more-btn";
+          moreBtn.hidden = true;
+          moreBtn.textContent = "… more";
+          moreBtn.title = "Show full text";
+          moreBtn.addEventListener("click", function (event) {
+            event.preventDefault();
+            event.stopPropagation();
+            var columnOffset = Number(
+              cell.getColumn().getField().substring(1)
+            );
+            showRequestPreview(
+              cell.getRow().getData(),
+              columnOffset,
+              moreBtn
+            );
+          });
+          wrap.appendChild(moreBtn);
+          setTimeout(function () {
+            updateExpandableTextButton(cell);
+          }, 0);
+          return wrap;
+        }
+
         function checkboxFormatter(cell) {
           var status = cell.getValue();
           if (status === true) status = "checked";
@@ -991,12 +1288,16 @@
               editable: !(checkboxColumn || readOnlyColumn),
               minWidth: checkboxColumn ? 66 : textWidth,
               width: checkboxColumn ? 70 : textWidth,
-              variableHeight: !checkboxColumn,
+              variableHeight: false,
               cssClass: cssClasses.join(" "),
               headerCssClass: isStatusGroupBoundary(columnOffset)
                 ? "status-group-boundary"
                 : "",
-              formatter: checkboxColumn ? checkboxFormatter : textFormatter,
+              formatter: checkboxColumn
+                ? checkboxFormatter
+                : isExpandableTextColumn(columnOffset)
+                ? expandableTextFormatter
+                : textFormatter,
               editor: checkboxColumn || readOnlyColumn
                 ? false
                 : projectColumn
@@ -1110,6 +1411,11 @@
             index: "_id",
             height: tableHeight(),
             layout: "fitColumns",
+            layoutColumnsOnNewData: false,
+            // ~3 text lines; drag row edge to grow, or … more for full preview.
+            rowHeight: COMPACT_ROW_HEIGHT,
+            resizableRows: true,
+            resizableRowGuide: true,
             editTriggerEvent: "dblclick",
             placeholder: "No invoice requests found",
             pagination: true,
@@ -1119,15 +1425,31 @@
             initialSort: [{ column: "_activityAt", dir: "desc" }],
             columns: buildColumns(response.headers || []),
             data: tableRows(response),
-            rowFormatter: function (row) {
-              row.getElement().style.minHeight = "34px";
-            },
           });
+          closeRequestPreview();
           table.on("tableBuilt", function () {
             applyHeaderColors();
             table.setSort([{ column: "_activityAt", dir: "desc" }]);
+            refreshAllExpandableTextButtons();
           });
-          table.on("cellEdited", trackCellChange);
+          table.on("cellEdited", function (cell) {
+            trackCellChange(cell);
+            refreshExpandableTextButtons(cell.getRow());
+          });
+          table.on("dataProcessed", function () {
+            setTimeout(refreshAllExpandableTextButtons, 0);
+          });
+          table.on("pageLoaded", function () {
+            setTimeout(refreshAllExpandableTextButtons, 0);
+          });
+          table.on("columnResized", function () {
+            setTimeout(refreshAllExpandableTextButtons, 0);
+          });
+          table.on("rowResized", function (row) {
+            setTimeout(function () {
+              refreshExpandableTextButtons(row);
+            }, 0);
+          });
         }
 
         function trackCellChange(cell) {
@@ -1175,8 +1497,6 @@
           if (hasStatusSaveInFlight()) {
             pendingReloadAfterStatusSave = true;
             setStatus("Finishing status save, then reloading…");
-            reloadButton.querySelector("i").className =
-              "spinner-border spinner-border-sm me-1";
             updateToolbar();
             return;
           }
@@ -1205,6 +1525,8 @@
           }
           delete dirtyChanges[key];
           cell.getElement().classList.remove("is-dirty");
+          cell.getElement().classList.remove("is-status-saving");
+          cell.getElement().removeAttribute("aria-busy");
           checkboxFormatter(cell);
           applyStatusSavePatchToResponse([
             {
@@ -1256,6 +1578,8 @@
         ) {
           var key = changeKey(rowId, columnOffset);
           statusSaveInFlight[key] = true;
+          cell.getElement().classList.add("is-status-saving");
+          cell.getElement().setAttribute("aria-busy", "true");
           setStatus("Saving status…");
 
           google.script.run
@@ -1358,6 +1682,7 @@
         }
 
         function setLoading(loading) {
+          if (loading) closeRequestPreview();
           reloadButton.disabled =
             loading || isSaving || pendingReloadAfterStatusSave;
           addRowButton.disabled =
@@ -1366,9 +1691,16 @@
             dirtyCount() > 0 ||
             hasOpenCreateOrEditForm();
           reloadButton.querySelector("i").className =
-            loading || pendingReloadAfterStatusSave
+            loading
               ? "spinner-border spinner-border-sm me-1"
               : "bi bi-arrow-clockwise me-1";
+          if (window.AppAsyncUX) {
+            window.AppAsyncUX.setRegionPending(
+              tableElement,
+              loading,
+              "Loading invoice requests..."
+            );
+          }
         }
 
         function escapeHtml(value) {
@@ -1409,7 +1741,7 @@
         function refreshProjectOptions(done) {
           google.script.run
             .withSuccessHandler(function (projects) {
-              if (Array.isArray(projects)) projectOptions = projects;
+              updateProjectOptions(projects);
               if (typeof done === "function") done();
             })
             .withFailureHandler(function () {
@@ -1467,8 +1799,21 @@
           desktopDetailsField.classList.remove("is-invalid");
           updateToolbar();
           createInvoiceModal.show();
+          if (window.AppAsyncUX) {
+            window.AppAsyncUX.setRegionPending(
+              createInvoiceModalElement.querySelector(".modal-body"),
+              true,
+              "Loading projects..."
+            );
+          }
           refreshProjectOptions(function () {
             fillSelectOptions(desktopProjectField, "");
+            if (window.AppAsyncUX) {
+              window.AppAsyncUX.setRegionPending(
+                createInvoiceModalElement.querySelector(".modal-body"),
+                false
+              );
+            }
             setTimeout(function () {
               desktopProjectField.focus();
             }, 200);
@@ -1588,8 +1933,21 @@
           mobileFormElement.classList.remove("d-none");
           mobileListElement.classList.add("d-none");
           updateToolbar();
+          if (window.AppAsyncUX) {
+            window.AppAsyncUX.setRegionPending(
+              mobileFormElement,
+              true,
+              "Loading projects..."
+            );
+          }
           refreshProjectOptions(function () {
             fillMobileProjectOptions(project);
+            if (window.AppAsyncUX) {
+              window.AppAsyncUX.setRegionPending(
+                mobileFormElement,
+                false
+              );
+            }
             mobileProjectField.focus();
           });
         }
@@ -1837,24 +2195,63 @@
             .getInvoiceRequestsFileUpdatedAt();
         }
 
-        function replaceTableDataPreservingView(dataRows) {
+        function reconcileTableDataPreservingView(dataRows) {
           if (!table) return;
           var page = table.getPage();
-          var pageSize = table.getPageSize();
-          var sorters = table.getSorters ? table.getSorters() : [];
-          var replaceResult = table.replaceData(dataRows);
+          var pageSize = table.getPageSize ? table.getPageSize() : null;
+          var holder = tableElement.querySelector(".tabulator-tableholder");
+          var scrollTop = holder ? holder.scrollTop : 0;
+          var scrollLeft = holder ? holder.scrollLeft : 0;
+          var headerFilters = table.getHeaderFilters
+            ? table.getHeaderFilters()
+            : [];
+          var columnWidths = table.getColumns().map(function (column) {
+            var definition = column.getDefinition() || {};
+            return {
+              field: definition.field || column.getField(),
+              width: column.getWidth(),
+            };
+          });
+          var currentById = {};
+          table.getRows().forEach(function (rowComponent) {
+            var rowData = rowComponent.getData();
+            currentById[String(rowData._id)] = rowData;
+          });
+          var incomingById = {};
+          var changedRows = [];
+          dataRows.forEach(function (rowData) {
+            var id = String(rowData._id);
+            incomingById[id] = true;
+            if (
+              !currentById[id] ||
+              JSON.stringify(currentById[id]) !== JSON.stringify(rowData)
+            ) {
+              changedRows.push(rowData);
+            }
+          });
+          var removedIds = Object.keys(currentById).filter(function (id) {
+            return !incomingById[id];
+          });
+          var operations = [];
+          if (changedRows.length) {
+            operations.push(table.updateOrAddData(changedRows));
+          }
+          if (removedIds.length) {
+            operations.push(table.deleteRow(removedIds));
+          }
           var restore = function () {
             try {
               if (pageSize) table.setPageSize(pageSize);
-              if (sorters && sorters.length) {
-                table.setSort(
-                  sorters.map(function (sorter) {
-                    return {
-                      column: sorter.field || sorter.column,
-                      dir: sorter.dir,
-                    };
-                  })
-                );
+              columnWidths.forEach(function (item) {
+                if (!item.field || !item.width) return;
+                var column = table.getColumn(item.field);
+                if (column && column.setWidth) column.setWidth(item.width);
+              });
+              if (headerFilters && headerFilters.length) {
+                headerFilters.forEach(function (filter) {
+                  if (!filter || !filter.field) return;
+                  table.setHeaderFilterValue(filter.field, filter.value);
+                });
               }
               var maxPage = table.getPageMax ? table.getPageMax() : page;
               if (page) {
@@ -1862,21 +2259,42 @@
                   maxPage ? Math.min(page, maxPage) : page
                 );
               }
+              holder = tableElement.querySelector(".tabulator-tableholder");
+              if (holder) {
+                holder.scrollTop = scrollTop;
+                holder.scrollLeft = scrollLeft;
+              }
             } catch (error) {
               console.warn(
-                "Could not restore Invoice Requests table page:",
+                "Could not restore Invoice Requests table view:",
                 error
               );
             }
           };
-          if (replaceResult && typeof replaceResult.then === "function") {
-            replaceResult.then(restore).catch(restore);
+          if (!operations.length) {
+            restore();
+          } else if (typeof Promise !== "undefined") {
+            Promise.all(operations).then(restore).catch(restore);
           } else {
             restore();
           }
         }
 
         function applyLoadedData(response) {
+          var previousResponse = lastLoadedResponse;
+          var canReuseDesktopTable = !!(
+            table &&
+            !useMobileLimitedUi() &&
+            previousResponse &&
+            JSON.stringify(previousResponse.headers || []) ===
+              JSON.stringify((response && response.headers) || []) &&
+            previousResponse.showStatusColumns ===
+              (response && response.showStatusColumns) &&
+            previousResponse.showAuthorColumn ===
+              (response && response.showAuthorColumn) &&
+            previousResponse.showClientFolderColumn ===
+              (response && response.showClientFolderColumn)
+          );
           dirtyChanges = {};
           mobileFormMode = null;
           mobileEditRow = null;
@@ -1898,7 +2316,7 @@
             lastLoadedResponse.projects &&
             lastLoadedResponse.projects.length
           ) {
-            projectOptions = lastLoadedResponse.projects;
+            updateProjectOptions(lastLoadedResponse.projects);
           }
           showStatusColumns = !(
             response && response.showStatusColumns === false
@@ -1916,6 +2334,13 @@
             (response.accessMode === "limited" ||
               response.showStatusColumns === false)
           );
+          if (canReuseDesktopTable && !useMobileLimitedUi()) {
+            reconcileTableDataPreservingView(
+              tableRows(lastLoadedResponse)
+            );
+            updateToolbar();
+            return;
+          }
           renderCurrentView();
         }
 
@@ -1975,7 +2400,7 @@
             renderCurrentView();
             return;
           }
-          replaceTableDataPreservingView(tableRows(lastLoadedResponse));
+          reconcileTableDataPreservingView(tableRows(lastLoadedResponse));
         }
 
         function handleSaveResult(result) {
@@ -2010,7 +2435,7 @@
           if (!response) return;
           rememberFileUpdatedAt(response);
           if (response.projects && response.projects.length) {
-            projectOptions = response.projects;
+            updateProjectOptions(response.projects);
           }
           lastLoadedResponse = {
             headers:
@@ -2046,7 +2471,7 @@
               mobileListElement.scrollTop = mobileScroll;
             }
           } else if (table) {
-            replaceTableDataPreservingView(
+            reconcileTableDataPreservingView(
               tableRows(lastLoadedResponse)
             );
           } else {
@@ -2294,6 +2719,7 @@
         });
 
         window.addEventListener("resize", function () {
+          closeRequestPreview();
           var wantMobile = useMobileLimitedUi();
           var isMobile = document.body.classList.contains(
             "invoice-mobile-limited"
@@ -2310,6 +2736,18 @@
             return;
           }
           if (table) table.setHeight(tableHeight());
+          setTimeout(refreshAllExpandableTextButtons, 0);
+        });
+
+        document.addEventListener("click", function (event) {
+          if (!previewOpen || !previewCard) return;
+          if (event.target.closest(".details-more-btn")) return;
+          if (previewCard.contains(event.target)) return;
+          closeRequestPreview();
+        });
+
+        document.addEventListener("keydown", function (event) {
+          if (event.key === "Escape") closeRequestPreview();
         });
 
         // Browser refresh / first open: always reload from sheet (bust list cache).

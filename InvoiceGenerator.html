@@ -354,6 +354,11 @@
             required
           />
           <datalist id="project_list"></datalist>
+          <div
+            id="project-details-status"
+            class="form-text"
+            aria-live="polite"
+          ></div>
         </div>
         <div class="col-md-3">
           <label class="form-label"
@@ -1089,23 +1094,40 @@
           return dateVal;
         }
 
+        function loadProjectDetailsWithFeedback(project, onSuccess) {
+          const status = document.getElementById("project-details-status");
+          if (status) {
+            status.classList.remove("text-danger");
+            status.textContent = "Loading project details...";
+          }
+          google.script.run
+            .withSuccessHandler(function (details) {
+              if (status) status.textContent = "";
+              (onSuccess || fillProjectDetails)(details || {});
+            })
+            .withFailureHandler(function (error) {
+              console.error("Failed to load project details:", error);
+              if (status) {
+                status.classList.add("text-danger");
+                status.textContent = "Failed to load project details.";
+              }
+            })
+            .getProjectDetails(project);
+        }
+
         if (["create", "edit", "copy"].includes(mode)) {
           document
             .getElementById("project_name")
             .addEventListener("change", function () {
               const value = this.value.trim();
               if (validProjectNames.includes(value) && mode === "create") {
-                google.script.run
-                  .withSuccessHandler(fillProjectDetails)
-                  .getProjectDetails(value);
+                loadProjectDetailsWithFeedback(value);
               } else if (mode === "copy") {
                 // In copy, when project changes, refresh client data immediately
-                google.script.run
-                  .withSuccessHandler(function (details) {
+                loadProjectDetailsWithFeedback(value, function (details) {
                     window.currentProjectDetails = details || {};
                     fillProjectDetails(details || {});
-                  })
-                  .getProjectDetails(value);
+                  });
               }
             });
 
@@ -1118,9 +1140,7 @@
                 .value.trim();
               if (value && project) {
                 if (mode === "create") {
-                  google.script.run
-                    .withSuccessHandler(fillProjectDetails)
-                    .getProjectDetails(project);
+                  loadProjectDetailsWithFeedback(project);
                 } else if (mode === "copy" && window.currentProjectDetails) {
                   // Recompute due date based on cached details
                   const details = window.currentProjectDetails;
@@ -1290,6 +1310,7 @@
           }
 
           document.getElementById("generate-btn").disabled = true;
+          document.getElementById("spinner").style.display = "inline-block";
 
           // Check if project details are loaded
           if (
@@ -1524,6 +1545,13 @@
             "none";
 
           if (invoiceId) {
+            if (window.AppAsyncUX) {
+              window.AppAsyncUX.setRegionPending(
+                document.querySelector(".main-content"),
+                true,
+                "Loading invoice..."
+              );
+            }
             google.script.run
               .withSuccessHandler(function (data) {
                 console.log("Loaded invoice data (DOMContentLoaded):", data);
@@ -1639,6 +1667,22 @@
                   data.bankDetails2 || "";
                 document.getElementById("due_date_input").value =
                   formatInputDate(data.dueDate || "");
+                if (window.AppAsyncUX) {
+                  window.AppAsyncUX.setRegionPending(
+                    document.querySelector(".main-content"),
+                    false
+                  );
+                }
+              })
+              .withFailureHandler(function (error) {
+                console.error("Failed to load invoice data:", error);
+                if (window.AppAsyncUX) {
+                  window.AppAsyncUX.setRegionPending(
+                    document.querySelector(".main-content"),
+                    false
+                  );
+                }
+                alert("Failed to load invoice data.");
               })
               .getInvoiceDataById(invoiceId);
 
