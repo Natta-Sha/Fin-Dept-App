@@ -339,6 +339,11 @@
               placeholder="Start typing to search..."
             />
             <datalist id="project_list"></datalist>
+            <div
+              id="project-details-status"
+              class="form-text"
+              aria-live="polite"
+            ></div>
           </div>
           <div class="col-md-3">
             <label class="form-label"
@@ -1327,25 +1332,52 @@
 
       // Setup project selection handlers (called after projects are loaded)
       function setupProjectSelectionHandlers() {
+        let projectDetailsTimer = null;
+        let projectDetailsRequestVersion = 0;
+
+        function setProjectDetailsStatus(message, isError) {
+          const status = document.getElementById("project-details-status");
+          if (!status) return;
+          status.classList.toggle("text-danger", !!isError);
+          status.textContent = message || "";
+        }
+
+        function loadSelectedProjectDetails(value) {
+          const requestVersion = ++projectDetailsRequestVersion;
+          setProjectDetailsStatus("Loading project details...", false);
+          google.script.run
+            .withSuccessHandler(function (details) {
+              if (requestVersion !== projectDetailsRequestVersion) return;
+              setProjectDetailsStatus("", false);
+              fillProjectDetails(details);
+              // In copy mode, update cached project details
+              if (mode === "copy") {
+                window.currentProjectDetails = details || {};
+                window.currentProjectNameCached = value;
+              }
+            })
+            .withFailureHandler(function (error) {
+              if (requestVersion !== projectDetailsRequestVersion) return;
+              console.error("Failed to load project details:", error);
+              setProjectDetailsStatus(
+                "Failed to load project details.",
+                true
+              );
+            })
+            .getProjectDetails(value);
+        }
+
         function handleProjectSelection() {
           const value = this.value.trim();
           console.log("Project selection event triggered, value:", value);
+          clearTimeout(projectDetailsTimer);
           if (validProjectNames.includes(value)) {
-            console.log("Valid project selected, loading details...");
-            google.script.run
-              .withSuccessHandler(function (details) {
-                fillProjectDetails(details);
-                // In copy mode, update cached project details
-                if (mode === "copy") {
-                  window.currentProjectDetails = details || {};
-                  window.currentProjectNameCached = value;
-                }
-              })
-              .withFailureHandler(function (error) {
-                console.error("Failed to load project details:", error);
-              })
-              .getProjectDetails(value);
+            projectDetailsTimer = setTimeout(function () {
+              loadSelectedProjectDetails(value);
+            }, 300);
           } else {
+            projectDetailsRequestVersion++;
+            setProjectDetailsStatus("", false);
             console.log(
               "Project not in valid list:",
               validProjectNames.includes(value)
@@ -1433,6 +1465,13 @@
 
         // Handle view/edit modes
         if (creditNoteId) {
+          if (window.AppAsyncUX) {
+            window.AppAsyncUX.setRegionPending(
+              document.querySelector(".main-content"),
+              true,
+              "Loading credit note..."
+            );
+          }
           console.log(
             "Loading credit note data for ID:",
             creditNoteId,
@@ -1868,9 +1907,21 @@
                 // Cache project name for copy mode
                 window.currentProjectNameCached = data.projectName;
               }
+              if (window.AppAsyncUX) {
+                window.AppAsyncUX.setRegionPending(
+                  document.querySelector(".main-content"),
+                  false
+                );
+              }
             })
             .withFailureHandler(function (error) {
               console.error("Failed to load credit note data:", error);
+              if (window.AppAsyncUX) {
+                window.AppAsyncUX.setRegionPending(
+                  document.querySelector(".main-content"),
+                  false
+                );
+              }
               alert("Failed to load credit note data.");
               window.location.href = "?page=CreditNotesList";
             })

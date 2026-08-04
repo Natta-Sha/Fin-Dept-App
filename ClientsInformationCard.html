@@ -528,13 +528,15 @@
         populateSelect("ourCompany",       opts.ourCompanies     || [], cur.ourCompany);
       }
 
-      function loadDropdowns(currentData) {
+      function loadDropdowns(currentData, callback) {
         google.script.run
           .withSuccessHandler(function (opts) {
             populateClientDropdowns(opts, currentData);
+            if (callback) callback();
           })
           .withFailureHandler(function (err) {
             console.error("Failed to load dropdowns:", err);
+            if (callback) callback();
           })
           .getClientsInformationDropdowns();
       }
@@ -740,7 +742,21 @@
         if (mode === "create") {
           document.getElementById("loading-spinner").style.display = "none";
           document.getElementById("card-form").style.display = "";
-          loadDropdowns(null);
+          if (window.AppAsyncUX) {
+            window.AppAsyncUX.setRegionPending(
+              document.getElementById("card-form"),
+              true,
+              "Loading form options..."
+            );
+          }
+          loadDropdowns(null, function () {
+            if (window.AppAsyncUX) {
+              window.AppAsyncUX.setRegionPending(
+                document.getElementById("card-form"),
+                false
+              );
+            }
+          });
           return;
         }
 

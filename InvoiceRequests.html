@@ -183,6 +183,11 @@
           inset 0 0 0 4px #fff3cd;
       }
 
+      #invoice-requests-table .tabulator-cell.is-status-saving {
+        cursor: progress;
+        opacity: 0.58;
+      }
+
       #save-invoice-requests.has-unsaved {
         animation: unsaved-save-pulse 1.4s ease-in-out infinite;
         box-shadow: 0 0 0 4px rgba(255, 140, 0, 0.3);
@@ -711,6 +716,14 @@
         var mobileEditRow = null;
         var mobileFormBaseline = null;
 
+        function updateProjectOptions(options) {
+          if (!Array.isArray(options)) return;
+          projectOptions.length = 0;
+          options.forEach(function (option) {
+            projectOptions.push(option);
+          });
+        }
+
         function isStatusColumn(columnOffset) {
           return (
             columnOffset >= STATUS_FIRST_OFFSET &&
@@ -1110,6 +1123,7 @@
             index: "_id",
             height: tableHeight(),
             layout: "fitColumns",
+            layoutColumnsOnNewData: false,
             editTriggerEvent: "dblclick",
             placeholder: "No invoice requests found",
             pagination: true,
@@ -1175,8 +1189,6 @@
           if (hasStatusSaveInFlight()) {
             pendingReloadAfterStatusSave = true;
             setStatus("Finishing status save, then reloading…");
-            reloadButton.querySelector("i").className =
-              "spinner-border spinner-border-sm me-1";
             updateToolbar();
             return;
           }
@@ -1205,6 +1217,8 @@
           }
           delete dirtyChanges[key];
           cell.getElement().classList.remove("is-dirty");
+          cell.getElement().classList.remove("is-status-saving");
+          cell.getElement().removeAttribute("aria-busy");
           checkboxFormatter(cell);
           applyStatusSavePatchToResponse([
             {
@@ -1256,6 +1270,8 @@
         ) {
           var key = changeKey(rowId, columnOffset);
           statusSaveInFlight[key] = true;
+          cell.getElement().classList.add("is-status-saving");
+          cell.getElement().setAttribute("aria-busy", "true");
           setStatus("Saving status…");
 
           google.script.run
@@ -1366,9 +1382,16 @@
             dirtyCount() > 0 ||
             hasOpenCreateOrEditForm();
           reloadButton.querySelector("i").className =
-            loading || pendingReloadAfterStatusSave
+            loading
               ? "spinner-border spinner-border-sm me-1"
               : "bi bi-arrow-clockwise me-1";
+          if (window.AppAsyncUX) {
+            window.AppAsyncUX.setRegionPending(
+              tableElement,
+              loading,
+              "Loading invoice requests..."
+            );
+          }
         }
 
         function escapeHtml(value) {
@@ -1409,7 +1432,7 @@
         function refreshProjectOptions(done) {
           google.script.run
             .withSuccessHandler(function (projects) {
-              if (Array.isArray(projects)) projectOptions = projects;
+              updateProjectOptions(projects);
               if (typeof done === "function") done();
             })
             .withFailureHandler(function () {
@@ -1467,8 +1490,21 @@
           desktopDetailsField.classList.remove("is-invalid");
           updateToolbar();
           createInvoiceModal.show();
+          if (window.AppAsyncUX) {
+            window.AppAsyncUX.setRegionPending(
+              createInvoiceModalElement.querySelector(".modal-body"),
+              true,
+              "Loading projects..."
+            );
+          }
           refreshProjectOptions(function () {
             fillSelectOptions(desktopProjectField, "");
+            if (window.AppAsyncUX) {
+              window.AppAsyncUX.setRegionPending(
+                createInvoiceModalElement.querySelector(".modal-body"),
+                false
+              );
+            }
             setTimeout(function () {
               desktopProjectField.focus();
             }, 200);
@@ -1588,8 +1624,21 @@
           mobileFormElement.classList.remove("d-none");
           mobileListElement.classList.add("d-none");
           updateToolbar();
+          if (window.AppAsyncUX) {
+            window.AppAsyncUX.setRegionPending(
+              mobileFormElement,
+              true,
+              "Loading projects..."
+            );
+          }
           refreshProjectOptions(function () {
             fillMobileProjectOptions(project);
+            if (window.AppAsyncUX) {
+              window.AppAsyncUX.setRegionPending(
+                mobileFormElement,
+                false
+              );
+            }
             mobileProjectField.focus();
           });
         }
@@ -1837,24 +1886,63 @@
             .getInvoiceRequestsFileUpdatedAt();
         }
 
-        function replaceTableDataPreservingView(dataRows) {
+        function reconcileTableDataPreservingView(dataRows) {
           if (!table) return;
           var page = table.getPage();
-          var pageSize = table.getPageSize();
-          var sorters = table.getSorters ? table.getSorters() : [];
-          var replaceResult = table.replaceData(dataRows);
+          var pageSize = table.getPageSize ? table.getPageSize() : null;
+          var holder = tableElement.querySelector(".tabulator-tableholder");
+          var scrollTop = holder ? holder.scrollTop : 0;
+          var scrollLeft = holder ? holder.scrollLeft : 0;
+          var headerFilters = table.getHeaderFilters
+            ? table.getHeaderFilters()
+            : [];
+          var columnWidths = table.getColumns().map(function (column) {
+            var definition = column.getDefinition() || {};
+            return {
+              field: definition.field || column.getField(),
+              width: column.getWidth(),
+            };
+          });
+          var currentById = {};
+          table.getRows().forEach(function (rowComponent) {
+            var rowData = rowComponent.getData();
+            currentById[String(rowData._id)] = rowData;
+          });
+          var incomingById = {};
+          var changedRows = [];
+          dataRows.forEach(function (rowData) {
+            var id = String(rowData._id);
+            incomingById[id] = true;
+            if (
+              !currentById[id] ||
+              JSON.stringify(currentById[id]) !== JSON.stringify(rowData)
+            ) {
+              changedRows.push(rowData);
+            }
+          });
+          var removedIds = Object.keys(currentById).filter(function (id) {
+            return !incomingById[id];
+          });
+          var operations = [];
+          if (changedRows.length) {
+            operations.push(table.updateOrAddData(changedRows));
+          }
+          if (removedIds.length) {
+            operations.push(table.deleteRow(removedIds));
+          }
           var restore = function () {
             try {
               if (pageSize) table.setPageSize(pageSize);
-              if (sorters && sorters.length) {
-                table.setSort(
-                  sorters.map(function (sorter) {
-                    return {
-                      column: sorter.field || sorter.column,
-                      dir: sorter.dir,
-                    };
-                  })
-                );
+              columnWidths.forEach(function (item) {
+                if (!item.field || !item.width) return;
+                var column = table.getColumn(item.field);
+                if (column && column.setWidth) column.setWidth(item.width);
+              });
+              if (headerFilters && headerFilters.length) {
+                headerFilters.forEach(function (filter) {
+                  if (!filter || !filter.field) return;
+                  table.setHeaderFilterValue(filter.field, filter.value);
+                });
               }
               var maxPage = table.getPageMax ? table.getPageMax() : page;
               if (page) {
@@ -1862,21 +1950,42 @@
                   maxPage ? Math.min(page, maxPage) : page
                 );
               }
+              holder = tableElement.querySelector(".tabulator-tableholder");
+              if (holder) {
+                holder.scrollTop = scrollTop;
+                holder.scrollLeft = scrollLeft;
+              }
             } catch (error) {
               console.warn(
-                "Could not restore Invoice Requests table page:",
+                "Could not restore Invoice Requests table view:",
                 error
               );
             }
           };
-          if (replaceResult && typeof replaceResult.then === "function") {
-            replaceResult.then(restore).catch(restore);
+          if (!operations.length) {
+            restore();
+          } else if (typeof Promise !== "undefined") {
+            Promise.all(operations).then(restore).catch(restore);
           } else {
             restore();
           }
         }
 
         function applyLoadedData(response) {
+          var previousResponse = lastLoadedResponse;
+          var canReuseDesktopTable = !!(
+            table &&
+            !useMobileLimitedUi() &&
+            previousResponse &&
+            JSON.stringify(previousResponse.headers || []) ===
+              JSON.stringify((response && response.headers) || []) &&
+            previousResponse.showStatusColumns ===
+              (response && response.showStatusColumns) &&
+            previousResponse.showAuthorColumn ===
+              (response && response.showAuthorColumn) &&
+            previousResponse.showClientFolderColumn ===
+              (response && response.showClientFolderColumn)
+          );
           dirtyChanges = {};
           mobileFormMode = null;
           mobileEditRow = null;
@@ -1898,7 +2007,7 @@
             lastLoadedResponse.projects &&
             lastLoadedResponse.projects.length
           ) {
-            projectOptions = lastLoadedResponse.projects;
+            updateProjectOptions(lastLoadedResponse.projects);
           }
           showStatusColumns = !(
             response && response.showStatusColumns === false
@@ -1916,6 +2025,13 @@
             (response.accessMode === "limited" ||
               response.showStatusColumns === false)
           );
+          if (canReuseDesktopTable && !useMobileLimitedUi()) {
+            reconcileTableDataPreservingView(
+              tableRows(lastLoadedResponse)
+            );
+            updateToolbar();
+            return;
+          }
           renderCurrentView();
         }
 
@@ -1975,7 +2091,7 @@
             renderCurrentView();
             return;
           }
-          replaceTableDataPreservingView(tableRows(lastLoadedResponse));
+          reconcileTableDataPreservingView(tableRows(lastLoadedResponse));
         }
 
         function handleSaveResult(result) {
@@ -2010,7 +2126,7 @@
           if (!response) return;
           rememberFileUpdatedAt(response);
           if (response.projects && response.projects.length) {
-            projectOptions = response.projects;
+            updateProjectOptions(response.projects);
           }
           lastLoadedResponse = {
             headers:
@@ -2046,7 +2162,7 @@
               mobileListElement.scrollTop = mobileScroll;
             }
           } else if (table) {
-            replaceTableDataPreservingView(
+            reconcileTableDataPreservingView(
               tableRows(lastLoadedResponse)
             );
           } else {
