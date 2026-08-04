@@ -578,7 +578,24 @@ function buildInvoiceRequestsPayload_(spreadsheet, projectsOrLookup) {
     showStatusColumns: accessMode === "full",
     showAuthorColumn: accessMode === "full",
     showClientFolderColumn: accessMode === "full",
+    fileUpdatedAt: getInvoiceRequestsFileUpdatedAt_(),
   };
+}
+
+/** Drive last-modified time for the Invoice Requests spreadsheet (ms). */
+function getInvoiceRequestsFileUpdatedAt_() {
+  return DriveApp.getFileById(INVOICE_REQUESTS_SPREADSHEET_ID)
+    .getLastUpdated()
+    .getTime();
+}
+
+/**
+ * Lightweight pulse: was the spreadsheet file saved/changed?
+ * Does not read the Requests sheet.
+ */
+function getInvoiceRequestsFileUpdatedAt() {
+  assertInvoiceRequestsAccess_();
+  return getInvoiceRequestsFileUpdatedAt_();
 }
 
 function readInvoiceRequestsSheetPayload_(spreadsheet, projectsOrLookup) {

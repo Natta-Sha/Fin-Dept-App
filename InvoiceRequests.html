@@ -624,6 +624,8 @@
         var unsavedModal = new bootstrap.Modal(unsavedModalElement);
         var table = null;
         var dirtyChanges = {};
+        var lastKnownFileUpdatedAt = 0;
+        var softPulseInFlight = false;
         var isSaving = false;
         var allowUnsavedExit = false;
         var pendingDiscardAction = null;
@@ -1617,6 +1619,65 @@
             .saveInvoiceRequestChanges(changes);
         }
 
+        function rememberFileUpdatedAt(responseOrStamp) {
+          var stamp =
+            typeof responseOrStamp === "number"
+              ? responseOrStamp
+              : responseOrStamp && responseOrStamp.fileUpdatedAt;
+          var next = Number(stamp) || 0;
+          if (next > lastKnownFileUpdatedAt) {
+            lastKnownFileUpdatedAt = next;
+          }
+        }
+
+        function syncFileUpdatedAtAfterLocalWrite() {
+          google.script.run
+            .withSuccessHandler(function (stamp) {
+              rememberFileUpdatedAt(stamp);
+            })
+            .withFailureHandler(function () {})
+            .getInvoiceRequestsFileUpdatedAt();
+        }
+
+        function replaceTableDataPreservingView(dataRows) {
+          if (!table) return;
+          var page = table.getPage();
+          var pageSize = table.getPageSize();
+          var sorters = table.getSorters ? table.getSorters() : [];
+          var replaceResult = table.replaceData(dataRows);
+          var restore = function () {
+            try {
+              if (pageSize) table.setPageSize(pageSize);
+              if (sorters && sorters.length) {
+                table.setSort(
+                  sorters.map(function (sorter) {
+                    return {
+                      column: sorter.field || sorter.column,
+                      dir: sorter.dir,
+                    };
+                  })
+                );
+              }
+              var maxPage = table.getPageMax ? table.getPageMax() : page;
+              if (page) {
+                table.setPage(
+                  maxPage ? Math.min(page, maxPage) : page
+                );
+              }
+            } catch (error) {
+              console.warn(
+                "Could not restore Invoice Requests table page:",
+                error
+              );
+            }
+          };
+          if (replaceResult && typeof replaceResult.then === "function") {
+            replaceResult.then(restore).catch(restore);
+          } else {
+            restore();
+          }
+        }
+
         function applyLoadedData(response) {
           dirtyChanges = {};
           mobileFormMode = null;
@@ -1634,6 +1695,7 @@
             rows: [],
             projects: [],
           };
+          rememberFileUpdatedAt(lastLoadedResponse);
           if (
             lastLoadedResponse.projects &&
             lastLoadedResponse.projects.length
@@ -1715,8 +1777,7 @@
             renderCurrentView();
             return;
           }
-          table.replaceData(tableRows(lastLoadedResponse));
-          table.setSort([{ column: "_activityAt", dir: "desc" }]);
+          replaceTableDataPreservingView(tableRows(lastLoadedResponse));
         }
 
         function handleSaveResult(result) {
@@ -1729,6 +1790,9 @@
             if (mobileFormMode) closeMobileForm();
             refreshTableFromLastResponse();
             updateToolbar();
+            // Own write bumps Drive lastUpdated — sync stamp so pulse
+            // does not immediately full-reload for our own save.
+            syncFileUpdatedAtAfterLocalWrite();
             return;
           }
           if (result && result.rows) {
@@ -1741,6 +1805,7 @@
         function applySoftRefresh(response) {
           if (hasUnsavedWork() || hasOpenCreateOrEditForm()) return;
           if (!response) return;
+          rememberFileUpdatedAt(response);
           if (response.projects && response.projects.length) {
             projectOptions = response.projects;
           }
@@ -1755,6 +1820,10 @@
             showStatusColumns: response.showStatusColumns,
             showAuthorColumn: response.showAuthorColumn,
             showClientFolderColumn: response.showClientFolderColumn,
+            fileUpdatedAt:
+              response.fileUpdatedAt ||
+              (lastLoadedResponse && lastLoadedResponse.fileUpdatedAt) ||
+              0,
           };
           showStatusColumns = !(response.showStatusColumns === false);
           showAuthorColumn = !(response.showAuthorColumn === false);
@@ -1766,12 +1835,56 @@
             response.showStatusColumns === false
           );
           if (useMobileLimitedUi()) {
+            var mobileScroll = mobileListElement
+              ? mobileListElement.scrollTop
+              : 0;
             renderMobileList(lastLoadedResponse);
+            if (mobileListElement) {
+              mobileListElement.scrollTop = mobileScroll;
+            }
           } else if (table) {
-            table.replaceData(tableRows(lastLoadedResponse));
+            replaceTableDataPreservingView(
+              tableRows(lastLoadedResponse)
+            );
           } else {
             renderCurrentView();
           }
+        }
+
+        function runSoftChangePulse() {
+          if (
+            softPulseInFlight ||
+            isSaving ||
+            hasUnsavedWork() ||
+            hasOpenCreateOrEditForm()
+          ) {
+            return;
+          }
+          softPulseInFlight = true;
+          google.script.run
+            .withSuccessHandler(function (stamp) {
+              softPulseInFlight = false;
+              if (
+                isSaving ||
+                hasUnsavedWork() ||
+                hasOpenCreateOrEditForm()
+              ) {
+                return;
+              }
+              var next = Number(stamp) || 0;
+              if (!next) return;
+              if (!lastKnownFileUpdatedAt) {
+                lastKnownFileUpdatedAt = next;
+                return;
+              }
+              if (next <= lastKnownFileUpdatedAt) return;
+              loadData(false, true, true);
+            })
+            .withFailureHandler(function (error) {
+              softPulseInFlight = false;
+              console.warn("Invoice Requests change pulse failed:", error);
+            })
+            .getInvoiceRequestsFileUpdatedAt();
         }
 
         function loadData(force, refreshCache, softRefresh) {
@@ -1996,12 +2109,8 @@
 
         // Browser refresh / first open: always reload from sheet (bust list cache).
         loadData(true, true);
-        setInterval(function () {
-          if (isSaving || hasUnsavedWork() || hasOpenCreateOrEditForm()) {
-            return;
-          }
-          loadData(false, true, true);
-        }, 120000);
+        // Light Drive lastUpdated pulse; full rebuild only when the file changed.
+        setInterval(runSoftChangePulse, 60000);
       });
     </script>
   </body>
