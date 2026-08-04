@@ -117,60 +117,31 @@
         vertical-align: top;
       }
 
+      /* Compact text cells: clipped body + stable … more control (opens preview). */
       #invoice-requests-table .details-cell-wrap {
-        position: relative;
+        display: flex;
+        flex-direction: column;
         height: 100%;
         min-height: 0;
         overflow: hidden;
       }
 
       #invoice-requests-table .details-cell-wrap .request-cell-content {
-        display: block;
+        flex: 1 1 auto;
+        min-height: 0;
+        overflow: hidden;
         white-space: pre-wrap;
         word-break: break-word;
         overflow-wrap: anywhere;
       }
 
-      #invoice-requests-table
-        .details-cell-wrap.has-more:not(.is-expanded)
-        .request-cell-content {
-        max-height: calc(100% - 1.15rem);
-        overflow: hidden;
-      }
-
-      /* Expanded rows must grow cell boxes, not only the row shell. */
-      #invoice-requests-table .tabulator-row.is-row-expanded .tabulator-cell {
-        height: auto !important;
-        max-height: none !important;
-        overflow: visible;
-        white-space: pre-wrap;
-      }
-
-      #invoice-requests-table .details-cell-wrap.is-expanded {
-        height: auto;
-        max-height: none;
-        overflow: visible;
-      }
-
-      #invoice-requests-table
-        .details-cell-wrap.is-expanded
-        .request-cell-content {
-        max-height: none !important;
-        overflow: visible;
-      }
-
       #invoice-requests-table .details-more-btn {
-        position: absolute;
-        right: 0;
-        bottom: 0;
-        z-index: 2;
+        flex: 0 0 auto;
+        align-self: flex-end;
+        margin-top: 0.1rem;
         border: none;
-        padding: 0 0.2rem 0 1.5rem;
-        background: linear-gradient(
-          90deg,
-          rgba(255, 255, 255, 0),
-          #ffffff 35%
-        );
+        padding: 0;
+        background: transparent;
         color: #667eea;
         font-size: 0.72rem;
         font-weight: 700;
@@ -179,17 +150,36 @@
         white-space: nowrap;
       }
 
-      #invoice-requests-table .tabulator-row:hover .details-more-btn {
-        background: linear-gradient(
-          90deg,
-          rgba(236, 236, 236, 0),
-          #ececec 35%
-        );
+      #invoice-requests-table .details-cell-wrap:not(.has-more) .details-more-btn {
+        display: none;
       }
 
       #invoice-requests-table .details-more-btn:hover {
         color: #764ba2;
         text-decoration: underline;
+      }
+
+      /* Lightweight cell popover: just the full text, no chrome. */
+      .invoice-request-preview-card {
+        position: fixed;
+        display: none;
+        box-sizing: border-box;
+        min-width: 180px;
+        max-width: min(520px, calc(100vw - 24px));
+        max-height: min(50vh, 360px);
+        overflow: auto;
+        z-index: 3000;
+        padding: 8px 10px;
+        background: #fff;
+        border: none;
+        border-radius: 6px;
+        box-shadow: 0 6px 22px rgba(0, 0, 0, 0.16);
+        color: #212529;
+        font-size: 0.8rem;
+        line-height: 1.35;
+        white-space: pre-wrap;
+        overflow-wrap: anywhere;
+        word-break: break-word;
       }
 
       /* One solid row color — disable Bootstrap Tabulator striping. */
@@ -471,6 +461,13 @@
         id="invoice-requests-table"
         aria-label="Invoice requests"
       ></div>
+      <div
+        id="invoice-request-preview-card"
+        class="invoice-request-preview-card"
+        role="tooltip"
+        aria-label="Full cell text"
+        hidden
+      ></div>
       <div id="invoice-requests-mobile" aria-label="Invoice requests mobile">
         <div id="invoice-mobile-form" class="invoice-mobile-form d-none">
           <div class="invoice-mobile-form-title" id="invoice-mobile-form-title">
@@ -707,7 +704,11 @@
         var table = null;
         var dirtyChanges = {};
         var COMPACT_ROW_HEIGHT = 72;
-        var expandedRowIds = {};
+        var MORE_BTN_RESERVE_PX = 16;
+        var previewCard = document.getElementById(
+          "invoice-request-preview-card"
+        );
+        var previewOpen = false;
         var lastKnownFileUpdatedAt = 0;
         var softPulseInFlight = false;
         var statusSaveInFlight = {};
@@ -1078,6 +1079,7 @@
           clone.style.whiteSpace = "pre-wrap";
           clone.style.wordBreak = "break-word";
           clone.style.overflowWrap = "anywhere";
+          clone.style.flex = "none";
           clone.style.width =
             (widthPx || contentEl.clientWidth || contentEl.offsetWidth || 300) +
             "px";
@@ -1088,21 +1090,22 @@
           return height;
         }
 
-        function clearExpandedRowStyles(rowEl) {
-          if (!rowEl) return;
-          rowEl.classList.remove("is-row-expanded");
-          rowEl.style.height = "";
-          rowEl.querySelectorAll(".tabulator-cell").forEach(function (cellEl) {
-            cellEl.style.height = "";
-            cellEl.style.maxHeight = "";
-            cellEl.style.overflow = "";
-          });
-        }
-
         function getExpandableCellWidth(cell) {
           if (!cell) return 300;
           var cellEl = cell.getElement();
           return Math.max(cellEl.clientWidth - 14, cellEl.offsetWidth - 14, 120);
+        }
+
+        function getAvailableTextHeight(cell) {
+          var cellEl = cell && cell.getElement();
+          var wrap = cellEl && cellEl.querySelector(".details-cell-wrap");
+          var measured = wrap
+            ? wrap.clientHeight
+            : cellEl
+              ? cellEl.clientHeight
+              : COMPACT_ROW_HEIGHT;
+          // Leave room for the … more control so we don't flash false negatives.
+          return Math.max(measured - MORE_BTN_RESERVE_PX, 24);
         }
 
         function cellContentOverflows(cell) {
@@ -1115,97 +1118,68 @@
           }
           return (
             measureContentHeight(content, getExpandableCellWidth(cell)) >
-            COMPACT_ROW_HEIGHT - 18
+            getAvailableTextHeight(cell) + 1
           );
         }
 
-        function setRowExpanded(rowComponent, expanded) {
-          if (!rowComponent) return;
-          var id = String(rowComponent.getData()._id);
-          var rowEl = rowComponent.getElement();
-          if (expanded) {
-            expandedRowIds[id] = true;
-            rowEl.classList.add("is-row-expanded");
-            refreshExpandableTextButtons(rowComponent);
-            rowEl.querySelectorAll(".tabulator-cell").forEach(function (cellEl) {
-              cellEl.style.height = "auto";
-              cellEl.style.maxHeight = "none";
-              cellEl.style.overflow = "visible";
-            });
-            var fullHeight = COMPACT_ROW_HEIGHT;
-            [DETAILS_OFFSET, COMMENT_OFFSET].forEach(function (offset) {
-              var cell = rowComponent.getCell("c" + offset);
-              if (!cell) return;
-              var content = cell
-                .getElement()
-                .querySelector(".request-cell-content");
-              var measured =
-                measureContentHeight(content, getExpandableCellWidth(cell)) +
-                36;
-              if (measured > fullHeight) fullHeight = measured;
-            });
-            rowEl.style.height = Math.min(fullHeight, 720) + "px";
-          } else {
-            delete expandedRowIds[id];
-            clearExpandedRowStyles(rowEl);
-            rowEl.style.height = COMPACT_ROW_HEIGHT + "px";
-            // Remeasure after compact layout settles — otherwise … more stays hidden.
-            refreshExpandableTextButtons(rowComponent);
-            setTimeout(function () {
-              if (!expandedRowIds[id]) {
-                refreshExpandableTextButtons(rowComponent);
-              }
-            }, 0);
-            return;
+        function closeRequestPreview() {
+          if (!previewCard) return;
+          previewOpen = false;
+          previewCard.hidden = true;
+          previewCard.style.display = "none";
+          previewCard.innerHTML = "";
+        }
+
+        function positionRequestPreview(trigger) {
+          if (!previewCard || !trigger) return;
+          var cellEl = trigger.closest(".tabulator-cell") || trigger;
+          var rect = cellEl.getBoundingClientRect();
+          var width = Math.min(
+            Math.max(rect.width, 220),
+            Math.min(520, window.innerWidth - 24)
+          );
+          previewCard.style.width = width + "px";
+          var left = Math.min(
+            Math.max(12, rect.left),
+            window.innerWidth - width - 12
+          );
+          previewCard.style.left = left + "px";
+          previewCard.style.top = Math.max(12, rect.bottom + 4) + "px";
+          previewCard.style.display = "block";
+          previewCard.hidden = false;
+          var cardHeight = previewCard.offsetHeight;
+          if (rect.bottom + 4 + cardHeight > window.innerHeight - 12) {
+            previewCard.style.top =
+              Math.max(12, rect.top - cardHeight - 4) + "px";
           }
-          refreshExpandableTextButtons(rowComponent);
+        }
+
+        function showRequestPreview(rowData, focusOffset, trigger) {
+          if (!previewCard || !rowData) return;
+          var text =
+            rowData["_display" + focusOffset] ||
+            rowData["c" + focusOffset] ||
+            "";
+          previewCard.textContent = String(text);
+          previewOpen = true;
+          positionRequestPreview(trigger);
         }
 
         function updateExpandableTextButton(cell) {
           if (!cell) return;
           var wrap = cell.getElement().querySelector(".details-cell-wrap");
           if (!wrap) return;
-          // Guard against accidental duplicate controls after redraws.
           var buttons = wrap.querySelectorAll(".details-more-btn");
           var button = buttons[0] || null;
           for (var i = 1; i < buttons.length; i++) {
             buttons[i].remove();
           }
-          var content = wrap.querySelector(".request-cell-content");
-          if (!content || !button) return;
-
-          var rowComponent = cell.getRow();
-          var columnOffset = Number(cell.getColumn().getField().substring(1));
-          var id = String(rowComponent.getData()._id);
-          var expanded = !!expandedRowIds[id];
+          if (!button) return;
           var overflows = cellContentOverflows(cell);
-          wrap.classList.toggle("is-expanded", expanded);
-          wrap.classList.toggle("has-more", overflows || expanded);
-
-          if (expanded) {
-            // One collapse control for the whole row — only on Дані.
-            var showLess = columnOffset === DETAILS_OFFSET && overflows;
-            if (!showLess && columnOffset === DETAILS_OFFSET) {
-              // Details may not overflow alone while comment does.
-              showLess = cellContentOverflows(
-                rowComponent.getCell("c" + COMMENT_OFFSET)
-              );
-            }
-            if (columnOffset === COMMENT_OFFSET) {
-              button.hidden = true;
-              return;
-            }
-            button.hidden = !showLess;
-            button.textContent = "… less";
-            button.setAttribute("aria-expanded", "true");
-            button.title = "Collapse row";
-            return;
-          }
-
+          wrap.classList.toggle("has-more", overflows);
           button.hidden = !overflows;
           button.textContent = "… more";
-          button.setAttribute("aria-expanded", "false");
-          button.title = "Expand row";
+          button.title = "Show full text";
         }
 
         function refreshExpandableTextButtons(rowComponent) {
@@ -1234,12 +1208,18 @@
           moreBtn.className = "details-more-btn";
           moreBtn.hidden = true;
           moreBtn.textContent = "… more";
+          moreBtn.title = "Show full text";
           moreBtn.addEventListener("click", function (event) {
             event.preventDefault();
             event.stopPropagation();
-            var rowComponent = cell.getRow();
-            var id = String(rowComponent.getData()._id);
-            setRowExpanded(rowComponent, !expandedRowIds[id]);
+            var columnOffset = Number(
+              cell.getColumn().getField().substring(1)
+            );
+            showRequestPreview(
+              cell.getRow().getData(),
+              columnOffset,
+              moreBtn
+            );
           });
           wrap.appendChild(moreBtn);
           setTimeout(function () {
@@ -1432,7 +1412,7 @@
             height: tableHeight(),
             layout: "fitColumns",
             layoutColumnsOnNewData: false,
-            // ~3 text lines at current cell padding/font; drag edge or … more.
+            // ~3 text lines; drag row edge to grow, or … more for full preview.
             rowHeight: COMPACT_ROW_HEIGHT,
             resizableRows: true,
             resizableRowGuide: true,
@@ -1446,7 +1426,7 @@
             columns: buildColumns(response.headers || []),
             data: tableRows(response),
           });
-          expandedRowIds = {};
+          closeRequestPreview();
           table.on("tableBuilt", function () {
             applyHeaderColors();
             table.setSort([{ column: "_activityAt", dir: "desc" }]);
@@ -1464,6 +1444,11 @@
           });
           table.on("columnResized", function () {
             setTimeout(refreshAllExpandableTextButtons, 0);
+          });
+          table.on("rowResized", function (row) {
+            setTimeout(function () {
+              refreshExpandableTextButtons(row);
+            }, 0);
           });
         }
 
@@ -1697,7 +1682,7 @@
         }
 
         function setLoading(loading) {
-          if (loading) expandedRowIds = {};
+          if (loading) closeRequestPreview();
           reloadButton.disabled =
             loading || isSaving || pendingReloadAfterStatusSave;
           addRowButton.disabled =
@@ -2734,6 +2719,7 @@
         });
 
         window.addEventListener("resize", function () {
+          closeRequestPreview();
           var wantMobile = useMobileLimitedUi();
           var isMobile = document.body.classList.contains(
             "invoice-mobile-limited"
@@ -2750,6 +2736,18 @@
             return;
           }
           if (table) table.setHeight(tableHeight());
+          setTimeout(refreshAllExpandableTextButtons, 0);
+        });
+
+        document.addEventListener("click", function (event) {
+          if (!previewOpen || !previewCard) return;
+          if (event.target.closest(".details-more-btn")) return;
+          if (previewCard.contains(event.target)) return;
+          closeRequestPreview();
+        });
+
+        document.addEventListener("keydown", function (event) {
+          if (event.key === "Escape") closeRequestPreview();
         });
 
         // Browser refresh / first open: always reload from sheet (bust list cache).
