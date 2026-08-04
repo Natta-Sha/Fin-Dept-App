@@ -626,6 +626,8 @@
         var dirtyChanges = {};
         var lastKnownFileUpdatedAt = 0;
         var softPulseInFlight = false;
+        var statusSaveInFlight = {};
+        var statusSaveQueued = {};
         var isSaving = false;
         var allowUnsavedExit = false;
         var pendingDiscardAction = null;
@@ -1045,15 +1047,7 @@
                 event.preventDefault();
                 if (!showStatusColumns) return;
                 if (hasOpenCreateOrEditForm()) return;
-                var currentStatus = cell.getValue();
-                var nextStatus =
-                  currentStatus === "unchecked"
-                    ? "checked"
-                    : currentStatus === "checked"
-                    ? "notApplicable"
-                    : "unchecked";
-                cell.setValue(nextStatus);
-                trackCellChange(cell);
+                cycleAndSaveStatusCell(cell);
               };
             }
             if (columnOffset === 0) column.frozen = true;
@@ -1137,7 +1131,8 @@
         function trackCellChange(cell) {
           var row = cell.getRow().getData();
           var columnOffset = Number(cell.getColumn().getField().substring(1));
-          if (isStatusColumn(columnOffset) && !showStatusColumns) {
+          if (isStatusColumn(columnOffset)) {
+            // Status checkboxes save immediately — never treat as dirty batch.
             return;
           }
           var originalValue = row._original[columnOffset];
@@ -1157,8 +1152,177 @@
             delete dirtyChanges[key];
           }
           cell.getElement().classList.toggle("is-dirty", changed);
-          if (isStatusColumn(columnOffset)) checkboxFormatter(cell);
           updateToolbar();
+        }
+
+        function nextCheckboxStatus(currentStatus) {
+          if (currentStatus === true) currentStatus = "checked";
+          if (currentStatus === false || currentStatus === "") {
+            currentStatus = "unchecked";
+          }
+          if (currentStatus === "unchecked") return "checked";
+          if (currentStatus === "checked") return "notApplicable";
+          return "unchecked";
+        }
+
+        function hasStatusSaveInFlight() {
+          return Object.keys(statusSaveInFlight).length > 0;
+        }
+
+        function applyStatusCellLocally(cell, value, originalToken) {
+          var row = cell.getRow().getData();
+          var columnOffset = Number(cell.getColumn().getField().substring(1));
+          var key = changeKey(row._id, columnOffset);
+          cell.setValue(value, true);
+          row["c" + columnOffset] = value;
+          row["_display" + columnOffset] = value;
+          row._original[columnOffset] = value;
+          if (originalToken !== undefined) {
+            row._originalTokens[columnOffset] = originalToken;
+          }
+          delete dirtyChanges[key];
+          cell.getElement().classList.remove("is-dirty");
+          checkboxFormatter(cell);
+          applyStatusSavePatchToResponse([
+            {
+              id: row._id,
+              columnOffset: columnOffset,
+              value: value,
+              originalToken:
+                originalToken !== undefined ? originalToken : value,
+            },
+          ]);
+        }
+
+        function cycleAndSaveStatusCell(cell) {
+          var row = cell.getRow().getData();
+          var columnOffset = Number(cell.getColumn().getField().substring(1));
+          if (!isStatusColumn(columnOffset) || !showStatusColumns) return;
+
+          var key = changeKey(row._id, columnOffset);
+          var currentStatus = cell.getValue();
+          var nextStatus = nextCheckboxStatus(currentStatus);
+
+          // Optimistic UI; mutate=true avoids cellEdited → dirty tracking.
+          cell.setValue(nextStatus, true);
+          checkboxFormatter(cell);
+
+          if (statusSaveInFlight[key]) {
+            statusSaveQueued[key] = { value: nextStatus };
+            return;
+          }
+
+          saveStatusCellNow(
+            cell,
+            row._id,
+            columnOffset,
+            nextStatus,
+            row._originalTokens[columnOffset],
+            currentStatus
+          );
+        }
+
+        function saveStatusCellNow(
+          cell,
+          rowId,
+          columnOffset,
+          value,
+          originalToken,
+          rollbackValue
+        ) {
+          var key = changeKey(rowId, columnOffset);
+          statusSaveInFlight[key] = true;
+          setStatus("Saving status…");
+
+          google.script.run
+            .withSuccessHandler(function (result) {
+              delete statusSaveInFlight[key];
+              if (!result || !result.success) {
+                delete statusSaveQueued[key];
+                if (result && result.conflict && result.current) {
+                  applyStatusCellLocally(
+                    cell,
+                    result.current.value,
+                    result.current.originalToken
+                  );
+                  setStatus(
+                    result.message ||
+                      "Checkbox already changed. Showing latest value.",
+                    "error"
+                  );
+                } else {
+                  applyStatusCellLocally(
+                    cell,
+                    rollbackValue,
+                    originalToken
+                  );
+                  setStatus(
+                    (result && result.message) ||
+                      "Status save failed. Reverted.",
+                    "error"
+                  );
+                }
+                if (result && result.fileUpdatedAt) {
+                  rememberFileUpdatedAt(result.fileUpdatedAt);
+                }
+                updateToolbar();
+                return;
+              }
+
+              var applied =
+                result.applied && result.applied[0]
+                  ? result.applied[0]
+                  : {
+                      id: rowId,
+                      columnOffset: columnOffset,
+                      value: value,
+                      originalToken: value,
+                    };
+              applyStatusCellLocally(
+                cell,
+                applied.value,
+                applied.originalToken
+              );
+              if (result.fileUpdatedAt) {
+                rememberFileUpdatedAt(result.fileUpdatedAt);
+              } else {
+                syncFileUpdatedAtAfterLocalWrite();
+              }
+
+              var queued = statusSaveQueued[key];
+              delete statusSaveQueued[key];
+              if (queued && queued.value !== applied.value) {
+                saveStatusCellNow(
+                  cell,
+                  rowId,
+                  columnOffset,
+                  queued.value,
+                  applied.originalToken,
+                  applied.value
+                );
+                return;
+              }
+
+              setStatus("Status saved", "success");
+              updateToolbar();
+            })
+            .withFailureHandler(function (error) {
+              delete statusSaveInFlight[key];
+              delete statusSaveQueued[key];
+              applyStatusCellLocally(cell, rollbackValue, originalToken);
+              setStatus(
+                (error && error.message) ||
+                  "Status save failed. Reverted.",
+                "error"
+              );
+              updateToolbar();
+            })
+            .saveInvoiceRequestStatusCell({
+              id: rowId,
+              columnOffset: columnOffset,
+              value: value,
+              originalToken: originalToken,
+            });
         }
 
         function setLoading(loading) {
@@ -1803,7 +1967,13 @@
         }
 
         function applySoftRefresh(response) {
-          if (hasUnsavedWork() || hasOpenCreateOrEditForm()) return;
+          if (
+            hasUnsavedWork() ||
+            hasOpenCreateOrEditForm() ||
+            hasStatusSaveInFlight()
+          ) {
+            return;
+          }
           if (!response) return;
           rememberFileUpdatedAt(response);
           if (response.projects && response.projects.length) {
@@ -1855,6 +2025,7 @@
           if (
             softPulseInFlight ||
             isSaving ||
+            hasStatusSaveInFlight() ||
             hasUnsavedWork() ||
             hasOpenCreateOrEditForm()
           ) {
@@ -1866,6 +2037,7 @@
               softPulseInFlight = false;
               if (
                 isSaving ||
+                hasStatusSaveInFlight() ||
                 hasUnsavedWork() ||
                 hasOpenCreateOrEditForm()
               ) {
@@ -1930,9 +2102,13 @@
         }
 
         function saveChanges() {
-          var changes = Object.keys(dirtyChanges).map(function (key) {
-            return dirtyChanges[key];
-          });
+          var changes = Object.keys(dirtyChanges)
+            .map(function (key) {
+              return dirtyChanges[key];
+            })
+            .filter(function (change) {
+              return change && !isStatusColumn(change.columnOffset);
+            });
           if (changes.length === 0 || isSaving) return;
 
           isSaving = true;

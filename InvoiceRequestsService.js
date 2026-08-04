@@ -744,6 +744,115 @@ function writeInvoiceRequestStatus_(range, status) {
   range.setBackground(null);
 }
 
+/**
+ * Immediate single-checkbox save (finance status columns).
+ * Conflict-checks only that cell; does not rebuild the full list.
+ */
+function saveInvoiceRequestStatusCell(change) {
+  assertInvoiceRequestsAccess_();
+  change = change || {};
+  var rowId = String(change.id || "").trim();
+  var columnOffset = Number(change.columnOffset);
+  var nextValue =
+    change.value === null || change.value === undefined
+      ? ""
+      : String(change.value);
+
+  if (
+    !rowId ||
+    !Number.isInteger(columnOffset) ||
+    !isInvoiceRequestStatusColumn_(columnOffset)
+  ) {
+    throw new Error("Invalid status change.");
+  }
+  if (
+    nextValue !== "checked" &&
+    nextValue !== "unchecked" &&
+    nextValue !== "notApplicable"
+  ) {
+    throw new Error("Invalid checkbox status.");
+  }
+
+  var accessMode = getInvoiceRequestAccessMode_();
+  if (accessMode === "limited") {
+    throw new Error("No permission to edit status columns.");
+  }
+
+  var lock = LockService.getScriptLock();
+  if (!lock.tryLock(10000)) {
+    throw new Error("The sheet is busy. Please try again.");
+  }
+
+  try {
+    var spreadsheet = SpreadsheetApp.openById(
+      INVOICE_REQUESTS_SPREADSHEET_ID
+    );
+    var sheet = spreadsheet.getSheetByName(INVOICE_REQUESTS_SHEET_NAME);
+    if (!sheet) throw new Error('Sheet "Requests" was not found.');
+
+    var idToSheetRow = findInvoiceRequestSheetRowsByIds_(sheet, [rowId]);
+    var sheetRow = idToSheetRow[rowId];
+    var fileUpdatedAt = getInvoiceRequestsFileUpdatedAt_();
+    if (!sheetRow) {
+      return {
+        success: false,
+        conflict: true,
+        message: "This row was removed. Reload the page.",
+        fileUpdatedAt: fileUpdatedAt,
+      };
+    }
+
+    var sheetColumn = sheetColumnForInvoiceRequestOffset_(columnOffset);
+    var cellRange = sheet.getRange(sheetRow, sheetColumn);
+    var currentRaw = cellRange.getValue();
+    var currentToken = getInvoiceRequestOriginalToken_(
+      currentRaw,
+      columnOffset
+    );
+    var currentStatus = getInvoiceRequestCheckboxStatus_(currentRaw);
+
+    if (currentToken !== change.originalToken) {
+      return {
+        success: false,
+        conflict: true,
+        message:
+          "This checkbox was already changed. Showing the latest value.",
+        current: {
+          id: rowId,
+          columnOffset: columnOffset,
+          value: currentStatus,
+          originalToken: currentToken,
+        },
+        fileUpdatedAt: fileUpdatedAt,
+      };
+    }
+
+    writeInvoiceRequestStatus_(cellRange, nextValue);
+    SpreadsheetApp.flush();
+    invalidateInvoiceRequestsListCache_();
+
+    return {
+      success: true,
+      patch: true,
+      applied: [
+        {
+          id: rowId,
+          columnOffset: columnOffset,
+          value: nextValue,
+          originalToken: nextValue,
+        },
+      ],
+      fileUpdatedAt: getInvoiceRequestsFileUpdatedAt_(),
+    };
+  } finally {
+    try {
+      lock.releaseLock();
+    } catch (error) {
+      console.warn("Could not release Invoice Requests status lock:", error);
+    }
+  }
+}
+
 function createInvoiceRequest(data) {
   assertInvoiceRequestsAccess_();
   var cells = data && Array.isArray(data.cells) ? data.cells : [];
