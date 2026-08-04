@@ -138,6 +138,27 @@
         overflow: hidden;
       }
 
+      /* Expanded rows must grow cell boxes, not only the row shell. */
+      #invoice-requests-table .tabulator-row.is-row-expanded .tabulator-cell {
+        height: auto !important;
+        max-height: none !important;
+        overflow: visible;
+        white-space: pre-wrap;
+      }
+
+      #invoice-requests-table .details-cell-wrap.is-expanded {
+        height: auto;
+        max-height: none;
+        overflow: visible;
+      }
+
+      #invoice-requests-table
+        .details-cell-wrap.is-expanded
+        .request-cell-content {
+        max-height: none !important;
+        overflow: visible;
+      }
+
       #invoice-requests-table .details-more-btn {
         position: absolute;
         right: 0;
@@ -1021,9 +1042,17 @@
           var value = cell.getValue();
           var row = cell.getRow().getData();
           var columnOffset = Number(cell.getColumn().getField().substring(1));
-          var link = row._links[columnOffset] || "";
           var displayValue =
             value === null || value === undefined ? "" : String(value);
+          // Дані / Комент always show full stored text — never replace with a link label.
+          if (isExpandableTextColumn(columnOffset)) {
+            var fullText = document.createElement("span");
+            fullText.className = "request-cell-content";
+            fullText.textContent =
+              row["_display" + columnOffset] || displayValue;
+            return fullText;
+          }
+          var link = row._links[columnOffset] || "";
           if (!link) {
             var text = document.createElement("span");
             text.className = "request-cell-content";
@@ -1043,21 +1072,39 @@
           return anchor;
         }
 
-        function measureContentHeight(contentEl) {
+        function measureContentHeight(contentEl, widthPx) {
           if (!contentEl) return 0;
           var clone = contentEl.cloneNode(true);
+          clone.className = contentEl.className;
           clone.style.position = "absolute";
+          clone.style.left = "-99999px";
+          clone.style.top = "0";
           clone.style.visibility = "hidden";
           clone.style.height = "auto";
           clone.style.maxHeight = "none";
-          clone.style.width = contentEl.clientWidth
-            ? contentEl.clientWidth + "px"
-            : contentEl.offsetWidth + "px";
+          clone.style.overflow = "visible";
+          clone.style.whiteSpace = "pre-wrap";
+          clone.style.wordBreak = "break-word";
+          clone.style.overflowWrap = "anywhere";
+          clone.style.width =
+            (widthPx || contentEl.clientWidth || contentEl.offsetWidth || 300) +
+            "px";
           clone.style.pointerEvents = "none";
           document.body.appendChild(clone);
           var height = clone.scrollHeight;
           document.body.removeChild(clone);
           return height;
+        }
+
+        function clearExpandedRowStyles(rowEl) {
+          if (!rowEl) return;
+          rowEl.classList.remove("is-row-expanded");
+          rowEl.style.height = "";
+          rowEl.querySelectorAll(".tabulator-cell").forEach(function (cellEl) {
+            cellEl.style.height = "";
+            cellEl.style.maxHeight = "";
+            cellEl.style.overflow = "";
+          });
         }
 
         function setRowExpanded(rowComponent, expanded) {
@@ -1066,19 +1113,35 @@
           var rowEl = rowComponent.getElement();
           if (expanded) {
             expandedRowIds[id] = true;
+            rowEl.classList.add("is-row-expanded");
+            // Unlock clipping first so layout can use full text height.
+            refreshExpandableTextButtons(rowComponent);
+            rowEl.querySelectorAll(".tabulator-cell").forEach(function (cellEl) {
+              cellEl.style.height = "auto";
+              cellEl.style.maxHeight = "none";
+              cellEl.style.overflow = "visible";
+            });
             var fullHeight = COMPACT_ROW_HEIGHT;
             [DETAILS_OFFSET, COMMENT_OFFSET].forEach(function (offset) {
               var cell = rowComponent.getCell("c" + offset);
               if (!cell) return;
-              var content = cell
-                .getElement()
-                .querySelector(".request-cell-content");
-              var measured = measureContentHeight(content) + 28;
+              var cellEl = cell.getElement();
+              var content = cellEl.querySelector(".request-cell-content");
+              var width = Math.max(
+                cellEl.clientWidth - 14,
+                content ? content.clientWidth : 0,
+                120
+              );
+              var measured = measureContentHeight(content, width) + 36;
               if (measured > fullHeight) fullHeight = measured;
             });
-            rowEl.style.height = Math.min(fullHeight, 480) + "px";
+            rowEl.style.height = Math.min(fullHeight, 720) + "px";
+            if (typeof rowComponent.normalizeHeight === "function") {
+              rowComponent.normalizeHeight();
+            }
           } else {
             delete expandedRowIds[id];
+            clearExpandedRowStyles(rowEl);
             rowEl.style.height = COMPACT_ROW_HEIGHT + "px";
           }
           refreshExpandableTextButtons(rowComponent);
