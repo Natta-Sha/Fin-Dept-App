@@ -1983,7 +1983,6 @@
           // Always clear local dirty state after a successful save response.
           dirtyChanges = {};
           if (result && result.patch) {
-            applyStatusSavePatchToResponse(result.applied);
             mergePatchedRowsIntoResponse(result.rows);
             if (mobileFormMode) closeMobileForm();
             refreshTableFromLastResponse();
@@ -2136,13 +2135,9 @@
         }
 
         function saveChanges() {
-          var changes = Object.keys(dirtyChanges)
-            .map(function (key) {
-              return dirtyChanges[key];
-            })
-            .filter(function (change) {
-              return change && !isStatusColumn(change.columnOffset);
-            });
+          var changes = Object.keys(dirtyChanges).map(function (key) {
+            return dirtyChanges[key];
+          });
           if (changes.length === 0 || isSaving) return;
 
           isSaving = true;

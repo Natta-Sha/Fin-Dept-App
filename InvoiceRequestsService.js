@@ -1152,7 +1152,7 @@ function getInvoiceRequestProjectOptions() {
 function saveInvoiceRequestChanges(changes) {
   assertInvoiceRequestsAccess_();
   if (!Array.isArray(changes) || changes.length === 0) {
-    return { success: true, updated: 0, patch: true, applied: [] };
+    return { success: true, updated: 0, patch: true, rows: [] };
   }
 
   var lock = LockService.getScriptLock();
@@ -1196,15 +1196,13 @@ function saveInvoiceRequestChanges(changes) {
       if (
         !rowId ||
         !Number.isInteger(columnOffset) ||
-        !isInvoiceRequestClientEditableColumn_(columnOffset)
+        !isInvoiceRequestContentColumn_(columnOffset)
       ) {
+        // Status checkboxes use saveInvoiceRequestStatusCell (instant save).
+        if (isInvoiceRequestStatusColumn_(columnOffset)) {
+          continue;
+        }
         throw new Error("Invalid change payload.");
-      }
-      if (
-        accessMode === "limited" &&
-        isInvoiceRequestStatusColumn_(columnOffset)
-      ) {
-        throw new Error("No permission to edit status columns.");
       }
 
       var sheetRow = idToSheetRow[rowId];
@@ -1238,14 +1236,6 @@ function saveInvoiceRequestChanges(changes) {
           ? ""
           : String(change.value);
       if (
-        isInvoiceRequestStatusColumn_(columnOffset) &&
-        nextValue !== "checked" &&
-        nextValue !== "unchecked" &&
-        nextValue !== "notApplicable"
-      ) {
-        throw new Error("Invalid checkbox status.");
-      }
-      if (
         columnOffset === INVOICE_REQUESTS_PROJECT_OFFSET &&
         String(nextValue || "").trim()
       ) {
@@ -1278,22 +1268,20 @@ function saveInvoiceRequestChanges(changes) {
         value: nextValue,
         rowId: rowId,
       });
-      if (isInvoiceRequestContentColumn_(columnOffset)) {
-        if (!contentEditsByRow[rowId]) {
-          contentEditsByRow[rowId] = {
-            sheetRow: sheetRow,
-            project: String(
-              rowValues[
-                INVOICE_REQUESTS_FIRST_COLUMN -
-                  1 +
-                  INVOICE_REQUESTS_PROJECT_OFFSET
-              ] || ""
-            ).trim(),
-          };
-        }
-        if (columnOffset === INVOICE_REQUESTS_PROJECT_OFFSET) {
-          contentEditsByRow[rowId].project = String(nextValue || "").trim();
-        }
+      if (!contentEditsByRow[rowId]) {
+        contentEditsByRow[rowId] = {
+          sheetRow: sheetRow,
+          project: String(
+            rowValues[
+              INVOICE_REQUESTS_FIRST_COLUMN -
+                1 +
+                INVOICE_REQUESTS_PROJECT_OFFSET
+            ] || ""
+          ).trim(),
+        };
+      }
+      if (columnOffset === INVOICE_REQUESTS_PROJECT_OFFSET) {
+        contentEditsByRow[rowId].project = String(nextValue || "").trim();
       }
     }
 
@@ -1307,20 +1295,21 @@ function saveInvoiceRequestChanges(changes) {
       };
     }
 
+    if (validated.length === 0) {
+      return {
+        success: true,
+        updated: 0,
+        patch: true,
+        rows: [],
+        notifications: [],
+      };
+    }
+
     for (var writeIndex = 0; writeIndex < validated.length; writeIndex++) {
       var item = validated[writeIndex];
-      if (
-        isInvoiceRequestStatusColumn_(item.columnOffset) &&
-        contentEditsByRow[item.rowId]
-      ) {
-        continue;
-      }
-      var target = sheet.getRange(item.sheetRow, item.sheetColumn);
-      if (isInvoiceRequestStatusColumn_(item.columnOffset)) {
-        writeInvoiceRequestStatus_(target, item.value);
-      } else {
-        target.setValue(item.value);
-      }
+      sheet
+        .getRange(item.sheetRow, item.sheetColumn)
+        .setValue(item.value);
     }
 
     var author = "";
@@ -1376,46 +1365,22 @@ function saveInvoiceRequestChanges(changes) {
       });
     }
 
-    var applied = [];
-    for (var a = 0; a < validated.length; a++) {
-      var appliedItem = validated[a];
-      if (
-        isInvoiceRequestStatusColumn_(appliedItem.columnOffset) &&
-        contentEditsByRow[appliedItem.rowId]
-      ) {
-        // Status on a content-edited row was reset below; skip stale applied value.
-        continue;
-      }
-      if (!isInvoiceRequestStatusColumn_(appliedItem.columnOffset)) {
-        continue;
-      }
-      applied.push({
-        id: appliedItem.rowId,
-        columnOffset: appliedItem.columnOffset,
-        value: appliedItem.value,
-        originalToken: appliedItem.value,
-      });
-    }
-
     var patchedRows = [];
-    if (contentRowIds.length > 0) {
-      for (var p = 0; p < contentRowIds.length; p++) {
-        var patchedId = contentRowIds[p];
-        patchedRows.push(
-          buildInvoiceRequestRowPayloadFromSheet_(
-            sheet,
-            contentEditsByRow[patchedId].sheetRow,
-            patchedId
-          )
-        );
-      }
+    for (var p = 0; p < contentRowIds.length; p++) {
+      var patchedId = contentRowIds[p];
+      patchedRows.push(
+        buildInvoiceRequestRowPayloadFromSheet_(
+          sheet,
+          contentEditsByRow[patchedId].sheetRow,
+          patchedId
+        )
+      );
     }
 
     return {
       success: true,
       updated: validated.length,
       patch: true,
-      applied: applied,
       rows: patchedRows,
       notifications: notifications,
     };
