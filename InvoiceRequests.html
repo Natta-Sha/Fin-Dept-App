@@ -109,11 +109,123 @@
       }
 
       #invoice-requests-table .tabulator-cell {
-        min-height: 34px;
+        min-height: 0;
         padding: 5px 7px;
         white-space: pre-wrap;
+        overflow: hidden;
         overflow-wrap: anywhere;
-        vertical-align: middle;
+        vertical-align: top;
+      }
+
+      #invoice-requests-table .project-cell {
+        display: flex;
+        align-items: flex-start;
+        gap: 0.2rem;
+        min-width: 0;
+        height: 100%;
+      }
+
+      #invoice-requests-table .project-cell .request-cell-content {
+        flex: 1 1 auto;
+        min-width: 0;
+        overflow: hidden;
+      }
+
+      #invoice-requests-table .preview-btn {
+        flex: 0 0 auto;
+        padding: 0 0.2rem;
+        border: none;
+        background: transparent;
+        color: #667eea;
+        cursor: pointer;
+        line-height: 1.2;
+      }
+
+      #invoice-requests-table .preview-btn:hover {
+        color: #764ba2;
+      }
+
+      .invoice-request-preview-card {
+        position: fixed;
+        display: none;
+        width: min(720px, calc(100vw - 40px));
+        max-height: min(70vh, 620px);
+        overflow: auto;
+        z-index: 3000;
+        background: #fff;
+        border: 1px solid #dee2e6;
+        border-radius: 12px;
+        box-shadow: 0 12px 35px rgba(0, 0, 0, 0.18);
+      }
+
+      .invoice-request-preview-card .preview-header {
+        position: sticky;
+        top: 0;
+        z-index: 1;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1rem;
+        padding: 0.85rem 1rem;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: #fff;
+      }
+
+      .invoice-request-preview-card .preview-title {
+        margin: 0;
+        font-size: 1rem;
+        font-weight: 700;
+      }
+
+      .invoice-request-preview-card .preview-close {
+        width: 28px;
+        height: 28px;
+        border: none;
+        border-radius: 50%;
+        background: rgba(255, 255, 255, 0.16);
+        color: #fff;
+        cursor: pointer;
+        line-height: 28px;
+        text-align: center;
+      }
+
+      .invoice-request-preview-card .preview-body {
+        padding: 1rem;
+      }
+
+      .invoice-request-preview-card .preview-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 0.65rem 1rem;
+      }
+
+      .invoice-request-preview-card .preview-field {
+        padding-bottom: 0.45rem;
+        border-bottom: 1px solid #edf0f2;
+      }
+
+      .invoice-request-preview-card .preview-field.is-wide {
+        grid-column: 1 / -1;
+      }
+
+      .invoice-request-preview-card .preview-label {
+        display: block;
+        margin-bottom: 0.15rem;
+        color: #6c757d;
+        font-size: 0.72rem;
+        font-weight: 700;
+      }
+
+      .invoice-request-preview-card .preview-value {
+        color: #212529;
+        overflow-wrap: anywhere;
+        white-space: pre-wrap;
+      }
+
+      @media (max-width: 700px) {
+        .invoice-request-preview-card .preview-grid {
+          grid-template-columns: 1fr;
+        }
       }
 
       /* One solid row color — disable Bootstrap Tabulator striping. */
@@ -141,24 +253,25 @@
 
       #invoice-requests-table .tabulator-cell.invoice-checkbox-cell {
         text-align: center;
+        vertical-align: middle;
         font-size: 1.05rem;
       }
 
+      /* Compact 3-line rows: clip overflow; drag row edge to see more. */
       #invoice-requests-table .tabulator-cell.scrollable-text-cell {
-        overflow-x: auto;
-        overflow-y: hidden;
-        overscroll-behavior-x: contain;
-        white-space: pre;
+        overflow: hidden;
+        white-space: pre-wrap;
+        word-break: break-word;
         text-overflow: clip;
-        scrollbar-width: thin;
       }
 
       #invoice-requests-table
         .tabulator-cell.scrollable-text-cell
         .request-cell-content {
-        display: inline-block;
-        min-width: max-content;
-        white-space: pre;
+        display: block;
+        white-space: pre-wrap;
+        word-break: break-word;
+        overflow-wrap: anywhere;
       }
 
       #invoice-requests-table
@@ -393,6 +506,11 @@
       <div
         id="invoice-requests-table"
         aria-label="Invoice requests"
+      ></div>
+      <div
+        id="invoiceRequestPreviewCard"
+        class="invoice-request-preview-card"
+        aria-hidden="true"
       ></div>
       <div id="invoice-requests-mobile" aria-label="Invoice requests mobile">
         <div id="invoice-mobile-form" class="invoice-mobile-form d-none">
@@ -944,6 +1062,181 @@
           return anchor;
         }
 
+        function projectFormatter(cell) {
+          var row = cell.getRow().getData();
+          var value = cell.getValue();
+          var displayValue =
+            value === null || value === undefined ? "" : String(value);
+          var wrapper = document.createElement("div");
+          wrapper.className = "project-cell";
+
+          var text = document.createElement("span");
+          text.className = "request-cell-content";
+          text.textContent = displayValue;
+          wrapper.appendChild(text);
+
+          var previewButton = document.createElement("button");
+          previewButton.type = "button";
+          previewButton.className = "preview-btn";
+          previewButton.setAttribute("data-request-id", row._id);
+          previewButton.title = "Preview request";
+          previewButton.setAttribute(
+            "aria-label",
+            "Preview " + (displayValue || "invoice request")
+          );
+          previewButton.innerHTML =
+            '<i class="bi bi-eye" aria-hidden="true"></i>';
+          previewButton.addEventListener("click", function (event) {
+            event.preventDefault();
+            event.stopPropagation();
+          });
+          wrapper.appendChild(previewButton);
+          return wrapper;
+        }
+
+        function formatPreviewStatus(value) {
+          if (value === true || value === "checked") return "✓";
+          if (value === "notApplicable") return "✕";
+          return "□";
+        }
+
+        function formatPreviewLink(row, columnOffset, value) {
+          var link = (row._links && row._links[columnOffset]) || "";
+          var text =
+            row["_display" + columnOffset] ||
+            value ||
+            link ||
+            "";
+          if (!text && !link) {
+            return '<span class="text-muted">no data</span>';
+          }
+          if (!link) return escapeHtml(text);
+          return (
+            '<a class="request-link" href="' +
+            escapeHtml(link) +
+            '" target="_blank" rel="noopener">' +
+            escapeHtml(text || link) +
+            "</a>"
+          );
+        }
+
+        function buildRequestPreviewHtml(row) {
+          var headers =
+            (lastLoadedResponse && lastLoadedResponse.headers) ||
+            fallbackHeaders;
+          var projectName = String(row.c0 || "Invoice request");
+          var fields = [];
+
+          for (var offset = 0; offset < fallbackHeaders.length; offset++) {
+            if (isStatusColumn(offset) && !showStatusColumns) continue;
+            if (offset === AUTHOR_OFFSET && !showAuthorColumn) continue;
+            if (
+              offset === CLIENT_FOLDER_OFFSET &&
+              !showClientFolderColumn
+            ) {
+              continue;
+            }
+
+            var header = headers[offset] || fallbackHeaders[offset];
+            var value = row["c" + offset];
+            var display =
+              row["_display" + offset] != null &&
+              row["_display" + offset] !== ""
+                ? row["_display" + offset]
+                : value;
+            var wide =
+              offset === DETAILS_OFFSET ||
+              offset === COMMENT_OFFSET ||
+              offset === RATE_FILE_OFFSET ||
+              offset === CLIENT_FOLDER_OFFSET;
+            var valueHtml;
+
+            if (isStatusColumn(offset)) {
+              valueHtml = escapeHtml(formatPreviewStatus(value));
+            } else if (
+              offset === RATE_FILE_OFFSET ||
+              offset === CLIENT_FOLDER_OFFSET
+            ) {
+              valueHtml = formatPreviewLink(row, offset, display);
+            } else if (
+              display === null ||
+              display === undefined ||
+              String(display) === ""
+            ) {
+              valueHtml = '<span class="text-muted">no data</span>';
+            } else {
+              valueHtml = escapeHtml(String(display));
+            }
+
+            fields.push(
+              '<div class="preview-field' +
+                (wide ? " is-wide" : "") +
+                '">' +
+                '<span class="preview-label">' +
+                escapeHtml(header) +
+                "</span>" +
+                '<div class="preview-value">' +
+                valueHtml +
+                "</div>" +
+                "</div>"
+            );
+          }
+
+          return (
+            '<div class="preview-header">' +
+            '<h3 class="preview-title">' +
+            escapeHtml(projectName) +
+            "</h3>" +
+            '<button type="button" class="preview-close" aria-label="Close preview">&times;</button>' +
+            "</div>" +
+            '<div class="preview-body">' +
+            '<div class="preview-grid">' +
+            fields.join("") +
+            "</div></div>"
+          );
+        }
+
+        function positionRequestPreviewCard(card, trigger) {
+          var rect = trigger.getBoundingClientRect();
+          var cardWidth = Math.min(720, window.innerWidth - 40);
+          var left = Math.min(
+            Math.max(20, rect.left),
+            window.innerWidth - cardWidth - 20
+          );
+          var top = rect.bottom + 8;
+
+          card.style.width = cardWidth + "px";
+          card.style.left = left + "px";
+          card.style.top = top + "px";
+          card.style.display = "block";
+
+          var cardRect = card.getBoundingClientRect();
+          if (cardRect.bottom > window.innerHeight - 20) {
+            card.style.top =
+              Math.max(20, rect.top - cardRect.height - 8) + "px";
+          }
+        }
+
+        function showRequestPreview(id, trigger) {
+          if (!table) return;
+          var rowComponent = table.getRow(String(id));
+          if (!rowComponent) return;
+          var card = document.getElementById("invoiceRequestPreviewCard");
+          card.innerHTML = buildRequestPreviewHtml(rowComponent.getData());
+          card.setAttribute("data-request-id", String(id));
+          card.setAttribute("aria-hidden", "false");
+          positionRequestPreviewCard(card, trigger);
+        }
+
+        function hideRequestPreview() {
+          var card = document.getElementById("invoiceRequestPreviewCard");
+          if (!card) return;
+          card.style.display = "none";
+          card.removeAttribute("data-request-id");
+          card.setAttribute("aria-hidden", "true");
+          card.innerHTML = "";
+        }
+
         function checkboxFormatter(cell) {
           var status = cell.getValue();
           if (status === true) status = "checked";
@@ -1004,12 +1297,16 @@
               editable: !(checkboxColumn || readOnlyColumn),
               minWidth: checkboxColumn ? 66 : textWidth,
               width: checkboxColumn ? 70 : textWidth,
-              variableHeight: !checkboxColumn,
+              variableHeight: false,
               cssClass: cssClasses.join(" "),
               headerCssClass: isStatusGroupBoundary(columnOffset)
                 ? "status-group-boundary"
                 : "",
-              formatter: checkboxColumn ? checkboxFormatter : textFormatter,
+              formatter: checkboxColumn
+                ? checkboxFormatter
+                : projectColumn
+                ? projectFormatter
+                : textFormatter,
               editor: checkboxColumn || readOnlyColumn
                 ? false
                 : projectColumn
@@ -1124,6 +1421,10 @@
             height: tableHeight(),
             layout: "fitColumns",
             layoutColumnsOnNewData: false,
+            // ~3 text lines at current cell padding/font; drag edge to expand.
+            rowHeight: 72,
+            resizableRows: true,
+            resizableRowGuide: true,
             editTriggerEvent: "dblclick",
             placeholder: "No invoice requests found",
             pagination: true,
@@ -1133,15 +1434,13 @@
             initialSort: [{ column: "_activityAt", dir: "desc" }],
             columns: buildColumns(response.headers || []),
             data: tableRows(response),
-            rowFormatter: function (row) {
-              row.getElement().style.minHeight = "34px";
-            },
           });
           table.on("tableBuilt", function () {
             applyHeaderColors();
             table.setSort([{ column: "_activityAt", dir: "desc" }]);
           });
           table.on("cellEdited", trackCellChange);
+          table.on("dataProcessed", hideRequestPreview);
         }
 
         function trackCellChange(cell) {
@@ -1374,6 +1673,7 @@
         }
 
         function setLoading(loading) {
+          if (loading) hideRequestPreview();
           reloadButton.disabled =
             loading || isSaving || pendingReloadAfterStatusSave;
           addRowButton.disabled =
@@ -2409,7 +2709,45 @@
           event.returnValue = "";
         });
 
+        document.addEventListener("click", function (event) {
+          var previewButton = event.target.closest(".preview-btn");
+          var card = document.getElementById("invoiceRequestPreviewCard");
+          if (!card) return;
+
+          if (previewButton) {
+            event.preventDefault();
+            event.stopPropagation();
+            var id = previewButton.getAttribute("data-request-id");
+            if (
+              card.style.display === "block" &&
+              card.getAttribute("data-request-id") === String(id)
+            ) {
+              hideRequestPreview();
+            } else {
+              showRequestPreview(id, previewButton);
+            }
+            return;
+          }
+
+          if (event.target.closest(".preview-close")) {
+            hideRequestPreview();
+            return;
+          }
+
+          if (
+            card.style.display === "block" &&
+            !card.contains(event.target)
+          ) {
+            hideRequestPreview();
+          }
+        });
+
+        document.addEventListener("keydown", function (event) {
+          if (event.key === "Escape") hideRequestPreview();
+        });
+
         window.addEventListener("resize", function () {
+          hideRequestPreview();
           var wantMobile = useMobileLimitedUi();
           var isMobile = document.body.classList.contains(
             "invoice-mobile-limited"
