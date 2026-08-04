@@ -165,11 +165,11 @@
         bottom: 0;
         z-index: 2;
         border: none;
-        padding: 0 0.15rem 0 1.4rem;
+        padding: 0 0.2rem 0 1.5rem;
         background: linear-gradient(
           90deg,
           rgba(255, 255, 255, 0),
-          #ffffff 28%
+          #ffffff 35%
         );
         color: #667eea;
         font-size: 0.72rem;
@@ -183,21 +183,13 @@
         background: linear-gradient(
           90deg,
           rgba(236, 236, 236, 0),
-          #ececec 28%
+          #ececec 35%
         );
       }
 
       #invoice-requests-table .details-more-btn:hover {
         color: #764ba2;
         text-decoration: underline;
-      }
-
-      #invoice-requests-table .details-cell-wrap.is-expanded .details-more-btn {
-        position: static;
-        display: inline-block;
-        margin-top: 0.2rem;
-        padding-left: 0;
-        background: transparent;
       }
 
       /* One solid row color — disable Bootstrap Tabulator striping. */
@@ -1107,6 +1099,26 @@
           });
         }
 
+        function getExpandableCellWidth(cell) {
+          if (!cell) return 300;
+          var cellEl = cell.getElement();
+          return Math.max(cellEl.clientWidth - 14, cellEl.offsetWidth - 14, 120);
+        }
+
+        function cellContentOverflows(cell) {
+          if (!cell) return false;
+          var content = cell
+            .getElement()
+            .querySelector(".request-cell-content");
+          if (!content || !String(content.textContent || "").trim()) {
+            return false;
+          }
+          return (
+            measureContentHeight(content, getExpandableCellWidth(cell)) >
+            COMPACT_ROW_HEIGHT - 18
+          );
+        }
+
         function setRowExpanded(rowComponent, expanded) {
           if (!rowComponent) return;
           var id = String(rowComponent.getData()._id);
@@ -1114,7 +1126,6 @@
           if (expanded) {
             expandedRowIds[id] = true;
             rowEl.classList.add("is-row-expanded");
-            // Unlock clipping first so layout can use full text height.
             refreshExpandableTextButtons(rowComponent);
             rowEl.querySelectorAll(".tabulator-cell").forEach(function (cellEl) {
               cellEl.style.height = "auto";
@@ -1125,24 +1136,27 @@
             [DETAILS_OFFSET, COMMENT_OFFSET].forEach(function (offset) {
               var cell = rowComponent.getCell("c" + offset);
               if (!cell) return;
-              var cellEl = cell.getElement();
-              var content = cellEl.querySelector(".request-cell-content");
-              var width = Math.max(
-                cellEl.clientWidth - 14,
-                content ? content.clientWidth : 0,
-                120
-              );
-              var measured = measureContentHeight(content, width) + 36;
+              var content = cell
+                .getElement()
+                .querySelector(".request-cell-content");
+              var measured =
+                measureContentHeight(content, getExpandableCellWidth(cell)) +
+                36;
               if (measured > fullHeight) fullHeight = measured;
             });
             rowEl.style.height = Math.min(fullHeight, 720) + "px";
-            if (typeof rowComponent.normalizeHeight === "function") {
-              rowComponent.normalizeHeight();
-            }
           } else {
             delete expandedRowIds[id];
             clearExpandedRowStyles(rowEl);
             rowEl.style.height = COMPACT_ROW_HEIGHT + "px";
+            // Remeasure after compact layout settles — otherwise … more stays hidden.
+            refreshExpandableTextButtons(rowComponent);
+            setTimeout(function () {
+              if (!expandedRowIds[id]) {
+                refreshExpandableTextButtons(rowComponent);
+              }
+            }, 0);
+            return;
           }
           refreshExpandableTextButtons(rowComponent);
         }
@@ -1150,28 +1164,44 @@
         function updateExpandableTextButton(cell) {
           if (!cell) return;
           var wrap = cell.getElement().querySelector(".details-cell-wrap");
-          var content = wrap && wrap.querySelector(".request-cell-content");
-          var button = wrap && wrap.querySelector(".details-more-btn");
-          if (!wrap || !content || !button) return;
+          if (!wrap) return;
+          // Guard against accidental duplicate controls after redraws.
+          var buttons = wrap.querySelectorAll(".details-more-btn");
+          var button = buttons[0] || null;
+          for (var i = 1; i < buttons.length; i++) {
+            buttons[i].remove();
+          }
+          var content = wrap.querySelector(".request-cell-content");
+          if (!content || !button) return;
 
           var rowComponent = cell.getRow();
+          var columnOffset = Number(cell.getColumn().getField().substring(1));
           var id = String(rowComponent.getData()._id);
           var expanded = !!expandedRowIds[id];
+          var overflows = cellContentOverflows(cell);
           wrap.classList.toggle("is-expanded", expanded);
+          wrap.classList.toggle("has-more", overflows || expanded);
 
           if (expanded) {
-            wrap.classList.add("has-more");
-            button.hidden = false;
+            // One collapse control for the whole row — only on Дані.
+            var showLess = columnOffset === DETAILS_OFFSET && overflows;
+            if (!showLess && columnOffset === DETAILS_OFFSET) {
+              // Details may not overflow alone while comment does.
+              showLess = cellContentOverflows(
+                rowComponent.getCell("c" + COMMENT_OFFSET)
+              );
+            }
+            if (columnOffset === COMMENT_OFFSET) {
+              button.hidden = true;
+              return;
+            }
+            button.hidden = !showLess;
             button.textContent = "… less";
             button.setAttribute("aria-expanded", "true");
             button.title = "Collapse row";
             return;
           }
 
-          var overflows =
-            measureContentHeight(content) >
-            COMPACT_ROW_HEIGHT - 18;
-          wrap.classList.toggle("has-more", overflows);
           button.hidden = !overflows;
           button.textContent = "… more";
           button.setAttribute("aria-expanded", "false");
@@ -1212,7 +1242,6 @@
             setRowExpanded(rowComponent, !expandedRowIds[id]);
           });
           wrap.appendChild(moreBtn);
-
           setTimeout(function () {
             updateExpandableTextButton(cell);
           }, 0);
