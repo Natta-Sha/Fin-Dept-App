@@ -628,6 +628,7 @@
         var softPulseInFlight = false;
         var statusSaveInFlight = {};
         var statusSaveQueued = {};
+        var pendingReloadAfterStatusSave = false;
         var isSaving = false;
         var allowUnsavedExit = false;
         var pendingDiscardAction = null;
@@ -871,7 +872,8 @@
           var mobileUi = useMobileLimitedUi();
           var formOpen = hasOpenCreateOrEditForm();
           saveButton.disabled = isSaving || count === 0;
-          reloadButton.disabled = isSaving;
+          reloadButton.disabled =
+            isSaving || pendingReloadAfterStatusSave;
           addRowButton.disabled =
             isSaving || count > 0 || formOpen;
           saveButton.classList.toggle("has-unsaved", count > 0);
@@ -1169,6 +1171,27 @@
           return Object.keys(statusSaveInFlight).length > 0;
         }
 
+        function requestFullReload() {
+          if (hasStatusSaveInFlight()) {
+            pendingReloadAfterStatusSave = true;
+            setStatus("Finishing status save, then reloading…");
+            reloadButton.querySelector("i").className =
+              "spinner-border spinner-border-sm me-1";
+            updateToolbar();
+            return;
+          }
+          pendingReloadAfterStatusSave = false;
+          loadData(true, true);
+        }
+
+        function flushPendingReloadAfterStatusSave() {
+          if (!pendingReloadAfterStatusSave || hasStatusSaveInFlight()) {
+            return;
+          }
+          pendingReloadAfterStatusSave = false;
+          loadData(true, true);
+        }
+
         function applyStatusCellLocally(cell, value, originalToken) {
           var row = cell.getRow().getData();
           var columnOffset = Number(cell.getColumn().getField().substring(1));
@@ -1198,6 +1221,7 @@
           var row = cell.getRow().getData();
           var columnOffset = Number(cell.getColumn().getField().substring(1));
           if (!isStatusColumn(columnOffset) || !showStatusColumns) return;
+          if (pendingReloadAfterStatusSave) return;
 
           var key = changeKey(row._id, columnOffset);
           var currentStatus = cell.getValue();
@@ -1266,6 +1290,7 @@
                   rememberFileUpdatedAt(result.fileUpdatedAt);
                 }
                 updateToolbar();
+                flushPendingReloadAfterStatusSave();
                 return;
               }
 
@@ -1303,6 +1328,12 @@
                 return;
               }
 
+              if (pendingReloadAfterStatusSave) {
+                updateToolbar();
+                flushPendingReloadAfterStatusSave();
+                return;
+              }
+
               setStatus("Status saved", "success");
               updateToolbar();
             })
@@ -1316,6 +1347,7 @@
                 "error"
               );
               updateToolbar();
+              flushPendingReloadAfterStatusSave();
             })
             .saveInvoiceRequestStatusCell({
               id: rowId,
@@ -1326,15 +1358,17 @@
         }
 
         function setLoading(loading) {
-          reloadButton.disabled = loading || isSaving;
+          reloadButton.disabled =
+            loading || isSaving || pendingReloadAfterStatusSave;
           addRowButton.disabled =
             loading ||
             isSaving ||
             dirtyCount() > 0 ||
             hasOpenCreateOrEditForm();
-          reloadButton.querySelector("i").className = loading
-            ? "spinner-border spinner-border-sm me-1"
-            : "bi bi-arrow-clockwise me-1";
+          reloadButton.querySelector("i").className =
+            loading || pendingReloadAfterStatusSave
+              ? "spinner-border spinner-border-sm me-1"
+              : "bi bi-arrow-clockwise me-1";
         }
 
         function escapeHtml(value) {
@@ -2160,7 +2194,7 @@
         saveButton.addEventListener("click", saveChanges);
         reloadButton.addEventListener("click", function () {
           confirmDiscard(function () {
-            loadData(true, true);
+            requestFullReload();
           });
         });
         mobileFormSaveButton.addEventListener("click", saveMobileForm);
