@@ -286,6 +286,30 @@
         text-decoration: underline;
       }
 
+      #invoice-requests-table .col-link {
+        text-align: center;
+      }
+
+      #invoice-requests-table .icon-link {
+        color: #667eea;
+        font-size: 1rem;
+        text-decoration: none;
+      }
+
+      #invoice-requests-table .icon-link:hover {
+        color: #764ba2;
+      }
+
+      .invoice-mobile-icon-link {
+        color: #667eea;
+        font-size: 1.1rem;
+        text-decoration: none;
+      }
+
+      .invoice-mobile-icon-link:hover {
+        color: #764ba2;
+      }
+
       .save-status {
         min-width: 150px;
         padding: 0.3rem 0.55rem;
@@ -786,8 +810,8 @@
           1: 366,
           2: 216,
           3: 138,
-          12: 150,
-          13: 150,
+          12: 90,
+          13: 105,
           14: 120,
           15: 140,
           16: 120,
@@ -1045,6 +1069,44 @@
           return anchor;
         }
 
+        function resourceLinkFormatter(cell) {
+          var row = cell.getRow().getData();
+          var columnOffset = Number(cell.getColumn().getField().substring(1));
+          var value = cell.getValue();
+          var href =
+            row._links[columnOffset] ||
+            (value === null || value === undefined ? "" : String(value).trim());
+          if (!href) return "";
+
+          var config =
+            columnOffset === RATE_FILE_OFFSET
+              ? { icon: "bi-file-earmark-text", title: "Rate file" }
+              : { icon: "bi-folder2-open", title: "Client folder" };
+
+          var link = document.createElement("a");
+          link.href = href;
+          link.target = "_blank";
+          link.rel = "noopener";
+          link.className = "icon-link";
+          link.title = config.title;
+          link.addEventListener("click", function (event) {
+            event.stopPropagation();
+          });
+
+          var icon = document.createElement("i");
+          icon.className = "bi " + config.icon;
+          icon.setAttribute("aria-hidden", "true");
+          link.appendChild(icon);
+          return link;
+        }
+
+        function isResourceLinkColumn(columnOffset) {
+          return (
+            columnOffset === RATE_FILE_OFFSET ||
+            columnOffset === CLIENT_FOLDER_OFFSET
+          );
+        }
+
         function isExpandableTextColumn(columnOffset) {
           return (
             columnOffset === DETAILS_OFFSET ||
@@ -1295,16 +1357,20 @@
             }
             if (
               columnOffset === DETAILS_OFFSET ||
-              columnOffset === COMMENT_OFFSET ||
-              columnOffset === RATE_FILE_OFFSET ||
-              columnOffset === CLIENT_FOLDER_OFFSET
+              columnOffset === COMMENT_OFFSET
             ) {
               cssClasses.push("scrollable-text-cell");
+            }
+            if (isResourceLinkColumn(columnOffset)) {
+              cssClasses.push("col-link");
             }
             var column = {
               title: header,
               field: "c" + columnOffset,
               headerHozAlign: "center",
+              hozAlign: isResourceLinkColumn(columnOffset)
+                ? "center"
+                : "left",
               headerSort: true,
               editable: !(checkboxColumn || readOnlyColumn),
               minWidth: checkboxColumn ? 66 : textWidth,
@@ -1318,6 +1384,8 @@
                 ? checkboxFormatter
                 : isExpandableTextColumn(columnOffset)
                 ? expandableTextFormatter
+                : isResourceLinkColumn(columnOffset)
+                ? resourceLinkFormatter
                 : textFormatter,
               editor: checkboxColumn || readOnlyColumn
                 ? false
@@ -1976,19 +2044,21 @@
 
           mobileListElement.innerHTML = rows
             .map(function (row) {
-              var rateValue = String(
-                row["_display" + RATE_FILE_OFFSET] ||
-                  row["c" + RATE_FILE_OFFSET] ||
-                  ""
-              );
-              var rateLink = row._links[RATE_FILE_OFFSET] || "";
-              var rateHtml = rateLink
-                ? '<a class="request-link" href="' +
-                  escapeHtml(rateLink) +
-                  '" target="_blank" rel="noopener">' +
-                  escapeHtml(rateValue || rateLink) +
-                  "</a>"
-                : escapeHtml(rateValue);
+              function mobileIconLinkHtml(offset, icon, title) {
+                var href =
+                  row._links[offset] ||
+                  String(row["c" + offset] || "").trim();
+                if (!href) return "&nbsp;";
+                return (
+                  '<a class="invoice-mobile-icon-link" href="' +
+                  escapeHtml(href) +
+                  '" target="_blank" rel="noopener" title="' +
+                  escapeHtml(title) +
+                  '"><i class="bi ' +
+                  icon +
+                  '" aria-hidden="true"></i></a>'
+                );
+              }
 
               return (
                 '<article class="invoice-mobile-card" data-row-id="' +
@@ -1997,7 +2067,22 @@
                 mobileFieldHtml("Project", escapeHtml(row.c0 || "")) +
                 mobileFieldHtml("Details", escapeHtml(row.c1 || "")) +
                 mobileFieldHtml("Comment", escapeHtml(row.c2 || "")) +
-                mobileFieldHtml("Rate file", rateHtml || "&nbsp;") +
+                mobileFieldHtml(
+                  "Rate file",
+                  mobileIconLinkHtml(
+                    RATE_FILE_OFFSET,
+                    "bi-file-earmark-text",
+                    "Rate file"
+                  )
+                ) +
+                mobileFieldHtml(
+                  "Client folder",
+                  mobileIconLinkHtml(
+                    CLIENT_FOLDER_OFFSET,
+                    "bi-folder2-open",
+                    "Client folder"
+                  )
+                ) +
                 mobileFieldHtml(
                   "Created by",
                   escapeHtml(row["c" + CREATED_BY_OFFSET] || "")
