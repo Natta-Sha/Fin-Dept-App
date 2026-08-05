@@ -326,13 +326,13 @@ function sendInvoiceRequestNotification_(
       "Привіт.\n\n" +
       paragraph +
       "\n\n" +
-      "Проект: " +
+      "Project: " +
       String(project || "") +
       "\n" +
-      "Автор: " +
+      "Author: " +
       String(author || "") +
       "\n\n" +
-      "Деталі за посиланням: " +
+      "View request: " +
       pageUrl;
 
     var htmlBody =
@@ -340,15 +340,15 @@ function sendInvoiceRequestNotification_(
       "<p>" +
       escapeInvoiceRequestHtml_(paragraph) +
       "</p>" +
-      "<p><b>Проект:</b> " +
+      "<p><b>Project:</b> " +
       safeProject +
       "<br>" +
-      "<b>Автор:</b> " +
+      "<b>Author:</b> " +
       safeAuthor +
       "</p>" +
-      "<p>Деталі за <a href=\"" +
+      "<p>View request: <a href=\"" +
       safeUrl +
-      "\">посиланням</a></p>";
+      "\">link</a></p>";
 
     MailApp.sendEmail({
       to: recipients[0],

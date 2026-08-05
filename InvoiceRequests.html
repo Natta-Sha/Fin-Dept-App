@@ -474,12 +474,12 @@
             New invoice request
           </div>
           <div class="mb-3">
-            <label for="mobile-field-project" class="form-label">Проект *</label>
+            <label for="mobile-field-project" class="form-label">Project *</label>
             <select id="mobile-field-project" class="form-select"></select>
             <div class="invalid-feedback">Select a project from the list.</div>
           </div>
           <div class="mb-3">
-            <label for="mobile-field-details" class="form-label">Дані *</label>
+            <label for="mobile-field-details" class="form-label">Details *</label>
             <textarea
               id="mobile-field-details"
               class="form-control"
@@ -488,7 +488,7 @@
             <div class="invalid-feedback">Details are required.</div>
           </div>
           <div class="mb-3">
-            <label for="mobile-field-comment" class="form-label">Комент</label>
+            <label for="mobile-field-comment" class="form-label">Comment</label>
             <textarea
               id="mobile-field-comment"
               class="form-control"
@@ -541,14 +541,14 @@
           <div class="modal-body">
             <div class="mb-3">
               <label for="desktop-field-project" class="form-label"
-                >Проект *</label
+                >Project *</label
               >
               <select id="desktop-field-project" class="form-select"></select>
               <div class="invalid-feedback">Select a project from the list.</div>
             </div>
             <div class="mb-3">
               <label for="desktop-field-details" class="form-label"
-                >Дані *</label
+                >Details *</label
               >
               <textarea
                 id="desktop-field-details"
@@ -559,7 +559,7 @@
             </div>
             <div class="mb-3">
               <label for="desktop-field-comment" class="form-label"
-                >Комент</label
+                >Comment</label
               >
               <textarea
                 id="desktop-field-comment"
@@ -741,10 +741,10 @@
           "#f1f3f5",
         ];
         var fallbackHeaders = [
-          "Проект",
-          "Дані",
-          "Комент",
-          "Автор",
+          "Project",
+          "Details",
+          "Comment",
+          "Author",
           "Инв",
           "Файл зад.",
           "XERO",
@@ -753,8 +753,8 @@
           "Отпр.инв",
           "Проекты",
           "Оп.б",
-          "Файл рейтів",
-          "Папка клієнта",
+          "Rate file",
+          "Client folder",
           "Created by",
           "Created at",
           "Edited by",
@@ -818,7 +818,7 @@
             );
           }
           // Limited view hides status columns; keep a separator between
-          // the data block and Файл рейтів / audit columns.
+          // the data block and Rate file / audit columns.
           return columnOffset === RATE_FILE_OFFSET;
         }
 
@@ -1037,7 +1037,7 @@
           var columnOffset = Number(cell.getColumn().getField().substring(1));
           var displayValue =
             value === null || value === undefined ? "" : String(value);
-          // Дані / Комент always show full stored text — never replace with a link label.
+          // Details / Comment always show full stored text — never replace with a link label.
           if (isExpandableTextColumn(columnOffset)) {
             var fullText = document.createElement("span");
             fullText.className = "request-cell-content";
@@ -1974,10 +1974,10 @@
                 '<article class="invoice-mobile-card" data-row-id="' +
                 escapeHtml(row._id) +
                 '">' +
-                mobileFieldHtml("Проект", escapeHtml(row.c0 || "")) +
-                mobileFieldHtml("Дані", escapeHtml(row.c1 || "")) +
-                mobileFieldHtml("Комент", escapeHtml(row.c2 || "")) +
-                mobileFieldHtml("Файл рейтів", rateHtml || "&nbsp;") +
+                mobileFieldHtml("Project", escapeHtml(row.c0 || "")) +
+                mobileFieldHtml("Details", escapeHtml(row.c1 || "")) +
+                mobileFieldHtml("Comment", escapeHtml(row.c2 || "")) +
+                mobileFieldHtml("Rate file", rateHtml || "&nbsp;") +
                 mobileFieldHtml(
                   "Created by",
                   escapeHtml(row["c" + CREATED_BY_OFFSET] || "")
