@@ -1412,10 +1412,9 @@
             height: tableHeight(),
             layout: "fitColumns",
             layoutColumnsOnNewData: false,
-            // ~3 text lines; drag row edge to grow, or … more for full preview.
+            // Fixed ~3 text lines; … more opens full-text preview.
             rowHeight: COMPACT_ROW_HEIGHT,
-            resizableRows: true,
-            resizableRowGuide: true,
+            resizableRows: false,
             editTriggerEvent: "dblclick",
             placeholder: "No invoice requests found",
             pagination: true,
@@ -1444,11 +1443,6 @@
           });
           table.on("columnResized", function () {
             setTimeout(refreshAllExpandableTextButtons, 0);
-          });
-          table.on("rowResized", function (row) {
-            setTimeout(function () {
-              refreshExpandableTextButtons(row);
-            }, 0);
           });
         }
 
