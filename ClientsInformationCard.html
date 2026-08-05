@@ -314,7 +314,7 @@
         button.setAttribute("aria-disabled", "true");
         button.setAttribute("data-original-html", button.innerHTML);
         button.innerHTML =
-          '<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>' +
+          '<span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>' +
           esc(busyText || "Loading...");
       }
 
@@ -746,7 +746,7 @@
             window.AppAsyncUX.setRegionPending(
               document.getElementById("card-form"),
               true,
-              "Loading form options..."
+              "Loading..."
             );
           }
           loadDropdowns(null, function () {

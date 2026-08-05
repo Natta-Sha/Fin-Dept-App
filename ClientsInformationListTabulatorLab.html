@@ -598,14 +598,13 @@
 
         function setRefreshBusy(busy) {
           refreshButton.disabled = busy;
-          refreshButton.querySelector("i").className = busy
-            ? "spinner-border spinner-border-sm me-1"
-            : "bi bi-arrow-clockwise me-1";
+          refreshButton.querySelector("i").className =
+            "bi bi-arrow-clockwise me-1";
           if (window.AppAsyncUX) {
             window.AppAsyncUX.setRegionPending(
               tableElement,
               busy,
-              "Loading clients..."
+              "Loading..."
             );
           }
         }

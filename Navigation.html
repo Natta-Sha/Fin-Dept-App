@@ -196,15 +196,24 @@
   }
 
   .app-async-overlay-content {
-    display: flex;
+    display: inline-flex;
     align-items: center;
-    gap: 0.65rem;
-    padding: 0.75rem 1rem;
-    border: 1px solid #dee2e6;
-    border-radius: 0.5rem;
-    background: #fff;
-    color: #495057;
+    gap: 0.5rem;
+    padding: 0.5rem 1.15rem;
+    border: 1px solid #6c757d;
+    border-radius: 25px;
+    background: rgba(108, 117, 125, 0.08);
+    color: #6c757d;
+    font-size: 0.875rem;
     font-weight: 600;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  }
+
+  .app-async-overlay-content .spinner-border {
+    width: 1rem;
+    height: 1rem;
+    border-width: 0.15em;
+    color: #6c757d;
   }
 
   .app-navigation-indicator {
@@ -212,15 +221,24 @@
     top: 0.75rem;
     right: 1rem;
     z-index: 2000;
-    display: flex;
+    display: inline-flex;
     align-items: center;
     gap: 0.5rem;
-    padding: 0.55rem 0.8rem;
-    border: 1px solid rgba(255, 255, 255, 0.55);
-    border-radius: 0.5rem;
-    background: #212529;
-    color: #fff;
+    padding: 0.5rem 1.15rem;
+    border: 1px solid #667eea;
+    border-radius: 25px;
+    background: #fff;
+    color: #667eea;
     font-size: 0.875rem;
+    font-weight: 600;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.12);
+  }
+
+  .app-navigation-indicator .spinner-border {
+    width: 1rem;
+    height: 1rem;
+    border-width: 0.15em;
+    color: #667eea;
   }
 </style>
 
@@ -523,7 +541,7 @@
       button.disabled = true;
       button.setAttribute("aria-busy", "true");
       button.innerHTML =
-        '<span class="spinner-border spinner-border-sm me-2" aria-hidden="true"></span>' +
+        '<span class="spinner-border spinner-border-sm me-1" aria-hidden="true"></span>' +
         String(label || "Loading...");
     }
 
@@ -614,7 +632,7 @@
         '<span class="spinner-border spinner-border-sm" aria-hidden="true"></span>' +
         '<span></span>';
       indicator.querySelector("span:last-child").textContent =
-        label || "Opening...";
+        label || "Loading...";
       document.body.appendChild(indicator);
     }
 
@@ -648,7 +666,11 @@
       ) {
         return;
       }
-      showNavigationPending("Opening...");
+      if (link.classList.contains("btn")) {
+        setButtonPending(link, "Loading...");
+      } else {
+        showNavigationPending("Loading...");
+      }
       link.setAttribute("aria-busy", "true");
       link.style.pointerEvents = "none";
     });

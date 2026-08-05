@@ -309,14 +309,14 @@
 
         function setLoading(isLoading) {
           refreshButton.disabled = isLoading;
-          refreshButton.querySelector("i").className = isLoading
-            ? "spinner-border spinner-border-sm me-1"
-            : "bi bi-arrow-clockwise me-1";
+          // Keep arrow icon — region overlay already shows the spinner.
+          refreshButton.querySelector("i").className =
+            "bi bi-arrow-clockwise me-1";
           if (window.AppAsyncUX) {
             window.AppAsyncUX.setRegionPending(
               document.getElementById("invoice-tabulator"),
               isLoading,
-              "Loading invoices..."
+              "Loading..."
             );
           }
         }

@@ -1344,7 +1344,7 @@
 
         function loadSelectedProjectDetails(value) {
           const requestVersion = ++projectDetailsRequestVersion;
-          setProjectDetailsStatus("Loading project details...", false);
+          setProjectDetailsStatus("Loading...", false);
           google.script.run
             .withSuccessHandler(function (details) {
               if (requestVersion !== projectDetailsRequestVersion) return;
@@ -1469,7 +1469,7 @@
             window.AppAsyncUX.setRegionPending(
               document.querySelector(".main-content"),
               true,
-              "Loading credit note..."
+              "Loading..."
             );
           }
           console.log(

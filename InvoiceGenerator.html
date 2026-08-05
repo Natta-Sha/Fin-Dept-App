@@ -1098,7 +1098,7 @@
           const status = document.getElementById("project-details-status");
           if (status) {
             status.classList.remove("text-danger");
-            status.textContent = "Loading project details...";
+            status.textContent = "Loading...";
           }
           google.script.run
             .withSuccessHandler(function (details) {
@@ -1549,7 +1549,7 @@
               window.AppAsyncUX.setRegionPending(
                 document.querySelector(".main-content"),
                 true,
-                "Loading invoice..."
+                "Loading..."
               );
             }
             google.script.run
